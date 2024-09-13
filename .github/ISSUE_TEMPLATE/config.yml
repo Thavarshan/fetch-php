@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Help & Support
+    url: https://github.com/Thavarshan/fetch-php/discussions
+    about: 'This repository is only for reporting bugs. If you have a question or need help using the library, click:'

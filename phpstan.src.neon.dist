@@ -1,0 +1,17 @@
+parameters:
+    level: 1
+    paths:
+        - src
+    excludePaths:
+        - src/Illuminate/Testing/ParallelRunner.php
+        - src/*/views/*
+    ignoreErrors:
+        - "#\\(void\\) is used#"
+        - "#Access to an undefined property#"
+        - "#but return statement is missing.#"
+        - "#Call to an undefined method#"
+        - "#Caught class [a-zA-Z0-9\\\\_]+ not found.#"
+        - "#Class [a-zA-Z0-9\\\\_]+ not found.#"
+        - "#has invalid type#"
+        - "#Instantiated class [a-zA-Z0-9\\\\_]+ not found.#"
+        - "#Unsafe usage of new static#"

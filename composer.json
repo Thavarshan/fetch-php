@@ -1,0 +1,66 @@
+{
+    "name": "jerome/fetch-php",
+    "description": "The fetch API for PHP.",
+    "version": "1.0.0",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jerome Thayananthajothy",
+            "email": "tjthavarshan@gmail.com"
+        }
+    ],
+    "homepage": "https://fetch-php.thavarshan.com",
+    "support": {
+        "issues": "https://github.com/Thavarshan/fetch-php/issues",
+        "source": "https://github.com/Thavarshan/fetch-php"
+    },
+    "autoload": {
+        "psr-4": {
+            "Fetch\\": "src/"
+        },
+        "files": [
+            "src/fetch.php"
+        ]
+    },
+    "require": {
+        "guzzlehttp/guzzle": "^7.8",
+        "nesbot/carbon": "^2.72.2|^3.0",
+        "symfony/cache": "^7.0",
+        "symfony/http-client": "^7.0",
+        "symfony/http-foundation": "^7.1",
+        "symfony/psr-http-message-bridge": "^7.0",
+        "symfony/var-dumper": "^7.0",
+        "vlucas/phpdotenv": "^5.4.1"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "mockery/mockery": "^1.6",
+        "pestphp/pest": "^3.0",
+        "phpstan/phpstan": "^1.11.5",
+        "squizlabs/php_codesniffer": "^3.7"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "analyse": "chmod +x bin/analysis.sh && ./bin/analysis.sh",
+        "lint": "chmod +x bin/lint.sh && ./bin/lint.sh",
+        "fix": "chmod +x bin/fix.sh && ./bin/fix.sh"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true,
+            "php-http/discovery": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "pestphp/pest-plugin": true
+        },
+        "optimize-autoloader": true,
+        "preferred-install": "dist"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
