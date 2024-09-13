@@ -11,7 +11,7 @@ FetchPHP is a PHP library that mimics the behavior of JavaScript’s `fetch` API
 
 ## **Installation**
 
-To install FetchPHP, use Composer:X
+To install FetchPHP, run the following command:
 
 ```bash
 composer require jerome/fetch-php
