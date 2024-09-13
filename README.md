@@ -1,4 +1,4 @@
-[![Fetch PHP](./assets/Banner.png)](https://github.com/Thavarshan/fetch-php)
+[![Fetch PHP](https://github.com/Thavarshan/fetch-php/blob/1e341206ec8be0f0c512d1ee988e9f364299ff8e/assets/Banner.png)](https://github.com/Thavarshan/fetch-php)
 
 # About Fetch PHP
 
