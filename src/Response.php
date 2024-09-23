@@ -27,6 +27,7 @@ class Response extends SymfonyResponse
         // Buffer the body contents to allow multiple reads
         $this->bodyContents = (string) $guzzleResponse->getBody();
 
+        // Pass the string body to the Symfony Response
         parent::__construct(
             $this->bodyContents,
             $guzzleResponse->getStatusCode(),
@@ -43,13 +44,20 @@ class Response extends SymfonyResponse
      */
     public function json(bool $assoc = true)
     {
+        // Handle empty body by returning null or an empty array/object
+        if (trim($this->bodyContents) === '') {
+            return $assoc ? [] : null;
+        }
+
         $decoded = json_decode($this->bodyContents, $assoc);
+
         if (json_last_error() !== \JSON_ERROR_NONE) {
             throw new RuntimeException('Failed to decode JSON: ' . json_last_error_msg());
         }
 
         return $decoded;
     }
+
 
     /**
      * Get the body as plain text.
@@ -69,9 +77,11 @@ class Response extends SymfonyResponse
     public function blob()
     {
         $stream = fopen('php://memory', 'r+');
+
         if ($stream === false) {
             return false;
         }
+
         fwrite($stream, $this->bodyContents);
         rewind($stream);
 
