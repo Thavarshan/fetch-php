@@ -15,7 +15,7 @@ test('Response::json() throws exception for invalid JSON', function () {
     $guzzleResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], 'Invalid JSON');
     $response = new Response($guzzleResponse);
 
-    expect(fn () => $response->json())->toThrow(RuntimeException::class, 'Failed to decode JSON');
+    expect(fn () => $response->json())->toThrow(\RuntimeException::class, 'Failed to decode JSON');
 });
 
 test('Response::text() correctly retrieves plain text', function () {
@@ -112,7 +112,7 @@ test('Response handles non-JSON content types', function () {
     $response = new Response($guzzleResponse);
 
     expect($response->text())->toBe('Plain text content');
-    expect(fn () => $response->json())->toThrow(RuntimeException::class, 'Failed to decode JSON');
+    expect(fn () => $response->json())->toThrow(\RuntimeException::class, 'Failed to decode JSON');
 });
 
 test('Response handles large bodies', function () {
