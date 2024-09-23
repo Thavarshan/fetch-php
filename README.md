@@ -28,6 +28,51 @@ FetchPHP provides two main functions:
 
 ---
 
+### **Important Consideration: Guzzle Client Instantiation**
+
+By default, the Guzzle HTTP client is instantiated every time the `fetch` or `fetchAsync` function is called. While this is fine for most cases, it can introduce some inefficiency if you're making frequent HTTP requests in your application.
+
+#### **Mitigating Guzzle Client Reinstantiation**
+
+You can mitigate the overhead of creating a new Guzzle client each time by passing a custom Guzzle client through the `options` parameter. This allows you to use a **singleton instance** of the client across multiple `fetch` requests.
+
+### **How to Provide a Custom Guzzle Client**
+
+```php
+<?php
+
+use GuzzleHttp\Client;
+
+// Create a singleton instance of Guzzle client
+$client = new Client([
+    'base_uri' => 'https://jsonplaceholder.typicode.com',
+    'timeout' => 10.0,
+    // Other default options
+]);
+
+// Pass the Guzzle client into the fetch function via options
+$response = fetch('/todos/1', [
+    'client' => $client
+]);
+
+// The Guzzle client instance will now be reused across multiple fetch calls
+$response2 = fetch('/todos/2', [
+    'client' => $client
+]);
+
+print_r($response->json());
+print_r($response2->json());
+```
+
+### **Why use a Singleton?**
+
+Passing a singleton Guzzle client is useful when:
+
+- You're making many requests and want to avoid the overhead of creating a new client each time.
+- You want to configure specific client-wide options (e.g., base URI, timeouts, headers) and use them across multiple requests.
+
+---
+
 ### **1. Synchronous Requests with `fetch`**
 
 The `fetch` function performs an HTTP request and returns a `Response` object, which provides convenient methods to interact with the response.
@@ -119,6 +164,7 @@ FetchPHP accepts an array of options as the second argument in both `fetch` and 
 - **`cookies`**: Boolean to enable cookies. If `true`, a new `CookieJar` is used. You can also pass an instance of `GuzzleHttp\Cookie\CookieJar`.
 - **`auth`**: Array for HTTP Basic or Digest authentication.
 - **`proxy`**: Proxy server URL to route requests through.
+- **`client`**: A custom instance of Guzzle Client (e.g., singleton) to be reused for multiple requests.
 
 ---
 
@@ -223,7 +269,9 @@ You can control timeouts and whether redirects are followed:
 <?php
 
 $response = fetch('https://example.com/slow-request', [
-    'timeout' => 5,   // 5-second timeout
+
+
+ 'timeout' => 5,   // 5-second timeout
     'allow_redirects' => false
 ]);
 
@@ -334,9 +382,7 @@ echo $response->statusText();
 
 require 'vendor/autoload.php';
 
-// POST request with JSON data, custom headers, query
-
- parameters, and authentication
+// POST request with JSON data, custom headers, query parameters, and authentication
 $response = fetch('https://api.example.com/data', [
     'method' => 'POST',
     'headers' => [
