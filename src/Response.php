@@ -2,54 +2,155 @@
 
 namespace Fetch;
 
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
-class Response extends SymfonyResponse
+class Response
 {
     /**
-     * The buffered content of the body.
+     * The original PSR-7 response instance.
+     *
+     * @var \Psr\Http\Message\ResponseInterface
+     */
+    protected PsrResponseInterface $response;
+
+    /**
+     * The body content of the response.
      *
      * @var string
      */
-    protected string $bodyContents;
+    protected string $body;
 
     /**
-     * Create new response instance.
+     * The response headers.
      *
-     * @param \Psr\Http\Message\ResponseInterface $guzzleResponse
+     * @var array
+     */
+    protected array $headers = [];
+
+    /**
+     * The response status code.
+     *
+     * @var int
+     */
+    protected int $statusCode;
+
+    /**
+     * Create a new response instance.
+     *
+     * @param \Psr\Http\Message\ResponseInterface $response
      *
      * @return void
      */
-    public function __construct(protected ResponseInterface $guzzleResponse)
+    public function __construct(PsrResponseInterface $response)
     {
-        // Buffer the body contents to allow multiple reads
-        $this->bodyContents = (string) $guzzleResponse->getBody();
-
-        // Pass the string body to the Symfony Response
-        parent::__construct(
-            $this->bodyContents,
-            $guzzleResponse->getStatusCode(),
-            $guzzleResponse->getHeaders()
-        );
+        $this->response = $response;
+        $this->body = (string) $response->getBody();
+        $this->headers = $response->getHeaders();
+        $this->statusCode = $response->getStatusCode();
     }
 
     /**
-     * Get the body as a JSON-decoded array or object.
+     * Get or set the response content.
      *
-     * @param bool $assoc Whether to return associative array (true) or object (false)
+     * @param string|null $content
+     *
+     * @return string|self
+     */
+    public function content(string $content = null): string|self
+    {
+        if ($content === null) {
+            return $this->body;
+        }
+
+        $this->body = $content;
+
+        return $this;
+    }
+
+    /**
+     * Get or set the response status code.
+     *
+     * @param int|null $status
+     *
+     * @return int|self
+     */
+    public function status(int $status = null): int|self
+    {
+        if ($status === null) {
+            return $this->statusCode;
+        }
+
+        $this->statusCode = $status;
+
+        return $this;
+    }
+
+    /**
+     * Get the response status code (backwards compatibility).
+     *
+     * @return int
+     */
+    public function getStatusCode(): int
+    {
+        return $this->status();
+    }
+
+    /**
+     * Add a header to the response.
+     *
+     * @param string $key
+     * @param string $value
+     *
+     * @return $this
+     */
+    public function header(string $key, string $value): self
+    {
+        $this->headers[$key] = [$value];
+
+        return $this;
+    }
+
+    /**
+     * Set multiple headers on the response.
+     *
+     * @param array $headers
+     *
+     * @return $this
+     */
+    public function withHeaders(array $headers): self
+    {
+        foreach ($headers as $key => $value) {
+            $this->header($key, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get the response headers.
+     *
+     * @return array
+     */
+    public function headers(): array
+    {
+        return $this->headers;
+    }
+
+    /**
+     * Get the body content as JSON.
+     *
+     * @param bool $assoc
      *
      * @return mixed
      */
-    public function json(bool $assoc = true)
+    public function json(bool $assoc = true): mixed
     {
-        // Handle empty body by returning null or an empty array/object
-        if (trim($this->bodyContents) === '') {
+        if (trim($this->body) === '') {
             return $assoc ? [] : null;
         }
 
-        $decoded = json_decode($this->bodyContents, $assoc);
+        $decoded = json_decode($this->body, $assoc);
 
         if (json_last_error() !== \JSON_ERROR_NONE) {
             throw new RuntimeException('Failed to decode JSON: ' . json_last_error_msg());
@@ -58,44 +159,43 @@ class Response extends SymfonyResponse
         return $decoded;
     }
 
-
     /**
-     * Get the body as plain text.
+     * Get the body content as plain text.
      *
      * @return string
      */
     public function text(): string
     {
-        return $this->bodyContents;
+        return $this->body;
     }
 
     /**
-     * Get the body as a stream (simulating a "blob" in JavaScript).
+     * Get the body content as a blob (stream).
      *
-     * @return resource|false
+     * @return resource
      */
     public function blob()
     {
         $stream = fopen('php://memory', 'r+');
 
         if ($stream === false) {
-            return false;
+            throw new RuntimeException('Failed to create stream for blob');
         }
 
-        fwrite($stream, $this->bodyContents);
+        fwrite($stream, $this->body);
         rewind($stream);
 
         return $stream;
     }
 
     /**
-     * Get the body as an array buffer (binary data).
+     * Get the body content as an array buffer (binary data).
      *
      * @return string
      */
     public function arrayBuffer(): string
     {
-        return $this->bodyContents;
+        return $this->body;
     }
 
     /**
@@ -105,8 +205,7 @@ class Response extends SymfonyResponse
      */
     public function statusText(): string
     {
-        return $this->statusText
-            ?? SymfonyResponse::$statusTexts[$this->getStatusCode()];
+        return $this->response->getReasonPhrase() ?: 'Unknown Status';
     }
 
     /**

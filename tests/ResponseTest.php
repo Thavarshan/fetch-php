@@ -88,3 +88,48 @@ test('Response handles empty body and returns null when $assoc is false', functi
     expect($response->text())->toBe('');
     expect($response->json(false))->toBeNull();
 });
+
+test('Response::header() correctly sets and retrieves headers', function () {
+    $guzzleResponse = new GuzzleResponse(200);
+    $response = new Response($guzzleResponse);
+
+    $response->header('X-Custom-Header', 'HeaderValue');
+    $headers = $response->headers();
+
+    expect($headers)->toHaveKey('X-Custom-Header');
+    expect($headers['X-Custom-Header'])->toBe(['HeaderValue']);
+});
+
+test('Response::status() correctly sets and retrieves status code', function () {
+    $guzzleResponse = new GuzzleResponse(200);
+    $response = new Response($guzzleResponse);
+
+    $response->status(404);
+    expect($response->getStatusCode())->toBe(404);
+});
+
+test('Response handles non-JSON content types', function () {
+    $guzzleResponse = new GuzzleResponse(200, ['Content-Type' => 'text/plain'], 'Plain text content');
+    $response = new Response($guzzleResponse);
+
+    expect($response->text())->toBe('Plain text content');
+    expect(fn () => $response->json())->toThrow(RuntimeException::class, 'Failed to decode JSON');
+});
+
+test('Response handles large bodies', function () {
+    $largeContent = str_repeat('A', 1024 * 1024); // 1MB of 'A'
+    $guzzleResponse = new GuzzleResponse(200, [], $largeContent);
+    $response = new Response($guzzleResponse);
+
+    expect($response->text())->toBe($largeContent);
+    expect($response->arrayBuffer())->toBe($largeContent);
+});
+
+test('Response handles different status codes', function () {
+    $statusCodes = [100, 200, 301, 404, 500];
+    foreach ($statusCodes as $statusCode) {
+        $guzzleResponse = new GuzzleResponse($statusCode);
+        $response = new Response($guzzleResponse);
+        expect($response->getStatusCode())->toBe($statusCode);
+    }
+});

@@ -1,5 +1,8 @@
 <?php
 
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Psr7\Request;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -39,7 +42,29 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
-{
-    // ..
+if (! function_exists('create_redirect_handler')) {
+    /**
+     * Creates a redirect handler for the mock Guzzle client.
+     *
+     * @param array $responses
+     *
+     * @return callable
+     */
+    function create_redirect_handler(array $responses): callable
+    {
+        return function (Request $request, array $options) use (&$responses) {
+            $response = array_shift($responses);
+
+            if ($response->getStatusCode() === 302) {
+                $location = $response->getHeaderLine('Location');
+                $newRequest = new Request('GET', $location);
+
+                return Create::promiseFor(
+                    create_redirect_handler($responses)($newRequest, $options)
+                );
+            }
+
+            return Create::promiseFor($response);
+        };
+    }
 }

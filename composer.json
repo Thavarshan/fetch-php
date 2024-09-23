@@ -23,6 +23,11 @@
             "src/fetch.php"
         ]
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "require": {
         "guzzlehttp/guzzle": "^7.8",
         "nesbot/carbon": "^2.72.2|^3.0",
@@ -39,11 +44,6 @@
         "pestphp/pest": "^3.0",
         "phpstan/phpstan": "^1.11.5",
         "squizlabs/php_codesniffer": "^3.7"
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "tests/"
-        }
     },
     "scripts": {
         "analyse": "chmod +x bin/analysis.sh && ./bin/analysis.sh",
