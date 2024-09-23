@@ -2,7 +2,6 @@
 
 use Fetch\Response;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
-use RuntimeException;
 
 test('Response::json() correctly decodes JSON', function () {
     $guzzleResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"key":"value"}');

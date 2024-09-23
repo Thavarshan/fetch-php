@@ -30,40 +30,11 @@ FetchPHP provides two main functions:
 
 ---
 
-### **Guzzle Client Instantiation and Static Variables**
+### **Guzzle Client Instantiation**
 
-By default, FetchPHP uses a **singleton** pattern to create and reuse the Guzzle HTTP client across multiple `fetch` or `fetch_async` function calls. This ensures that a new client is not created for every request, reducing overhead. If you do not pass a custom client, the first time you call `fetch`, a new Guzzle client will be created and stored as a **static variable**. All subsequent requests will reuse this client.
+FetchPHP uses a **singleton** pattern within the `Http` class to manage the Guzzle HTTP client. This ensures that the same client instance is reused across multiple requests unless a custom client is explicitly provided. This refactor resolves the issues with static variables being shared across all requests globally.
 
-#### **Static Variables and Potential Risks**
-
-While using a static variable for the Guzzle client improves performance by avoiding repeated client instantiation, it introduces some potential issues that you should be aware of:
-
-1. **Shared State and Configuration**:
-    - Any changes to the static client configuration (e.g., headers, base URI, timeouts) will persist across all subsequent requests. This could lead to unexpected behavior if different configurations are required for different requests.
-    - **Mitigation**: Always pass explicit configurations (like `headers`, `auth`, or `timeout`) in the options parameter for every request. This ensures that each request uses the intended configuration.
-
-    Example:
-
-    ```php
-    $response1 = fetch('/endpoint1', ['headers' => ['Authorization' => 'Bearer token1']]);
-    $response2 = fetch('/endpoint2', ['headers' => ['Authorization' => 'Bearer token2']]);  // Independent headers
-    ```
-
-2. **Memory Leaks in Long-Running Processes**:
-    - If the application is a long-running process (e.g., a worker or daemon), the static Guzzle client will remain in memory. Over time, it could accumulate state (such as cookies or connection pools) and potentially cause memory issues.
-    - **Mitigation**: If your application is long-running, consider resetting or replacing the static Guzzle client at regular intervals, especially if there is a risk of accumulated state affecting performance.
-
-3. **Concurrency and Thread Safety**:
-    - In environments where concurrent requests are made (e.g., using Swoole or ReactPHP), the static client could introduce thread-safety issues. Since PHP is not inherently multi-threaded, this is not a concern for standard PHP web applications. However, in concurrent environments, race conditions could occur.
-    - **Mitigation**: In environments with concurrent requests, avoid using static variables for the Guzzle client. Instead, instantiate separate Guzzle clients or use dependency injection for better control over individual request contexts.
-
-4. **Global Impact**:
-    - Modifying the static Guzzle client affects all subsequent requests globally. If different services or APIs are accessed with different configurations, this could cause unexpected side effects.
-    - **Mitigation**: Always pass client-specific configurations in the options, or use separate Guzzle client instances for different services.
-
-    In applications where more granular control over the client lifecycle is required, or in environments with dependency injection support, consider passing the Guzzle client explicitly via service containers or dependency injection frameworks.
-
-#### **Using a Custom Guzzle Client with Middleware Support**
+#### **Custom Guzzle Client Handling**
 
 If you want to provide a custom Guzzle client (with custom configurations or middleware), you can pass it through the `options` parameter. This allows you to add middleware for things like logging, retries, caching, etc.
 
@@ -84,20 +55,19 @@ $stack->push(Middleware::mapRequest(function (RequestInterface $request) {
     return $request->withHeader('X-Custom-Header', 'Value');
 }));
 
-// Create a singleton instance of Guzzle client with middleware
+// Create a Guzzle client with middleware
 $client = new Client([
     'handler' => $stack,
     'base_uri' => 'https://jsonplaceholder.typicode.com',
     'timeout' => 10.0,
-    // Other default options
 ]);
 
-// Pass the Guzzle client into the fetch function via options
+// Pass the custom Guzzle client into the fetch function via options
 $response = fetch('/todos/1', [
     'client' => $client
 ]);
 
-// The Guzzle client instance will now be reused across multiple fetch calls
+// The custom Guzzle client will only be used for this request
 $response2 = fetch('/todos/2', [
     'client' => $client
 ]);
@@ -106,14 +76,11 @@ print_r($response->json());
 print_r($response2->json());
 ```
 
-### **Why is Singleton Guzzle Client Useful?**
+### **Why is the Singleton Guzzle Client Still Useful?**
 
-Passing a singleton Guzzle client is useful when:
-
-- You're making many requests and want to avoid the overhead of creating a new client each time.
-- You want to configure specific client-wide options (e.g., base URI, timeouts, headers) and use them across multiple requests.
-- You want to apply custom middleware to every request made by the client (e.g., logging, retries, etc.).
-- If different configurations are needed for different requests, you can pass a new instance of the Guzzle client in the `options` parameter to bypass the singleton behavior.
+- The singleton pattern ensures the client instance is reused across multiple requests to avoid creating new client instances unnecessarily.
+- You can still pass a custom client for specific requests as needed.
+- The client lifecycle is now more controlled, ensuring that the potential issues with static variables and shared state have been resolved.
 
 ---
 
@@ -140,13 +107,23 @@ echo $response->statusText();
 
 #### **Available Response Methods**
 
-- **`json(bool $assoc = true)`**: Decodes the response body as JSON. If `$assoc` is `true`, it returns an associative array. If `false`, it returns an object. If the JSON decoding fails, a `RuntimeException` will be thrown. Ensure you handle this exception when working with potentially malformed JSON responses.
+The `Response` class provides various methods to interact with the response data, similar to how Laravel's response works but with FetchPHP-specific enhancements:
+
+- **`json(bool $assoc = true)`**: Decodes the response body as JSON. If `$assoc` is `true`, it returns an associative array. If `false`, it returns an object. Throws a `RuntimeException` if JSON decoding fails.
 - **`text()`**: Returns the response body as plain text.
-- **`blob()`**: Returns the response body as a PHP stream resource (like a "blob").
-- **`arrayBuffer()`**: Returns the response body as a binary string.
+- **`blob()`**: Returns the response body as a PHP stream resource, which can be used like a "blob."
+- **`arrayBuffer()`**: Returns the raw binary data from the response body as a string.
+- **`status()`**: Returns the HTTP status code (e.g., `200` for success, `404` for not found). This replaces the old `getStatusCode()` method, but remains backwards compatible.
 - **`statusText()`**: Returns the HTTP status text (e.g., "OK" for `200`).
+- **`header(string $key)`**: Retrieves a specific header from the response.
+- **`headers()`**: Retrieves all headers as an associative array.
+- **`withHeaders(array $headers)`**: Sets new headers for the response and returns a new instance with the headers applied.
+- **`setStatusCode(int $code)`**: Sets a custom status code on the response.
 - **`ok()`**: Returns `true` if the status code is between `200-299`.
-- **`isInformational()`**, **`isRedirection()`**, **`isClientError()`**, **`isServerError()`**: Helpers to check status ranges.
+- **`isInformational()`**: Returns `true` if the status code is between `100-199`.
+- **`isRedirection()`**: Returns `true` if the status code is between `300-399`.
+- **`isClientError()`**: Returns `true` if the status code is between `400-499`.
+- **`isServerError()`**: Returns `true` if the status code is between `500-599`.
 
 ---
 
@@ -337,7 +314,7 @@ FetchPHP gracefully handles errors, returning a `500` status code and error mess
 
 $response = fetch('https://nonexistent-url.com');
 
-echo $response->getStatusCode();  // Outputs 500
+echo $response->status();  // Outputs 500
 echo $response->text();  // Outputs error message
 ```
 
@@ -393,16 +370,7 @@ echo $response->statusText();
 
 ### **Working with the Response Object**
 
-The `Response` class provides convenient methods for interacting with the response body, headers, and status codes.
-
-#### **Response Methods Overview**
-
-- **`json()`**: Decodes the response body as JSON. If the JSON decoding fails, a `RuntimeException` is thrown.
-- **`text()`**: Returns the raw response body as plain text.
-- **`blob()`**: Returns the body as a PHP stream (useful for file handling).
-- **`arrayBuffer()`**: Returns the body as a binary string.
-- **`statusText()`**: Returns the status text (e.g., "OK").
-- **`ok()`**: Returns `true` if the status is 200–299.
+The `Response` class provides convenient methods for interacting with the response body, headers, and status codes. For a detailed overview of available methods, refer to the **Available Response Methods** section above.
 
 #### **Example: Accessing Response Data**
 
