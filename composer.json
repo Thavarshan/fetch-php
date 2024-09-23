@@ -20,8 +20,7 @@
             "Fetch\\": "src/"
         },
         "files": [
-            "src/fetch.php",
-            "src/helpers.php"
+            "src/fetch.php"
         ]
     },
     "require": {
