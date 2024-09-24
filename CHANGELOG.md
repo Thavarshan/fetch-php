@@ -2,10 +2,6 @@
 
 ## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v1.1.0...HEAD)
 
-## v1.0.0 - 2024-09-14
-
-Initial release.
-
 ## [v1.1.0](https://github.com/Thavarshan/fetch-php/compare/v1.1.4...v1.1.0) - 2024-09-24
 
 ### Changed
@@ -17,3 +13,7 @@ Initial release.
 ### Fixed
 
 - **Guzzle Client Instantiation Issue**: Resolved an issue where the Guzzle client was instantiated for every HTTP request, leading to performance inefficiencies. Now, the client is reused across requests, reducing overhead.
+
+## v1.0.0 - 2024-09-14
+
+Initial release.
