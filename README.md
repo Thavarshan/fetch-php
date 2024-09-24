@@ -7,7 +7,7 @@
 [![Check & fix styling](https://github.com/Thavarshan/fetch-php/actions/workflows/php-cs-fixer.yml/badge.svg?label=code%20style&branch=main)](https://github.com/Thavarshan/fetch-php/actions/workflows/php-cs-fixer.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
 
-FetchPHP is a PHP library that mimics the behavior of JavaScript’s `fetch` API using the powerful Guzzle HTTP client. FetchPHP supports both synchronous and asynchronous requests, and provides an easy-to-use, flexible API for making HTTP requests in PHP.
+FetchPHP is a PHP library that mimics the behavior of JavaScript’s `fetch` API using the powerful Guzzle HTTP client. FetchPHP supports both synchronous and asynchronous requests and provides an easy-to-use, flexible API for making HTTP requests in PHP.
 
 ## **Installation**
 
@@ -21,20 +21,17 @@ composer require jerome/fetch-php
 
 ## **Core Functions Overview**
 
-FetchPHP provides two main functions:
+FetchPHP provides three main functions:
 
 1. **`fetch`** – Performs a **synchronous** HTTP request.
-2. **`fetchAsync`** – Performs an **asynchronous** HTTP request and returns a Guzzle `PromiseInterface`.
+2. **`fetch_async`** – Performs an **asynchronous** HTTP request and returns a Guzzle `PromiseInterface`.
+3. **`fetchAsync`** – An alias for `fetch_async`, but **deprecated**.
 
 ---
 
-### **Important Consideration: Guzzle Client Instantiation**
+### **Custom Guzzle Client Usage**
 
-By default, the Guzzle HTTP client is instantiated every time the `fetch` or `fetchAsync` function is called. While this is fine for most cases, it can introduce some inefficiency if you're making frequent HTTP requests in your application.
-
-#### **Mitigating Guzzle Client Reinstantiation**
-
-You can mitigate the overhead of creating a new Guzzle client each time by passing a custom Guzzle client through the `options` parameter. This allows you to use a **singleton instance** of the client across multiple `fetch` requests.
+By default, FetchPHP uses a single instance of the Guzzle client shared across all requests. However, you can provide your own Guzzle client through the `options` parameter of both `fetch` and `fetch_async`. This gives you full control over the client configuration, including base URI, headers, timeouts, and more.
 
 ### **How to Provide a Custom Guzzle Client**
 
@@ -55,7 +52,6 @@ $response = fetch('/todos/1', [
     'client' => $client
 ]);
 
-// The Guzzle client instance will now be reused across multiple fetch calls
 $response2 = fetch('/todos/2', [
     'client' => $client
 ]);
@@ -69,7 +65,7 @@ print_r($response2->json());
 Passing a singleton Guzzle client is useful when:
 
 - You're making many requests and want to avoid the overhead of creating a new client each time.
-- You want to configure specific client-wide options (e.g., base URI, timeouts, headers) and use them across multiple requests.
+- You want to configure specific client-wide options (e.g., base URI, timeouts, headers) and reuse them across multiple requests.
 
 ---
 
@@ -106,9 +102,9 @@ echo $response->statusText();
 
 ---
 
-### **2. Asynchronous Requests with `fetchAsync`**
+### **2. Asynchronous Requests with `fetch_async`**
 
-The `fetchAsync` function returns a `PromiseInterface` object. You can use the `.then()` and `.wait()` methods to manage the asynchronous flow.
+The `fetch_async` function returns a `PromiseInterface` object. You can use the `.then()` and `.wait()` methods to manage the asynchronous flow.
 
 #### **Basic Asynchronous GET Request Example**
 
@@ -117,7 +113,7 @@ The `fetchAsync` function returns a `PromiseInterface` object. You can use the `
 
 require 'vendor/autoload.php';
 
-$promise = fetchAsync('https://jsonplaceholder.typicode.com/todos/1');
+$promise = fetch_async('https://jsonplaceholder.typicode.com/todos/1');
 
 $promise->then(function ($response) {
     $data = $response->json();
@@ -130,10 +126,10 @@ $promise->wait();
 
 #### **Error Handling in Asynchronous Requests**
 
-You can handle errors with the `catch` or `then` method of the promise:
+You can handle errors with the `then` or `catch` methods of the promise:
 
 ```php
-$promise = fetchAsync('https://nonexistent-url.com');
+$promise = fetch_async('https://nonexistent-url.com');
 
 $promise->then(function ($response) {
     // handle success
@@ -149,7 +145,7 @@ $promise->wait();
 
 ## **Request Options**
 
-FetchPHP accepts an array of options as the second argument in both `fetch` and `fetchAsync`. These options configure how the request is handled.
+FetchPHP accepts an array of options as the second argument in both `fetch` and `fetch_async`. These options configure how the request is handled.
 
 ### **Available Request Options**
 
@@ -220,66 +216,6 @@ echo $response->statusText();
 
 ---
 
-### **Detailed Request Customization**
-
-#### **Custom Headers**
-
-You can specify custom headers using the `headers` option:
-
-```php
-<?php
-
-$response = fetch('https://example.com/endpoint', [
-    'method' => 'POST',
-    'headers' => [
-        'Authorization' => 'Bearer YOUR_TOKEN',
-        'Accept' => 'application/json'
-    ],
-    'json' => [
-        'key' => 'value'
-    ]
-]);
-
-print_r($response->json());
-```
-
-#### **Handling Cookies**
-
-To enable cookies, set the `cookies` option to `true` or pass a `CookieJar` instance:
-
-```php
-<?php
-
-use GuzzleHttp\Cookie\CookieJar;
-
-$jar = new CookieJar();
-
-$response = fetch('https://example.com', [
-    'cookies' => $jar
-]);
-
-print_r($response->json());
-```
-
-#### **Timeouts and Redirects**
-
-You can control timeouts and whether redirects are followed:
-
-```php
-<?php
-
-$response = fetch('https://example.com/slow-request', [
-
-
- 'timeout' => 5,   // 5-second timeout
-    'allow_redirects' => false
-]);
-
-echo $response->statusText();
-```
-
----
-
 ### **Error Handling**
 
 FetchPHP gracefully handles errors, returning a `500` status code and error message in the response when a request fails.
@@ -300,7 +236,7 @@ echo $response->text();  // Outputs error message
 ```php
 <?php
 
-$promise = fetchAsync('https://nonexistent-url.com');
+$promise = fetch_async('https://nonexistent-url.com');
 
 $promise->then(function ($response) {
     echo $response->text();
@@ -345,7 +281,9 @@ echo $response->statusText();
 
 ---
 
-### **Working with the Response Object**
+### **Working
+
+ with the Response Object**
 
 The `Response` class provides convenient methods for interacting with the response body, headers, and status codes.
 
