@@ -14,6 +14,41 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class Http
 {
     /**
+     * The Guzzle client instance.
+     *
+     * @var \GuzzleHttp\Client|null
+     */
+    protected static ?Client $client = null;
+
+    /**
+     * Get the Guzzle client instance.
+     *
+     * @param array $options
+     *
+     * @return \GuzzleHttp\Client
+     */
+    public static function getClient(array $options = []): Client
+    {
+        if (self::$client === null) {
+            self::$client = new Client($options);
+        }
+
+        return self::$client;
+    }
+
+    /**
+     * Set the Guzzle client instance.
+     *
+     * @param \GuzzleHttp\Client $client
+     *
+     * @return void
+     */
+    public static function setClient(Client $client): void
+    {
+        self::$client = $client;
+    }
+
+    /**
      * Helper function to perform HTTP requests using Guzzle.
      *
      * @param string $url
@@ -27,9 +62,13 @@ class Http
         array $options,
         bool $async
     ): PromiseInterface|Response {
-        $client = $options['client'] ?? new Client([
+        if (isset($options['client'])) {
+            self::setClient($options['client']);
+        }
+
+        $client = self::getClient([
             'base_uri' => $options['base_uri'] ?? null,
-            'timeout' => $options['timeout'] ?? 10.0,
+            'timeout' => $options['timeout'] ?? 0,
             'allow_redirects' => $options['allow_redirects'] ?? true,
             'cookies' => isset($options['cookies']) ? new CookieJar() : false,
             'verify' => $options['verify'] ?? true,
@@ -59,9 +98,7 @@ class Http
         if ($async) {
             return $client->requestAsync($method, $url, $requestOptions)->then(
                 fn (ResponseInterface $response) => new Response($response),
-                fn (RequestException $e) => $e->hasResponse()
-                    ? new Response($e->getResponse())
-                    : self::createErrorResponse($e)
+                fn (RequestException $e) => self::handleRequestException($e)
             );
         }
 
@@ -70,14 +107,26 @@ class Http
 
             return new Response($response);
         } catch (RequestException $e) {
-            $response = $e->getResponse();
-
-            if ($response) {
-                return new Response($response);
-            }
-
-            return self::createErrorResponse($e);
+            return self::handleRequestException($e);
         }
+    }
+
+    /**
+     * Handles the RequestException and returns a Response.
+     *
+     * @param \GuzzleHttp\Exception\RequestException $e
+     *
+     * @return \Fetch\Response
+     */
+    protected static function handleRequestException(RequestException $e): Response
+    {
+        $response = $e->getResponse();
+
+        if ($response) {
+            return new Response($response);
+        }
+
+        return self::createErrorResponse($e);
     }
 
     /**
@@ -87,7 +136,7 @@ class Http
      *
      * @return \Fetch\Response
      */
-    public static function createErrorResponse(RequestException $e): Response
+    protected static function createErrorResponse(RequestException $e): Response
     {
         $mockResponse = new GuzzleResponse(
             SymfonyResponse::HTTP_INTERNAL_SERVER_ERROR,

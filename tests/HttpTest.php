@@ -12,6 +12,7 @@ beforeEach(function () {
     $this->mock = new MockHandler();
     $this->handler = HandlerStack::create($this->mock);
     $this->client = new Client(['handler' => $this->handler]);
+    Http::setClient($this->client);
 });
 
 afterEach(function () {
@@ -19,42 +20,39 @@ afterEach(function () {
     $this->mock->reset();
 });
 
-test('fetch can handle a successful GET request', function () {
+test('Http can handle a successful GET request', function () {
     // Simulate a Guzzle success response
     $this->mock->append(new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"message":"success"}'));
 
-    $response = fetch('/', [
-        'client' => $this->client,
+    $response = Http::makeRequest('/', [
         'method' => 'GET',
         'headers' => ['Accept' => 'application/json']
-    ]);
+    ], false);
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getStatusCode())->toBe(200);
     expect($response->json())->toMatchArray(['message' => 'success']);
 });
 
-test('fetch can handle a 404 error response', function () {
+test('Http can handle a 404 error response', function () {
     $this->mock->append(new GuzzleResponse(404, [], 'Not Found'));
 
-    $response = fetch('/', [
-        'client' => $this->client,
+    $response = Http::makeRequest('/', [
         'method' => 'GET'
-    ]);
+    ], false);
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getStatusCode())->toBe(404);
     expect($response->text())->toBe('Not Found');
 });
 
-test('fetch_async can handle a successful GET request', function () {
+test('Http can handle a successful GET request asynchronously', function () {
     $this->mock->append(new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"message":"success"}'));
 
-    $promise = fetch_async('/', [
-        'client' => $this->client,
+    $promise = Http::makeRequest('/', [
         'method' => 'GET',
         'headers' => ['Accept' => 'application/json']
-    ]);
+    ], true);
     $response = $promise->wait();
 
     expect($response)->toBeInstanceOf(Response::class);
@@ -62,14 +60,12 @@ test('fetch_async can handle a successful GET request', function () {
     expect($response->json())->toMatchArray(['message' => 'success']);
 });
 
-// Test for asynchronous fetch with a 500 error
-test('fetch_async can handle a 500 error response', function () {
+test('Http can handle a 500 error response asynchronously', function () {
     $this->mock->append(new GuzzleResponse(500, [], 'Internal Server Error'));
 
-    $promise = fetch_async('/', [
-        'client' => $this->client,
+    $promise = Http::makeRequest('/', [
         'method' => 'GET'
-    ]);
+    ], true);
     $response = $promise->wait();
 
     expect($response)->toBeInstanceOf(Response::class);
@@ -77,11 +73,10 @@ test('fetch_async can handle a 500 error response', function () {
     expect($response->text())->toBe('Internal Server Error');
 });
 
-test('fetch can send multipart form data', function () {
+test('Http can send multipart form data', function () {
     $this->mock->append(new GuzzleResponse(200, [], 'OK'));
 
-    $response = fetch('/upload', [
-        'client' => $this->client,
+    $response = Http::makeRequest('/upload', [
         'method' => 'POST',
         'multipart' => [
             [
@@ -90,30 +85,29 @@ test('fetch can send multipart form data', function () {
                 'filename' => 'test.txt'
             ]
         ]
-    ]);
+    ], false);
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getStatusCode())->toBe(200);
     expect($response->text())->toBe('OK');
 });
 
-test('fetch can send JSON data', function () {
+test('Http can send JSON data', function () {
     $this->mock->append(new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"success":true}'));
 
-    $response = fetch('/api', [
-        'client' => $this->client,
+    $response = Http::makeRequest('/api', [
         'method' => 'POST',
         'json' => [
             'key' => 'value'
         ]
-    ]);
+    ], false);
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getStatusCode())->toBe(200);
     expect($response->json())->toMatchArray(['success' => true]);
 });
 
-test('fetch uses a singleton instance of Guzzle client', function () {
+test('Http uses a singleton instance of Guzzle client', function () {
     // Simulate Guzzle success responses
     $this->mock->append(
         new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"message":"success"}'),
@@ -121,18 +115,16 @@ test('fetch uses a singleton instance of Guzzle client', function () {
     );
 
     // First fetch call
-    $response1 = fetch('/', [
-        'client' => $this->client,
+    $response1 = Http::makeRequest('/', [
         'method' => 'GET',
         'headers' => ['Accept' => 'application/json']
-    ]);
+    ], false);
 
     // Second fetch call
-    $response2 = fetch('/', [
-        'client' => $this->client,
+    $response2 = Http::makeRequest('/', [
         'method' => 'GET',
         'headers' => ['Accept' => 'application/json']
-    ]);
+    ], false);
 
     // Check if both responses are instances of Response class
     expect($response1)->toBeInstanceOf(Response::class);
