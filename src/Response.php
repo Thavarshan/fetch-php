@@ -69,21 +69,13 @@ class Response
     }
 
     /**
-     * Get or set the response status code.
+     * Get the response status code.
      *
-     * @param int|null $status
-     *
-     * @return int|self
+     * @return int
      */
-    public function status(int $status = null): int|self
+    public function status(): int
     {
-        if ($status === null) {
-            return $this->statusCode;
-        }
-
-        $this->statusCode = $status;
-
-        return $this;
+        return $this->statusCode;
     }
 
     /**
