@@ -49,10 +49,10 @@ test('fetch can handle a 404 error response', function () {
 });
 
 // Test for asynchronous fetch with a successful response
-test('fetchAsync can handle a successful GET request', function () {
+test('fetch_async can handle a successful GET request', function () {
     $this->mock->append(new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"message":"success"}'));
 
-    $promise = fetchAsync('/', [
+    $promise = fetch_async('/', [
         'client' => $this->client,
         'method' => 'GET',
         'headers' => ['Accept' => 'application/json']
@@ -65,10 +65,10 @@ test('fetchAsync can handle a successful GET request', function () {
 });
 
 // Test for asynchronous fetch with a 500 error
-test('fetchAsync can handle a 500 error response', function () {
+test('fetch_async can handle a 500 error response', function () {
     $this->mock->append(new GuzzleResponse(500, [], 'Internal Server Error'));
 
-    $promise = fetchAsync('/', [
+    $promise = fetch_async('/', [
         'client' => $this->client,
         'method' => 'GET'
     ]);
