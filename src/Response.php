@@ -89,6 +89,20 @@ class Response
     }
 
     /**
+     * Set the response status code.
+     *
+     * @param int $code
+     *
+     * @return $this
+     */
+    public function setStatus(int $code): self
+    {
+        $this->statusCode = $code;
+
+        return $this;
+    }
+
+    /**
      * Add a header to the response.
      *
      * @param string $key

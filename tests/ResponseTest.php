@@ -102,8 +102,9 @@ test('Response::header() correctly sets and retrieves headers', function () {
 test('Response::status() correctly sets and retrieves status code', function () {
     $guzzleResponse = new GuzzleResponse(200);
     $response = new Response($guzzleResponse);
+    $response->setStatus(404);
 
-    $response->status(404);
+    $response->status();
     expect($response->getStatusCode())->toBe(404);
 });
 

@@ -115,10 +115,12 @@ The `Response` class provides various methods to interact with the response data
 - **`arrayBuffer()`**: Returns the raw binary data from the response body as a string.
 - **`status()`**: Returns the HTTP status code (e.g., `200` for success, `404` for not found). This replaces the old `getStatusCode()` method, but remains backwards compatible.
 - **`statusText()`**: Returns the HTTP status text (e.g., "OK" for `200`).
+- **`content()`**: Returns the raw response content as a string.
+- **`setStatus(int $code)`**: Sets a custom status code on the response.
 - **`header(string $key)`**: Retrieves a specific header from the response.
 - **`headers()`**: Retrieves all headers as an associative array.
 - **`withHeaders(array $headers)`**: Sets new headers for the response and returns a new instance with the headers applied.
-- **`setStatusCode(int $code)`**: Sets a custom status code on the response.
+- **`addHeader(string $key, string $value)`**: Adds a value to an existing header or creates a new header if it doesn't exist.
 - **`ok()`**: Returns `true` if the status code is between `200-299`.
 - **`isInformational()`**: Returns `true` if the status code is between `100-199`.
 - **`isRedirection()`**: Returns `true` if the status code is between `300-399`.
