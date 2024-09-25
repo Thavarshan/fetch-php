@@ -45,7 +45,7 @@ jobs:
       - name: Add your package to composer.json
         run: |
           composer config repositories.local path ../
-          composer require your/package-name --no-update
+          composer require jerome/fetch-php --no-update
 
       - name: Install dependencies
         run: composer update --prefer-dist --no-progress --no-suggest --prefer-${{ matrix.stability }}
