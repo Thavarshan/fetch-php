@@ -40,15 +40,17 @@ jobs:
         run: composer create-project --prefer-dist laravel/laravel laravel-project "${{ matrix.laravel }}" --no-progress --no-interaction
 
       - name: Navigate to Laravel project
-        run: cd laravel-project
-
-      - name: Add your package to composer.json
+        working-directory: ./laravel-project
         run: |
+          # Add local package path
           composer config repositories.local path ../
-          composer require jerome/fetch-php --no-update
+          # Require the package
+          composer require jerome/fetch-php:* --no-update
 
       - name: Install dependencies
+        working-directory: ./laravel-project
         run: composer update --prefer-dist --no-progress --no-suggest --prefer-${{ matrix.stability }}
 
       - name: Run Laravel tests (if applicable)
+        working-directory: ./laravel-project
         run: php artisan test
