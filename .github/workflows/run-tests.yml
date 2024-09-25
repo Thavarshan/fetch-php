@@ -2,12 +2,11 @@ name: Tests
 
 on:
   push:
-    paths:
-      - '**.php'
-      - '.github/workflows/run-tests.yml'
-      - 'phpunit.xml.dist'
-      - 'composer.json'
-      - 'composer.lock'
+    branches:
+      - main
+      - refactor/**
+      - feature/**
+      - fix/**
 
 jobs:
   test:
@@ -19,9 +18,11 @@ jobs:
         os: [ubuntu-latest]
         php: [8.3, 8.2]
         laravel: [9.*, 10.*, 11.*]
+        symfony_http_foundation: [6.4, 7.1]
+        psr_http_message: [1.0, 2.0]
         stability: [prefer-stable]
 
-    name: PHP ${{ matrix.php }} on ${{ matrix.os }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+    name: PHP ${{ matrix.php }} on ${{ matrix.os }} - Laravel ${{ matrix.laravel }} - Symfony ${{ matrix.symfony_http_foundation }} - PSR ${{ matrix.psr_http_message }} - ${{ matrix.stability }}
 
     steps:
       - name: Checkout code
@@ -36,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require laravel/framework:${{ matrix.laravel }} --no-update
+          composer require laravel/framework:${{ matrix.laravel }} symfony/http-foundation:${{ matrix.symfony_http_foundation }} psr/http-message:${{ matrix.psr_http_message }} --no-update
           composer install --no-interaction --no-progress --no-suggest
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
