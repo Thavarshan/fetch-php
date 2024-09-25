@@ -1,0 +1,50 @@
+name: Compatibility check
+
+on:
+  push:
+    branches:
+      - main
+      - refactor/**
+      - feature/**
+      - fix/**
+
+jobs:
+  check-compatibility:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest]
+        php: [8.3, 8.2]
+        laravel: [9.*, 10.*, 11.*]
+        stability: [prefer-stable]
+
+    name: PHP ${{ matrix.php }} on ${{ matrix.os }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, mbstring, json, openssl
+          coverage: none
+
+      - name: Install Composer
+        run: composer self-update
+
+      - name: Create Laravel project
+        run: composer create-project --prefer-dist laravel/laravel laravel-project ${{ matrix.laravel }}
+
+      - name: Copy code to Laravel project
+        run: cp -r ./* ./laravel-project
+
+      - name: Install dependencies
+        working-directory: ./laravel-project
+        run: |
+          composer require laravel/framework:${{ matrix.laravel }} --no-update
+          composer install --no-interaction --no-progress --no-suggest
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
