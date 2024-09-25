@@ -24,10 +24,10 @@
         ]
     },
     "require": {
-        "php": "^8.2 || ^8.3",
+        "php": "^8.2",
         "guzzlehttp/guzzle": "^7.8",
         "psr/http-message": "^1.0 || ^2.0",
-        "symfony/http-foundation": ">=6.2 <7.0 || >=7.1"
+        "symfony/http-foundation": "^6.2 || ^7.1"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.64",
