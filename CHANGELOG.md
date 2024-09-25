@@ -1,6 +1,20 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v1.1.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v1.1.1...HEAD)
+
+## [v1.1.1](https://github.com/Thavarshan/fetch-php/compare/v1.1.0...v1.1.1) - 2024-09-25
+
+### Changed
+
+- **Updated Composer Dependencies:**
+  The `symfony/http-foundation` dependency has been updated to support versions `^6.0 || ^7.0`, ensuring compatibility with Laravel 10 and future versions. This change allows smooth integration with Laravel 9.x, 10.x, and future Laravel versions without version conflicts.
+- **Enhanced Test Suite for Compatibility:**
+  The GitHub Actions test matrix has been expanded to test against Laravel 9.x, 10.x, and 11.x, ensuring future compatibility with new Laravel releases.
+
+### Fixed
+
+- **Compatibility Issue with Laravel 10:**
+  The package had an installation conflict when used with Laravel 10 due to outdated `symfony/http-foundation` version constraints. This release resolves the issue, allowing users to install the package without dependency conflicts in Laravel 10 environments.
 
 ## [v1.1.0](https://github.com/Thavarshan/fetch-php/compare/v1.1.4...v1.1.0) - 2024-09-24
 
