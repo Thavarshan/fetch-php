@@ -17,10 +17,11 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        php: [8.3, 8.2]
+        php: [8.3, 8.2, 8.1]
+        laravel: [9.*, 10.*, 11.*]
         stability: [prefer-stable]
 
-    name: PHP ${{ matrix.php }} on ${{ matrix.os }} - ${{ matrix.stability }}
+    name: PHP ${{ matrix.php }} on ${{ matrix.os }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
 
     steps:
       - name: Checkout code
@@ -35,6 +36,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          composer require laravel/framework:${{ matrix.laravel }} --no-update
           composer install --no-interaction --no-progress --no-suggest
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
