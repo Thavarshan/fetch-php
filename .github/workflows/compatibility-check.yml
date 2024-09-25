@@ -18,9 +18,8 @@ jobs:
         os: [ubuntu-latest]
         php: [8.2, 8.3]
         laravel: [9.*, 10.*, 11.*]
-        stability: [prefer-stable]
 
-    name: PHP ${{ matrix.php }} on ${{ matrix.os }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+    name: PHP ${{ matrix.php }} on ${{ matrix.os }} - Laravel ${{ matrix.laravel }}
 
     steps:
       - name: Checkout code
@@ -49,7 +48,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./laravel-project
-        run: composer update --prefer-dist --no-progress --no-suggest --prefer-${{ matrix.stability }}
+        run: composer update --prefer-dist --no-progress --no-suggest
 
       - name: Run Laravel tests (if applicable)
         working-directory: ./laravel-project
