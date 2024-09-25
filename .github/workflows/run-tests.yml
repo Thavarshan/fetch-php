@@ -18,7 +18,7 @@ jobs:
         os: [ubuntu-latest]
         php: [8.3, 8.2]
         laravel: [9.*, 10.*, 11.*]
-        symfony_http_foundation: [6.2, 7.1]
+        symfony_http_foundation: [6.0, 6.4, 7.1]
         psr_http_message: [1.0, 2.0]
         stability: [prefer-stable]
 
