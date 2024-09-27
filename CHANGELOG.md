@@ -1,6 +1,26 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v1.1.1...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v1.2.0...HEAD)
+
+## [v1.2.0](https://github.com/Thavarshan/fetch-php/compare/v1.1.1...v1.2.0) - 2024-09-27
+
+### Added
+
+- **Guzzle PSR-7 Response Support**: Introduced the `guzzlehttp/psr7` library for managing HTTP responses, providing more flexibility and aligning with PSR-7 standards.
+- **Enhanced Error Handling**: Improved error handling for both synchronous and asynchronous requests using Guzzle's `RequestException`.
+- **New README Documentation**: Updated the README to reflect the changes in response handling and usage of the `guzzlehttp/psr7` response.
+
+### Changed
+
+- **Refactor Response Class**: The `Response` class now extends `guzzlehttp/psr7\Response` instead of Symfony's `Response`, reducing dependency overhead and improving compatibility with PSR-7.
+- **HTTP Request Handling**: Refactored the `Http` class to ensure seamless request handling with the new `guzzlehttp/psr7` response model.
+- **Removed Symfony Response Dependency**: Dropped Symfony's `Response` class in favor of the more lightweight and standard `guzzlehttp/psr7`.
+
+### Fixed
+
+- **Laravel 10 Compatibility**: Addressed compatibility issues with Laravel 10 by ensuring the package can work with Symfony 6.x versions while allowing flexibility for future upgrades.
+- **Composer Dependency Conflicts**: Resolved conflicts with Symfony’s HTTP Foundation, ensuring compatibility for projects that depend on specific versions of Symfony and other packages.
+- **Asynchronous Error Handling**: Fixed issues related to handling exceptions in asynchronous requests, ensuring proper error handling and promise resolution.
 
 ## [v1.1.1](https://github.com/Thavarshan/fetch-php/compare/v1.1.0...v1.1.1) - 2024-09-25
 
