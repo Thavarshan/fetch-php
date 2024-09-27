@@ -2,11 +2,10 @@
 
 namespace Fetch;
 
-use Psr\Http\Message\ResponseInterface;
+use GuzzleHttp\Psr7\Response as BaseResponse;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
-class Response extends SymfonyResponse
+class Response extends BaseResponse
 {
     /**
      * The buffered content of the body.
@@ -18,20 +17,21 @@ class Response extends SymfonyResponse
     /**
      * Create new response instance.
      *
-     * @param \Psr\Http\Message\ResponseInterface $guzzleResponse
-     *
-     * @return void
+     * @param int    $status
+     * @param array  $headers
+     * @param string $body
+     * @param string $version
+     * @param string $reason
      */
-    public function __construct(protected ResponseInterface $guzzleResponse)
-    {
-        // Buffer the body contents to allow multiple reads
-        $this->bodyContents = (string) $guzzleResponse->getBody();
-
-        parent::__construct(
-            $this->bodyContents,
-            $guzzleResponse->getStatusCode(),
-            $guzzleResponse->getHeaders()
-        );
+    public function __construct(
+        int $status = 200,
+        array $headers = [],
+        string $body = '',
+        string $version = '1.1',
+        string $reason = null
+    ) {
+        parent::__construct($status, $headers, $body, $version, $reason);
+        $this->bodyContents = (string) $this->getBody();
     }
 
     /**
@@ -41,14 +41,20 @@ class Response extends SymfonyResponse
      *
      * @return mixed
      */
-    public function json(bool $assoc = true)
+    public function json(bool $assoc = true, bool $throwOnError = true)
     {
         $decoded = json_decode($this->bodyContents, $assoc);
-        if (json_last_error() !== \JSON_ERROR_NONE) {
+        $jsonError = json_last_error();
+
+        if ($jsonError === \JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        if ($throwOnError) {
             throw new RuntimeException('Failed to decode JSON: ' . json_last_error_msg());
         }
 
-        return $decoded;
+        return null; // or return an empty array/object depending on your needs.
     }
 
     /**
@@ -95,8 +101,7 @@ class Response extends SymfonyResponse
      */
     public function statusText(): string
     {
-        return $this->statusText
-            ?? SymfonyResponse::$statusTexts[$this->getStatusCode()];
+        return $this->getReasonPhrase() ?: 'No reason phrase available';
     }
 
     /**
