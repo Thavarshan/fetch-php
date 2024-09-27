@@ -31,7 +31,7 @@ FetchPHP provides three main functions:
 
 ### **Custom Guzzle Client Usage**
 
-By default, FetchPHP uses a single instance of the Guzzle client shared across all requests. However, you can provide your own Guzzle client through the `options` parameter of both `fetch` and `fetch_async`. This gives you full control over the client configuration, including base URI, headers, timeouts, and more.
+By default, FetchPHP uses a singleton instance of the Guzzle client shared across all requests. However, you can provide your own Guzzle client through the `options` parameter of both `fetch` and `fetch_async`. This gives you full control over the client configuration, including base URI, headers, timeouts, and more.
 
 ### **How to Provide a Custom Guzzle Client**
 
@@ -91,6 +91,8 @@ echo $response->statusText();
 ```
 
 #### **Available Response Methods**
+
+The `Response` class, now based on Guzzle’s `Psr7\Response`, provides various methods to interact with the response data:
 
 - **`json(bool $assoc = true)`**: Decodes the response body as JSON. If `$assoc` is `true`, it returns an associative array. If `false`, it returns an object.
 - **`text()`**: Returns the response body as plain text.
@@ -238,7 +240,9 @@ echo $response->text();  // Outputs error message
 
 $promise = fetch_async('https://nonexistent-url.com');
 
-$promise->then(function ($response) {
+$promise->then(function ($
+
+response) {
     echo $response->text();
 }, function ($exception) {
     echo "Request failed: " . $exception->getMessage();
@@ -281,9 +285,7 @@ echo $response->statusText();
 
 ---
 
-### **Working
-
- with the Response Object**
+### **Working with the Response Object**
 
 The `Response` class provides convenient methods for interacting with the response body, headers, and status codes.
 

@@ -7,9 +7,7 @@ use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\MultipartStream;
-use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Psr\Http\Message\ResponseInterface;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class Http
 {
@@ -46,6 +44,16 @@ class Http
     public static function setClient(Client $client): void
     {
         self::$client = $client;
+    }
+
+    /**
+     * Reset the Guzzle client instance.
+     *
+     * @return void
+     */
+    public static function resetClient(): void
+    {
+        self::$client = null;
     }
 
     /**
@@ -97,7 +105,13 @@ class Http
 
         if ($async) {
             return $client->requestAsync($method, $url, $requestOptions)->then(
-                fn (ResponseInterface $response) => new Response($response),
+                fn (ResponseInterface $response) => new Response(
+                    $response->getStatusCode(),
+                    $response->getHeaders(),
+                    (string) $response->getBody(),
+                    $response->getProtocolVersion(),
+                    $response->getReasonPhrase()
+                ),
                 fn (RequestException $e) => self::handleRequestException($e)
             );
         }
@@ -105,7 +119,13 @@ class Http
         try {
             $response = $client->request($method, $url, $requestOptions);
 
-            return new Response($response);
+            return new Response(
+                $response->getStatusCode(),
+                $response->getHeaders(),
+                (string) $response->getBody(),
+                $response->getProtocolVersion(),
+                $response->getReasonPhrase()
+            );
         } catch (RequestException $e) {
             return self::handleRequestException($e);
         }
@@ -123,8 +143,16 @@ class Http
         $response = $e->getResponse();
 
         if ($response) {
-            return new Response($response);
+            return new Response(
+                $response->getStatusCode(),
+                $response->getHeaders(),
+                (string) $response->getBody(),
+                $response->getProtocolVersion(),
+                $response->getReasonPhrase()
+            );
         }
+
+        error_log('HTTP Error: ' . $e->getMessage());
 
         return self::createErrorResponse($e);
     }
@@ -138,12 +166,10 @@ class Http
      */
     protected static function createErrorResponse(RequestException $e): Response
     {
-        $mockResponse = new GuzzleResponse(
-            SymfonyResponse::HTTP_INTERNAL_SERVER_ERROR,
+        return new Response(
+            500,
             [],
             $e->getMessage()
         );
-
-        return new Response($mockResponse);
     }
 }

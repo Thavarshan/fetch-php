@@ -1,7 +1,7 @@
 {
     "name": "jerome/fetch-php",
     "description": "The JavaScript fetch API for PHP.",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -26,8 +26,8 @@
     "require": {
         "php": "^8.2",
         "guzzlehttp/guzzle": "^7.8",
-        "psr/http-message": "^1.0 || ^2.0",
-        "symfony/http-foundation": "^6.0 || ^7.1"
+        "guzzlehttp/psr7": "^2.7",
+        "psr/http-message": "^1.0 || ^2.0"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.64",
