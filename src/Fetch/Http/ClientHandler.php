@@ -7,6 +7,7 @@ use GuzzleHttp\Client as SyncClient;
 use GuzzleHttp\Exception\RequestException;
 use Matrix\AsyncHelper;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 
 class ClientHandler implements ClientHandlerInterface
 {
@@ -191,6 +192,49 @@ class ClientHandler implements ClientHandlerInterface
         }
 
         throw new RuntimeException('Request failed after all retries.');
+    }
+
+    /**
+     * Set the base URI for the request.
+     *
+     * @param string $baseUri
+     *
+     * @return self
+     */
+    public function baseUri(string $baseUri): self
+    {
+        $this->options['base_uri'] = $baseUri;
+
+        return $this;
+    }
+
+    /**
+     * Set the token for the request.
+     *
+     * @param string $token
+     *
+     * @return self
+     */
+    public function withToken(string $token): self
+    {
+        $this->options['headers']['Authorization'] = 'Bearer ' . $token;
+
+        return $this;
+    }
+
+    /**
+     * Set the basic auth for the request.
+     *
+     * @param string $username
+     * @param string $password
+     *
+     * @return self
+     */
+    public function withAuth(string $username, string $password): self
+    {
+        $this->options['auth'] = [$username, $password];
+
+        return $this;
     }
 
     /**
