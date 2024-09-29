@@ -31,3 +31,5 @@ coverage
 /.idea
 .php-cs-fixer.cache
 notes.md
+docs/.vitepress/dist
+docs/.vitepress/cache
