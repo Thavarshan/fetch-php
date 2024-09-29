@@ -1,6 +1,5 @@
 <?php
 
-use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
@@ -22,10 +21,7 @@ test('fetch makes a successful synchronous GET request', function () {
             ->andReturn(new Response(200, [], json_encode(['success' => true])));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
-    $response = fetch('https://example.com');
+    $response = fetch('https://example.com', ['client' => $mockClient]);
 
     expect($response->json())->toBe(['success' => true]);
     expect($response->getStatusCode())->toBe(200);
@@ -42,10 +38,7 @@ test('fetch makes a successful asynchronous GET request', function () {
             ->andReturn(new Response(200, [], json_encode(['async' => 'result'])));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
-    async(fn () => fetch('https://example.com', ['async' => true]))
+    async(fn () => fetch('https://example.com', ['client' => $mockClient]))
         ->then(function (Response $response) {
             expect($response->json())->toBe(['async' => 'result']);
             expect($response->getStatusCode())->toBe(200);
@@ -68,11 +61,9 @@ test('fetch sends headers with a GET request', function () {
             ->andReturn(new Response(200, [], 'Headers checked'));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
     $response = fetch('https://example.com', [
-        'headers' => ['Authorization' => 'Bearer token']
+        'headers' => ['Authorization' => 'Bearer token'],
+        'client' => $mockClient
     ]);
 
     expect($response->text())->toBe('Headers checked');
@@ -91,11 +82,9 @@ test('fetch appends query parameters to the GET request', function () {
             ->andReturn(new Response(200, [], 'Query params checked'));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
     $response = fetch('https://example.com', [
-        'query' => ['foo' => 'bar', 'baz' => 'qux']
+        'query' => ['foo' => 'bar', 'baz' => 'qux'],
+        'client' => $mockClient
     ]);
 
     expect($response->text())->toBe('Query params checked');
@@ -114,11 +103,8 @@ test('fetch handles timeout for synchronous requests', function () {
             ->andThrow(new RequestException('Timeout', new Request('GET', 'https://example.com')));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
     try {
-        fetch('https://example.com', ['timeout' => 1]);
+        fetch('https://example.com', ['timeout' => 1, 'client' => $mockClient]);
     } catch (RequestException $e) {
         expect($e->getMessage())->toContain('Timeout');
     }
@@ -139,10 +125,7 @@ test('fetch retries a failed synchronous request', function () {
             ->andReturn(new Response(200, [], 'Success after retry'));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
-    $response = fetch('https://example.com', ['retries' => 2]);
+    $response = fetch('https://example.com', ['retries' => 2, 'client' => $mockClient]);
 
     expect($response->text())->toBe('Success after retry');
 });
@@ -160,12 +143,10 @@ test('fetch makes a POST request with body data', function () {
             ->andReturn(new Response(201, [], 'Created'));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
     $response = fetch('https://example.com/users', [
         'method' => 'POST',
-        'body' => json_encode(['name' => 'John'])
+        'body' => json_encode(['name' => 'John']),
+        'client' => $mockClient
     ]);
 
     expect($response->getStatusCode())->toBe(201);
@@ -187,10 +168,7 @@ test('fetch retries an asynchronous request on failure', function () {
             ->andReturn(new Response(200, [], 'Success after retry'));
     });
 
-    $clientHandler = new ClientHandler();
-    $clientHandler->setSyncClient($mockClient);
-
-    async(fn () => fetch('https://example.com', ['retries' => 2, 'async' => true]))
+    async(fn () => fetch('https://example.com', ['retries' => 2, 'client' => $mockClient]))
         ->then(function (Response $response) {
             expect($response->text())->toBe('Success after retry');
         })

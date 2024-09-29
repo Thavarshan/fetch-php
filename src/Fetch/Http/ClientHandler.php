@@ -89,6 +89,10 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected function applyOptions(array $options): void
     {
+        if (isset($options['client'])) {
+            $this->setSyncClient($options['client']);
+        }
+
         $this->options = array_merge($this->options, $options);
 
         if (isset($options['timeout'])) {
