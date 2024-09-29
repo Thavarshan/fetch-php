@@ -3,10 +3,13 @@
 namespace Fetch\Http;
 
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
+use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Client as SyncClient;
+use GuzzleHttp\Cookie\CookieJarInterface;
 use GuzzleHttp\Exception\RequestException;
 use Matrix\AsyncHelper;
-use Psr\Http\Message\ResponseInterface;
+use Matrix\Interfaces\AsyncHelper as AsyncHelperInterface;
+use Psr\Http\Client\ClientInterface;
 use RuntimeException;
 
 class ClientHandler implements ClientHandlerInterface
@@ -16,7 +19,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @var array
      */
-    protected static $defaultOptions = [
+    protected static array $defaultOptions = [
         'method' => 'GET',
         'headers' => [],
         'timeout' => 30, // Default timeout
@@ -25,9 +28,9 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * The synchronous HTTP client.
      *
-     * @var \GuzzleHttp\Client
+     * @var \Psr\Http\Client\ClientInterface|null
      */
-    protected ?SyncClient $syncClient = null;
+    protected ?ClientInterface $syncClient = null;
 
     /**
      * The options for the request.
@@ -73,7 +76,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return mixed
      */
-    public static function handle(string $method, string $uri, array $options = [])
+    public static function handle(string $method, string $uri, array $options = []): mixed
     {
         $handler = new static();
         $handler->applyOptions($options);
@@ -117,7 +120,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return mixed
      */
-    protected function finalizeRequest(string $method, string $uri)
+    protected function finalizeRequest(string $method, string $uri): mixed
     {
         $this->options['method'] = $method;
         $this->options['uri'] = $uri;
@@ -130,6 +133,8 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Merge class properties (timeout, retries, etc.) into the final options array.
+     *
+     * @return void
      */
     protected function mergePropertiesIntoOptions(): void
     {
@@ -141,29 +146,29 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Send a synchronous HTTP request.
      *
-     * @return ResponseInterface
+     * @return \Fetch\Interfaces\Response
      */
     protected function sendSync(): ResponseInterface
     {
-        return $this->retryRequest(function () {
-            $guzzleResponse = $this->getSyncClient()->request(
+        return $this->retryRequest(function (): ResponseInterface {
+            $psrResponse = $this->getSyncClient()->request(
                 $this->options['method'],
                 $this->options['uri'],
                 $this->options
             );
 
-            return Response::createFromBase($guzzleResponse);
+            return Response::createFromBase($psrResponse);
         });
     }
 
     /**
      * Send an asynchronous HTTP request.
      *
-     * @return AsyncHelper
+     * @return \Matrix\Interfaces\AsyncHelper
      */
-    protected function sendAsync(): AsyncHelper
+    protected function sendAsync(): AsyncHelperInterface
     {
-        return new AsyncHelper(function () {
+        return new AsyncHelper(function (): ResponseInterface {
             return $this->sendSync();
         });
     }
@@ -173,7 +178,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @param callable $request
      *
-     * @return ResponseInterface
+     * @return \Fetch\Interfaces\Response
      */
     protected function retryRequest(callable $request): ResponseInterface
     {
@@ -261,7 +266,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return self
      */
-    public function withBody($body): self
+    public function withBody(mixed $body): self
     {
         $this->options['body'] = $body;
 
@@ -331,7 +336,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return self
      */
-    public function withProxy($proxy): self
+    public function withProxy(string|array $proxy): self
     {
         $this->options['proxy'] = $proxy;
 
@@ -345,7 +350,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return self
      */
-    public function withCookies($cookies): self
+    public function withCookies(bool|CookieJarInterface $cookies): self
     {
         $this->options['cookies'] = $cookies;
 
@@ -359,7 +364,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return self
      */
-    public function withRedirects($redirects = true): self
+    public function withRedirects(bool|array $redirects = true): self
     {
         $this->options['allow_redirects'] = $redirects;
 
@@ -373,7 +378,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return self
      */
-    public function withCert($cert): self
+    public function withCert(string|array $cert): self
     {
         $this->options['cert'] = $cert;
 
@@ -387,7 +392,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return self
      */
-    public function withSslKey($sslKey): self
+    public function withSslKey(string|array $sslKey): self
     {
         $this->options['ssl_key'] = $sslKey;
 
@@ -415,7 +420,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return mixed
      */
-    public function get(string $uri)
+    public function get(string $uri): mixed
     {
         return $this->finalizeRequest('GET', $uri);
     }
@@ -428,7 +433,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return mixed
      */
-    public function post(string $uri, $body = null)
+    public function post(string $uri, mixed $body = null): mixed
     {
         if ($body !== null) {
             $this->withBody($body);
@@ -445,7 +450,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return mixed
      */
-    public function put(string $uri, $body = null)
+    public function put(string $uri, mixed $body = null): mixed
     {
         if ($body !== null) {
             $this->withBody($body);
@@ -461,7 +466,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return mixed
      */
-    public function delete(string $uri)
+    public function delete(string $uri): mixed
     {
         return $this->finalizeRequest('DELETE', $uri);
     }
@@ -473,7 +478,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @return mixed
      */
-    public function options(string $uri)
+    public function options(string $uri): mixed
     {
         return $this->finalizeRequest('OPTIONS', $uri);
     }
@@ -481,9 +486,9 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Get the synchronous HTTP client.
      *
-     * @return SyncClient
+     * @return \Psr\Http\Client\ClientInterface
      */
-    public function getSyncClient(): SyncClient
+    public function getSyncClient(): ClientInterface
     {
         if (! $this->syncClient) {
             $this->syncClient = new SyncClient();
@@ -495,11 +500,11 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Set the synchronous HTTP client.
      *
-     * @param SyncClient $syncClient
+     * @param \Psr\Http\Client\ClientInterface $syncClient
      *
      * @return self
      */
-    public function setSyncClient(SyncClient $syncClient): self
+    public function setSyncClient(ClientInterface $syncClient): self
     {
         $this->syncClient = $syncClient;
 

@@ -7,49 +7,68 @@
 [![Check & fix styling](https://github.com/Thavarshan/fetch-php/actions/workflows/php-cs-fixer.yml/badge.svg?label=code%20style&branch=main)](https://github.com/Thavarshan/fetch-php/actions/workflows/php-cs-fixer.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
 
-**FetchPHP** is a powerful PHP HTTP client library built on top of the Guzzle HTTP client, designed to mimic the behavior of JavaScript’s `fetch` API. It leverages **Matrix** for true asynchronous capabilities using PHP Fibers, allowing developers to use a **JavaScript-like async/await** syntax. FetchPHP also offers a **fluent API** inspired by Laravel's HTTP client for more flexible and readable request building.
+**FetchPHP** is a modern HTTP client library for PHP, built on top of the Guzzle HTTP client, designed to mimic the behavior of JavaScript’s `fetch` API. Leveraging **Matrix** for true asynchronous capabilities with PHP Fibers, FetchPHP allows developers to use a **JavaScript-like async/await** syntax. FetchPHP also offers a **fluent API** inspired by Laravel's HTTP client, making request building both flexible and readable.
+
+Whether you're building small APIs or large-scale systems with high concurrency needs, FetchPHP provides a powerful and efficient solution for managing HTTP requests in PHP.
+
+Make sure to check out [Matrix](https://github.com/Thavarshan/matrix) for more information on how FetchPHP is powered by PHP Fibers.
 
 ---
 
 ### **Why Choose FetchPHP Over Guzzle?**
 
-Guzzle is a robust and widely-used HTTP client for PHP, and it does support asynchronous requests using Promises. However, **FetchPHP** goes a step further by offering **true asynchronous task management** via PHP Fibers, powered by **Matrix**. Here’s what sets FetchPHP apart:
+Guzzle is a well-established and widely-used HTTP client for PHP. It supports asynchronous requests using Promises. However, **FetchPHP** takes things further by offering **true asynchronous task management** through PHP Fibers, powered by **Matrix**. Here’s why FetchPHP stands out:
 
-- **True Async Task Management with Fibers**: While Guzzle uses Promises for async operations, FetchPHP harnesses PHP’s native Fibers (introduced in PHP 8.1) to provide **true non-blocking concurrency**. This allows more **fine-grained control** over task execution, lifecycle management (e.g., pausing, resuming, retrying), and error handling.
+- **True Async Task Management with Fibers**: While Guzzle uses Promises for async operations, FetchPHP leverages PHP’s native Fibers (introduced in PHP 8.1) to provide **true non-blocking concurrency**. This gives developers **fine-grained control** over task execution, lifecycle management (e.g., pausing, resuming, retrying), and error handling.
 
-- **JavaScript-Like `async`/`await` Syntax**: FetchPHP introduces a syntax that will feel familiar to developers who use JavaScript’s async/await functionality. With `async()`, developers can write asynchronous PHP code in a more readable and intuitive way.
+- **JavaScript-Like `async`/`await` Syntax**: FetchPHP introduces a familiar `async()` syntax for developers who use JavaScript’s async/await functionality. This makes writing asynchronous PHP code more **readable** and **intuitive**.
 
-- **Fluent API**: FetchPHP provides a **fluent, chainable API** that makes constructing and managing HTTP requests easier and more flexible, similar to Laravel’s HTTP client. This contrasts with Guzzle’s Promise-based API, which can feel more rigid and less intuitive for managing complex tasks.
+- **Fluent API**: FetchPHP provides a **fluent, chainable API** similar to Laravel’s HTTP client, making constructing and managing HTTP requests easier. It’s more flexible and readable than Guzzle’s Promise-based API, which can feel rigid for managing complex tasks.
 
-- **Error Handling and Task Lifecycle Control**: FetchPHP, using Matrix, allows developers to handle errors at a more granular level. Tasks can be paused, resumed, canceled, or retried dynamically, and errors can be managed through customizable handlers. Guzzle’s Promises handle errors in a less flexible way, usually through chained `.then()` and `.catch()` methods.
+- **Error Handling and Task Lifecycle Control**: FetchPHP, powered by Matrix, allows for granular error management. Tasks can be paused, resumed, canceled, or retried dynamically, and errors can be handled through customizable handlers. Guzzle’s Promises manage errors in a less flexible way, usually through chained `.then()` and `.catch()` methods.
 
-### **How FetchPHP's Async Task Management is Different from Guzzle**
+### **How FetchPHP's Async Task Management Differs from Guzzle**
 
-Here’s a breakdown of FetchPHP’s **AsyncHelper** and **Task** classes, which manage true asynchronous behavior, compared to Guzzle’s Promise-based approach:
+Here’s a breakdown of FetchPHP’s underlying async task management powered by [Matrix](https://github.com/Thavarshan/matrix) compared to Guzzle’s Promise-based approach:
 
-- **Fiber-Based Concurrency**: FetchPHP uses PHP Fibers to run tasks asynchronously. Fibers allow tasks to be paused, resumed, and canceled mid-execution, which isn’t possible with Guzzle’s Promises. This gives FetchPHP a true **multi-tasking** advantage.
+- **Fiber-Based Concurrency**: FetchPHP uses PHP Fibers to run tasks asynchronously. Fibers allow tasks to be paused, resumed, and canceled mid-execution, which isn’t possible with Guzzle’s Promises. This provides FetchPHP a true **multi-tasking** advantage.
 
-- **Task Lifecycle Management**: FetchPHP allows you to start, pause, resume, cancel, and retry tasks directly using the `Task` class. Guzzle does not offer built-in lifecycle management for Promises at this level. In FetchPHP, you can track the status of a task (e.g., `PENDING`, `RUNNING`, `PAUSED`, `COMPLETED`, `FAILED`, `CANCELED`), providing more control over long-running or asynchronous processes.
+- **Task Lifecycle Management**: FetchPHP allows you to start, pause, resume, cancel, and retry tasks using the `Task` class. Guzzle doesn’t offer built-in lifecycle management at this level. FetchPHP lets you track the status of a task (e.g., `PENDING`, `RUNNING`, `PAUSED`, `COMPLETED`, `FAILED`, `CANCELED`), giving more control over long-running or asynchronous processes.
 
-- **Custom Error Handling**: FetchPHP provides a customizable `ErrorHandler` that developers can use to manage retries, logging, and error resolution. This allows you to handle failures dynamically and retry tasks when needed, offering a level of **error recovery** beyond Guzzle’s Promises.
+- **Custom Error Handling**: FetchPHP offers a customizable `ErrorHandler` to manage retries, logging, and error resolution. This allows dynamic error handling and retrying tasks when needed, going beyond Guzzle’s Promises.
+
+| Feature                | FetchPHP                                | Guzzle                                 |
+|------------------------|-----------------------------------------|----------------------------------------|
+| Async Task Management   | True async with PHP Fibers (PHP 8.1+)   | Promises-based concurrency             |
+| JavaScript-like API     | `async/await` syntax                    | Traditional PHP-based Promises         |
+| Task Lifecycle Control  | Start, pause, resume, cancel, retry     | No built-in lifecycle management       |
+| Error Handling          | Customizable error handlers             | Standard Promise error handling        |
+| Concurrent Requests     | Supports Fibers for parallel tasks      | Limited to Promises and threading      |
+
+---
 
 #### **Example: Managing Asynchronous Tasks with FetchPHP**
 
 ```php
 <?php
 
-use Fetch\Http\ClientHandler;
-use Matrix\AsyncHelper;
+use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch('https://example.com', [
+$data = null;
+
+// Asynchronously send a POST request using async/await syntax
+async(fn () => fetch('https://example.com', [
     'method' => 'POST',
     'headers' => ['Content-Type' => 'application/json'],
     'body' => json_encode(['key' => 'value']),
-]))->then(fn ($response) => $response->json())
-  ->catch(fn ($e) => $e->getMessage());
+]))
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
+    ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());      // Error handler
 
-// FetchPHP manages task lifecycle (start, pause, resume, cancel)
+// The async operation is managed with start, pause, resume, and cancel controls
 ```
+
+---
 
 #### **Lifecycle Control Example with FetchPHP**
 
@@ -57,10 +76,10 @@ $response = async(fn () => fetch('https://example.com', [
 <?php
 
 use Matrix\Task;
+use Matrix\Enum\TaskStatus;
 
 // Define a long-running task
 $task = new Task(function () {
-    // Task operation here
     return "Task completed!";
 });
 
@@ -78,13 +97,15 @@ $task->cancel();
 if ($task->getStatus() === TaskStatus::FAILED) {
     $task->retry();
 }
+
+$result = $task->getResult();
 ```
 
 ---
 
 ### **Why FetchPHP is Better for Asynchronous PHP**
 
-While Guzzle is a fantastic tool for making HTTP requests, FetchPHP brings **modern PHP capabilities** with **PHP 8 Fibers**, making it more powerful for developers who need **true asynchronous task management** with a **JavaScript-like syntax**. FetchPHP is designed to make your code more flexible, readable, and efficient when managing complex HTTP operations, especially when concurrency and non-blocking I/O are crucial.
+While Guzzle is a fantastic tool for making HTTP requests, FetchPHP brings **modern PHP capabilities** with **PHP 8 Fibers**, making it ideal for developers who need **true asynchronous task management** with a **JavaScript-like syntax**. FetchPHP is designed to make your code more flexible, readable, and efficient when managing complex HTTP operations, especially when concurrency and non-blocking I/O are crucial.
 
 ---
 
@@ -132,15 +153,18 @@ $data = $response->json();
 ```php
 <?php
 
-$response = async(fn () => fetch('https://example.com', [
-        'method' => 'POST',
-        'headers' => [
-            'Content-Type' => 'application/json',
-        ],
-        'body' => json_encode(['key' => 'value']),
-    ]))
-    ->then(fn (ResponseInterface $response) => $response->json())
-    ->catch(fn (Throwable $e) => $e->getMessage());
+use Fetch\Interfaces\Response as ResponseInterface;
+
+$data = null;
+
+// Asynchronously send a POST request using async/await syntax
+async(fn () => fetch('https://example.com', [
+    'method' => 'POST',
+    'headers' => ['Content-Type' => 'application/json'],
+    'body' => json_encode(['key' => 'value']),
+]))
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
+    ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());      // Error handler
 ```
 
 ---
@@ -169,14 +193,19 @@ $data = $response->json();
 ```php
 <?php
 
-$response = async(fn () => fetch()
+use Fetch\Interfaces\Response as ResponseInterface;
+
+$data = null;
+
+// Asynchronously send a POST request using the fluent API
+async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
     ->withBody(json_encode(['key' => 'value']))
     ->withToken('fake-bearer-auth-token')
     ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $response->json())
-    ->catch(fn (Throwable $e) => $e->getMessage());
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
+    ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());      // Error handler
 ```
 
 ---
@@ -205,13 +234,16 @@ $data = $response->json();
 <?php
 
 use Fetch\Http\ClientHandler;
-use Matrix\AsyncHelper;
 
-$response = async(fn () => ClientHandler::handle('POST', 'https://example.com', [
+$data = null;
+
+// Asynchronously manage a request using the ClientHandler
+async(fn () => ClientHandler::handle('POST', 'https://example.com', [
     'headers' => ['Content-Type' => 'application/json'],
     'body' => json_encode(['key' => 'value']),
-]))->then(fn ($response) => $response->json())
-  ->catch(fn ($e) => $e->getMessage());
+]))
+    ->then(fn ($response) => $data = $response->json())
+    ->catch(fn ($e) => echo "Error: " . $e->getMessage());
 ```
 
 ---
@@ -256,7 +288,30 @@ if ($response->ok()) {
 
 $response = async(fn () => fetch('https://nonexistent-url.com'))
     ->then(fn ($response) => $response->json())
-    ->catch(fn ($e) => $e->getMessage());
+    ->catch(fn ($e) => echo "Error: " . $e->getMessage());
+
+echo $response;
+```
+
+---
+
+### **Advanced Error Handling: Retry with Exponential Backoff**
+
+```php
+<?php
+
+$response = async(fn () => fetch('https://api.example.com/resource'))
+    ->then(fn ($response) => $response->json())
+    ->catch(function (\Throwable $e) {
+        // Implement retry logic with exponential backoff
+        static $attempt = 1;
+        if ($attempt <= 3) {
+            sleep(pow(2, $attempt));  // Exponential backoff
+            $attempt++;
+            return retryRequest();  // Custom function to retry
+        }
+        return "Error: " . $e->getMessage();
+    });
 
 echo $response;
 ```
@@ -276,6 +331,12 @@ $response = fetch('https://example.com', [
     'proxy' => 'tcp://localhost:8080'
 ]);
 
+// or
+
+$response = fetch('https://example.com')
+    ->withProxy('tcp://localhost:8080')
+    ->get();
+
 echo $response->statusText();
 ```
 
@@ -287,6 +348,13 @@ echo $response->statusText();
 $response = fetch('https://example.com/secure-endpoint', [
     'auth' => ['username', 'password']
 ]);
+
+// or
+
+$response = fetch('https://example.com')
+    ->baseUri('https://example.com/')
+    ->withAuth('username', 'password')
+    ->get('/secure-endpoint');
 
 echo $response->statusText();
 ```
@@ -302,6 +370,14 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## Contributing
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+We’re currently looking for help in the following areas:
+
+- Expanding test coverage for async task management
+- Improving documentation for more advanced use cases
+- Adding support for additional HTTP methods and protocols
+
+To contribute:
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/amazing-feature`)

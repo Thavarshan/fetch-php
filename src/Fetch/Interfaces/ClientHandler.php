@@ -2,7 +2,8 @@
 
 namespace Fetch\Interfaces;
 
-use GuzzleHttp\Client as SyncClient;
+use GuzzleHttp\Cookie\CookieJarInterface;
+use Psr\Http\Client\ClientInterface;
 
 interface ClientHandler
 {
@@ -15,7 +16,7 @@ interface ClientHandler
      *
      * @return mixed
      */
-    public static function handle(string $method, string $uri, array $options = []);
+    public static function handle(string $method, string $uri, array $options = []): mixed;
 
     /**
      * Set the headers for the request.
@@ -33,7 +34,7 @@ interface ClientHandler
      *
      * @return self
      */
-    public function withBody($body): self;
+    public function withBody(mixed $body): self;
 
     /**
      * Set the query parameters for the request.
@@ -77,7 +78,7 @@ interface ClientHandler
      *
      * @return self
      */
-    public function withProxy($proxy): self;
+    public function withProxy(string|array $proxy): self;
 
     /**
      * Set the cookies for the request.
@@ -86,7 +87,7 @@ interface ClientHandler
      *
      * @return self
      */
-    public function withCookies($cookies): self;
+    public function withCookies(bool|CookieJarInterface $cookies): self;
 
     /**
      * Set whether to follow redirects.
@@ -95,7 +96,7 @@ interface ClientHandler
      *
      * @return self
      */
-    public function withRedirects($redirects = true): self;
+    public function withRedirects(bool|array $redirects = true): self;
 
     /**
      * Set the certificate for the request.
@@ -104,7 +105,7 @@ interface ClientHandler
      *
      * @return self
      */
-    public function withCert($cert): self;
+    public function withCert(string|array $cert): self;
 
     /**
      * Set the SSL key for the request.
@@ -113,7 +114,7 @@ interface ClientHandler
      *
      * @return self
      */
-    public function withSslKey($sslKey): self;
+    public function withSslKey(string|array $sslKey): self;
 
     /**
      * Set the stream option for the request.
@@ -131,7 +132,7 @@ interface ClientHandler
      *
      * @return mixed
      */
-    public function get(string $uri);
+    public function get(string $uri): mixed;
 
     /**
      * Finalize and send a POST request.
@@ -141,7 +142,7 @@ interface ClientHandler
      *
      * @return mixed
      */
-    public function post(string $uri, $body = null);
+    public function post(string $uri, mixed $body = null): mixed;
 
     /**
      * Finalize and send a PUT request.
@@ -151,7 +152,7 @@ interface ClientHandler
      *
      * @return mixed
      */
-    public function put(string $uri, $body = null);
+    public function put(string $uri, mixed $body = null): mixed;
 
     /**
      * Finalize and send a DELETE request.
@@ -160,7 +161,7 @@ interface ClientHandler
      *
      * @return mixed
      */
-    public function delete(string $uri);
+    public function delete(string $uri): mixed;
 
     /**
      * Finalize and send an OPTIONS request.
@@ -169,23 +170,23 @@ interface ClientHandler
      *
      * @return mixed
      */
-    public function options(string $uri);
+    public function options(string $uri): mixed;
 
     /**
      * Get the synchronous HTTP client.
      *
-     * @return SyncClient
+     * @return \Psr\Http\Client\ClientInterface
      */
-    public function getSyncClient(): SyncClient;
+    public function getSyncClient(): ClientInterface;
 
     /**
      * Set the synchronous HTTP client.
      *
-     * @param SyncClient $syncClient
+     * @param \Psr\Http\Client\ClientInterface $syncClient
      *
      * @return self
      */
-    public function setSyncClient(SyncClient $syncClient): self;
+    public function setSyncClient(ClientInterface $syncClient): self;
 
     /**
      * Get the default options for the request.

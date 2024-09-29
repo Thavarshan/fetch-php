@@ -2,11 +2,12 @@
 
 namespace Fetch\Http;
 
+use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Psr7\Response as BaseResponse;
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use RuntimeException;
 
-class Response extends BaseResponse
+class Response extends BaseResponse implements ResponseInterface
 {
     /**
      * The buffered content of the body.
@@ -116,7 +117,7 @@ class Response extends BaseResponse
      *
      * @return self
      */
-    public static function createFromBase(ResponseInterface $response): self
+    public static function createFromBase(PsrResponseInterface $response): self
     {
         return new self(
             $response->getStatusCode(),
