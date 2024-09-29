@@ -15,19 +15,26 @@
         "issues": "https://github.com/Thavarshan/fetch-php/issues",
         "source": "https://github.com/Thavarshan/fetch-php"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Thavarshan/matrix"
+        }
+    ],
     "autoload": {
         "psr-4": {
-            "Fetch\\": "src/"
+            "Fetch\\": "src/Fetch/"
         },
         "files": [
-            "src/fetch.php"
+            "src/Fetch/Http/fetch.php"
         ]
     },
     "require": {
         "php": "^8.2",
         "guzzlehttp/guzzle": "^7.8",
         "guzzlehttp/psr7": "^2.7",
-        "psr/http-message": "^1.0 || ^2.0"
+        "psr/http-message": "^1.0 || ^2.0",
+        "jerome/matrix": "dev-main"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.64",
