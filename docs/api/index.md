@@ -34,16 +34,16 @@ Learn more about response handling in the [Response API](./response.md).
 
 FetchPHP enables asynchronous HTTP requests using PHP Fibers, providing true concurrency. The `async()` function allows you to perform non-blocking requests while handling the results using `.then()` and `.catch()` for success and error scenarios. You can also manage the lifecycle of asynchronous tasks, including pausing, resuming, canceling, and retrying tasks.
 
-Explore the [Async API](./async-requests.md) for details on making asynchronous requests.
+Explore the [Async API](https://fetch-php.thavarshan.com/guide/async-requests.md) for details on making asynchronous requests.
 
 ### **Task Lifecycle Management**
 
 For asynchronous tasks, FetchPHP provides control mechanisms to manage long-running processes or tasks. The `Task` class, powered by the Matrix package, allows you to start, pause, resume, cancel, and retry tasks, making it ideal for handling asynchronous workflows that require fine-grained control.
 
-Refer to the [Task Management API](./task-management.md) for more information.
+Refer to the [Task Management API](https://github.com/Thavarshan/matrix) for more information.
 
 ### Error Handling
 
 FetchPHP offers robust error-handling mechanisms for both synchronous and asynchronous requests. You can manage exceptions using `try/catch` blocks, disable automatic HTTP error exceptions, and implement custom retry logic for failed requests.
 
-Detailed information can be found in the [Error Handling API](./error-handling.md).
+Detailed information can be found in the [Error Handling API](https://fetch-php.thavarshan.com/guide/error-handling.md).
