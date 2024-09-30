@@ -1,7 +1,7 @@
 [build]
   base = "docs/empty-netlify/"           # Point to the placeholder directory without any dependencies
   publish = "../.vitepress/dist"         # Your actual publish directory where VitePress builds the static files
-  command = "cd ../ && npm install && npm run docs:build"  # Run npm install and build the VitePress site
+  command = "cd ../ && npm install && npm run build"  # Run npm install and build the VitePress site
 
 [context.production.environment]
   NETLIFY_SKIP_COMPOSER_INSTALL = "true"
