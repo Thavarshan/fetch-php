@@ -13,7 +13,7 @@ Whether you're building small APIs or large-scale systems with high concurrency 
 
 Make sure to check out [Matrix](https://github.com/Thavarshan/matrix) for more information on how FetchPHP is powered by PHP Fibers.
 
-Full documentation can be found [here](./docs)
+Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 
 ---
 
