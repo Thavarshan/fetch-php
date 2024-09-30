@@ -34,6 +34,9 @@ export default defineConfig({
                     ]
                 }
             ]
-        }
+        },
+        socialLinks: [
+            { icon: 'github', link: 'https://github.com/Thavarshan/fetch-php' }
+        ]
     }
 });
