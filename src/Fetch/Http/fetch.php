@@ -1,20 +1,25 @@
 <?php
 
-use Fetch\Http\ClientHandler;
-use Fetch\Http\Response;
+namespace Fetch\Http;
+
 use GuzzleHttp\Exception\RequestException;
+use Throwable;
 
 if (! function_exists('fetch')) {
     /**
      * Perform an HTTP request similar to JavaScript's fetch API.
      *
-     * @param string $url
-     * @param array  $options
+     * @param string|null $url
+     * @param array|null  $options
      *
-     * @return \Fetch\Http\Response
+     * @return \Fetch\Http\Response|\Fetch\Http\ClientHandler
      */
-    function fetch(string $url, array $options = []): mixed
+    function fetch(?string $url = null, ?array $options = []): Response|ClientHandler
     {
+        if (is_null($url)) {
+            return new ClientHandler(options: $options);
+        }
+
         $options = array_merge(ClientHandler::getDefaultOptions(), $options);
 
         // Uppercase the method
@@ -26,10 +31,16 @@ if (! function_exists('fetch')) {
             $options['headers']['Content-Type'] = 'application/json';
         }
 
+        // Handle baseUri if provided
+        if (isset($options['base_uri'])) {
+            $url = rtrim($options['base_uri'], '/') . '/' . ltrim($url, '/');
+            unset($options['base_uri']);
+        }
+
         // Synchronous request handling
         try {
             return ClientHandler::handle($options['method'], $url, $options);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Handle exceptions and return the response
             if ($e instanceof RequestException && $e->hasResponse()) {
                 return Response::createFromBase($e->getResponse());

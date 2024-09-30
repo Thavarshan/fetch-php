@@ -7,6 +7,7 @@ use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Client as SyncClient;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use GuzzleHttp\Exception\RequestException;
+use InvalidArgumentException;
 use Matrix\AsyncHelper;
 use Matrix\Interfaces\AsyncHelper as AsyncHelperInterface;
 use Psr\Http\Client\ClientInterface;
@@ -98,6 +99,10 @@ class ClientHandler implements ClientHandlerInterface
         $this->retries = $options['retries'] ?? $this->retries;
         $this->retryDelay = $options['retry_delay'] ?? $this->retryDelay;
         $this->isAsync = ! empty($options['async']);
+
+        if (isset($options['base_uri'])) {
+            $this->baseUri($options['base_uri']);
+        }
     }
 
     /**
@@ -140,7 +145,7 @@ class ClientHandler implements ClientHandlerInterface
         return $this->retryRequest(function (): ResponseInterface {
             $psrResponse = $this->getSyncClient()->request(
                 $this->options['method'],
-                $this->options['uri'],
+                $this->getFullUri(),
                 $this->options
             );
 
@@ -155,9 +160,9 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected function sendAsync(): AsyncHelperInterface
     {
-        return new AsyncHelper(function (): ResponseInterface {
-            return $this->sendSync();
-        });
+        return new AsyncHelper(
+            promise: fn (): ResponseInterface => $this->sendSync()
+        );
     }
 
     /**
@@ -196,6 +201,35 @@ class ClientHandler implements ClientHandlerInterface
     protected function isRetryableError(RequestException $e): bool
     {
         return in_array($e->getCode(), [500, 502, 503, 504]);
+    }
+
+    /**
+     * Get the full URI for the request.
+     *
+     * @return string
+     */
+    protected function getFullUri(): string
+    {
+        $baseUri = $this->options['base_uri'] ?? '';
+        $uri = $this->options['uri'] ?? '';
+
+        // If the URI is an absolute URL, return it as is
+        if (filter_var($uri, \FILTER_VALIDATE_URL)) {
+            return $uri;
+        }
+
+        // If base URI is empty, return the URI with leading slashes trimmed
+        if (empty($baseUri)) {
+            return ltrim($uri, '/');
+        }
+
+        // Ensure base URI is a valid URL
+        if (! filter_var($baseUri, \FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException("Invalid base URI: $baseUri");
+        }
+
+        // Concatenate base URI and URI ensuring no double slashes
+        return rtrim($baseUri, '/') . '/' . ltrim($uri, '/');
     }
 
     /**

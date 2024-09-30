@@ -32,6 +32,23 @@ test('makes a successful synchronous GET request', function () {
     expect($response->getStatusCode())->toBe(200);
 });
 
+test('makes successful synchronous GET request using fluent API', function () {
+    $mockClient = mock(Client::class, function (MockInterface $mock) {
+        $mock->shouldReceive('request')
+            ->once()
+            ->with('GET', 'http://localhost/', \Mockery::type('array'))
+            ->andReturn(new Response(200, [], json_encode(['success' => true])));
+    });
+
+    $clientHandler = new ClientHandler();
+    $response = $clientHandler->setSyncClient($mockClient)
+        ->baseUri('http://localhost')
+        ->get('/');
+
+    expect($response->json())->toBe(['success' => true]);
+    expect($response->getStatusCode())->toBe(200);
+});
+
 /*
  * Test for a successful asynchronous GET request.
  */
@@ -55,6 +72,26 @@ test('makes a successful asynchronous GET request', function () {
         ->catch(function (\Throwable $e) {
             throw $e; // Fail the test if an exception is caught
         });
+});
+
+test('makes successful synchronous POST request using fluent API', function () {
+    $mockClient = mock(Client::class, function (MockInterface $mock) {
+        $mock->shouldReceive('request')
+            ->once()
+            ->with('POST', 'http://localhost/posts', \Mockery::type('array'))
+            ->andReturn(new Response(201, [], json_encode(['success' => true])));
+    });
+
+    $clientHandler = new ClientHandler();
+    $response = $clientHandler->setSyncClient($mockClient)
+        ->baseUri('http://localhost')
+        ->withHeaders(['Content-Type' => 'application/json'])
+        ->withBody(json_encode(['key' => 'value']))
+        ->withToken('fake-bearer-auth-token')
+        ->post('/posts');
+
+    expect($response->json())->toBe(['success' => true]);
+    expect($response->getStatusCode())->toBe(201);
 });
 
 /*

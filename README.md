@@ -180,7 +180,7 @@ The **fluent API** allows for a more flexible and readable way of building and s
 
 $response = fetch()
     ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
+    ->withHeaders(['Content-Type' => 'application/json'])
     ->withBody(json_encode(['key' => 'value']))
     ->withToken('fake-bearer-auth-token')
     ->post('/posts');
@@ -200,7 +200,7 @@ $data = null;
 // Asynchronously send a POST request using the fluent API
 async(fn () => fetch()
     ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
+    ->withHeaders(['Content-Type' => 'application/json'])
     ->withBody(json_encode(['key' => 'value']))
     ->withToken('fake-bearer-auth-token')
     ->post('/posts'))
