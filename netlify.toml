@@ -1,10 +1,13 @@
 [build]
   command = "npm run docs:build"
   publish = "docs/.vitepress/dist"
-  base = "docs"
 
 [context.production.environment]
   NODE_VERSION = "18"  # Specify the Node.js version, if needed
+
+# Ensure that only npm is used for installing dependencies
+[build.environment]
+  NPM_FLAGS = "--ignore-scripts"  # Optional: Add any npm flags if needed
 
 [[redirects]]
   from = "/*"
