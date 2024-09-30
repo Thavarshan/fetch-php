@@ -1,11 +1,11 @@
 [build]
-  # Set the build command for your VitePress site
   command = "npm run docs:build"
-
-  # Set the publish directory for Netlify
   publish = "docs/.vitepress/dist"
+  base = "docs"
 
-# Optional settings for redirecting 404s
+[context.production.environment]
+  NODE_VERSION = "18"  # Specify the Node.js version, if needed
+
 [[redirects]]
   from = "/*"
   to = "/404.html"
