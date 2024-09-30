@@ -1,9 +1,8 @@
 <?php
 
-namespace Fetch\Http;
-
+use Fetch\Http\ClientHandler;
+use Fetch\Http\Response;
 use GuzzleHttp\Exception\RequestException;
-use Throwable;
 
 if (! function_exists('fetch')) {
     /**
@@ -40,7 +39,7 @@ if (! function_exists('fetch')) {
         // Synchronous request handling
         try {
             return ClientHandler::handle($options['method'], $url, $options);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             // Handle exceptions and return the response
             if ($e instanceof RequestException && $e->hasResponse()) {
                 return Response::createFromBase($e->getResponse());

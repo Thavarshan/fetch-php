@@ -1,7 +1,5 @@
 <?php
 
-use function Fetch\Http\fetch;
-
 use Fetch\Http\Response;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
