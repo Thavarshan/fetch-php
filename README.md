@@ -13,6 +13,8 @@ Whether you're building small APIs or large-scale systems with high concurrency 
 
 Make sure to check out [Matrix](https://github.com/Thavarshan/matrix) for more information on how FetchPHP is powered by PHP Fibers.
 
+Full documentation can be found [here](./docs)
+
 ---
 
 ### **Why Choose FetchPHP Over Guzzle?**
@@ -46,6 +48,8 @@ Here’s a breakdown of FetchPHP’s underlying async task management powered by
 | Concurrent Requests     | Supports Fibers for parallel tasks      | Limited to Promises and threading      |
 
 ---
+
+> **Note**: The `fetch()` function allows for flexible HTTP request handling. When a URL is provided, it immediately sends the request. When no URL is provided, it returns a `ClientHandler` instance to enable further chaining for advanced request configuration.
 
 #### **Example: Managing Asynchronous Tasks with FetchPHP**
 
@@ -171,7 +175,17 @@ async(fn () => fetch('https://example.com', [
 
 ### **Using the Fluent API**
 
-The **fluent API** allows for a more flexible and readable way of building and sending HTTP requests:
+FetchPHP’s fluent API provides the following methods for building requests:
+
+- `withToken()`: Attach a Bearer token to the request.
+- `withAuth()`: Attach basic authentication credentials.
+- `withHeaders()`: Add headers to the request.
+- `withBody()`: Add a request body (e.g., JSON, form data).
+- `withProxy()`: Specify a proxy server for the request.
+- `withCookies()`: Attach cookies to the request.
+- `withQueryParameters()`: Add query parameters to the request URL.
+- `timeout()`: Set the timeout for the request.
+- `retry()`: Set the number of retries and delay for failed requests.
 
 #### **Synchronous Example**
 

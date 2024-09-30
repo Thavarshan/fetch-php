@@ -5,24 +5,34 @@ export default defineConfig({
     title: "Fetch PHP",
     description: "The JavaScript fetch API for PHP.",
     themeConfig: {
-        // https://vitepress.dev/reference/default-theme-config
         nav: [
-            { text: 'Home', link: '/' },
-            { text: 'Examples', link: '/markdown-examples' }
+            { text: 'Guide', link: '/guide/getting-started' },
+            { text: 'API Reference', link: '/api/' }
         ],
-
-        sidebar: [
-            {
-                text: 'Examples',
-                items: [
-                    { text: 'Markdown Examples', link: '/markdown-examples' },
-                    { text: 'Runtime API Examples', link: '/api-examples' }
-                ]
-            }
-        ],
-
-        socialLinks: [
-            { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
-        ]
+        sidebar: {
+            '/guide/': [
+                {
+                    text: 'Guide',
+                    items: [
+                        { text: 'Getting Started', link: '/guide/getting-started' },
+                        { text: 'Installation', link: '/guide/installation' },
+                        { text: 'Synchronous Requests', link: '/guide/sync-requests' },
+                        { text: 'Asynchronous Requests', link: '/guide/async-requests' },
+                        { text: 'Error Handling', link: '/guide/error-handling' },
+                    ]
+                }
+            ],
+            '/api/': [
+                {
+                    text: 'API Reference',
+                    items: [
+                        { text: 'Overview', link: '/api/' },
+                        { text: 'fetch()', link: '/api/fetch' },
+                        { text: 'ClientHandler', link: '/api/client-handler' },
+                        { text: 'Response', link: '/api/response' }
+                    ]
+                }
+            ]
+        }
     }
 });
