@@ -134,7 +134,7 @@ test('retries a failed synchronous request', function () {
     $clientHandler = new ClientHandler();
     $clientHandler->setSyncClient($mockClient);
 
-    $response = $clientHandler->retry(2)->get('https://example.com');
+    $response = $clientHandler->retry(2, 100)->get('https://example.com');
 
     expect($response->text())->toBe('Success after retry');
 });
@@ -180,7 +180,7 @@ test('retries an asynchronous request on failure', function () {
     $clientHandler = new ClientHandler();
     $clientHandler->setSyncClient($mockClient);
 
-    async(fn () => $clientHandler->retry(2)->get('https://example.com'))
+    async(fn () => $clientHandler->retry(2, 100)->get('https://example.com'))
         ->then(function (Response $response) {
             expect($response->text())->toBe('Success after retry');
         });

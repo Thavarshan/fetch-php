@@ -15,6 +15,21 @@ use RuntimeException;
 class ClientHandler implements ClientHandlerInterface
 {
     /**
+     * Default timeout for requests in seconds.
+     */
+    private const DEFAULT_TIMEOUT = 30;
+
+    /**
+     * Default number of retries.
+     */
+    private const DEFAULT_RETRIES = 1;
+
+    /**
+     * Default delay between retries in milliseconds.
+     */
+    private const DEFAULT_RETRY_DELAY = 100;
+
+    /**
      * Default options for the request.
      *
      * @var array
@@ -22,50 +37,30 @@ class ClientHandler implements ClientHandlerInterface
     protected static array $defaultOptions = [
         'method' => 'GET',
         'headers' => [],
-        'timeout' => 30, // Default timeout
+        'timeout' => self::DEFAULT_TIMEOUT,
     ];
 
     /**
-     * The synchronous HTTP client.
+     * ClientHandler constructor.
      *
-     * @var \Psr\Http\Client\ClientInterface|null
-     */
-    protected ?ClientInterface $syncClient = null;
-
-    /**
-     * The options for the request.
+     * @param ClientInterface|null $syncClient The synchronous HTTP client.
+     * @param array                $options    The options for the request.
+     * @param int|null             $timeout    Timeout for the request.
+     * @param int|null             $retries    Number of retries for the request.
+     * @param int|null             $retryDelay Delay between retries.
+     * @param bool                 $isAsync    Whether the request is asynchronous.
      *
-     * @var array
+     * @return void
      */
-    protected array $options = [];
-
-    /**
-     * Timeout for the request.
-     *
-     * @var int|null
-     */
-    protected ?int $timeout = null;
-
-    /**
-     * Number of retries for the request.
-     *
-     * @var int|null
-     */
-    protected ?int $retries = null;
-
-    /**
-     * Delay between retries.
-     *
-     * @var int|null
-     */
-    protected ?int $retryDelay = null;
-
-    /**
-     * Whether the request is asynchronous.
-     *
-     * @var bool
-     */
-    protected bool $isAsync = false;
+    public function __construct(
+        protected ?ClientInterface $syncClient = null,
+        protected array $options = [],
+        protected ?int $timeout = null,
+        protected ?int $retries = null,
+        protected ?int $retryDelay = null,
+        protected bool $isAsync = false
+    ) {
+    }
 
     /**
      * Apply options and execute the request.
@@ -99,17 +94,10 @@ class ClientHandler implements ClientHandlerInterface
 
         $this->options = array_merge($this->options, $options);
 
-        if (isset($options['timeout'])) {
-            $this->timeout($options['timeout']);
-        }
-
-        if (isset($options['retries'])) {
-            $this->retry($options['retries'], $options['retry_delay'] ?? 100);
-        }
-
-        if (! empty($options['async'])) {
-            $this->isAsync = true;
-        }
+        $this->timeout = $options['timeout'] ?? $this->timeout;
+        $this->retries = $options['retries'] ?? $this->retries;
+        $this->retryDelay = $options['retry_delay'] ?? $this->retryDelay;
+        $this->isAsync = ! empty($options['async']);
     }
 
     /**
@@ -125,28 +113,27 @@ class ClientHandler implements ClientHandlerInterface
         $this->options['method'] = $method;
         $this->options['uri'] = $uri;
 
-        // Merge timeout and retry properties into the options array
-        $this->mergePropertiesIntoOptions();
+        $this->mergeOptionsAndProperties();
 
         return $this->isAsync ? $this->sendAsync() : $this->sendSync();
     }
 
     /**
-     * Merge class properties (timeout, retries, etc.) into the final options array.
+     * Merge class properties and options into the final options array.
      *
      * @return void
      */
-    protected function mergePropertiesIntoOptions(): void
+    protected function mergeOptionsAndProperties(): void
     {
-        if ($this->timeout !== null) {
-            $this->options['timeout'] = $this->timeout;
-        }
+        $this->options['timeout'] = $this->timeout ?? self::DEFAULT_TIMEOUT;
+        $this->options['retries'] = $this->retries ?? self::DEFAULT_RETRIES;
+        $this->options['retry_delay'] = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
     }
 
     /**
      * Send a synchronous HTTP request.
      *
-     * @return \Fetch\Interfaces\Response
+     * @return ResponseInterface
      */
     protected function sendSync(): ResponseInterface
     {
@@ -164,7 +151,7 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Send an asynchronous HTTP request.
      *
-     * @return \Matrix\Interfaces\AsyncHelper
+     * @return AsyncHelperInterface
      */
     protected function sendAsync(): AsyncHelperInterface
     {
@@ -174,16 +161,16 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
-     * Implement retry logic for the request.
+     * Implement retry logic for the request with exponential backoff.
      *
      * @param callable $request
      *
-     * @return \Fetch\Interfaces\Response
+     * @return ResponseInterface
      */
     protected function retryRequest(callable $request): ResponseInterface
     {
-        $attempts = $this->retries ?? 1;
-        $delay = $this->retryDelay ?? 100; // Default retry delay is 100ms
+        $attempts = $this->retries ?? self::DEFAULT_RETRIES;
+        $delay = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
 
         for ($i = 0; $i < $attempts; $i++) {
             try {
@@ -197,6 +184,72 @@ class ClientHandler implements ClientHandlerInterface
         }
 
         throw new RuntimeException('Request failed after all retries.');
+    }
+
+    /**
+     * Determine if an error is retryable.
+     *
+     * @param RequestException $e
+     *
+     * @return bool
+     */
+    protected function isRetryableError(RequestException $e): bool
+    {
+        return in_array($e->getCode(), [500, 502, 503, 504]);
+    }
+
+    /**
+     * Reset the handler state.
+     *
+     * @return self
+     */
+    public function reset(): self
+    {
+        $this->options = [];
+        $this->timeout = null;
+        $this->retries = null;
+        $this->retryDelay = null;
+        $this->isAsync = false;
+
+        return $this;
+    }
+
+    /**
+     * Get the synchronous HTTP client.
+     *
+     * @return ClientInterface
+     */
+    public function getSyncClient(): ClientInterface
+    {
+        if (! $this->syncClient) {
+            $this->syncClient = new SyncClient();
+        }
+
+        return $this->syncClient;
+    }
+
+    /**
+     * Set the synchronous HTTP client.
+     *
+     * @param ClientInterface $syncClient
+     *
+     * @return self
+     */
+    public function setSyncClient(ClientInterface $syncClient): self
+    {
+        $this->syncClient = $syncClient;
+
+        return $this;
+    }
+
+    /**
+     * Get the default options for the request.
+     *
+     * @return array
+     */
+    public static function getDefaultOptions(): array
+    {
+        return self::$defaultOptions;
     }
 
     /**
@@ -481,43 +534,5 @@ class ClientHandler implements ClientHandlerInterface
     public function options(string $uri): mixed
     {
         return $this->finalizeRequest('OPTIONS', $uri);
-    }
-
-    /**
-     * Get the synchronous HTTP client.
-     *
-     * @return \Psr\Http\Client\ClientInterface
-     */
-    public function getSyncClient(): ClientInterface
-    {
-        if (! $this->syncClient) {
-            $this->syncClient = new SyncClient();
-        }
-
-        return $this->syncClient;
-    }
-
-    /**
-     * Set the synchronous HTTP client.
-     *
-     * @param \Psr\Http\Client\ClientInterface $syncClient
-     *
-     * @return self
-     */
-    public function setSyncClient(ClientInterface $syncClient): self
-    {
-        $this->syncClient = $syncClient;
-
-        return $this;
-    }
-
-    /**
-     * Get the default options for the request.
-     *
-     * @return array
-     */
-    public static function getDefaultOptions(): array
-    {
-        return self::$defaultOptions;
     }
 }
