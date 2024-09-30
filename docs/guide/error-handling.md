@@ -66,7 +66,7 @@ $response = fetch('https://example.com/nonexistent', [
 if ($response->ok()) {
     echo $response->json();
 } else {
-    echo "HTTP Error: " . $response->status() . " - " . $response->statusText();
+    echo "HTTP Error: " . $response->getStatusCode() . " - " . $response->statusText();
 }
 ```
 

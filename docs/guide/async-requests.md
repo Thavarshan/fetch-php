@@ -11,15 +11,19 @@ FetchPHP allows you to make asynchronous HTTP requests using the `async()` funct
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch('https://example.com', [
+$data = null;
+
+async(fn () => fetch('https://example.com', [
     'method' => 'POST',
     'headers' => [
         'Content-Type' => 'application/json',
     ],
     'body' => json_encode(['key' => 'value']),
 ]))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
     ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+
+echo $data;
 ```
 
 In this example:
@@ -39,14 +43,18 @@ FetchPHP’s Fluent API can also be used to build asynchronous requests. This AP
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch()
+$data = null;
+
+async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
     ->withBody(json_encode(['key' => 'value']))
     ->withToken('fake-bearer-auth-token')
     ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
     ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+
+echo $data;
 ```
 
 In this example:
@@ -84,6 +92,9 @@ $task->resume();
 
 // Cancel the task if required
 $task->cancel();
+
+// Get only if completed properly
+$result = $task->getResult();
 ```
 
 In this example, a long-running asynchronous task is started, paused, resumed, and potentially canceled based on the task’s lifecycle needs.
@@ -95,13 +106,17 @@ In this example, a long-running asynchronous task is started, paused, resumed, a
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch()
+$data = null;
+
+async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withQueryParameters(['page' => 1])
     ->withToken('fake-bearer-auth-token')
     ->get('/resources'))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
     ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+
+echo $data;
 ```
 
 This example demonstrates an asynchronous GET request where query parameters and a Bearer token are used to retrieve data from an API.
@@ -113,14 +128,18 @@ You can implement retry logic in asynchronous requests by utilizing the `retry()
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch()
+$data = null;
+
+async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
     ->withBody(json_encode(['key' => 'value']))
     ->retry(3, 1000)  // Retry 3 times with a 1-second delay between retries
     ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
     ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+
+echo $data;
 ```
 
 In this example:
@@ -136,11 +155,13 @@ FetchPHP makes it easy to handle errors in asynchronous requests using the `catc
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch('https://nonexistent-url.com'))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
+$data = null;
+
+async(fn () => fetch('https://nonexistent-url.com'))
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
     ->catch(fn (Throwable $e) => "Error: " . $e->getMessage());    // Error handler
 
-echo $response;
+echo $data;
 ```
 
 In this example, any errors that occur during the request are caught and handled gracefully.
@@ -152,11 +173,13 @@ Just like synchronous requests, asynchronous requests allow you to handle differ
 ### **Example: Handling JSON Response**
 
 ```php
-$response = async(fn () => fetch('https://example.com/api/resource'))
-    ->then(fn ($response) => $response->json())
+$data = null;
+
+async(fn () => fetch('https://example.com/api/resource'))
+    ->then(fn ($response) => $data = $response->json())
     ->catch(fn (Throwable $e) => $e->getMessage());
 
-echo $response;
+echo $data;
 ```
 
 - **json()**: Parses the response as JSON.

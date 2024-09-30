@@ -43,15 +43,19 @@ FetchPHP also supports asynchronous requests using a syntax similar to JavaScrip
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch('https://example.com', [
+$data = null;
+
+async(fn () => fetch('https://example.com', [
     'method' => 'POST',
     'headers' => [
         'Content-Type' => 'application/json',
     ],
     'body' => json_encode(['key' => 'value']),
 ]))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
     ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+
+echo $data;
 ```
 
 This example asynchronously sends a POST request and processes the JSON response, or handles an error using `.catch()`.
@@ -84,14 +88,18 @@ You can also use the fluent API for asynchronous requests:
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch()
+$data = null;
+
+async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
     ->withBody(json_encode(['key' => 'value']))
     ->withToken('fake-bearer-auth-token')
     ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
     ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+
+echo $data;
 ```
 
 This example asynchronously sends a POST request using the fluent API, handles the response, or catches any errors.
@@ -150,9 +158,13 @@ if ($response->ok()) {
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch('https://nonexistent-url.com'))
-    ->then(fn (ResponseInterface $response) => $response->json())
+$data = null;
+
+async(fn () => fetch('https://nonexistent-url.com'))
+    ->then(fn (ResponseInterface $response) => $data = $response->json())
     ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());
+
+echo $data;
 ```
 
 ## Proxy and Authentication Support

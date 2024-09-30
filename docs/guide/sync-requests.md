@@ -166,7 +166,7 @@ if ($response->ok()) {
     $data = $response->json();
     echo "JSON Response: " . print_r($data, true);
 } else {
-    echo "Error: " . $response->status() . " - " . $response->statusText();
+    echo "Error: " . $response->getStatusCode() . " - " . $response->statusText();
 }
 ```
 

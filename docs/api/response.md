@@ -117,6 +117,22 @@ Returns the reason phrase associated with the status code (e.g., "OK" for a 200 
 $statusMessage = $response->statusText();
 ```
 
+### **`getStatusCode()`**
+
+```php
+public function getStatusCode(): int
+```
+
+Returns the HTTP status code of the response.
+
+**Returns**: The status code as an integer.
+
+### Example
+
+```php
+$statusCode = $response->getStatusCode();
+```
+
 ### **`createFromBase()`**
 
 ```php
