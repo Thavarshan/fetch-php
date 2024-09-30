@@ -1,11 +1,13 @@
 <?php
 
-namespace Fetch;
+namespace Fetch\Http;
 
+use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Psr7\Response as BaseResponse;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use RuntimeException;
 
-class Response extends BaseResponse
+class Response extends BaseResponse implements ResponseInterface
 {
     /**
      * The buffered content of the body.
@@ -31,7 +33,9 @@ class Response extends BaseResponse
         string $reason = null
     ) {
         parent::__construct($status, $headers, $body, $version, $reason);
-        $this->bodyContents = (string) $this->getBody();
+
+        // Buffer the body contents to handle it appropriately.
+        $this->bodyContents = (string) $body;
     }
 
     /**
@@ -105,17 +109,27 @@ class Response extends BaseResponse
     }
 
     /**
-     * Check if the response was successful (status code 200-299).
+     * Create a new response from a base response.
      *
-     * @return bool
+     * Note: The response body will be fully read into memory.
+     *
+     * @param \Psr\Http\Message\ResponseInterface $response
+     *
+     * @return self
      */
-    public function ok(): bool
+    public static function createFromBase(PsrResponseInterface $response): self
     {
-        return $this->getStatusCode() >= 200 && $this->getStatusCode() < 300;
+        return new self(
+            $response->getStatusCode(),
+            $response->getHeaders(),
+            (string) $response->getBody(),
+            $response->getProtocolVersion(),
+            $response->getReasonPhrase()
+        );
     }
 
     /**
-     * Check if the response status is in the informational range (100-199).
+     * Check if the response status code is informational (1xx).
      *
      * @return bool
      */
@@ -125,7 +139,17 @@ class Response extends BaseResponse
     }
 
     /**
-     * Check if the response status is in the redirection range (300-399).
+     * Check if the response status code is OK (2xx).
+     *
+     * @return bool
+     */
+    public function ok(): bool
+    {
+        return $this->getStatusCode() >= 200 && $this->getStatusCode() < 300;
+    }
+
+    /**
+     * Check if the response status code is a redirection (3xx).
      *
      * @return bool
      */
@@ -135,7 +159,7 @@ class Response extends BaseResponse
     }
 
     /**
-     * Check if the response status is in the client error range (400-499).
+     * Check if the response status code is a client error (4xx).
      *
      * @return bool
      */
@@ -145,7 +169,7 @@ class Response extends BaseResponse
     }
 
     /**
-     * Check if the response status is in the server error range (500-599).
+     * Check if the response status code is a server error (5xx).
      *
      * @return bool
      */

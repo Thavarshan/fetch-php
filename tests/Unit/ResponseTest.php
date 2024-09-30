@@ -1,6 +1,6 @@
 <?php
 
-use Fetch\Response;
+use Fetch\Http\Response;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 
 test('Response::json() correctly decodes JSON', function () {
