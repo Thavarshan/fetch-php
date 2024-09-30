@@ -40,11 +40,13 @@ In asynchronous requests, FetchPHP uses the `.catch()` method to handle errors t
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch('https://nonexistent-url.com'))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => "Error: " . $e->getMessage());    // Error handler
+$data = null;
 
-echo $response;
+async(fn () => fetch('https://nonexistent-url.com'))
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
+    ->catch(fn (Throwable $e) => $error = "Error: " . $e->getMessage());    // Error handler
+
+echo $error;
 ```
 
 In this example:
@@ -114,16 +116,19 @@ FetchPHP’s fluent API provides a `retry()` method that can be used to retry fa
 ```php
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$response = async(fn () => fetch()
+$data = null;
+$error = null;
+
+async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
     ->withBody(json_encode(['key' => 'value']))
     ->retry(3, 1000)  // Retry 3 times with a 1-second delay between retries
     ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => "Error: " . $e->getMessage());    // Error handler
+    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
+    ->catch(fn (Throwable $e) => $error = "Error: " . $e->getMessage());    // Error handler
 
-echo $response;
+echo $error;
 ```
 
 In this example:

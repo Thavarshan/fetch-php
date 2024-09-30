@@ -70,6 +70,31 @@ async(fn () => fetch('https://example.com', [
     ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());      // Error handler
 
 // The async operation is managed with start, pause, resume, and cancel controls
+$task = async(fn () => fetch('https://example.com', [
+    'method' => 'POST',
+    'headers' => ['Content-Type' => 'application/json'],
+    'body' => json_encode(['key' => 'value']),
+]));
+
+// Manually control the task lifecycle as `then` and `catch` will automatically start the task
+$task->start();
+
+// Pause the task if needed
+$task->pause();
+
+// Resume the task
+$task->resume();
+
+// Cancel the task if required
+$task->cancel();
+
+// Retry the task if it fails
+if ($task->getStatus() === TaskStatus::FAILED) {
+    $task->retry();
+}
+
+// Get the result only if the task is completed successfully
+$result = $task->getResult();
 ```
 
 ---
