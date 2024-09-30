@@ -1,0 +1,12 @@
+[build]
+  # Set the build command for your VitePress site
+  command = "npm run docs:build"
+
+  # Set the publish directory for Netlify
+  publish = "docs/.vitepress/dist"
+
+# Optional settings for redirecting 404s
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 200
