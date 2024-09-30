@@ -4,6 +4,7 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
     title: "Fetch PHP",
     description: "The JavaScript fetch API for PHP.",
+    head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
     themeConfig: {
         nav: [
             { text: 'Guide', link: '/guide/getting-started' },
