@@ -1,6 +1,34 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v1.2.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...HEAD)
+
+## [v2.0.0](https://github.com/Thavarshan/fetch-php/compare/v1.2.0...v2.0.0) - 2024-09-30
+
+### Added
+
+- **VitePress Documentation**: Introduced a new VitePress documentation site, including comprehensive API reference, examples, and guides. The site is accessible under the `./docs/` directory and deployable on Netlify.
+- **Async Functionality**: Introduced a new async functionality using `async()` function powered by PHP Fibers for true asynchronous operations. This provides a modern, JavaScript-like `async/await` syntax for handling non-blocking requests.
+- **Fluent API for HTTP Requests**: Added support for a fluent, chainable API inspired by Laravel’s HTTP client. Methods like `withHeaders()`, `withBody()`, `withToken()`, and others allow for more intuitive and flexible request building.
+- **Task Lifecycle Management**: Introduced `Matrix`-powered task lifecycle management, allowing tasks to be paused, resumed, canceled, and retried for asynchronous requests.
+- **Retry Logic with Exponential Backoff**: Added customizable retry logic for both synchronous and asynchronous requests, allowing for retries with exponential backoff in case of network failures.
+
+### Changed
+
+- **Refactor of `fetch()` Function**: Refactored the core `fetch()` function to support both synchronous and asynchronous requests seamlessly. Now supports direct chaining of promises with `then()` and `catch()` for async requests.
+- **Improved Error Handling**: Enhanced error handling to provide better control over exceptions during both sync and async requests. Introduced customizable error handlers and improved promise rejection management.
+- **Response Class Overhaul**: The `Response` class has been revamped to better handle different response formats, including JSON, text, binary data (array buffer), and streams. This improves the handling of diverse response types.
+- **Expanded Guzzle Configuration Options**: The package now exposes all of Guzzle’s configuration options directly via the `ClientHandler`, including proxy settings, cookies, redirects, and SSL certificates.
+
+### Removed
+
+- **Deprecated `fetchAsync` Method**: The `fetchAsync` function has been fully removed, replaced by the new `async()` helper function. This provides better async handling and aligns with the new architecture based on PHP Fibers.
+- **Symfony `Response` Dependency**: Completely removed the dependency on Symfony’s `Response` class in favor of Guzzle’s PSR-7 compliant `Response` implementation. This reduces the package size and simplifies the dependencies.
+
+### Fixed
+
+- **Laravel 10 Compatibility Enhancements**: Improved compatibility with Laravel 10 and Symfony 6.x by resolving issues related to HTTP foundation conflicts. The package now supports a wider range of Symfony and Laravel versions without dependency clashes.
+- **Async Error Handling**: Fixed issues with async request error handling, ensuring that promises are properly resolved or rejected with meaningful exception messages.
+- **Persistent Guzzle Client Instances**: Fixed an issue where a new Guzzle client was instantiated for every request. The Guzzle client is now reused efficiently across both sync and async operations.
 
 ## [v1.2.0](https://github.com/Thavarshan/fetch-php/compare/v1.1.1...v1.2.0) - 2024-09-27
 
