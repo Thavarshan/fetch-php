@@ -60,7 +60,7 @@ test('fetch makes successful synchronous POST request using fluent API', functio
         ->setSyncClient($mockClient) // Set the mock client
         ->baseUri('http://localhost')
         ->withHeaders(['Content-Type' => 'application/json'])
-        ->withBody(json_encode(['key' => 'value']))
+        ->withBody(['key' => 'value'])
         ->withToken('fake-bearer-auth-token')
         ->post('/posts');
 

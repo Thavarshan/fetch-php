@@ -44,7 +44,7 @@ The Fluent API in FetchPHP allows for more flexible request building by chaining
 $response = fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
-    ->withBody(json_encode(['key' => 'value']))
+    ->withBody(['key' => 'value'])
     ->withToken('fake-bearer-auth-token')
     ->post('/posts');
 

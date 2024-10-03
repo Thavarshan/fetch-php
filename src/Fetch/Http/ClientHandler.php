@@ -349,13 +349,13 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Set the body for the request.
      *
-     * @param mixed $body
+     * @param array $body
      *
      * @return self
      */
-    public function withBody(mixed $body): self
+    public function withBody(array $body): self
     {
-        $this->options['body'] = $body;
+        $this->options['body'] = json_encode($body);
 
         return $this;
     }

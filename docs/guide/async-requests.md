@@ -48,7 +48,7 @@ $data = null;
 async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
-    ->withBody(json_encode(['key' => 'value']))
+    ->withBody(['key' => 'value'])
     ->withToken('fake-bearer-auth-token')
     ->post('/posts'))
     ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
@@ -133,7 +133,7 @@ $data = null;
 async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
-    ->withBody(json_encode(['key' => 'value']))
+    ->withBody(['key' => 'value'])
     ->retry(3, 1000)  // Retry 3 times with a 1-second delay between retries
     ->post('/posts'))
     ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler

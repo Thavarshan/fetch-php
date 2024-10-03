@@ -84,12 +84,12 @@ Sets the headers for the request.
 ### **`withBody()`**
 
 ```php
-public function withBody(mixed $body): self
+public function withBody(array $body): self
 ```
 
 Sets the request body.
 
-- **`$body`**: The content of the body, which could be a string, array (for JSON), or other data.
+- **`$body`**: The content of the body, which should be an array as key-value pairs and will be encoded as JSON.
 
 **Returns**: The `ClientHandler` instance for chaining.
 

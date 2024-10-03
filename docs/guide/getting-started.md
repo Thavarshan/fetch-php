@@ -70,7 +70,7 @@ FetchPHP’s fluent API allows you to chain methods to build and send HTTP reque
 $response = fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
-    ->withBody(json_encode(['key' => 'value']))
+    ->withBody(['key' => 'value'])
     ->withToken('fake-bearer-auth-token')
     ->post('/posts');
 
@@ -93,7 +93,7 @@ $data = null;
 async(fn () => fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
-    ->withBody(json_encode(['key' => 'value']))
+    ->withBody(['key' => 'value'])
     ->withToken('fake-bearer-auth-token')
     ->post('/posts'))
     ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler

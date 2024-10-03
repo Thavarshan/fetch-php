@@ -30,11 +30,11 @@ interface ClientHandler
     /**
      * Set the body for the request.
      *
-     * @param mixed $body
+     * @param array $body
      *
      * @return self
      */
-    public function withBody(mixed $body): self;
+    public function withBody(array $body): self;
 
     /**
      * Set the query parameters for the request.

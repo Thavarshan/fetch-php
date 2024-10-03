@@ -92,7 +92,7 @@ echo $data['key'];
 $response = fetch()
     ->baseUri('https://example.com')
     ->withHeaders('Content-Type', 'application/json')
-    ->withBody(json_encode(['key' => 'value']))
+    ->withBody(['key' => 'value'])
     ->withToken('fake-bearer-auth-token')
     ->post('/posts');
 

@@ -86,7 +86,7 @@ test('makes successful synchronous POST request using fluent API', function () {
     $response = $clientHandler->setSyncClient($mockClient)
         ->baseUri('http://localhost')
         ->withHeaders(['Content-Type' => 'application/json'])
-        ->withBody(json_encode(['key' => 'value']))
+        ->withBody(['key' => 'value'])
         ->withToken('fake-bearer-auth-token')
         ->post('/posts');
 
