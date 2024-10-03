@@ -6,7 +6,7 @@
 
 ### Changed
 
-- `withBody` only accepts array arguments and json encodes given arguments when called
+- Refactor `withBody` method in `ClientHandler` to only accept array arguments and encode given arguments to json string when called
 - Update documentation and fix typos
 
 ## [v2.0.0](https://github.com/Thavarshan/fetch-php/compare/v1.2.0...v2.0.0) - 2024-09-30
