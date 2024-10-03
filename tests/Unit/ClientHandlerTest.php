@@ -200,7 +200,7 @@ test('makes a POST request with body data', function () {
     $clientHandler = new ClientHandler();
     $clientHandler->setSyncClient($mockClient);
 
-    $response = $clientHandler->withBody(json_encode(['name' => 'John']))
+    $response = $clientHandler->withBody(['name' => 'John'])
         ->post('https://example.com/users');
 
     expect($response->getStatusCode())->toBe(201);
