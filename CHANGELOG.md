@@ -1,6 +1,13 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.1...HEAD)
+
+## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
+
+### Changed
+
+- `withBody` only accepts array arguments and json encodes given arguments when called
+- Update documentation and fix typos
 
 ## [v2.0.0](https://github.com/Thavarshan/fetch-php/compare/v1.2.0...v2.0.0) - 2024-09-30
 
