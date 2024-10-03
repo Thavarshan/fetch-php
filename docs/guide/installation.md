@@ -69,7 +69,7 @@ $response = fetch('/endpoint', ['client' => $client]);
 $data = $response->json();
 
 // Use the custom client with FetchPHP for async requests
-$response async(fetch('/endpoint', ['client' => $client]));
+$response async(fn () => fetch('/endpoint', ['client' => $client]));
 
 $data = $response->json();
 
