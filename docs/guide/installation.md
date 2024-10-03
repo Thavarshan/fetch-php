@@ -64,7 +64,19 @@ $client = new Client([
 ]);
 
 // Use the custom client with FetchPHP
-$response = ClientHandler::handle('GET', '/endpoint', ['client' => $client]);
+$response = fetch('/endpoint', ['client' => $client]);
+
+$data = $response->json();
+
+// Use the custom client with FetchPHP for async requests
+$response async(fetch('/endpoint', ['client' => $client]));
+
+$data = $response->json();
+
+// Use the custom client with directly on the client handler
+$handler = new ClientHandler($client, $options); // where $options are all possible Guzzle options
+
+$response = $handler->get('/endpoint');
 
 $data = $response->json();
 ```
