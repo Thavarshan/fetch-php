@@ -1,11 +1,13 @@
 <?php
 
-use Fetch\Http\ClientHandler;
-use Fetch\Http\Response;
+declare(strict_types=1);
+
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7\Request;
+use Fetch\Http\Response;
 use Mockery\MockInterface;
+use GuzzleHttp\Psr7\Request;
+use Fetch\Http\ClientHandler;
+use GuzzleHttp\Exception\RequestException;
 
 beforeEach(function () {
     \Mockery::close(); // Reset Mockery before each test
@@ -22,7 +24,7 @@ test('makes a successful synchronous GET request', function () {
             ->andReturn(new Response(200, [], json_encode(['success' => true])));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     $response = $clientHandler->get('https://example.com');
@@ -42,7 +44,7 @@ test('makes a successful asynchronous GET request', function () {
             ->andReturn(new Response(200, [], json_encode(['async' => 'result'])));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     async(fn () => $clientHandler->get('https://example.com'))
@@ -65,7 +67,7 @@ test('sends headers with a GET request', function () {
             ->andReturn(new Response(200, [], 'Headers checked'));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     $response = $clientHandler->withHeaders(['Authorization' => 'Bearer token'])
@@ -87,7 +89,7 @@ test('appends query parameters to the GET request', function () {
             ->andReturn(new Response(200, [], 'Query params checked'));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     $response = $clientHandler->withQueryParameters(['foo' => 'bar', 'baz' => 'qux'])
@@ -109,7 +111,7 @@ test('handles timeout for synchronous requests', function () {
             ->andThrow(new RequestException('Timeout', new Request('GET', 'https://example.com')));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     expect(fn () => $clientHandler->timeout(1)->get('https://example.com'))
@@ -131,7 +133,7 @@ test('retries a failed synchronous request', function () {
             ->andReturn(new Response(200, [], 'Success after retry'));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     $response = $clientHandler->retry(2, 100)->get('https://example.com');
@@ -152,7 +154,7 @@ test('makes a POST request with body data', function () {
             ->andReturn(new Response(201, [], 'Created'));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     $response = $clientHandler->withBody(['name' => 'John'])
@@ -177,7 +179,7 @@ test('retries an asynchronous request on failure', function () {
             ->andReturn(new Response(200, [], 'Success after retry'));
     });
 
-    $clientHandler = new ClientHandler();
+    $clientHandler = new ClientHandler;
     $clientHandler->setSyncClient($mockClient);
 
     async(fn () => $clientHandler->retry(2, 100)->get('https://example.com'))

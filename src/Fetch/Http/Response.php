@@ -1,29 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Fetch\Http;
 
-use Fetch\Interfaces\Response as ResponseInterface;
-use GuzzleHttp\Psr7\Response as BaseResponse;
-use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use RuntimeException;
+use GuzzleHttp\Psr7\Response as BaseResponse;
+use Fetch\Interfaces\Response as ResponseInterface;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 
 class Response extends BaseResponse implements ResponseInterface
 {
     /**
      * The buffered content of the body.
-     *
-     * @var string
      */
     protected string $bodyContents;
 
     /**
      * Create new response instance.
-     *
-     * @param int    $status
-     * @param array  $headers
-     * @param string $body
-     * @param string $version
-     * @param string $reason
      */
     public function __construct(
         int $status = 200,
@@ -41,8 +35,7 @@ class Response extends BaseResponse implements ResponseInterface
     /**
      * Get the body as a JSON-decoded array or object.
      *
-     * @param bool $assoc Whether to return associative array (true) or object (false)
-     *
+     * @param  bool  $assoc  Whether to return associative array (true) or object (false)
      * @return mixed
      */
     public function json(bool $assoc = true, bool $throwOnError = true)
@@ -63,8 +56,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Get the body as plain text.
-     *
-     * @return string
      */
     public function text(): string
     {
@@ -79,6 +70,7 @@ class Response extends BaseResponse implements ResponseInterface
     public function blob()
     {
         $stream = fopen('php://memory', 'r+');
+
         if ($stream === false) {
             return false;
         }
@@ -90,8 +82,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Get the body as an array buffer (binary data).
-     *
-     * @return string
      */
     public function arrayBuffer(): string
     {
@@ -100,8 +90,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Get the status text for the response (e.g., "OK").
-     *
-     * @return string
      */
     public function statusText(): string
     {
@@ -112,10 +100,6 @@ class Response extends BaseResponse implements ResponseInterface
      * Create a new response from a base response.
      *
      * Note: The response body will be fully read into memory.
-     *
-     * @param \Psr\Http\Message\ResponseInterface $response
-     *
-     * @return self
      */
     public static function createFromBase(PsrResponseInterface $response): self
     {
@@ -130,8 +114,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Check if the response status code is informational (1xx).
-     *
-     * @return bool
      */
     public function isInformational(): bool
     {
@@ -140,8 +122,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Check if the response status code is OK (2xx).
-     *
-     * @return bool
      */
     public function ok(): bool
     {
@@ -150,8 +130,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Check if the response status code is a redirection (3xx).
-     *
-     * @return bool
      */
     public function isRedirection(): bool
     {
@@ -160,8 +138,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Check if the response status code is a client error (4xx).
-     *
-     * @return bool
      */
     public function isClientError(): bool
     {
@@ -170,8 +146,6 @@ class Response extends BaseResponse implements ResponseInterface
 
     /**
      * Check if the response status code is a server error (5xx).
-     *
-     * @return bool
      */
     public function isServerError(): bool
     {
