@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Fetch\Http;
 
-use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
-use Fetch\Interfaces\Response as ResponseInterface;
+use RuntimeException;
+use Matrix\AsyncHelper;
+use InvalidArgumentException;
 use GuzzleHttp\Client as SyncClient;
+use Psr\Http\Client\ClientInterface;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use GuzzleHttp\Exception\RequestException;
-use InvalidArgumentException;
-use Matrix\AsyncHelper;
+use Fetch\Interfaces\Response as ResponseInterface;
 use Matrix\Interfaces\AsyncHelper as AsyncHelperInterface;
-use Psr\Http\Client\ClientInterface;
-use RuntimeException;
+use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 
 class ClientHandler implements ClientHandlerInterface
 {
@@ -32,11 +34,9 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Default options for the request.
-     *
-     * @var array
      */
     protected static array $defaultOptions = [
-        'method' => 'GET',
+        'method'  => 'GET',
         'headers' => [],
         'timeout' => self::DEFAULT_TIMEOUT,
     ];
@@ -44,13 +44,12 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * ClientHandler constructor.
      *
-     * @param ClientInterface|null $syncClient The synchronous HTTP client.
-     * @param array                $options    The options for the request.
-     * @param int|null             $timeout    Timeout for the request.
-     * @param int|null             $retries    Number of retries for the request.
-     * @param int|null             $retryDelay Delay between retries.
-     * @param bool                 $isAsync    Whether the request is asynchronous.
-     *
+     * @param  ClientInterface|null  $syncClient  The synchronous HTTP client.
+     * @param  array  $options  The options for the request.
+     * @param  int|null  $timeout  Timeout for the request.
+     * @param  int|null  $retries  Number of retries for the request.
+     * @param  int|null  $retryDelay  Delay between retries.
+     * @param  bool  $isAsync  Whether the request is asynchronous.
      * @return void
      */
     public function __construct(
@@ -60,21 +59,14 @@ class ClientHandler implements ClientHandlerInterface
         protected ?int $retries = null,
         protected ?int $retryDelay = null,
         protected bool $isAsync = false
-    ) {
-    }
+    ) {}
 
     /**
      * Apply options and execute the request.
-     *
-     * @param string $method
-     * @param string $uri
-     * @param array  $options
-     *
-     * @return mixed
      */
     public static function handle(string $method, string $uri, array $options = []): mixed
     {
-        $handler = new static();
+        $handler = new static;
         $handler->applyOptions($options);
 
         return $handler->finalizeRequest($method, $uri);
@@ -82,10 +74,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Apply the options to the handler.
-     *
-     * @param array $options
-     *
-     * @return void
      */
     protected function applyOptions(array $options): void
     {
@@ -107,11 +95,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Finalize the request and send it.
-     *
-     * @param string $method
-     * @param string $uri
-     *
-     * @return mixed
      */
     protected function finalizeRequest(string $method, string $uri): mixed
     {
@@ -125,8 +108,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Merge class properties and options into the final options array.
-     *
-     * @return void
      */
     protected function mergeOptionsAndProperties(): void
     {
@@ -137,8 +118,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Send a synchronous HTTP request.
-     *
-     * @return ResponseInterface
      */
     protected function sendSync(): ResponseInterface
     {
@@ -155,8 +134,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Send an asynchronous HTTP request.
-     *
-     * @return AsyncHelperInterface
      */
     protected function sendAsync(): AsyncHelperInterface
     {
@@ -167,10 +144,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Implement retry logic for the request with exponential backoff.
-     *
-     * @param callable $request
-     *
-     * @return ResponseInterface
      */
     protected function retryRequest(callable $request): ResponseInterface
     {
@@ -193,10 +166,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Determine if an error is retryable.
-     *
-     * @param RequestException $e
-     *
-     * @return bool
      */
     protected function isRetryableError(RequestException $e): bool
     {
@@ -205,8 +174,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Get the full URI for the request.
-     *
-     * @return string
      */
     protected function getFullUri(): string
     {
@@ -234,8 +201,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Reset the handler state.
-     *
-     * @return self
      */
     public function reset(): self
     {
@@ -250,13 +215,11 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Get the synchronous HTTP client.
-     *
-     * @return ClientInterface
      */
     public function getSyncClient(): ClientInterface
     {
         if (! $this->syncClient) {
-            $this->syncClient = new SyncClient();
+            $this->syncClient = new SyncClient;
         }
 
         return $this->syncClient;
@@ -264,10 +227,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the synchronous HTTP client.
-     *
-     * @param ClientInterface $syncClient
-     *
-     * @return self
      */
     public function setSyncClient(ClientInterface $syncClient): self
     {
@@ -278,8 +237,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Get the default options for the request.
-     *
-     * @return array
      */
     public static function getDefaultOptions(): array
     {
@@ -288,10 +245,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the base URI for the request.
-     *
-     * @param string $baseUri
-     *
-     * @return self
      */
     public function baseUri(string $baseUri): self
     {
@@ -302,10 +255,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the token for the request.
-     *
-     * @param string $token
-     *
-     * @return self
      */
     public function withToken(string $token): self
     {
@@ -316,11 +265,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the basic auth for the request.
-     *
-     * @param string $username
-     * @param string $password
-     *
-     * @return self
      */
     public function withAuth(string $username, string $password): self
     {
@@ -331,10 +275,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the headers for the request.
-     *
-     * @param array $headers
-     *
-     * @return self
      */
     public function withHeaders(array $headers): self
     {
@@ -348,10 +288,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the body for the request.
-     *
-     * @param array $body
-     *
-     * @return self
      */
     public function withBody(array $body): self
     {
@@ -362,10 +298,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the query parameters for the request.
-     *
-     * @param array $queryParams
-     *
-     * @return self
      */
     public function withQueryParameters(array $queryParams): self
     {
@@ -376,10 +308,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the timeout for the request.
-     *
-     * @param int $seconds
-     *
-     * @return self
      */
     public function timeout(int $seconds): self
     {
@@ -390,11 +318,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the retry logic for the request.
-     *
-     * @param int $retries
-     * @param int $delay
-     *
-     * @return self
      */
     public function retry(int $retries, int $delay = 100): self
     {
@@ -406,8 +329,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the request to be asynchronous.
-     *
-     * @return self
      */
     public function async(): self
     {
@@ -418,10 +339,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the proxy for the request.
-     *
-     * @param string|array $proxy
-     *
-     * @return self
      */
     public function withProxy(string|array $proxy): self
     {
@@ -432,10 +349,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the cookies for the request.
-     *
-     * @param bool|\GuzzleHttp\Cookie\CookieJarInterface $cookies
-     *
-     * @return self
      */
     public function withCookies(bool|CookieJarInterface $cookies): self
     {
@@ -446,10 +359,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set whether to follow redirects.
-     *
-     * @param bool|array $redirects
-     *
-     * @return self
      */
     public function withRedirects(bool|array $redirects = true): self
     {
@@ -460,10 +369,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the certificate for the request.
-     *
-     * @param string|array $cert
-     *
-     * @return self
      */
     public function withCert(string|array $cert): self
     {
@@ -474,10 +379,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the SSL key for the request.
-     *
-     * @param string|array $sslKey
-     *
-     * @return self
      */
     public function withSslKey(string|array $sslKey): self
     {
@@ -488,10 +389,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Set the stream option for the request.
-     *
-     * @param bool $stream
-     *
-     * @return self
      */
     public function withStream(bool $stream): self
     {
@@ -502,10 +399,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Finalize and send a GET request.
-     *
-     * @param string $uri
-     *
-     * @return mixed
      */
     public function get(string $uri): mixed
     {
@@ -514,11 +407,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Finalize and send a POST request.
-     *
-     * @param string $uri
-     * @param mixed  $body
-     *
-     * @return mixed
      */
     public function post(string $uri, mixed $body = null): mixed
     {
@@ -531,11 +419,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Finalize and send a PUT request.
-     *
-     * @param string $uri
-     * @param mixed  $body
-     *
-     * @return mixed
      */
     public function put(string $uri, mixed $body = null): mixed
     {
@@ -548,10 +431,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Finalize and send a DELETE request.
-     *
-     * @param string $uri
-     *
-     * @return mixed
      */
     public function delete(string $uri): mixed
     {
@@ -560,10 +439,6 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Finalize and send an OPTIONS request.
-     *
-     * @param string $uri
-     *
-     * @return mixed
      */
     public function options(string $uri): mixed
     {

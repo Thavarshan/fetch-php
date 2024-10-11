@@ -1,10 +1,12 @@
 <?php
 
-use Fetch\Http\Response;
+declare(strict_types=1);
+
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7\Request;
+use Fetch\Http\Response;
 use Mockery\MockInterface;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Exception\RequestException;
 
 beforeEach(function () {
     \Mockery::close(); // Reset Mockery before each test
@@ -83,7 +85,7 @@ test('fetch sends headers with a GET request', function () {
 
     $response = fetch('http://localhost', [
         'headers' => ['Authorization' => 'Bearer token'],
-        'client' => $mockClient
+        'client'  => $mockClient,
     ]);
 
     expect($response->text())->toBe('Headers checked');
@@ -103,8 +105,8 @@ test('fetch appends query parameters to the GET request', function () {
     });
 
     $response = fetch('http://localhost', [
-        'query' => ['foo' => 'bar', 'baz' => 'qux'],
-        'client' => $mockClient
+        'query'  => ['foo' => 'bar', 'baz' => 'qux'],
+        'client' => $mockClient,
     ]);
 
     expect($response->text())->toBe('Query params checked');
@@ -165,8 +167,8 @@ test('fetch makes a POST request with body data', function () {
 
     $response = fetch('http://localhost/users', [
         'method' => 'POST',
-        'body' => json_encode(['name' => 'John']),
-        'client' => $mockClient
+        'body'   => json_encode(['name' => 'John']),
+        'client' => $mockClient,
     ]);
 
     expect($response->getStatusCode())->toBe(201);

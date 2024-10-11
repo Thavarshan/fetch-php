@@ -1,17 +1,14 @@
 <?php
 
-use Fetch\Http\ClientHandler;
+declare(strict_types=1);
+
 use Fetch\Http\Response;
+use Fetch\Http\ClientHandler;
 use GuzzleHttp\Exception\RequestException;
 
 if (! function_exists('fetch')) {
     /**
      * Perform an HTTP request similar to JavaScript's fetch API.
-     *
-     * @param string|null $url
-     * @param array|null  $options
-     *
-     * @return \Fetch\Http\Response|\Fetch\Http\ClientHandler
      */
     function fetch(?string $url = null, ?array $options = []): Response|ClientHandler
     {
