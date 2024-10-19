@@ -48,7 +48,7 @@ class Response extends BaseResponse implements ResponseInterface
         }
 
         if ($throwOnError) {
-            throw new RuntimeException('Failed to decode JSON: '.json_last_error_msg());
+            throw new RuntimeException('Failed to decode JSON: ' . json_last_error_msg());
         }
 
         return null; // or return an empty array/object depending on your needs.

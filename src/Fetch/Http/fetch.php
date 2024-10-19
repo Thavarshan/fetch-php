@@ -29,7 +29,7 @@ if (! function_exists('fetch')) {
 
         // Handle baseUri if provided
         if (isset($options['base_uri'])) {
-            $url = rtrim($options['base_uri'], '/').'/'.ltrim($url, '/');
+            $url = rtrim($options['base_uri'], '/') . '/' . ltrim($url, '/');
             unset($options['base_uri']);
         }
 

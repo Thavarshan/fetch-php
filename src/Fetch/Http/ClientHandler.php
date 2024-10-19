@@ -36,7 +36,7 @@ class ClientHandler implements ClientHandlerInterface
      * Default options for the request.
      */
     protected static array $defaultOptions = [
-        'method' => 'GET',
+        'method'  => 'GET',
         'headers' => [],
         'timeout' => self::DEFAULT_TIMEOUT,
     ];
@@ -196,7 +196,7 @@ class ClientHandler implements ClientHandlerInterface
         }
 
         // Concatenate base URI and URI ensuring no double slashes
-        return rtrim($baseUri, '/').'/'.ltrim($uri, '/');
+        return rtrim($baseUri, '/') . '/' . ltrim($uri, '/');
     }
 
     /**
@@ -258,7 +258,7 @@ class ClientHandler implements ClientHandlerInterface
      */
     public function withToken(string $token): self
     {
-        $this->options['headers']['Authorization'] = 'Bearer '.$token;
+        $this->options['headers']['Authorization'] = 'Bearer ' . $token;
 
         return $this;
     }
