@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Fetch\Http\Response;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\Response;
 use GuzzleHttp\Exception\RequestException;
 
 if (! function_exists('fetch')) {
@@ -29,7 +29,7 @@ if (! function_exists('fetch')) {
 
         // Handle baseUri if provided
         if (isset($options['base_uri'])) {
-            $url = rtrim($options['base_uri'], '/') . '/' . ltrim($url, '/');
+            $url = rtrim($options['base_uri'], '/').'/'.ltrim($url, '/');
             unset($options['base_uri']);
         }
 

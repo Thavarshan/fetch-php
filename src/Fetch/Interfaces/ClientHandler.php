@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
-use Psr\Http\Client\ClientInterface;
 use GuzzleHttp\Cookie\CookieJarInterface;
+use Psr\Http\Client\ClientInterface;
 
 interface ClientHandler
 {

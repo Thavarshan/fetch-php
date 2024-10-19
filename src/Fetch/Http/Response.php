@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Fetch\Http;
 
-use RuntimeException;
-use GuzzleHttp\Psr7\Response as BaseResponse;
 use Fetch\Interfaces\Response as ResponseInterface;
+use GuzzleHttp\Psr7\Response as BaseResponse;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
+use RuntimeException;
 
 class Response extends BaseResponse implements ResponseInterface
 {
@@ -24,7 +24,7 @@ class Response extends BaseResponse implements ResponseInterface
         array $headers = [],
         string $body = '',
         string $version = '1.1',
-        string $reason = null
+        ?string $reason = null
     ) {
         parent::__construct($status, $headers, $body, $version, $reason);
 
@@ -48,7 +48,7 @@ class Response extends BaseResponse implements ResponseInterface
         }
 
         if ($throwOnError) {
-            throw new RuntimeException('Failed to decode JSON: ' . json_last_error_msg());
+            throw new RuntimeException('Failed to decode JSON: '.json_last_error_msg());
         }
 
         return null; // or return an empty array/object depending on your needs.

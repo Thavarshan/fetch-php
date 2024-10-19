@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use GuzzleHttp\Client;
-use Fetch\Http\Response;
-use Mockery\MockInterface;
-use GuzzleHttp\Psr7\Request;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\Response;
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Request;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     \Mockery::close(); // Reset Mockery before each test
@@ -234,4 +234,19 @@ test('retries an asynchronous request on failure', function () {
         ->catch(function (\Throwable $e) {
             throw $e; // Fail the test if an exception is caught
         });
+});
+
+test('checks if the request is asynchronous', function () {
+    $clientHandler = new ClientHandler;
+
+    // Initially, the request should not be asynchronous
+    expect($clientHandler->isAsync())->toBe(false);
+
+    // Simulate setting the request to asynchronous
+    $clientHandler->async();
+    expect($clientHandler->isAsync())->toBe(true);
+
+    // Simulate setting the request back to synchronous
+    $clientHandler->async(false);
+    expect($clientHandler->isAsync())->toBe(false);
 });

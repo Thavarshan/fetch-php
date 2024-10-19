@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Fetch\Http;
 
-use RuntimeException;
-use Matrix\AsyncHelper;
-use InvalidArgumentException;
+use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
+use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Client as SyncClient;
-use Psr\Http\Client\ClientInterface;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use GuzzleHttp\Exception\RequestException;
-use Fetch\Interfaces\Response as ResponseInterface;
+use InvalidArgumentException;
+use Matrix\AsyncHelper;
 use Matrix\Interfaces\AsyncHelper as AsyncHelperInterface;
-use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
+use Psr\Http\Client\ClientInterface;
+use RuntimeException;
 
 class ClientHandler implements ClientHandlerInterface
 {
@@ -36,7 +36,7 @@ class ClientHandler implements ClientHandlerInterface
      * Default options for the request.
      */
     protected static array $defaultOptions = [
-        'method'  => 'GET',
+        'method' => 'GET',
         'headers' => [],
         'timeout' => self::DEFAULT_TIMEOUT,
     ];
@@ -196,7 +196,7 @@ class ClientHandler implements ClientHandlerInterface
         }
 
         // Concatenate base URI and URI ensuring no double slashes
-        return rtrim($baseUri, '/') . '/' . ltrim($uri, '/');
+        return rtrim($baseUri, '/').'/'.ltrim($uri, '/');
     }
 
     /**
@@ -258,7 +258,7 @@ class ClientHandler implements ClientHandlerInterface
      */
     public function withToken(string $token): self
     {
-        $this->options['headers']['Authorization'] = 'Bearer ' . $token;
+        $this->options['headers']['Authorization'] = 'Bearer '.$token;
 
         return $this;
     }
@@ -328,11 +328,11 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
-     * Set the request to be asynchronous.
+     * Set the request to be asynchronous or not.
      */
-    public function async(): self
+    public function async(?bool $async = true): self
     {
-        $this->isAsync = true;
+        $this->isAsync = $async;
 
         return $this;
     }
@@ -443,5 +443,13 @@ class ClientHandler implements ClientHandlerInterface
     public function options(string $uri): mixed
     {
         return $this->finalizeRequest('OPTIONS', $uri);
+    }
+
+    /**
+     * Indicate that the request is asynchronous.
+     */
+    public function isAsync(): bool
+    {
+        return $this->isAsync;
     }
 }

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use GuzzleHttp\Client;
-use Fetch\Http\Response;
-use Mockery\MockInterface;
-use GuzzleHttp\Psr7\Request;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\Response;
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Request;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     \Mockery::close(); // Reset Mockery before each test

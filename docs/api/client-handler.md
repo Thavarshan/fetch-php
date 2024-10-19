@@ -158,10 +158,12 @@ Configures retry logic for failed requests.
 ### **`async()`**
 
 ```php
-public function async(): self
+public function async(?bool $async = true): self
 ```
 
-Marks the request as asynchronous.
+Enables asynchronous requests.
+
+- **`$async`**: `true` to enable asynchronous requests.
 
 **Returns**: The `ClientHandler` instance for chaining.
 
@@ -298,3 +300,13 @@ Sends an `OPTIONS` request.
 - **`$uri`**: The URI for the request.
 
 **Returns**: The response for synchronous requests, or `AsyncHelper` for async requests.
+
+### **`isAsync()`**
+
+```php
+public function isAsync(): bool
+```
+
+Checks if the request is asynchronous.
+
+**Returns**: `true` if the request is asynchronous, `false` otherwise.
