@@ -41,11 +41,11 @@ Here’s a breakdown of FetchPHP’s underlying async task management powered by
 
 | Feature                | FetchPHP                                | Guzzle                                 |
 |------------------------|-----------------------------------------|----------------------------------------|
-| Async Task Management   | True async with PHP Fibers (PHP 8.1+)   | Promises-based concurrency             |
-| JavaScript-like API     | `async/await` syntax                    | Traditional PHP-based Promises         |
-| Task Lifecycle Control  | Start, pause, resume, cancel, retry     | No built-in lifecycle management       |
-| Error Handling          | Customizable error handlers             | Standard Promise error handling        |
-| Concurrent Requests     | Supports Fibers for parallel tasks      | Limited to Promises and threading      |
+| Async Task Management  | True async with PHP Fibers (PHP 8.1+)   | Promises-based concurrency             |
+| JavaScript-like API    | `async/await` syntax                    | Traditional PHP-based Promises         |
+| Task Lifecycle Control | Start, pause, resume, cancel, retry     | No built-in lifecycle management       |
+| Error Handling         | Customizable error handlers             | Standard Promise error handling        |
+| Concurrent Requests    | Supports Fibers for parallel tasks      | Limited to Promises and threading      |
 
 ---
 

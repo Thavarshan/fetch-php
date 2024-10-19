@@ -2,23 +2,6 @@
 
 ## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...HEAD)
 
-## [v2.0.2](https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2) - 2024-10-19
-
-### Added
-
-* Add Laravel Pint by @patinthehat in https://github.com/Thavarshan/fetch-php/pull/8
-* Add `isAsync` method to `ClientHandler`
-
-### Changed
-
-* Update `async` method to accept arguments
-
-#### New Contributors
-
-* @patinthehat made their first contribution in https://github.com/Thavarshan/fetch-php/pull/8
-
-**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.1...2.0.2
-
 ## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
 
 ### Changed
