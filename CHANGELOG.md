@@ -1,6 +1,6 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...HEAD)
 
 ## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
 
@@ -86,6 +86,19 @@
 ## v1.0.0 - 2024-09-14
 
 Initial release.
+
+## [v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3) - 2024-12-06
+
+### Added
+
+* Support all PHP `8.x` versions
+
+### Changed
+
+* Updated dependencies
+* Updated dev dependencies
+
+**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.2...2.0.3
 
 ## [v2.0.2](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.2) - 2024-10-19
 
