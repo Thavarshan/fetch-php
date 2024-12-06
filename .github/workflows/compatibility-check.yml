@@ -16,7 +16,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        php: [8.2, 8.3]
+        php: [8.3, 8.4]
         laravel: [9.*, 10.*, 11.*]
 
     name: PHP ${{ matrix.php }} on ${{ matrix.os }} - Laravel ${{ matrix.laravel }}
