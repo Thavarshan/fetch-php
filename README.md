@@ -67,7 +67,7 @@ async(fn () => fetch('https://example.com', [
     'body' => json_encode(['key' => 'value']),
 ]))
     ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());      // Error handler
+    ->catch(fn (\Throwable $e) => print "Error: " . $e->getMessage());      // Error handler
 
 // The async operation is managed with start, pause, resume, and cancel controls
 $task = async(fn () => fetch('https://example.com', [
@@ -193,7 +193,7 @@ async(fn () => fetch('https://example.com', [
     'body' => json_encode(['key' => 'value']),
 ]))
     ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());      // Error handler
+    ->catch(fn (\Throwable $e) => print "Error: " . $e->getMessage());      // Error handler
 ```
 
 ---
@@ -244,7 +244,7 @@ async(fn () => fetch()
     ->withToken('fake-bearer-auth-token')
     ->post('/posts'))
     ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());      // Error handler
+    ->catch(fn (\Throwable $e) => print "Error: " . $e->getMessage());      // Error handler
 ```
 
 ---
@@ -282,7 +282,7 @@ async(fn () => ClientHandler::handle('POST', 'https://example.com', [
     'body' => json_encode(['key' => 'value']),
 ]))
     ->then(fn ($response) => $data = $response->json())
-    ->catch(fn ($e) => echo "Error: " . $e->getMessage());
+    ->catch(fn ($e) => print "Error: " . $e->getMessage());
 ```
 
 ---
@@ -327,7 +327,7 @@ if ($response->ok()) {
 
 $response = async(fn () => fetch('https://nonexistent-url.com'))
     ->then(fn ($response) => $response->json())
-    ->catch(fn ($e) => echo "Error: " . $e->getMessage());
+    ->catch(fn ($e) => print "Error: " . $e->getMessage());
 
 echo $response;
 ```
