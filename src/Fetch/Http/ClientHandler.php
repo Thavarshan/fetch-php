@@ -462,4 +462,36 @@ class ClientHandler implements ClientHandlerInterface
     {
         return $this->isAsync;
     }
+
+    /**
+     * Get the request options.
+     */
+    public function getOptions() : array
+    {
+        return $this->options;
+    }
+
+    /**
+     * Get the request headers.
+     */
+    public function getHeaders() : array
+    {
+        return $this->options['headers'] ?? [];
+    }
+
+    /**
+     * Determine if the request has a specific header.
+     */
+    public function hasHeader(string $header) : bool
+    {
+        return isset($this->options['headers'][$header]);
+    }
+
+    /**
+     * Determine if the request has a specific option.
+     */
+    public function hasOption(string $option) : bool
+    {
+        return isset($this->options[$option]);
+    }
 }

@@ -128,4 +128,24 @@ interface ClientHandler
      * Get the default options for the request.
      */
     public static function getDefaultOptions(): array;
+
+    /**
+     * Get the request options.
+     */
+    public function getOptions() : array;
+
+    /**
+     * Get the request headers.
+     */
+    public function getHeaders() : array;
+
+    /**
+     * Determine if the request has a specific header.
+     */
+    public function hasHeader(string $header) : bool;
+
+    /**
+     * Determine if the request has a specific option.
+     */
+    public function hasOption(string $option) : bool;
 }
