@@ -1,6 +1,6 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...HEAD)
 
 ## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
 
@@ -86,6 +86,34 @@
 ## v1.0.0 - 2024-09-14
 
 Initial release.
+
+## [v2.0.4](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4) - 2025-03-29
+
+### Added
+
+- Added support for setting a single request header via `withHeader()` method in `ClientHandler`.
+- Introduced new methods in `ClientHandler` interface:
+  - `withToken(string $token): self`
+  - `withAuth(string $username, string $password): self`
+  - `withHeader(string $header, mixed $value): self`
+  
+- Added `laravel/pint` as a development dependency.
+
+### Changed
+
+- Updated package version in `composer.json` from `2.0.3` to `2.0.4`.
+- Bump dependabot/fetch-metadata from 2.2.0 to 2.3.0 by @dependabot in https://github.com/Thavarshan/fetch-php/pull/13
+- Update README fixing syntax error by @tresbach in https://github.com/Thavarshan/fetch-php/pull/14
+
+### Fixed
+
+- Restored required dependencies `jerome/matrix` and `psr/http-message` to `composer.json`.
+
+### New Contributors
+
+- @tresbach made their first contribution in https://github.com/Thavarshan/fetch-php/pull/14
+
+**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.3...2.0.4
 
 ## [v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3) - 2024-12-06
 
