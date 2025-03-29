@@ -287,6 +287,16 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
+     * Set a single header for the request.
+     */
+    public function withHeader(string $header, mixed $value): self
+    {
+        $this->options['headers'][$header] = $value;
+
+        return $this;
+    }
+
+    /**
      * Set the body for the request.
      */
     public function withBody(array $body): self

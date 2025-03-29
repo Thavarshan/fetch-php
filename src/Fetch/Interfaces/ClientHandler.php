@@ -15,9 +15,24 @@ interface ClientHandler
     public static function handle(string $method, string $uri, array $options = []): mixed;
 
     /**
+     * Set the token for the request.
+     */
+    public function withToken(string $token): self;
+
+    /**
+     * Set the basic auth for the request.
+     */
+    public function withAuth(string $username, string $password): self;
+
+    /**
      * Set the headers for the request.
      */
     public function withHeaders(array $headers): self;
+
+    /**
+     * Set a single header for the request.
+     */
+    public function withHeader(string $header, mixed $value): self;
 
     /**
      * Set the body for the request.
