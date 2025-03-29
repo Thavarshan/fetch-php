@@ -466,7 +466,7 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Get the request options.
      */
-    public function getOptions() : array
+    public function getOptions(): array
     {
         return $this->options;
     }
@@ -474,7 +474,7 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Get the request headers.
      */
-    public function getHeaders() : array
+    public function getHeaders(): array
     {
         return $this->options['headers'] ?? [];
     }
@@ -482,7 +482,7 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Determine if the request has a specific header.
      */
-    public function hasHeader(string $header) : bool
+    public function hasHeader(string $header): bool
     {
         return isset($this->options['headers'][$header]);
     }
@@ -490,7 +490,7 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Determine if the request has a specific option.
      */
-    public function hasOption(string $option) : bool
+    public function hasOption(string $option): bool
     {
         return isset($this->options[$option]);
     }

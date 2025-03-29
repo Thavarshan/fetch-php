@@ -132,20 +132,20 @@ interface ClientHandler
     /**
      * Get the request options.
      */
-    public function getOptions() : array;
+    public function getOptions(): array;
 
     /**
      * Get the request headers.
      */
-    public function getHeaders() : array;
+    public function getHeaders(): array;
 
     /**
      * Determine if the request has a specific header.
      */
-    public function hasHeader(string $header) : bool;
+    public function hasHeader(string $header): bool;
 
     /**
      * Determine if the request has a specific option.
      */
-    public function hasOption(string $option) : bool;
+    public function hasOption(string $option): bool;
 }
