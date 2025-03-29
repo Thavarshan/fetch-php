@@ -1,6 +1,6 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.5...HEAD)
 
 ## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
 
@@ -87,17 +87,33 @@
 
 Initial release.
 
+## [v2.0.5](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5) - 2025-03-29
+
+### Added
+
+- Added the following utility methods to `ClientHandler`:
+  - `getOptions()`: Retrieve the full request options array.
+  - `getHeaders()`: Retrieve the headers array from the request options.
+  - `hasHeader(string $header): bool`: Check if a specific header is set in the request.
+  - `hasOption(string $option): bool`: Check if a specific option is set in the request.
+  
+
+**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.4...2.0.5
+
 ## [v2.0.4](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4) - 2025-03-29
 
 ### Added
 
 - Added support for setting a single request header via `withHeader()` method in `ClientHandler`.
+  
 - Introduced new methods in `ClientHandler` interface:
+  
   - `withToken(string $token): self`
   - `withAuth(string $username, string $password): self`
   - `withHeader(string $header, mixed $value): self`
   
 - Added `laravel/pint` as a development dependency.
+  
 
 ### Changed
 
