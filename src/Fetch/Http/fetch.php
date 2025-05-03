@@ -29,7 +29,7 @@ if (! function_exists('fetch')) {
 
         // Handle baseUri if provided
         if (isset($options['base_uri'])) {
-            $url = rtrim($options['base_uri'], '/') . '/' . ltrim($url, '/');
+            $url = rtrim($options['base_uri'], '/').'/'.ltrim($url, '/');
             unset($options['base_uri']);
         }
 
@@ -42,7 +42,12 @@ if (! function_exists('fetch')) {
                 return Response::createFromBase($e->getResponse());
             }
 
-            throw $e; // Rethrow for other unhandled errors
+            // Add context to the exception
+            throw new RuntimeException(
+                "Fetch request to '$url' failed: ".$e->getMessage(),
+                $e->getCode(),
+                $e
+            );
         }
     }
 }

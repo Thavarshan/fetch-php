@@ -2,188 +2,158 @@
 
 declare(strict_types=1);
 
-use Fetch\Http\ClientHandler;
+namespace Tests\Integration;
+
 use Fetch\Http\Response;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
-use Mockery\MockInterface;
+use GuzzleHttp\Psr7\Response as GuzzleResponse;
 
 beforeEach(function () {
-    \Mockery::close(); // Reset Mockery before each test
+    // Set up a simple mock handler and history tracker
+    $this->mockHandler = new MockHandler;
+    $this->history = [];
+
+    $stack = HandlerStack::create($this->mockHandler);
+    $stack->push(Middleware::history($this->history));
+
+    $this->client = new Client(['handler' => $stack]);
 });
 
-/*
- * Test for a successful synchronous GET request.
- */
 test('makes a successful synchronous GET request', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->once()
-            ->with('GET', 'https://example.com', \Mockery::type('array'))
-            ->andReturn(new Response(200, [], json_encode(['success' => true])));
-    });
+    // Add a mock response
+    $this->mockHandler->append(
+        new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"message":"Hello World"}')
+    );
 
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
+    // Make a request using the fetch function
+    $response = fetch('https://example.com', [
+        'client' => $this->client,
+    ]);
 
-    $response = $clientHandler->get('https://example.com');
-
-    expect($response->json())->toBe(['success' => true]);
+    // Check response
+    expect($response)->toBeInstanceOf(Response::class);
     expect($response->getStatusCode())->toBe(200);
+    expect($response->json())->toBe(['message' => 'Hello World']);
+
+    // Check request was made correctly
+    expect($this->history)->toHaveCount(1);
+    expect($this->history[0]['request']->getMethod())->toBe('GET');
 });
 
-/*
- * Test for a successful asynchronous GET request.
- */
 test('makes a successful asynchronous GET request', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->once()
-            ->with('GET', 'https://example.com', \Mockery::type('array'))
-            ->andReturn(new Response(200, [], json_encode(['async' => 'result'])));
-    });
+    // Add a mock response
+    $this->mockHandler->append(
+        new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"async result"}')
+    );
 
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
+    // Create a client handler instance
+    $handler = fetch(null, [
+        'async' => true,
+    ]);
 
-    async(fn () => $clientHandler->get('https://example.com'))
-        ->then(function (Response $response) {
-            expect($response->json())->toBe(['async' => 'result']);
-            expect($response->getStatusCode())->toBe(200);
-        });
+    // Set our mock client
+    $handler->setSyncClient($this->client);
+    $handler->async();
+
+    // Make the async request
+    $promise = $handler->get('https://example.com');
+
+    // Resolve the promise
+    $promise->start();
+    $response = $promise->getResult();
+
+    // Verify the response
+    expect($response)->toBeInstanceOf(Response::class);
+    expect($response->json())->toBe(['data' => 'async result']);
 });
 
-/*
- * Test for sending headers with a GET request.
- */
 test('sends headers with a GET request', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->once()
-            ->with('GET', 'https://example.com', \Mockery::on(function ($options) {
-                return $options['headers']['Authorization'] === 'Bearer token';
-            }))
-            ->andReturn(new Response(200, [], 'Headers checked'));
-    });
+    // Add a mock response
+    $this->mockHandler->append(
+        new GuzzleResponse(200)
+    );
 
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
+    // Make a request with custom headers
+    fetch('https://example.com', [
+        'client' => $this->client,
+        'headers' => [
+            'X-API-Key' => 'test-key',
+            'Accept' => 'application/json',
+        ],
+    ]);
 
-    $response = $clientHandler->withHeaders(['Authorization' => 'Bearer token'])
-        ->get('https://example.com');
-
-    expect($response->text())->toBe('Headers checked');
+    // Check headers were sent
+    $request = $this->history[0]['request'];
+    expect($request->getHeaderLine('X-API-Key'))->toBe('test-key');
+    expect($request->getHeaderLine('Accept'))->toBe('application/json');
 });
 
-/*
- * Test for sending query parameters with a GET request.
- */
 test('appends query parameters to the GET request', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->once()
-            ->with('GET', 'https://example.com', \Mockery::on(function ($options) {
-                return $options['query'] === ['foo' => 'bar', 'baz' => 'qux'];
-            }))
-            ->andReturn(new Response(200, [], 'Query params checked'));
-    });
+    // Add a mock response
+    $this->mockHandler->append(
+        new GuzzleResponse(200)
+    );
 
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
+    // Make a request with query parameters
+    fetch('https://example.com', [
+        'client' => $this->client,
+        'query' => [
+            'foo' => 'bar',
+            'baz' => 'qux',
+        ],
+    ]);
 
-    $response = $clientHandler->withQueryParameters(['foo' => 'bar', 'baz' => 'qux'])
-        ->get('https://example.com');
+    // Check query was appended
+    $uri = $this->history[0]['request']->getUri();
+    $query = urldecode($uri->getQuery());
 
-    expect($response->text())->toBe('Query params checked');
+    // Just check that both parameters are present
+    expect($query)->toContain('foo=bar');
+    expect($query)->toContain('baz=qux');
 });
 
-/*
- * Test for handling timeouts in synchronous requests.
- */
 test('handles timeout for synchronous requests', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->once()
-            ->with('GET', 'https://example.com', \Mockery::on(function ($options) {
-                return $options['timeout'] === 1;
-            }))
-            ->andThrow(new RequestException('Timeout', new Request('GET', 'https://example.com')));
-    });
+    // Add a mock response
+    $this->mockHandler->append(
+        new GuzzleResponse(200)
+    );
 
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
+    // Make a request with a timeout
+    fetch('https://example.com', [
+        'client' => $this->client,
+        'timeout' => 5,
+    ]);
 
-    expect(fn () => $clientHandler->timeout(1)->get('https://example.com'))
-        ->toThrow(RequestException::class, 'Timeout');
+    // Check timeout was set
+    expect($this->history[0]['options'])->toHaveKey('timeout', 5);
 });
 
-/*
- * Test for retry mechanism in synchronous requests.
- */
-test('retries a failed synchronous request', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->times(1)
-            ->with('GET', 'https://example.com', \Mockery::type('array'))
-            ->andThrow(new RequestException('Failed request', new Request('GET', 'https://example.com')));
-        $mock->shouldReceive('request')
-            ->times(1)
-            ->with('GET', 'https://example.com', \Mockery::type('array'))
-            ->andReturn(new Response(200, [], 'Success after retry'));
-    });
-
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
-
-    $response = $clientHandler->retry(2, 100)->get('https://example.com');
-
-    expect($response->text())->toBe('Success after retry');
-});
-
-/*
- * Test for making a POST request with body data.
- */
 test('makes a POST request with body data', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->once()
-            ->with('POST', 'https://example.com/users', \Mockery::on(function ($options) {
-                return $options['body'] === json_encode(['name' => 'John']);
-            }))
-            ->andReturn(new Response(201, [], 'Created'));
-    });
+    // Add a mock response
+    $this->mockHandler->append(
+        new GuzzleResponse(201)
+    );
 
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
+    // Data to send
+    $data = ['name' => 'Test', 'email' => 'test@example.com'];
 
-    $response = $clientHandler->withBody(['name' => 'John'])
-        ->post('https://example.com/users');
+    // Make a POST request
+    fetch('https://example.com', [
+        'client' => $this->client,
+        'method' => 'POST',
+        'body' => $data,
+    ]);
 
-    expect($response->getStatusCode())->toBe(201);
-    expect($response->text())->toBe('Created');
-});
+    // Check request
+    $request = $this->history[0]['request'];
+    expect($request->getMethod())->toBe('POST');
+    expect($request->getHeaderLine('Content-Type'))->toBe('application/json');
 
-/*
- * Test for retry mechanism in asynchronous requests.
- */
-test('retries an asynchronous request on failure', function () {
-    $mockClient = mock(Client::class, function (MockInterface $mock) {
-        $mock->shouldReceive('request')
-            ->times(1)
-            ->with('GET', 'https://example.com', \Mockery::type('array'))
-            ->andThrow(new RequestException('Failed request', new Request('GET', 'https://example.com')));
-        $mock->shouldReceive('request')
-            ->times(1)
-            ->with('GET', 'https://example.com', \Mockery::type('array'))
-            ->andReturn(new Response(200, [], 'Success after retry'));
-    });
-
-    $clientHandler = new ClientHandler;
-    $clientHandler->setSyncClient($mockClient);
-
-    async(fn () => $clientHandler->retry(2, 100)->get('https://example.com'))
-        ->then(function (Response $response) {
-            expect($response->text())->toBe('Success after retry');
-        });
+    // Verify JSON body
+    $sentData = json_decode((string) $request->getBody(), true);
+    expect($sentData)->toBe($data);
 });

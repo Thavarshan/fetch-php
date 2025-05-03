@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Fetch\Http\ClientHandler;
+use Fetch\Interfaces\Response;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -41,7 +44,20 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function makeRetryableHandler(int $retries, int $delay = 0): ClientHandler
 {
-    // ..
+    return new class($retries, $delay) extends ClientHandler
+    {
+        public function __construct(private int $testRetries, private int $testDelay)
+        {
+            parent::__construct();
+            $this->retries = $testRetries;
+            $this->retryDelay = $testDelay;
+        }
+
+        public function testRetry(callable $request): Response
+        {
+            return $this->retryRequest($request);
+        }
+    };
 }
