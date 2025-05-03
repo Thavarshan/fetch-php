@@ -190,7 +190,7 @@ test('withHeaders adds multiple headers correctly', function () {
 
     $handler->withHeaders([
         'X-API-Key' => 'abc123',
-        'Accept' => 'application/json',
+        'Accept'    => 'application/json',
     ]);
 
     $headers = $handler->getHeaders();
@@ -330,7 +330,7 @@ test('retry with all failures throws exception', function () {
     ]);
 
     $mockClient = new Client([
-        'handler' => HandlerStack::create($mockHandler),
+        'handler'     => HandlerStack::create($mockHandler),
         'http_errors' => false, // Don't throw exceptions for HTTP errors
     ]);
 
@@ -475,8 +475,8 @@ test('withOptions adds multiple options correctly', function () {
 
     $handler->withOptions([
         'connect_timeout' => 5,
-        'debug' => true,
-        'version' => '1.1',
+        'debug'           => true,
+        'version'         => '1.1',
     ]);
 
     $options = $handler->getOptions();

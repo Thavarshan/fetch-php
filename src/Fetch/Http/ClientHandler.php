@@ -36,7 +36,7 @@ class ClientHandler implements ClientHandlerInterface
      * Default options for the request.
      */
     protected static array $defaultOptions = [
-        'method' => 'GET',
+        'method'  => 'GET',
         'headers' => [],
         'timeout' => self::DEFAULT_TIMEOUT,
     ];
@@ -201,7 +201,7 @@ class ClientHandler implements ClientHandlerInterface
                 $parsedUrl = parse_url($uri);
                 $separator = ! empty($parsedUrl['query']) ? '&' : '?';
 
-                return $uri.$separator.http_build_query($this->options['query']);
+                return $uri . $separator . http_build_query($this->options['query']);
             }
 
             return $uri;
@@ -217,13 +217,13 @@ class ClientHandler implements ClientHandlerInterface
             }
 
             // Concatenate base URI and URI ensuring no double slashes
-            $result = rtrim($baseUri, '/').'/'.ltrim($uri, '/');
+            $result = rtrim($baseUri, '/') . '/' . ltrim($uri, '/');
         }
 
         // If query parameters exist, append them to the URL
         if (! empty($this->options['query'])) {
             $separator = strpos($result, '?') !== false ? '&' : '?';
-            $result .= $separator.http_build_query($this->options['query']);
+            $result .= $separator . http_build_query($this->options['query']);
         }
 
         return $result;
@@ -328,7 +328,7 @@ class ClientHandler implements ClientHandlerInterface
      */
     public function withToken(string $token): self
     {
-        $this->options['headers']['Authorization'] = 'Bearer '.$token;
+        $this->options['headers']['Authorization'] = 'Bearer ' . $token;
 
         return $this;
     }
@@ -645,8 +645,8 @@ class ClientHandler implements ClientHandlerInterface
     public function debug(): array
     {
         return [
-            'uri' => $this->getFullUri(),
-            'method' => $this->options['method'] ?? 'GET',
+            'uri'     => $this->getFullUri(),
+            'method'  => $this->options['method'] ?? 'GET',
             'headers' => $this->getHeaders(),
             'options' => array_diff_key($this->options, ['headers' => true]),
         ];

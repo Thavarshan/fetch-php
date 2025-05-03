@@ -68,7 +68,7 @@ test('fetch sets json content type when body is array', function () {
 
     fetch('https://example.com', [
         'method' => 'POST',
-        'body' => $body,
+        'body'   => $body,
         'client' => $this->mockClient,
     ]);
 
@@ -84,7 +84,7 @@ test('fetch handles base_uri correctly', function () {
 
     fetch('endpoint', [
         'base_uri' => 'https://api.example.com/',
-        'client' => $this->mockClient,
+        'client'   => $this->mockClient,
     ]);
 
     expect($this->historyContainer)->toHaveCount(1);
@@ -98,7 +98,7 @@ test('fetch handles base_uri trailing slash correctly', function () {
 
     fetch('/endpoint', [
         'base_uri' => 'https://api.example.com',
-        'client' => $this->mockClient,
+        'client'   => $this->mockClient,
     ]);
 
     expect($this->historyContainer)->toHaveCount(1);
@@ -180,7 +180,7 @@ test('fetch handles different HTTP methods correctly', function () {
 
     fetch('https://example.com', [
         'method' => 'POST',
-        'body' => ['data' => 'value'],
+        'body'   => ['data' => 'value'],
         'client' => $this->mockClient,
     ]);
 
@@ -191,13 +191,13 @@ test('fetch handles different HTTP methods correctly', function () {
 
     fetch('https://example.com', [
         'method' => 'PUT',
-        'body' => ['data' => 'updated'],
+        'body'   => ['data' => 'updated'],
         'client' => $this->mockClient,
     ]);
 
     fetch('https://example.com', [
         'method' => 'PATCH',
-        'body' => ['data' => 'patched'],
+        'body'   => ['data' => 'patched'],
         'client' => $this->mockClient,
     ]);
 
@@ -218,9 +218,9 @@ test('fetch handles form parameters correctly', function () {
     $this->mockHandler->append(new GuzzleResponse(200));
 
     fetch('https://example.com', [
-        'method' => 'POST',
+        'method'      => 'POST',
         'form_params' => ['username' => 'test', 'password' => 'secret'],
-        'client' => $this->mockClient,
+        'client'      => $this->mockClient,
     ]);
 
     expect($this->historyContainer)->toHaveCount(1);
@@ -237,7 +237,7 @@ test('fetch handles query parameters correctly', function () {
     $this->mockHandler->append(new GuzzleResponse(200));
 
     fetch('https://example.com', [
-        'query' => ['page' => 1, 'limit' => 10],
+        'query'  => ['page' => 1, 'limit' => 10],
         'client' => $this->mockClient,
     ]);
 
@@ -257,7 +257,7 @@ test('fetch adds custom headers correctly', function () {
     fetch('https://example.com', [
         'headers' => [
             'X-API-Key' => 'abc123',
-            'Accept' => 'application/json',
+            'Accept'    => 'application/json',
         ],
         'client' => $this->mockClient,
     ]);
@@ -274,7 +274,7 @@ test('fetch applies timeout correctly', function () {
 
     fetch('https://example.com', [
         'timeout' => 15,
-        'client' => $this->mockClient,
+        'client'  => $this->mockClient,
     ]);
 
     expect($this->historyContainer)->toHaveCount(1);
@@ -331,12 +331,12 @@ test('fetch correctly merges options from different sources', function () {
     $this->mockHandler->append(new GuzzleResponse(200));
 
     fetch('https://example.com', [
-        'method' => 'POST',
-        'body' => ['name' => 'test'],
+        'method'  => 'POST',
+        'body'    => ['name' => 'test'],
         'headers' => ['X-Custom' => 'value'],
         'timeout' => 30,
-        'query' => ['debug' => 1],
-        'client' => $this->mockClient,
+        'query'   => ['debug' => 1],
+        'client'  => $this->mockClient,
     ]);
 
     expect($this->historyContainer)->toHaveCount(1);

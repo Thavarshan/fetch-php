@@ -213,7 +213,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             [
-                'Content-Type' => 'application/json',
+                'Content-Type'  => 'application/json',
                 'X-Test-Header' => 'Test Value',
             ]
         );

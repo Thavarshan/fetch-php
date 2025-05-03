@@ -57,7 +57,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
             );
         } catch (JsonException $e) {
             if ($throwOnError) {
-                throw new RuntimeException('Failed to decode JSON: '.$e->getMessage(), $e->getCode(), $e);
+                throw new RuntimeException('Failed to decode JSON: ' . $e->getMessage(), $e->getCode(), $e);
             }
 
             return $assoc ? [] : (object) [];
@@ -296,7 +296,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
             libxml_use_internal_errors(false);
 
             if ($throwOnError) {
-                throw new RuntimeException('Failed to parse XML: '.$e->getMessage(), $e->getCode(), $e);
+                throw new RuntimeException('Failed to parse XML: ' . $e->getMessage(), $e->getCode(), $e);
             }
 
             return null;

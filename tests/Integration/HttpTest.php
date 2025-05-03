@@ -79,10 +79,10 @@ test('sends headers with a GET request', function () {
 
     // Make a request with custom headers
     fetch('https://example.com', [
-        'client' => $this->client,
+        'client'  => $this->client,
         'headers' => [
             'X-API-Key' => 'test-key',
-            'Accept' => 'application/json',
+            'Accept'    => 'application/json',
         ],
     ]);
 
@@ -101,7 +101,7 @@ test('appends query parameters to the GET request', function () {
     // Make a request with query parameters
     fetch('https://example.com', [
         'client' => $this->client,
-        'query' => [
+        'query'  => [
             'foo' => 'bar',
             'baz' => 'qux',
         ],
@@ -124,7 +124,7 @@ test('handles timeout for synchronous requests', function () {
 
     // Make a request with a timeout
     fetch('https://example.com', [
-        'client' => $this->client,
+        'client'  => $this->client,
         'timeout' => 5,
     ]);
 
@@ -145,7 +145,7 @@ test('makes a POST request with body data', function () {
     fetch('https://example.com', [
         'client' => $this->client,
         'method' => 'POST',
-        'body' => $data,
+        'body'   => $data,
     ]);
 
     // Check request
