@@ -69,9 +69,9 @@ function any(array $promises): PromiseInterface
 ### Parallel API Requests with all()
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 // Create multiple promises with named keys
 $promises = [
@@ -124,9 +124,9 @@ $client->all($promises)
 ### Fastest Response with race()
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\race;
+use function async;
+use function await;
+use function race;
 
 // Create promises for multiple mirrors of the same API
 $promises = [
@@ -171,9 +171,9 @@ $client->race($promises)
 ### First Successful Response with any()
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\any;
+use function async;
+use function await;
+use function any;
 
 // Create promises for multiple servers that might fail
 $promises = [
@@ -220,9 +220,9 @@ $client->any($promises)
 ### Dynamic Batch Processing
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 /**
  * Process a large dataset in parallel batches
@@ -268,9 +268,9 @@ try {
 ### Conditional Parallel Requests
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 /**
  * Fetch user data and conditionally fetch related data
@@ -341,9 +341,9 @@ try {
 3. **Timeout Management**: Set appropriate timeouts for your promises to prevent hanging operations. A common pattern is to race a promise against a timeout:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\race;
+use function async;
+use function await;
+use function race;
 
 function withTimeout(PromiseInterface $promise, int $timeoutMs): PromiseInterface {
     $timeout = async(function () use ($timeoutMs) {

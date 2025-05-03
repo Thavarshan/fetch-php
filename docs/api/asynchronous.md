@@ -222,8 +222,8 @@ public function finally(callable $onFinally): PromiseInterface
 ### Basic Async Request
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 use Fetch\Interfaces\Response as ResponseInterface;
 
 // Create an async request
@@ -244,8 +244,8 @@ $promise
 ### Using Async/Await Pattern
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 try {
     // Wait for the async request to complete
@@ -262,8 +262,8 @@ try {
 ### Fluent API with Async
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 // Create an async request with the fluent API
 try {
@@ -301,9 +301,9 @@ $client
 ### Multiple Concurrent Requests
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 // Create promises for multiple requests
 $usersPromise = async(fn () => fetch('https://api.example.com/users'));
@@ -332,9 +332,9 @@ try {
 ### Using race() to Get the First Response
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\race;
+use function async;
+use function await;
+use function race;
 
 // Create promises for multiple endpoints that return the same data
 $primaryPromise = async(fn () => fetch('https://primary-api.example.com/data'));
@@ -353,9 +353,9 @@ try {
 ### Using any() to Get the First Successful Response
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\any;
+use function async;
+use function await;
+use function any;
 
 // Create promises for multiple endpoints
 $promises = [
@@ -377,7 +377,7 @@ try {
 ### Advanced Promise Chaining
 
 ```php
-use function Matrix\async;
+use function async;
 
 async(fn () => fetch('https://api.example.com/users'))
     ->then(function ($response) {

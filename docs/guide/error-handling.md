@@ -81,7 +81,7 @@ try {
 For asynchronous requests, Fetch PHP uses Promise-based error handling with the `.catch()` method:
 
 ```php
-use function Matrix\async;
+use function async;
 use Fetch\Interfaces\Response as ResponseInterface;
 
 async(fn () => fetch('https://api.example.com/nonexistent'))
@@ -105,8 +105,8 @@ async(fn () => fetch('https://api.example.com/nonexistent'))
 You can also use try/catch with await for a more synchronous-looking code structure:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 try {
     $response = await(async(fn () => fetch('https://api.example.com/nonexistent')));
@@ -170,8 +170,8 @@ Only certain types of errors trigger retries by default:
 For more advanced retry scenarios, you can implement custom retry logic:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 $maxRetries = 5;
 $backoffDelay = 100; // milliseconds

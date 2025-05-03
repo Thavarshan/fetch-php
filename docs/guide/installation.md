@@ -92,8 +92,8 @@ $handler = new ClientHandler(syncClient: $client);
 $response = $handler->get('/users');
 
 // Method 3: Use with async
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 $response = await(async(fn () => fetch('/users', ['client' => $client])));
 ```

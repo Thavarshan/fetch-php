@@ -20,8 +20,8 @@ Fetch PHP provides a JavaScript-like `fetch()` function for making HTTP requests
 $response = fetch('https://api.example.com/users');
 
 // Asynchronous request
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 $response = await(async(fn () => fetch('https://api.example.com/users')));
 ```
@@ -205,7 +205,7 @@ Fetch PHP provides true asynchronous HTTP requests using PHP Fibers through the 
 ### Promise-based Approach
 
 ```php
-use function Matrix\async;
+use function async;
 use Fetch\Interfaces\Response as ResponseInterface;
 
 // Create an async task that returns a promise
@@ -223,8 +223,8 @@ $promise->then(function (ResponseInterface $response) {
 ### Async/Await Approach
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 try {
     // Await the promise resolution
@@ -239,8 +239,8 @@ try {
 ### Fluent API with Async
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 // Create an async task with fluent API
 $response = await(async(fn () => fetch()
@@ -257,9 +257,9 @@ Fetch PHP allows you to run multiple requests concurrently and wait for their re
 ### Wait for All Requests
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 // Create multiple promises
 $usersPromise = async(fn () => fetch('https://api.example.com/users'));
@@ -282,9 +282,9 @@ $comments = $results['comments']->json();
 ### Race Requests
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\race;
+use function async;
+use function await;
+use function race;
 
 // Create multiple promises
 $usersPromise = async(fn () => fetch('https://api.example.com/users'));
@@ -298,9 +298,9 @@ $data = $firstResponse->json();
 ### First Successful Request
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\any;
+use function async;
+use function await;
+use function any;
 
 // Create multiple promises
 $promises = [

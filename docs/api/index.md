@@ -59,13 +59,13 @@ if ($response->ok()) {
 }
 ```
 
-### [Asynchronous API](./async.md)
+### [Asynchronous API](./asynchronous.md)
 
 Methods for non-blocking HTTP requests powered by PHP Fibers:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 // Promise-based pattern
 async(fn () => fetch('https://api.example.com/users'))
@@ -81,14 +81,14 @@ try {
 }
 ```
 
-### [Promise Operations](./promises.md)
+### [Promise Operations](./promise-operations.md)
 
 Utilities for working with multiple promises:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 // Run multiple requests in parallel
 $userPromise = async(fn () => fetch('https://api.example.com/users'));

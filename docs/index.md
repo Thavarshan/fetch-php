@@ -33,8 +33,8 @@ $response = fetch('https://api.example.com/users');
 $users = $response->json();
 
 // Asynchronous request with JavaScript-like syntax
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 async(fn () => fetch('https://api.example.com/users'))
     ->then(fn ($response) => $response->json())

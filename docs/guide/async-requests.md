@@ -9,7 +9,7 @@ To make asynchronous requests with Fetch PHP, you'll use the `async()` function 
 ### Simple Async Request
 
 ```php
-use function Matrix\async;
+use function async;
 use Fetch\Interfaces\Response as ResponseInterface;
 
 // Create an asynchronous request
@@ -34,8 +34,8 @@ In this example:
 You can also use the `await()` function to wait for a Promise to resolve, similar to JavaScript's async/await pattern:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 try {
     // Wait for the async request to complete
@@ -54,8 +54,8 @@ try {
 You can combine Fetch PHP's fluent API with asynchronous requests for more complex operations:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 async(fn () => fetch()
     ->baseUri('https://api.example.com')
@@ -79,9 +79,9 @@ One of the key benefits of asynchronous requests is the ability to run multiple 
 ### Running Requests in Parallel
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 // Create promises for multiple requests
 $usersPromise = async(fn () => fetch('https://api.example.com/users'));
@@ -108,9 +108,9 @@ echo "Fetched {$users['total']} users, {$posts['total']} posts, and {$comments['
 Sometimes you want to use the result of whichever request completes first:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\race;
+use function async;
+use function await;
+use function race;
 
 // Create promises for multiple endpoints that return the same data
 $primaryPromise = async(fn () => fetch('https://primary-api.example.com/data'));
@@ -128,9 +128,9 @@ echo "Got data from the fastest source";
 If you want to get the first successful request (ignoring failures):
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\any;
+use function async;
+use function await;
+use function any;
 
 // Create promises for multiple endpoints
 $promises = [
@@ -156,8 +156,8 @@ Fetch PHP, powered by Matrix, provides fine-grained control over the lifecycle o
 ### Starting and Cancelling Tasks
 
 ```php
-use function Matrix\async;
-use Matrix\Task;
+use function async;
+use Task;
 
 // Create a task but don't start it yet
 $task = async(fn () => fetch('https://api.example.com/large-dataset'));
@@ -174,8 +174,8 @@ $task->cancel();
 For long-running operations, you can pause and resume tasks:
 
 ```php
-use function Matrix\async;
-use Matrix\Enum\TaskStatus;
+use function async;
+use Enum\TaskStatus;
 
 $task = async(fn () => fetch('https://api.example.com/large-dataset'));
 $task->start();
@@ -200,8 +200,8 @@ if ($task->getStatus() === TaskStatus::COMPLETED) {
 You can implement retry logic for tasks that might fail:
 
 ```php
-use function Matrix\async;
-use Matrix\Enum\TaskStatus;
+use function async;
+use Enum\TaskStatus;
 
 $task = async(fn () => fetch('https://api.example.com/unstable-endpoint'));
 $task->start();
@@ -226,7 +226,7 @@ Proper error handling is crucial for asynchronous operations. Fetch PHP provides
 ### Using then/catch Chain
 
 ```php
-use function Matrix\async;
+use function async;
 
 async(fn () => fetch('https://api.example.com/users'))
     ->then(function ($response) {
@@ -255,8 +255,8 @@ async(fn () => fetch('https://api.example.com/users'))
 ### Using try/catch with await
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 try {
     $response = await(async(fn () => fetch('https://api.example.com/users')));
@@ -281,8 +281,8 @@ try {
 For more complex retry logic, you can implement custom retry strategies:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 $maxRetries = 5;
 $retryDelay = 1000; // Start with 1 second delay
@@ -322,9 +322,9 @@ try {
 ### Fetching User Data and Related Information
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 // Function to fetch a user and their related data
 async function fetchUserWithRelatedData($userId) {
@@ -363,9 +363,9 @@ try {
 ### Processing Data in Batches
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function async;
+use function await;
+use function all;
 
 // Process a large dataset in parallel batches
 async function processLargeDataset() {

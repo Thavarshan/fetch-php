@@ -73,8 +73,8 @@ $response = fetch('https://api.example.com/users', [
 ### Asynchronous Requests
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 use Fetch\Interfaces\Response as ResponseInterface;
 
 // Using Promise-style chaining
@@ -115,9 +115,9 @@ async(fn () => fetch()
 ### Concurrent Requests
 
 ```php
-use function Matrix\all;
-use function Matrix\await;
-use function Matrix\async;
+use function all;
+use function await;
+use function async;
 
 // Prepare multiple async requests
 $userPromise = async(fn () => fetch('https://api.example.com/users'));
@@ -140,8 +140,8 @@ $comments = $results['comments']->json();
 ### Task Lifecycle Management
 
 ```php
-use Matrix\Task;
-use Matrix\Enum\TaskStatus;
+use Task;
+use Enum\TaskStatus;
 
 // Create a task for a request
 $task = async(fn () => fetch('https://api.example.com/large-dataset'));

@@ -260,8 +260,8 @@ See the [ClientHandler API](./client-handler.md) for more details on the fluent 
 To make asynchronous requests, you can use `fetch()` with the Matrix package:
 
 ```php
-use function Matrix\async;
-use function Matrix\await;
+use function async;
+use function await;
 
 // Promise-based approach
 $promise = async(fn () => fetch('https://api.example.com/users'));
@@ -281,7 +281,7 @@ try {
 }
 ```
 
-See the [Asynchronous API](./async.md) for more details on asynchronous requests.
+See the [Asynchronous API](./asynchronous.md) for more details on asynchronous requests.
 
 ### **`$url`** (string|null)
 
