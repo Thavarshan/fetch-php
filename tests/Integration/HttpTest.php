@@ -51,9 +51,7 @@ test('makes a successful asynchronous GET request', function () {
     );
 
     // Create a client handler instance
-    $handler = fetch(null, [
-        'async' => true,
-    ]);
+    $handler = fetch(null);
 
     // Set our mock client
     $handler->setSyncClient($this->client);
@@ -62,9 +60,8 @@ test('makes a successful asynchronous GET request', function () {
     // Make the async request
     $promise = $handler->get('https://example.com');
 
-    // Resolve the promise
-    $promise->start();
-    $response = $promise->getResult();
+    // Use Matrix's await function to resolve the promise
+    $response = await($promise);
 
     // Verify the response
     expect($response)->toBeInstanceOf(Response::class);
@@ -79,10 +76,10 @@ test('sends headers with a GET request', function () {
 
     // Make a request with custom headers
     fetch('https://example.com', [
-        'client'  => $this->client,
+        'client' => $this->client,
         'headers' => [
             'X-API-Key' => 'test-key',
-            'Accept'    => 'application/json',
+            'Accept' => 'application/json',
         ],
     ]);
 
@@ -101,7 +98,7 @@ test('appends query parameters to the GET request', function () {
     // Make a request with query parameters
     fetch('https://example.com', [
         'client' => $this->client,
-        'query'  => [
+        'query' => [
             'foo' => 'bar',
             'baz' => 'qux',
         ],
@@ -124,7 +121,7 @@ test('handles timeout for synchronous requests', function () {
 
     // Make a request with a timeout
     fetch('https://example.com', [
-        'client'  => $this->client,
+        'client' => $this->client,
         'timeout' => 5,
     ]);
 
@@ -145,7 +142,7 @@ test('makes a POST request with body data', function () {
     fetch('https://example.com', [
         'client' => $this->client,
         'method' => 'POST',
-        'body'   => $data,
+        'body' => $data,
     ]);
 
     // Check request

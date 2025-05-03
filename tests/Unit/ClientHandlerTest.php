@@ -5,14 +5,14 @@ declare(strict_types=1);
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
-use Matrix\AsyncHelper;
-use Psr\Http\Client\ClientInterface;
+use React\Promise\PromiseInterface;
 
 beforeEach(function () {
     // Create a mock Guzzle client with predefined responses
@@ -27,7 +27,7 @@ test('handle method creates a handler instance and sends request', function () {
     {
         public static $mockClient = null;
 
-        public function getSyncClient(): \Psr\Http\Client\ClientInterface
+        public function getSyncClient(): ClientInterface
         {
             return self::$mockClient ?: parent::getSyncClient();
         }
@@ -190,7 +190,7 @@ test('withHeaders adds multiple headers correctly', function () {
 
     $handler->withHeaders([
         'X-API-Key' => 'abc123',
-        'Accept'    => 'application/json',
+        'Accept' => 'application/json',
     ]);
 
     $headers = $handler->getHeaders();
@@ -330,7 +330,7 @@ test('retry with all failures throws exception', function () {
     ]);
 
     $mockClient = new Client([
-        'handler'     => HandlerStack::create($mockHandler),
+        'handler' => HandlerStack::create($mockHandler),
         'http_errors' => false, // Don't throw exceptions for HTTP errors
     ]);
 
@@ -346,7 +346,7 @@ test('retry with all failures throws exception', function () {
         ->and($responsePromise->getStatusCode())->toBe(500); // Final response should be the 500 error
 });
 
-test('sendAsync returns AsyncHelper', function () {
+test('sendAsync returns a Promise', function () {
     $this->mockHandler->append(new GuzzleResponse(200));
 
     $handler = new ClientHandler(syncClient: $this->mockClient);
@@ -354,7 +354,7 @@ test('sendAsync returns AsyncHelper', function () {
 
     $result = $handler->get('https://example.com');
 
-    expect($result)->toBeInstanceOf(AsyncHelper::class);
+    expect($result)->toBeInstanceOf(PromiseInterface::class);
 });
 
 test('isRetryableError correctly identifies retryable errors', function () {
@@ -475,8 +475,8 @@ test('withOptions adds multiple options correctly', function () {
 
     $handler->withOptions([
         'connect_timeout' => 5,
-        'debug'           => true,
-        'version'         => '1.1',
+        'debug' => true,
+        'version' => '1.1',
     ]);
 
     $options = $handler->getOptions();

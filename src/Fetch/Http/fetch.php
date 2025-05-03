@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
+use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Exception\RequestException;
 
 if (! function_exists('fetch')) {
     /**
      * Perform an HTTP request similar to JavaScript's fetch API.
+     *
+     * @param  string|null  $url  The URL to fetch
+     * @param  array|null  $options  Request options
      */
-    function fetch(?string $url = null, ?array $options = []): Response|ClientHandler
+    function fetch(?string $url = null, ?array $options = []): ResponseInterface|ClientHandler
     {
         if (is_null($url)) {
             return new ClientHandler(options: $options);
@@ -29,7 +33,7 @@ if (! function_exists('fetch')) {
 
         // Handle baseUri if provided
         if (isset($options['base_uri'])) {
-            $url = rtrim($options['base_uri'], '/') . '/' . ltrim($url, '/');
+            $url = rtrim($options['base_uri'], '/').'/'.ltrim($url, '/');
             unset($options['base_uri']);
         }
 
@@ -44,7 +48,7 @@ if (! function_exists('fetch')) {
 
             // Add context to the exception
             throw new RuntimeException(
-                "Fetch request to '$url' failed: " . $e->getMessage(),
+                "Fetch request to '$url' failed: ".$e->getMessage(),
                 $e->getCode(),
                 $e
             );

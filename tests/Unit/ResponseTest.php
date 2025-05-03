@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
+namespace Tests\Unit;
+
 use Fetch\Http\Response;
+use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use SimpleXMLElement;
+use stdClass;
 
 class ResponseTest extends TestCase
 {
@@ -22,7 +28,7 @@ class ResponseTest extends TestCase
 
     public function test_create_from_base()
     {
-        $baseResponse = new GuzzleHttp\Psr7\Response(
+        $baseResponse = new GuzzleResponse(
             204,
             ['X-Test-Header' => 'Test Value'],
             'Test Body'
@@ -213,7 +219,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             [
-                'Content-Type'  => 'application/json',
+                'Content-Type' => 'application/json',
                 'X-Test-Header' => 'Test Value',
             ]
         );
