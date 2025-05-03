@@ -12,7 +12,276 @@ function fetch(?string $url = null, ?array $options = []): \Fetch\Http\Response|
 
 ---
 
+## Parameters# fetch() Function
+
+The `fetch()` function is the primary entry point for making HTTP requests in Fetch PHP. It provides a JavaScript-like syntax for performing both synchronous and asynchronous HTTP operations.
+
+## Syntax
+
+```php
+function fetch(?string $url = null, ?array $options = []): ResponseInterface|ClientHandler
+```
+
 ## Parameters
+
+### `$url` (optional)
+
+- **Type**: `string|null`
+- **Default**: `null`
+- **Description**: The URL to send the request to. If `null`, a new `ClientHandler` instance is returned for fluent API usage.
+
+### `$options` (optional)
+
+- **Type**: `array|null`
+- **Default**: `[]`
+- **Description**: An associative array of request options.
+
+## Return Value
+
+- When `$url` is provided: Returns a `ResponseInterface` instance with the response from the request
+- When `$url` is `null`: Returns a `ClientHandler` instance for building requests using the fluent API
+
+## Request Options
+
+The `$options` array accepts the following configuration parameters:
+
+### Core Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `method` | string | `'GET'` | HTTP method (GET, POST, PUT, PATCH, DELETE, etc.) |
+| `headers` | array | `[]` | Associative array of HTTP headers |
+| `body` | mixed | `null` | Request body content (arrays are automatically JSON-encoded) |
+| `timeout` | int | `30` | Request timeout in seconds |
+| `retries` | int | `1` | Number of retry attempts for failed requests |
+| `retry_delay` | int | `100` | Delay between retries in milliseconds |
+| `base_uri` | string | `null` | Base URI to prepend to the URL |
+| `query` | array | `null` | Associative array of query parameters |
+
+### Authentication Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `auth` | array | Basic authentication credentials as `[username, password]` |
+
+### Advanced Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `proxy` | string\|array | Proxy server configuration |
+| `cookies` | bool\|CookieJarInterface | Cookie handling configuration |
+| `allow_redirects` | bool\|array | Control redirect behavior |
+| `verify` | bool\|string | SSL certificate verification settings |
+| `cert` | string\|array | SSL client certificate |
+| `ssl_key` | string\|array | SSL client key |
+| `stream` | bool | Stream the response instead of loading it all into memory |
+| `async` | bool | Set to `true` to make the request asynchronous |
+| `http_errors` | bool | Whether to throw exceptions for 4xx/5xx responses |
+| `form_params` | array | For `application/x-www-form-urlencoded` requests |
+| `multipart` | array | For `multipart/form-data` requests (file uploads) |
+| `json` | mixed | JSON data to send as the request body |
+| `client` | ClientInterface | Custom Guzzle client instance |
+
+## Basic Examples
+
+### Simple GET Request
+
+```php
+$response = fetch('https://api.example.com/users');
+$users = $response->json();
+```
+
+### POST Request with JSON Body
+
+```php
+$response = fetch('https://api.example.com/users', [
+    'method' => 'POST',
+    'body' => [
+        'name' => 'John Doe',
+        'email' => 'john@example.com'
+    ]
+]);
+
+$newUser = $response->json();
+```
+
+### Setting Request Headers
+
+```php
+$response = fetch('https://api.example.com/users', [
+    'headers' => [
+        'Accept' => 'application/json',
+        'Authorization' => 'Bearer your-token-here'
+    ]
+]);
+```
+
+### Using Query Parameters
+
+```php
+$response = fetch('https://api.example.com/users', [
+    'query' => [
+        'page' => 1,
+        'limit' => 10,
+        'sort' => 'name'
+    ]
+]);
+```
+
+### Authentication
+
+```php
+// Basic authentication
+$response = fetch('https://api.example.com/secure', [
+    'auth' => ['username', 'password']
+]);
+
+// OAuth Bearer token
+$response = fetch('https://api.example.com/profile', [
+    'headers' => [
+        'Authorization' => 'Bearer your-token-here'
+    ]
+]);
+```
+
+### File Uploads
+
+```php
+$response = fetch('https://api.example.com/upload', [
+    'method' => 'POST',
+    'multipart' => [
+        [
+            'name' => 'file',
+            'contents' => fopen('/path/to/file.jpg', 'r'),
+            'filename' => 'upload.jpg',
+        ],
+        [
+            'name' => 'description',
+            'contents' => 'File description',
+        ]
+    ]
+]);
+```
+
+### Error Handling
+
+```php
+try {
+    $response = fetch('https://api.example.com/users/999');
+
+    if ($response->ok()) {
+        $user = $response->json();
+    } else {
+        echo "HTTP Error: " . $response->status() . " " . $response->statusText();
+    }
+} catch (\Throwable $e) {
+    echo "Request failed: " . $e->getMessage();
+}
+```
+
+## Advanced Examples
+
+### Using Base URI
+
+```php
+$response = fetch('users', [
+    'base_uri' => 'https://api.example.com/'
+]);
+```
+
+### Setting Timeout and Retries
+
+```php
+$response = fetch('https://api.example.com/unstable', [
+    'timeout' => 5,           // 5 second timeout
+    'retries' => 3,           // Retry up to 3 times
+    'retry_delay' => 100      // Start with 100ms delay (doubles each retry)
+]);
+```
+
+### Using a Custom Guzzle Client
+
+```php
+use GuzzleHttp\Client;
+
+$client = new Client([
+    'base_uri' => 'https://api.example.com/',
+    'timeout' => 5,
+    'headers' => [
+        'User-Agent' => 'My-App/1.0'
+    ]
+]);
+
+$response = fetch('users', [
+    'client' => $client
+]);
+```
+
+### Disabling HTTP Error Exceptions
+
+```php
+$response = fetch('https://api.example.com/users/999', [
+    'http_errors' => false  // Don't throw exceptions for 4xx/5xx responses
+]);
+
+if ($response->ok()) {
+    // Process successful response
+} else {
+    // Handle error response
+    echo "Error: " . $response->status() . " " . $response->statusText();
+}
+```
+
+## Using the Fluent API
+
+The `fetch()` function can be called without a URL to return a `ClientHandler` instance for fluent API usage:
+
+```php
+$response = fetch()
+    ->baseUri('https://api.example.com')
+    ->withHeaders([
+        'Accept' => 'application/json',
+        'X-API-Key' => 'your-api-key'
+    ])
+    ->withToken('your-oauth-token')
+    ->withQueryParameters([
+        'page' => 1,
+        'limit' => 10
+    ])
+    ->get('/users');
+
+$users = $response->json();
+```
+
+See the [ClientHandler API](./client-handler.md) for more details on the fluent API.
+
+## Asynchronous Requests
+
+To make asynchronous requests, you can use `fetch()` with the Matrix package:
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+
+// Promise-based approach
+$promise = async(fn () => fetch('https://api.example.com/users'));
+
+$promise
+    ->then(fn ($response) => $response->json())
+    ->then(fn ($users) => print_r($users))
+    ->catch(fn ($error) => echo "Error: " . $error->getMessage());
+
+// Async/await approach
+try {
+    $response = await(async(fn () => fetch('https://api.example.com/users')));
+    $users = $response->json();
+    print_r($users);
+} catch (\Throwable $e) {
+    echo "Error: " . $e->getMessage();
+}
+```
+
+See the [Asynchronous API](./async.md) for more details on asynchronous requests.
 
 ### **`$url`** (string|null)
 

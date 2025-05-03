@@ -1,192 +1,399 @@
-# Getting Started
+# Guide
 
-FetchPHP is a modern HTTP client for PHP that mimics the JavaScript `fetch()` API, providing both synchronous and asynchronous request handling. Whether you're familiar with JavaScript's `fetch()` or Laravel's HTTP client, FetchPHP provides a similar, intuitive API. It is powered by the Guzzle HTTP client for synchronous requests and Matrix for asynchronous task management using PHP Fibers.
+## Installation
 
-## Core Features
+```bash
+composer require jerome/fetch-php
+```
 
-FetchPHP offers several key features to simplify HTTP requests in PHP:
+::: info Requirements
+- PHP 8.1 or higher
+- The `sockets` PHP extension enabled
+:::
 
-- **JavaScript-like `fetch()` API**: Similar to JavaScript's `fetch()`, making it intuitive for developers.
-- **Fluent API**: Chain methods for flexible and readable HTTP request building.
-- **Asynchronous Support**: Manage asynchronous tasks via PHP Fibers, powered by Matrix.
-- **Powered by Guzzle**: Synchronous requests use the reliable Guzzle HTTP client.
-- **Error Handling**: Comprehensive error management with both synchronous and asynchronous request support.
+## Basic Concepts
 
-## Usage Examples
-
-### JavaScript-like Fetch API
-
-FetchPHP allows you to easily perform synchronous HTTP requests with a syntax similar to JavaScript’s `fetch()`.
-
-#### **Synchronous Example**
+Fetch PHP provides a JavaScript-like `fetch()` function for making HTTP requests. The library supports both synchronous and asynchronous operations:
 
 ```php
-$response = fetch('https://example.com', [
+// Synchronous request
+$response = fetch('https://api.example.com/users');
+
+// Asynchronous request
+use function Matrix\async;
+use function Matrix\await;
+
+$response = await(async(fn () => fetch('https://api.example.com/users')));
+```
+
+### The fetch() Function
+
+The core of the library is the `fetch()` function, which works in two modes:
+
+1. **URL Mode**: When provided with a URL, it immediately sends a request
+   ```php
+   $response = fetch('https://api.example.com/users');
+   ```
+
+2. **Client Mode**: When called without a URL, it returns a `ClientHandler` instance for fluent API usage
+   ```php
+   $client = fetch();
+   $response = $client->get('https://api.example.com/users');
+   ```
+
+### Request Options
+
+The `fetch()` function accepts an options array as its second parameter:
+
+```php
+$response = fetch('https://api.example.com/users', [
     'method' => 'POST',
-    'headers' => [
-        'Content-Type' => 'application/json',
-    ],
-    'body' => json_encode(['key' => 'value']),
+    'headers' => ['Content-Type' => 'application/json'],
+    'body' => ['name' => 'John Doe', 'email' => 'john@example.com'],
+    'timeout' => 30,
+    'retries' => 3
+]);
+```
+
+Common options include:
+
+- `method`: HTTP method (GET, POST, PUT, etc.)
+- `headers`: Request headers as an associative array
+- `body`: Request body (arrays are automatically JSON-encoded)
+- `timeout`: Request timeout in seconds
+- `retries`: Number of retry attempts for failed requests
+- `retry_delay`: Delay between retries in milliseconds
+
+### Response Handling
+
+The `fetch()` function returns a `Response` object with methods for inspecting and processing the response:
+
+```php
+$response = fetch('https://api.example.com/users');
+
+// Check if request was successful
+if ($response->ok()) {
+    // Get response body as JSON
+    $users = $response->json();
+
+    // Get response status code
+    $statusCode = $response->status();
+
+    // Get response headers
+    $contentType = $response->header('Content-Type');
+}
+```
+
+## Making Requests
+
+### GET Requests
+
+```php
+// Simple GET request
+$response = fetch('https://api.example.com/users');
+
+// With query parameters
+$response = fetch('https://api.example.com/users?page=1&limit=10');
+
+// Using fluent API
+$response = fetch()
+    ->withQueryParameters(['page' => 1, 'limit' => 10])
+    ->get('https://api.example.com/users');
+```
+
+### POST Requests
+
+```php
+// POST with JSON body
+$response = fetch('https://api.example.com/users', [
+    'method' => 'POST',
+    'headers' => ['Content-Type' => 'application/json'],
+    'body' => ['name' => 'John Doe', 'email' => 'john@example.com'],
 ]);
 
-$data = $response->json();
-```
-
-This example sends a POST request with a JSON body and retrieves the JSON response.
-
-### JavaScript-like Async Fetch API
-
-FetchPHP also supports asynchronous requests using a syntax similar to JavaScript’s async/await.
-
-#### **Asynchronous Example**
-
-```php
-use Fetch\Interfaces\Response as ResponseInterface;
-
-$data = null;
-
-async(fn () => fetch('https://example.com', [
-    'method' => 'POST',
-    'headers' => [
-        'Content-Type' => 'application/json',
-    ],
-    'body' => json_encode(['key' => 'value']),
-]))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
-
-echo $data;
-```
-
-This example asynchronously sends a POST request and processes the JSON response, or handles an error using `.catch()`.
-
-### Fluent API
-
-FetchPHP’s fluent API allows you to chain methods to build and send HTTP requests more elegantly and flexibly.
-
-#### **Synchronous Example Using Fluent API**
-
-```php
+// Using fluent API
 $response = fetch()
-    ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
-    ->withBody(['key' => 'value'])
-    ->withToken('fake-bearer-auth-token')
-    ->post('/posts');
-
-$data = $response->json();
+    ->withJson(['name' => 'John Doe', 'email' => 'john@example.com'])
+    ->post('https://api.example.com/users');
 ```
 
-This fluent API example sends a POST request to `/posts` with a JSON body and Bearer token authorization.
-
-### Fluent API in Async
-
-You can also use the fluent API for asynchronous requests:
-
-#### **Asynchronous Example Using Fluent API**
+### Other HTTP Methods
 
 ```php
-use Fetch\Interfaces\Response as ResponseInterface;
+// PUT request
+$response = fetch()
+    ->withJson(['name' => 'John Doe', 'email' => 'john@example.com'])
+    ->put('https://api.example.com/users/1');
 
-$data = null;
+// PATCH request
+$response = fetch()
+    ->withJson(['name' => 'John Doe'])
+    ->patch('https://api.example.com/users/1');
 
-async(fn () => fetch()
-    ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
-    ->withBody(['key' => 'value'])
-    ->withToken('fake-bearer-auth-token')
-    ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
-
-echo $data;
+// DELETE request
+$response = fetch()
+    ->delete('https://api.example.com/users/1');
 ```
 
-This example asynchronously sends a POST request using the fluent API, handles the response, or catches any errors.
+## Authentication
 
-## Task Lifecycle Management
-
-FetchPHP, powered by Matrix, allows you to manage long-running or asynchronous tasks with more control over their lifecycle.
-
-### **Example: Task Lifecycle Control**
+### Bearer Token
 
 ```php
-use Matrix\Task;
-use Matrix\Enum\TaskStatus;
+$response = fetch('https://api.example.com/profile', [
+    'headers' => ['Authorization' => 'Bearer your-token-here']
+]);
 
-// Define a long-running task
-$task = new Task(function () {
-    return "Task completed!";
-});
+// Using fluent API
+$response = fetch()
+    ->withToken('your-token-here')
+    ->get('https://api.example.com/profile');
+```
 
-// Start the task
-$task->start();
+### Basic Authentication
 
-// Pause and resume the task dynamically
-$task->pause();
-$task->resume();
+```php
+$response = fetch('https://api.example.com/secure', [
+    'auth' => ['username', 'password']
+]);
 
-// Cancel the task if needed
-$task->cancel();
-
-// Retry the task if it fails
-if ($task->getStatus() === TaskStatus::FAILED) {
-    $task->retry();
-}
-
-$result = $task->getResult();
+// Using fluent API
+$response = fetch()
+    ->withAuth('username', 'password')
+    ->get('https://api.example.com/secure');
 ```
 
 ## Error Handling
 
-FetchPHP provides flexible error handling for both synchronous and asynchronous requests.
-
-### **Synchronous Error Handling Example**
+### Synchronous Error Handling
 
 ```php
-$response = fetch('https://nonexistent-url.com');
+try {
+    $response = fetch('https://api.example.com/users/999');
 
-if ($response->ok()) {
-    echo $response->json();
-} else {
-    echo "Error: " . $response->statusText();
+    if ($response->ok()) {
+        $user = $response->json();
+    } else {
+        echo "Request failed with status: " . $response->status();
+    }
+} catch (\Throwable $e) {
+    echo "Error: " . $e->getMessage();
 }
 ```
 
-### **Asynchronous Error Handling Example**
+### Request Retries
+
+Fetch PHP automatically retries failed requests based on your configuration:
 
 ```php
+// Retry up to 3 times with exponential backoff
+$response = fetch('https://api.example.com/unstable', [
+    'retries' => 3,
+    'retry_delay' => 100 // 100ms initial delay, doubles each retry
+]);
+
+// Using fluent API
+$response = fetch()
+    ->retry(3, 100)
+    ->get('https://api.example.com/unstable');
+```
+
+## Asynchronous Requests
+
+Fetch PHP provides true asynchronous HTTP requests using PHP Fibers through the Matrix package.
+
+### Promise-based Approach
+
+```php
+use function Matrix\async;
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$data = null;
+// Create an async task that returns a promise
+$promise = async(fn () => fetch('https://api.example.com/users'));
 
-async(fn () => fetch('https://nonexistent-url.com'))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())
-    ->catch(fn (\Throwable $e) => echo "Error: " . $e->getMessage());
-
-echo $data;
+// Handle the promise resolution
+$promise->then(function (ResponseInterface $response) {
+    $users = $response->json();
+    echo "Fetched " . count($users) . " users";
+})->catch(function (\Throwable $e) {
+    echo "Error: " . $e->getMessage();
+});
 ```
 
-## Proxy and Authentication Support
-
-FetchPHP includes built-in support for proxies and authentication:
-
-### **Proxy Example**
+### Async/Await Approach
 
 ```php
-$response = fetch('https://example.com')
-    ->withProxy('tcp://localhost:8080')
-    ->get();
+use function Matrix\async;
+use function Matrix\await;
 
-echo $response->statusText();
+try {
+    // Await the promise resolution
+    $response = await(async(fn () => fetch('https://api.example.com/users')));
+    $users = $response->json();
+    echo "Fetched " . count($users) . " users";
+} catch (\Throwable $e) {
+    echo "Error: " . $e->getMessage();
+}
 ```
 
-### **Authentication Example**
+### Fluent API with Async
 
 ```php
-$response = fetch('https://example.com/secure-endpoint')
-    ->withAuth('username', 'password')
-    ->get();
+use function Matrix\async;
+use function Matrix\await;
 
-echo $response->statusText();
+// Create an async task with fluent API
+$response = await(async(fn () => fetch()
+    ->withToken('your-token-here')
+    ->get('https://api.example.com/users')));
+
+$users = $response->json();
+```
+
+## Concurrent Requests
+
+Fetch PHP allows you to run multiple requests concurrently and wait for their results.
+
+### Wait for All Requests
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\all;
+
+// Create multiple promises
+$usersPromise = async(fn () => fetch('https://api.example.com/users'));
+$postsPromise = async(fn () => fetch('https://api.example.com/posts'));
+$commentsPromise = async(fn () => fetch('https://api.example.com/comments'));
+
+// Wait for all promises to resolve
+$results = await(all([
+    'users' => $usersPromise,
+    'posts' => $postsPromise,
+    'comments' => $commentsPromise
+]));
+
+// Access the results
+$users = $results['users']->json();
+$posts = $results['posts']->json();
+$comments = $results['comments']->json();
+```
+
+### Race Requests
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\race;
+
+// Create multiple promises
+$usersPromise = async(fn () => fetch('https://api.example.com/users'));
+$postsPromise = async(fn () => fetch('https://api.example.com/posts'));
+
+// Get the first promise to resolve
+$firstResponse = await(race([$usersPromise, $postsPromise]));
+$data = $firstResponse->json();
+```
+
+### First Successful Request
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\any;
+
+// Create multiple promises
+$promises = [
+    async(fn () => fetch('https://api.example.com/endpoint1')),
+    async(fn () => fetch('https://api.example.com/endpoint2')),
+    async(fn () => fetch('https://api.example.com/endpoint3'))
+];
+
+// Get the first promise to succeed (ignoring failures)
+$firstSuccess = await(any($promises));
+$data = $firstSuccess->json();
+```
+
+## Advanced Features
+
+### File Uploads
+
+```php
+$response = fetch()
+    ->withMultipart([
+        [
+            'name' => 'file',
+            'contents' => fopen('/path/to/file.jpg', 'r'),
+            'filename' => 'upload.jpg',
+        ],
+        [
+            'name' => 'description',
+            'contents' => 'File description',
+        ]
+    ])
+    ->post('https://api.example.com/upload');
+```
+
+### Proxy Support
+
+```php
+$response = fetch('https://api.example.com', [
+    'proxy' => 'http://proxy.example.com:8080'
+]);
+
+// Using fluent API
+$response = fetch()
+    ->withProxy('http://proxy.example.com:8080')
+    ->get('https://api.example.com');
+```
+
+### Handling Redirects
+
+```php
+// Allow redirects (default)
+$response = fetch('https://api.example.com/redirecting-url');
+
+// Disable redirects
+$response = fetch('https://api.example.com/redirecting-url', [
+    'allow_redirects' => false
+]);
+
+// Custom redirect behavior
+$response = fetch('https://api.example.com/redirecting-url', [
+    'allow_redirects' => [
+        'max' => 5,       // Maximum number of redirects
+        'strict' => true, // Strict RFC compliant redirects
+        'referer' => true // Add a Referer header
+    ]
+]);
+```
+
+### Streaming Responses
+
+```php
+$response = fetch()
+    ->withStream(true)
+    ->get('https://api.example.com/large-file');
+
+$stream = $response->getBody();
+while (!$stream->eof()) {
+    echo $stream->read(1024);
+}
+```
+
+### Debugging Requests
+
+```php
+$handler = fetch();
+$debugInfo = $handler->debug();
+print_r($debugInfo);
+
+/* Output:
+[
+    'uri' => 'https://api.example.com/users',
+    'method' => 'GET',
+    'headers' => ['Accept' => 'application/json'],
+    'options' => [...]
+]
+*/
 ```

@@ -30,7 +30,9 @@ export default defineConfig({
                         { text: 'Overview', link: '/api/' },
                         { text: 'fetch()', link: '/api/fetch' },
                         { text: 'ClientHandler', link: '/api/client-handler' },
-                        { text: 'Response', link: '/api/response' }
+                        { text: 'Response', link: '/api/response' },
+                        { text: 'Asynchronous', link: '/api/asynchronous' },
+                        { text: 'Promises', link: '/api/promise-operations' },
                     ]
                 }
             ]

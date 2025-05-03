@@ -1,191 +1,427 @@
-# Asynchronous HTTP Requests
+# Asynchronous Requests
 
-FetchPHP provides a powerful and flexible API for making asynchronous HTTP requests using PHP Fibers. This API allows you to manage asynchronous tasks in a way similar to JavaScript’s `async/await`, with additional task control and error handling capabilities.
+Fetch PHP provides powerful asynchronous HTTP capabilities through PHP Fibers, allowing you to make non-blocking requests similar to JavaScript's Promise-based fetch API. This guide shows you how to use Fetch PHP's asynchronous features to handle concurrent requests efficiently.
 
-## Basic Async Fetch API
+## Basic Asynchronous Requests
 
-FetchPHP allows you to make asynchronous HTTP requests using the `async()` function. Below is an example of an asynchronous POST request:
+To make asynchronous requests with Fetch PHP, you'll use the `async()` function from the Matrix package, which returns a Promise that you can chain with `then()` and `catch()`.
 
-### **Asynchronous POST Request Example**
+### Simple Async Request
 
 ```php
+use function Matrix\async;
 use Fetch\Interfaces\Response as ResponseInterface;
 
-$data = null;
-
-async(fn () => fetch('https://example.com', [
-    'method' => 'POST',
-    'headers' => [
-        'Content-Type' => 'application/json',
-    ],
-    'body' => json_encode(['key' => 'value']),
-]))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
-
-echo $data;
+// Create an asynchronous request
+async(fn () => fetch('https://api.example.com/users'))
+    ->then(function (ResponseInterface $response) {
+        $users = $response->json();
+        echo "Fetched " . count($users) . " users";
+    })
+    ->catch(function (\Throwable $e) {
+        echo "Error: " . $e->getMessage();
+    });
 ```
 
 In this example:
 
-- **async()**: Executes the request asynchronously.
-- **then()**: Handles the success scenario when the request completes.
-- **catch()**: Catches any exceptions or errors that occur during the request.
+- The request is wrapped in an `async()` function that returns a Promise
+- `then()` handles the successful response
+- `catch()` handles any errors that occur
 
-The request sends a POST request to `https://example.com` and processes the JSON response if successful, or catches and displays the error if something goes wrong.
+### Async/Await Pattern
 
-## Fluent API for Asynchronous Requests
-
-FetchPHP’s Fluent API can also be used to build asynchronous requests. This API allows for greater flexibility by chaining methods to customize the request.
-
-### **Asynchronous POST Request Using Fluent API**
+You can also use the `await()` function to wait for a Promise to resolve, similar to JavaScript's async/await pattern:
 
 ```php
-use Fetch\Interfaces\Response as ResponseInterface;
+use function Matrix\async;
+use function Matrix\await;
 
-$data = null;
+try {
+    // Wait for the async request to complete
+    $response = await(async(fn () => fetch('https://api.example.com/users')));
+
+    // Process the response
+    $users = $response->json();
+    echo "Fetched " . count($users) . " users";
+} catch (\Throwable $e) {
+    echo "Error: " . $e->getMessage();
+}
+```
+
+## Fluent API with Async
+
+You can combine Fetch PHP's fluent API with asynchronous requests for more complex operations:
+
+```php
+use function Matrix\async;
+use function Matrix\await;
 
 async(fn () => fetch()
-    ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
-    ->withBody(['key' => 'value'])
-    ->withToken('fake-bearer-auth-token')
-    ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
-
-echo $data;
+    ->baseUri('https://api.example.com')
+    ->withHeaders(['Accept' => 'application/json'])
+    ->withToken('your-access-token')
+    ->withJson(['name' => 'John Doe', 'email' => 'john@example.com'])
+    ->post('/users'))
+    ->then(function ($response) {
+        $newUser = $response->json();
+        echo "Created user with ID: " . $newUser['id'];
+    })
+    ->catch(function ($error) {
+        echo "Error: " . $error->getMessage();
+    });
 ```
 
-In this example:
+## Handling Multiple Concurrent Requests
 
-- **baseUri()**: Sets the base URL.
-- **withHeaders()**: Adds the `Content-Type` header.
-- **withBody()**: Sets the JSON body for the request.
-- **withToken()**: Adds a Bearer token for authentication.
-- **post()**: Sends a POST request to `/posts`.
+One of the key benefits of asynchronous requests is the ability to run multiple operations concurrently. Fetch PHP provides several ways to manage concurrent requests.
 
-This request will run asynchronously, and on success, the JSON response will be processed. If an error occurs, it will be caught by the `catch()` block.
-
-## Task Management in Asynchronous Requests
-
-FetchPHP provides task management features such as pausing, resuming, and canceling tasks. These controls can be useful in long-running processes or when dealing with high concurrency.
-
-### **Example: Managing Async Task Lifecycle**
+### Running Requests in Parallel
 
 ```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\all;
+
+// Create promises for multiple requests
+$usersPromise = async(fn () => fetch('https://api.example.com/users'));
+$postsPromise = async(fn () => fetch('https://api.example.com/posts'));
+$commentsPromise = async(fn () => fetch('https://api.example.com/comments'));
+
+// Wait for all promises to resolve
+$results = await(all([
+    'users' => $usersPromise,
+    'posts' => $postsPromise,
+    'comments' => $commentsPromise
+]));
+
+// Process the results
+$users = $results['users']->json();
+$posts = $results['posts']->json();
+$comments = $results['comments']->json();
+
+echo "Fetched {$users['total']} users, {$posts['total']} posts, and {$comments['total']} comments";
+```
+
+### Racing Requests
+
+Sometimes you want to use the result of whichever request completes first:
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\race;
+
+// Create promises for multiple endpoints that return the same data
+$primaryPromise = async(fn () => fetch('https://primary-api.example.com/data'));
+$backupPromise = async(fn () => fetch('https://backup-api.example.com/data'));
+
+// Get the result from whichever completes first
+$response = await(race([$primaryPromise, $backupPromise]));
+$data = $response->json();
+
+echo "Got data from the fastest source";
+```
+
+### First Successful Request
+
+If you want to get the first successful request (ignoring failures):
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\any;
+
+// Create promises for multiple endpoints
+$promises = [
+    async(fn () => fetch('https://api1.example.com/data')),
+    async(fn () => fetch('https://api2.example.com/data')),
+    async(fn () => fetch('https://api3.example.com/data'))
+];
+
+// Get the first successful response
+try {
+    $response = await(any($promises));
+    $data = $response->json();
+    echo "Got data from a successful endpoint";
+} catch (\Throwable $e) {
+    echo "All requests failed: " . $e->getMessage();
+}
+```
+
+## Task Lifecycle Management
+
+Fetch PHP, powered by Matrix, provides fine-grained control over the lifecycle of asynchronous tasks.
+
+### Starting and Cancelling Tasks
+
+```php
+use function Matrix\async;
 use Matrix\Task;
-use Matrix\Enum\TaskStatus;
 
-$task = new Task(function () {
-    return fetch('https://example.com/api/resource');
-});
+// Create a task but don't start it yet
+$task = async(fn () => fetch('https://api.example.com/large-dataset'));
 
-// Start the task
+// Start the task when ready
 $task->start();
 
-// Pause the task if needed
-$task->pause();
-
-// Resume the task
-$task->resume();
-
-// Cancel the task if required
+// Later, if needed, cancel the task
 $task->cancel();
-
-// Get only if completed properly
-$result = $task->getResult();
 ```
 
-In this example, a long-running asynchronous task is started, paused, resumed, and potentially canceled based on the task’s lifecycle needs.
+### Pause and Resume
 
-## Advanced Async Examples
-
-### **Asynchronous GET Request with Fluent API**
+For long-running operations, you can pause and resume tasks:
 
 ```php
-use Fetch\Interfaces\Response as ResponseInterface;
+use function Matrix\async;
+use Matrix\Enum\TaskStatus;
 
-$data = null;
+$task = async(fn () => fetch('https://api.example.com/large-dataset'));
+$task->start();
 
-async(fn () => fetch()
-    ->baseUri('https://example.com')
-    ->withQueryParameters(['page' => 1])
-    ->withToken('fake-bearer-auth-token')
-    ->get('/resources'))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+// Pause the task
+$task->pause();
+echo "Task paused. Status: " . $task->getStatus();
 
-echo $data;
+// Resume the task later
+$task->resume();
+echo "Task resumed. Status: " . $task->getStatus();
+
+// Check if the task is completed
+if ($task->getStatus() === TaskStatus::COMPLETED) {
+    $response = $task->getResult();
+    $data = $response->json();
+}
 ```
 
-This example demonstrates an asynchronous GET request where query parameters and a Bearer token are used to retrieve data from an API.
+### Retry Logic
 
-### **Retry Logic with Asynchronous Requests**
-
-You can implement retry logic in asynchronous requests by utilizing the `retry()` method:
+You can implement retry logic for tasks that might fail:
 
 ```php
-use Fetch\Interfaces\Response as ResponseInterface;
+use function Matrix\async;
+use Matrix\Enum\TaskStatus;
 
-$data = null;
+$task = async(fn () => fetch('https://api.example.com/unstable-endpoint'));
+$task->start();
 
-async(fn () => fetch()
-    ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
-    ->withBody(['key' => 'value'])
-    ->retry(3, 1000)  // Retry 3 times with a 1-second delay between retries
-    ->post('/posts'))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => $e->getMessage());                // Error handler
+// If the task fails, retry it
+if ($task->getStatus() === TaskStatus::FAILED) {
+    echo "Task failed. Retrying...";
+    $task->retry();
+}
 
-echo $data;
+// Once completed successfully, get the result
+if ($task->getStatus() === TaskStatus::COMPLETED) {
+    $response = $task->getResult();
+    $data = $response->json();
+}
 ```
 
-In this example:
+## Error Handling
 
-- **retry(3, 1000)**: The request will be retried up to 3 times with a delay of 1000 milliseconds between each retry.
+Proper error handling is crucial for asynchronous operations. Fetch PHP provides multiple ways to handle errors in async requests.
 
-## Error Handling in Asynchronous Requests
-
-FetchPHP makes it easy to handle errors in asynchronous requests using the `catch()` method. Errors can include failed network connections, invalid responses, or server errors.
-
-### **Asynchronous Error Handling Example**
+### Using then/catch Chain
 
 ```php
-use Fetch\Interfaces\Response as ResponseInterface;
+use function Matrix\async;
 
-$data = null;
+async(fn () => fetch('https://api.example.com/users'))
+    ->then(function ($response) {
+        if ($response->ok()) {
+            return $response->json();
+        }
 
-async(fn () => fetch('https://nonexistent-url.com'))
-    ->then(fn (ResponseInterface $response) => $data = $response->json())  // Success handler
-    ->catch(fn (Throwable $e) => "Error: " . $e->getMessage());    // Error handler
+        // Handle HTTP error statuses
+        throw new \Exception("API error: " . $response->status() . " " . $response->statusText());
+    })
+    ->then(function ($data) {
+        // Process the data
+        echo "Successfully processed " . count($data) . " items";
+    })
+    ->catch(function (\Throwable $e) {
+        echo "Error occurred: " . $e->getMessage();
 
-echo $data;
+        // Log the error, notify the user, etc.
+    })
+    ->finally(function () {
+        // This runs regardless of success or failure
+        echo "Request completed";
+    });
 ```
 
-In this example, any errors that occur during the request are caught and handled gracefully.
-
-## Handling JSON and Other Response Types
-
-Just like synchronous requests, asynchronous requests allow you to handle different types of response content:
-
-### **Example: Handling JSON Response**
+### Using try/catch with await
 
 ```php
-$data = null;
+use function Matrix\async;
+use function Matrix\await;
 
-async(fn () => fetch('https://example.com/api/resource'))
-    ->then(fn ($response) => $data = $response->json())
-    ->catch(fn (Throwable $e) => $e->getMessage());
+try {
+    $response = await(async(fn () => fetch('https://api.example.com/users')));
 
-echo $data;
+    if ($response->failed()) {
+        throw new \Exception("API returned error status: " . $response->status());
+    }
+
+    $users = $response->json();
+    echo "Successfully fetched " . count($users) . " users";
+} catch (\Throwable $e) {
+    echo "Error: " . $e->getMessage();
+
+    // Implement fallback behavior if needed
+} finally {
+    echo "Operation complete";
+}
 ```
 
-- **json()**: Parses the response as JSON.
+## Advanced Retry Strategies
 
----
+For more complex retry logic, you can implement custom retry strategies:
 
-FetchPHP’s asynchronous API, combined with PHP Fibers, provides a robust and flexible way to manage HTTP requests. The Fluent API makes it easier to construct complex requests while the asynchronous control mechanisms allow for better task management.
+```php
+use function Matrix\async;
+use function Matrix\await;
 
-For more examples of task management, refer to the [Matrix Documentation](https://github.com/Thavarshan/matrix).
+$maxRetries = 5;
+$retryDelay = 1000; // Start with 1 second delay
+
+$makeRequestWithRetry = function () use (&$makeRequestWithRetry, &$maxRetries, &$retryDelay) {
+    return async(fn () => fetch('https://api.example.com/unstable-endpoint'))
+        ->catch(function (\Throwable $e) use (&$makeRequestWithRetry, &$maxRetries, &$retryDelay) {
+            if ($maxRetries > 0) {
+                $maxRetries--;
+                echo "Request failed. Retrying in " . ($retryDelay / 1000) . " seconds...";
+
+                // Exponential backoff with jitter
+                $jitter = rand(-100, 100) / 1000; // ±100ms jitter
+                usleep(($retryDelay + ($retryDelay * $jitter)) * 1000);
+                $retryDelay *= 2; // Double the delay for next retry
+
+                // Try again
+                return $makeRequestWithRetry();
+            }
+
+            // No more retries, propagate the error
+            throw $e;
+        });
+};
+
+try {
+    $response = await($makeRequestWithRetry());
+    $data = $response->json();
+    echo "Success after retries!";
+} catch (\Throwable $e) {
+    echo "All retry attempts failed: " . $e->getMessage();
+}
+```
+
+## Real-world Examples
+
+### Fetching User Data and Related Information
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\all;
+
+// Function to fetch a user and their related data
+async function fetchUserWithRelatedData($userId) {
+    // First fetch the user
+    $userResponse = await(async(fn () => fetch("https://api.example.com/users/{$userId}")));
+    $user = $userResponse->json();
+
+    // Then fetch related data in parallel
+    $relatedDataPromises = [
+        'posts' => async(fn () => fetch("https://api.example.com/users/{$userId}/posts")),
+        'comments' => async(fn () => fetch("https://api.example.com/users/{$userId}/comments")),
+        'followers' => async(fn () => fetch("https://api.example.com/users/{$userId}/followers"))
+    ];
+
+    // Wait for all related data to be fetched
+    $relatedData = await(all($relatedDataPromises));
+
+    // Combine the user with their related data
+    return [
+        'user' => $user,
+        'posts' => $relatedData['posts']->json(),
+        'comments' => $relatedData['comments']->json(),
+        'followers' => $relatedData['followers']->json()
+    ];
+}
+
+// Usage
+try {
+    $userData = await(async(fn () => fetchUserWithRelatedData(123)));
+    echo "User {$userData['user']['name']} has {$userData['followers']['total']} followers";
+} catch (\Throwable $e) {
+    echo "Error fetching user data: " . $e->getMessage();
+}
+```
+
+### Processing Data in Batches
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\all;
+
+// Process a large dataset in parallel batches
+async function processLargeDataset() {
+    // First, get the total count
+    $countResponse = await(async(fn () => fetch('https://api.example.com/items/count')));
+    $totalItems = $countResponse->json()['count'];
+    $batchSize = 100;
+    $batches = ceil($totalItems / $batchSize);
+
+    $results = [];
+
+    // Process in batches of 5 concurrent requests
+    for ($i = 0; $i < $batches; $i += 5) {
+        $batchPromises = [];
+
+        // Create up to 5 batch promises
+        for ($j = 0; $j < 5 && ($i + $j) < $batches; $j++) {
+            $offset = ($i + $j) * $batchSize;
+            $batchPromises["batch-{$offset}"] = async(fn () =>
+                fetch("https://api.example.com/items?offset={$offset}&limit={$batchSize}")
+            );
+        }
+
+        // Wait for this group of batches to complete
+        $batchResults = await(all($batchPromises));
+
+        // Process the results
+        foreach ($batchResults as $key => $response) {
+            $items = $response->json();
+            $results = array_merge($results, $items);
+            echo "Processed {$key} with " . count($items) . " items\n";
+        }
+    }
+
+    return $results;
+}
+
+// Usage
+try {
+    $allItems = await(async(fn () => processLargeDataset()));
+    echo "Processed " . count($allItems) . " items in total";
+} catch (\Throwable $e) {
+    echo "Error processing dataset: " . $e->getMessage();
+}
+```
+
+## Performance Considerations
+
+When working with asynchronous requests, keep these performance considerations in mind:
+
+1. **Memory Management**: Be careful when processing large datasets asynchronously, as all data remains in memory until the task completes.
+
+2. **Concurrency Limits**: Avoid making too many concurrent requests to the same domain, as most servers have rate limits.
+
+3. **Event Loop**: Asynchronous operations in PHP rely on the event loop provided by ReactPHP. Ensure you don't block the event loop with CPU-intensive operations.
+
+4. **Error Handling**: Always implement proper error handling for async operations to prevent unhandled promise rejections.
+
+5. **Task Cancellation**: Remember to cancel tasks that are no longer needed to free up resources.

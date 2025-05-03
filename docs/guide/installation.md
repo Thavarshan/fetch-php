@@ -2,54 +2,75 @@
 
 ## Prerequisites
 
-Before installing FetchPHP, ensure that your environment meets the following requirements:
+Before installing Fetch PHP, ensure your environment meets the following requirements:
 
-- **PHP 8.1 or higher**: FetchPHP relies on PHP Fibers, which were introduced in PHP 8.1. Make sure your project or server is running PHP 8.1 or above.
-- **Composer**: FetchPHP is distributed via Composer, so you’ll need Composer installed in your environment.
+- **PHP 8.1 or higher**: Fetch PHP relies on PHP Fibers, which were introduced in PHP 8.1
+- **The `sockets` PHP extension**: Required for the underlying ReactPHP event loop
+- **Composer**: Fetch PHP is distributed via Composer
 
-## Installing FetchPHP
+## Installing Fetch PHP
 
-To install FetchPHP in your project, run the following command:
+To install Fetch PHP in your project, run the following command:
 
 ```bash
 composer require jerome/fetch-php
 ```
 
-This will download and install FetchPHP along with its required dependencies, including **Guzzle** for HTTP client handling and **Matrix** for asynchronous task management.
+This will download and install Fetch PHP along with its required dependencies, including:
 
-## Configuration
+- **Guzzle** for HTTP client handling
+- **Matrix** for asynchronous task management with PHP Fibers
 
-FetchPHP uses Guzzle as its underlying HTTP client, and you can configure various Guzzle options by passing them into the `fetch()` function or creating a custom Guzzle client. Below is a list of Guzzle configuration options that can be used in FetchPHP:
+## Verifying Installation
 
-### Guzzle Client Options
+You can verify that Fetch PHP was installed correctly by running a simple test:
 
-- **base_uri**: The base URI to use with requests. Example: `https://example.com`.
-- **timeout**: Timeout in seconds for the request. Example: `timeout => 5`.
-- **connect_timeout**: Timeout in seconds for establishing a connection. Example: `connect_timeout => 2`.
-- **allow_redirects**: Allows redirections. Can be `true`, `false`, or an array of options. Default is `true`.
-- **proxy**: A string or array of proxy servers. Example: `'proxy' => 'tcp://localhost:8080'`.
-- **auth**: Array for HTTP Basic, Digest, or NTLM authentication. Example: `['username', 'password']`.
-- **headers**: Array of default headers to send with every request.
-- **verify**: Enable or disable SSL certificate verification. Default is `true`. Can be a boolean or a path to a CA file.
-- **cookies**: Enable or disable cookies for requests. Can be a `CookieJar` object or `true` to use a shared `CookieJar`.
-- **debug**: Set to `true` to enable debug output.
-- **http_errors**: Set to `false` to disable exceptions on HTTP protocol errors (e.g., 4xx, 5xx responses). Default is `true`.
-- **query**: Associative array of query string parameters to include in the request URL.
-- **form_params**: Associative array of data for form submissions (used for `application/x-www-form-urlencoded` requests).
-- **json**: JSON data to include as the request body.
-- **multipart**: An array of multipart form data fields. Used for `multipart/form-data` requests.
-- **sink**: Path to a file where the response body will be saved.
-- **ssl_key**: Path to SSL key file or array `[path, password]`.
-- **cert**: Path to an SSL certificate file or array `[path, password]`.
-- **stream**: Set to `true` to return the response body as a stream.
-- **delay**: The number of milliseconds to delay before sending the request.
-- **on_stats**: A callable function that receives transfer statistics after a request is completed.
+```php
+<?php
 
-> **Note**: Most options can also be invoked as methods on the `fetch()` function or `ClientHandler` class. Check the API reference for more details.
+require 'vendor/autoload.php';
 
-### Example of Custom Guzzle Client
+$response = fetch('https://example.com');
 
-You can configure FetchPHP with these options by creating a custom Guzzle client and passing it into FetchPHP’s `ClientHandler`:
+if ($response->ok()) {
+    echo "Fetch PHP is working correctly!";
+}
+```
+
+## Configuration Options
+
+Fetch PHP uses Guzzle as its underlying HTTP client. You can configure various options by passing them into the `fetch()` function or by using the fluent API.
+
+### Common Options
+
+- **method**: HTTP method (GET, POST, PUT, etc.). Default is `'GET'`.
+- **headers**: Associative array of request headers.
+- **body**: Request body (arrays are automatically JSON-encoded).
+- **timeout**: Request timeout in seconds. Default is `30`.
+- **retries**: Number of retry attempts for failed requests. Default is `1`.
+- **retry_delay**: Delay between retries in milliseconds. Default is `100`.
+- **base_uri**: Base URI to prepend to all request URLs.
+- **query**: Associative array of query parameters.
+
+### Authentication Options
+
+- **auth**: Array for HTTP Basic authentication, e.g., `['username', 'password']`.
+- **token**: Bearer token for OAuth authentication.
+
+### Advanced Options
+
+- **proxy**: Proxy server URL or configuration.
+- **cookies**: Enable cookies for requests.
+- **allow_redirects**: Control redirect behavior.
+- **verify**: SSL certificate verification settings.
+- **cert**: SSL client certificate.
+- **ssl_key**: SSL client key.
+- **stream**: Stream the response instead of loading it all into memory.
+- **async**: Set to `true` to make asynchronous requests.
+
+## Using a Custom Guzzle Client
+
+You can use a custom Guzzle client with Fetch PHP for more advanced configuration:
 
 ```php
 use GuzzleHttp\Client;
@@ -57,60 +78,38 @@ use Fetch\Http\ClientHandler;
 
 // Create a custom Guzzle client
 $client = new Client([
-    'base_uri' => 'https://example.com',
+    'base_uri' => 'https://api.example.com',
     'timeout' => 5,
     'headers' => ['User-Agent' => 'My-App'],
     'auth' => ['username', 'password'],
 ]);
 
-// Use the custom client with FetchPHP
-$response = fetch('/endpoint', ['client' => $client]);
+// Method 1: Use with fetch()
+$response = fetch('/users', ['client' => $client]);
 
-$data = $response->json();
+// Method 2: Create a ClientHandler directly
+$handler = new ClientHandler(syncClient: $client);
+$response = $handler->get('/users');
 
-// Use the custom client with FetchPHP for async requests
-$response async(fn () => fetch('/endpoint', ['client' => $client]));
+// Method 3: Use with async
+use function Matrix\async;
+use function Matrix\await;
 
-$data = $response->json();
-
-// Use the custom client with directly on the client handler
-$handler = new ClientHandler($client, $options); // where $options are all possible Guzzle options
-
-$response = $handler->get('/endpoint');
-
-$data = $response->json();
+$response = await(async(fn () => fetch('/users', ['client' => $client])));
 ```
 
-## Updating FetchPHP
+## Updating Fetch PHP
 
-To update FetchPHP to the latest version, run the following Composer command:
+To update Fetch PHP to the latest version:
 
 ```bash
 composer update jerome/fetch-php
 ```
 
-This will pull the latest version of FetchPHP and its dependencies.
+## Uninstalling Fetch PHP
 
-## Checking Installation
-
-To verify that FetchPHP was installed correctly, you can run a simple test:
-
-```php
-<?php
-
-$response = fetch('https://example.com');
-
-if ($response->ok()) {
-    echo "FetchPHP is working correctly!";
-}
-```
-
-## Uninstalling FetchPHP
-
-If you need to remove FetchPHP from your project, run the following Composer command:
+If you need to remove Fetch PHP from your project:
 
 ```bash
 composer remove jerome/fetch-php
 ```
-
-This will uninstall FetchPHP and remove it from your `composer.json` file.
