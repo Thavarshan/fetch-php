@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "Fetch PHP"
   text: "The PHP library that brings the power of the JavaScript fetch API."
-  tagline: "Synchronous and Asynchronous HTTP requests made easy with PHP Fibers."
+  tagline: "Synchronous and Asynchronous HTTP requests made easy with modern PHP."
   actions:
     - theme: brand
       text: Get Started
@@ -15,9 +15,9 @@ hero:
 
 features:
   - title: JavaScript-like API
-    details: FetchPHP mimics the intuitive syntax of JavaScript's `fetch` API for both synchronous and asynchronous requests.
+    details: Fetch PHP mimics the intuitive syntax of JavaScript's `fetch` API for both synchronous and asynchronous requests.
   - title: True Asynchronous Support
-    details: Powered by PHP Fibers and Matrix, FetchPHP allows for true async task management with fine-grained control.
+    details: Powered by Matrix, a custom PHP async engine, Fetch PHP allows for true async task management with fine-grained control.
   - title: Fluent API for Flexibility
     details: Chain methods and build requests effortlessly, inspired by Laravel's HTTP client for flexible, readable code.
   - title: Retry and Concurrency
@@ -45,6 +45,4 @@ $response = await(async(fn () => fetch('https://api.example.com/users')));
 $users = $response->json();
 ```
 
-The added code example immediately shows how your library works and how it mirrors JavaScript's fetch API. The additional feature highlights another key aspect of your library's functionality.
-
-Would you like to proceed with this updated landing page, or would you prefer something else?
+---
