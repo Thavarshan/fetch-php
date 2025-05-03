@@ -1,16 +1,22 @@
-# `Response` Class API Reference
+# Response Class
 
-The `Response` class in FetchPHP handles the responses from HTTP requests. It extends Guzzle's `Response` class and implements `Fetch\Interfaces\Response`. This class provides methods for interacting with the response data, including handling JSON, plain text, binary data, and streams, as well as methods for checking status codes.
+The `Response` class represents an HTTP response and provides methods for processing and accessing the response data. It extends Guzzle's PSR-7 Response implementation and implements `ArrayAccess` for convenient access to JSON response data.
 
-## Class Definition
+## Class Declaration
 
 ```php
 namespace Fetch\Http;
 
-class Response extends \GuzzleHttp\Psr7\Response implements ResponseInterface
-```
+use ArrayAccess;
+use Fetch\Interfaces\Response as ResponseInterface;
+use GuzzleHttp\Psr7\Response as BaseResponse;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 
-The `Response` class handles the response body and status, providing utility methods to parse the response and check status codes.
+class Response extends BaseResponse implements ArrayAccess, ResponseInterface
+{
+    // ...
+}
+```
 
 ## Constructor
 
@@ -20,195 +26,405 @@ public function __construct(
     array $headers = [],
     string $body = '',
     string $version = '1.1',
-    string $reason = null
+    ?string $reason = null
 )
 ```
 
 ### Parameters
 
-- **`$status`** (int): The HTTP status code (e.g., 200, 404).
-- **`$headers`** (array): An associative array of headers.
-- **`$body`** (string): The response body as a string.
-- **`$version`** (string): The HTTP protocol version (e.g., '1.1').
-- **`$reason`** (string|null): The reason phrase for the status code (optional).
+- `$status`: HTTP status code
+- `$headers`: Response headers array
+- `$body`: Response body content
+- `$version`: HTTP protocol version
+- `$reason`: Status reason phrase
 
-## Available Methods
+## Static Methods
 
-### **`json()`**
+### `createFromBase()`
 
-```php
-public function json(bool $assoc = true, bool $throwOnError = true): mixed
-```
-
-Parses the response body as JSON.
-
-- **`$assoc`** (bool): If `true`, returns the JSON data as an associative array. If `false`, returns it as an object.
-- **`$throwOnError`** (bool): If `true`, throws an exception if the body is not valid JSON.
-
-**Returns**: The parsed JSON as an array or object, or `null` if invalid and `$throwOnError` is `false`.
-
-### Example
-
-```php
-$data = $response->json();
-```
-
-### **`text()`**
-
-```php
-public function text(): string
-```
-
-Returns the raw response body as a plain text string.
-
-**Returns**: The response body as a string.
-
-### Example
-
-```php
-$content = $response->text();
-```
-
-### **`blob()`**
-
-```php
-public function blob(): resource|false
-```
-
-Returns the response body as a stream (similar to a "blob" in JavaScript).
-
-**Returns**: A stream resource or `false` on failure.
-
-### Example
-
-```php
-$stream = $response->blob();
-```
-
-### **`arrayBuffer()`**
-
-```php
-public function arrayBuffer(): string
-```
-
-Returns the response body as a binary string (array buffer).
-
-**Returns**: The raw binary data as a string.
-
-### Example
-
-```php
-$binaryData = $response->arrayBuffer();
-```
-
-### **`statusText()`**
-
-```php
-public function statusText(): string
-```
-
-Returns the reason phrase associated with the status code (e.g., "OK" for a 200 status).
-
-**Returns**: The reason phrase or a default message if none is available.
-
-### Example
-
-```php
-$statusMessage = $response->statusText();
-```
-
-### **`getStatusCode()`**
-
-```php
-public function getStatusCode(): int
-```
-
-Returns the HTTP status code of the response.
-
-**Returns**: The status code as an integer.
-
-### Example
-
-```php
-$statusCode = $response->getStatusCode();
-```
-
-### **`createFromBase()`**
+Creates a new Response instance from a PSR-7 ResponseInterface.
 
 ```php
 public static function createFromBase(PsrResponseInterface $response): self
 ```
 
-Creates a new `Response` instance from a base PSR-7 response.
+## Response Body Methods
 
-- **`$response`**: A PSR-7 response object from which to create the new `Response`.
+### `json()`
 
-**Returns**: A new `Response` instance.
-
-### Example
+Parses the response body as JSON.
 
 ```php
-$response = Response::createFromBase($psrResponse);
+public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0)
 ```
 
-## Status Code Checking
+### `object()`
 
-The `Response` class provides several methods to check the status code category of the response.
-
-### **`isInformational()`**
+Gets the response body as a JSON-decoded object.
 
 ```php
-public function isInformational(): bool
+public function object(bool $throwOnError = true)
 ```
 
-Checks if the status code is informational (1xx).
+### `array()`
 
-**Returns**: `true` if the status code is in the 100-199 range.
+Gets the response body as a JSON-decoded array.
 
-### **`ok()`**
+```php
+public function array(bool $throwOnError = true): array
+```
+
+### `text()`
+
+Gets the response body as plain text.
+
+```php
+public function text(): string
+```
+
+### `body()`
+
+Gets the raw response body content.
+
+```php
+public function body(): string
+```
+
+### `blob()`
+
+Gets the body as a stream.
+
+```php
+public function blob()
+```
+
+### `arrayBuffer()`
+
+Gets the body as binary data.
+
+```php
+public function arrayBuffer(): string
+```
+
+### `xml()`
+
+Parses the body as XML.
+
+```php
+public function xml(int $options = 0, bool $throwOnError = true): ?SimpleXMLElement
+```
+
+## Status Methods
+
+### `status()`
+
+Gets the response status code.
+
+```php
+public function status(): int
+```
+
+### `statusText()`
+
+Gets the response status text.
+
+```php
+public function statusText(): string
+```
+
+### `ok()`
+
+Checks if the response status is successful (2xx).
 
 ```php
 public function ok(): bool
 ```
 
-Checks if the status code is successful (2xx).
+### `successful()`
 
-**Returns**: `true` if the status code is in the 200-299 range.
-
-### Example
+Alias for `ok()`.
 
 ```php
-if ($response->ok()) {
-    // Handle successful response
-}
+public function successful(): bool
 ```
 
-### **`isRedirection()`**
+### `failed()`
+
+Checks if the response status indicates an error (4xx or 5xx).
+
+```php
+public function failed(): bool
+```
+
+### `isInformational()`
+
+Checks if the response status is informational (1xx).
+
+```php
+public function isInformational(): bool
+```
+
+### `redirect()`
+
+Checks if the response is a redirect (3xx).
+
+```php
+public function redirect(): bool
+```
+
+### `isRedirection()`
+
+Alias for `redirect()`.
 
 ```php
 public function isRedirection(): bool
 ```
 
-Checks if the status code is a redirection (3xx).
+### `clientError()`
 
-**Returns**: `true` if the status code is in the 300-399 range.
+Checks if the response is a client error (4xx).
 
-### **`isClientError()`**
+```php
+public function clientError(): bool
+```
+
+### `isClientError()`
+
+Alias for `clientError()`.
 
 ```php
 public function isClientError(): bool
 ```
 
-Checks if the status code indicates a client error (4xx).
+### `serverError()`
 
-**Returns**: `true` if the status code is in the 400-499 range.
+Checks if the response is a server error (5xx).
 
-### **`isServerError()`**
+```php
+public function serverError(): bool
+```
+
+### `isServerError()`
+
+Alias for `serverError()`.
 
 ```php
 public function isServerError(): bool
 ```
 
-Checks if the status code indicates a server error (5xx).
+### Status Code Checks
 
-**Returns**: `true` if the status code is in the 500-599 range.
+```php
+public function isStatus(int $status): bool         // Check specific status code
+public function isOk(): bool                        // 200
+public function isCreated(): bool                   // 201
+public function isAccepted(): bool                  // 202
+public function isNoContent(): bool                 // 204
+public function isMovedPermanently(): bool          // 301
+public function isFound(): bool                     // 302
+public function isBadRequest(): bool                // 400
+public function isUnauthorized(): bool              // 401
+public function isForbidden(): bool                 // 403
+public function isNotFound(): bool                  // 404
+public function isConflict(): bool                  // 409
+public function isUnprocessableEntity(): bool       // 422
+public function isTooManyRequests(): bool           // 429
+public function isInternalServerError(): bool       // 500
+public function isServiceUnavailable(): bool        // 503
+```
+
+## Header Methods
+
+### `headers()`
+
+Gets all response headers.
+
+```php
+public function headers(): array
+```
+
+### `header()`
+
+Gets a specific response header.
+
+```php
+public function header(string $header): ?string
+```
+
+### `hasHeader()`
+
+Checks if a specific header exists.
+
+```php
+public function hasHeader($header): bool
+```
+
+### `contentType()`
+
+Gets the Content-Type header from the response.
+
+```php
+public function contentType(): ?string
+```
+
+## Data Access Methods
+
+### `get()`
+
+Gets a value from the JSON response by key.
+
+```php
+public function get(string $key, mixed $default = null): mixed
+```
+
+### Array Access Implementation
+
+The `Response` class implements `ArrayAccess`, allowing you to access JSON response data as an array:
+
+```php
+public function offsetExists($offset): bool
+public function offsetGet($offset): mixed
+public function offsetSet($offset, $value): void    // Throws RuntimeException
+public function offsetUnset($offset): void          // Throws RuntimeException
+```
+
+### `__toString()`
+
+Converts the response to a string, returning the raw body content.
+
+```php
+public function __toString(): string
+```
+
+## Examples
+
+### Processing JSON Responses
+
+```php
+$response = fetch('https://api.example.com/users/1');
+
+if ($response->ok()) {
+    // Parse as associative array
+    $user = $response->json();
+    echo "User ID: " . $user['id'] . ", Name: " . $user['name'];
+
+    // Or parse as object
+    $userObj = $response->object();
+    echo "User ID: " . $userObj->id . ", Name: " . $userObj->name;
+
+    // Array access syntax
+    echo "User email: " . $response['email'];
+
+    // Get method with default value
+    $role = $response->get('role', 'user');
+}
+```
+
+### Checking Response Status
+
+```php
+$response = fetch('https://api.example.com/users/1');
+
+// Check general status categories
+if ($response->successful()) {
+    echo "Request was successful (2xx)";
+} elseif ($response->clientError()) {
+    echo "Client error occurred (4xx)";
+} elseif ($response->serverError()) {
+    echo "Server error occurred (5xx)";
+}
+
+// Check specific status codes
+if ($response->isOk()) {
+    echo "Status 200 OK";
+} elseif ($response->isNotFound()) {
+    echo "Status 404 Not Found";
+} elseif ($response->isUnauthorized()) {
+    echo "Status 401 Unauthorized";
+}
+```
+
+### Working with Headers
+
+```php
+$response = fetch('https://api.example.com/users/1');
+
+// Get a specific header
+$contentType = $response->header('Content-Type');
+echo "Content-Type: " . $contentType;
+
+// Check if a header exists
+if ($response->hasHeader('X-Rate-Limit')) {
+    $rateLimit = $response->header('X-Rate-Limit');
+    echo "Rate limit: " . $rateLimit;
+}
+
+// Get all headers
+$headers = $response->headers();
+foreach ($headers as $name => $values) {
+    echo $name . ": " . implode(", ", $values) . "\n";
+}
+```
+
+### Working with Different Response Types
+
+```php
+// JSON response
+$response = fetch('https://api.example.com/users');
+$users = $response->json();
+
+// XML response
+$response = fetch('https://api.example.com/feed.xml');
+$xml = $response->xml();
+echo "Title: " . $xml->title;
+
+// Plain text response
+$response = fetch('https://api.example.com/robots.txt');
+$text = $response->text();
+echo $text;
+
+// Binary response (e.g., image or file download)
+$response = fetch('https://api.example.com/image.jpg');
+file_put_contents('downloaded-image.jpg', $response->body());
+
+// Or using a stream
+$response = fetch('https://api.example.com/large-file.zip');
+$stream = $response->blob();
+$localFile = fopen('large-file.zip', 'w');
+stream_copy_to_stream($stream, $localFile);
+fclose($localFile);
+```
+
+### Error Handling
+
+```php
+$response = fetch('https://api.example.com/users/999');
+
+if ($response->failed()) {
+    echo "Request failed with status: " . $response->status();
+
+    // For API errors that return JSON error details
+    if ($response->contentType() === 'application/json') {
+        $error = $response->json();
+        echo "Error message: " . ($error['message'] ?? 'Unknown error');
+        echo "Error code: " . ($error['code'] ?? 'No code');
+    }
+}
+
+// Specific error handling based on status code
+if ($response->isNotFound()) {
+    echo "Resource not found";
+} elseif ($response->isUnauthorized()) {
+    echo "Authentication required";
+} elseif ($response->isForbidden()) {
+    echo "Access denied";
+} elseif ($response->isUnprocessableEntity()) {
+    echo "Validation error";
+
+    // Process validation errors
+    $errors = $response->json()['errors'] ?? [];
+    foreach ($errors as $field => $messages) {
+        echo $field . ": " . implode(", ", $messages) . "\n";
+    }
+}
+```

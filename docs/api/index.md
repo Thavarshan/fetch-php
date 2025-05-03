@@ -1,49 +1,211 @@
-# Overview
+# API Reference
 
-The FetchPHP API reference provides detailed documentation on all the available functions, classes, and methods within the FetchPHP library. FetchPHP offers a robust, flexible, and easy-to-use interface for making HTTP requests in PHP, providing both synchronous and asynchronous capabilities, with an API similar to JavaScript’s `fetch()`.
+This API reference provides detailed documentation for all components of the Fetch PHP library. Use this reference to understand the available functions, classes, and methods for making HTTP requests in PHP with a JavaScript-like interface.
 
-This section will cover the core features and functionality of FetchPHP, including:
+## Core Components
 
-- **`fetch()` Function**: The main function for performing HTTP requests, modeled after the JavaScript `fetch()` API.
-- **ClientHandler Class**: A fluent API for constructing and sending HTTP requests with flexible options.
-- **Response Handling**: Methods for parsing and interacting with the response data returned from requests.
-- **Asynchronous Requests**: A guide on making async requests using PHP Fibers and managing tasks.
-- **Task Lifecycle Management**: Features for pausing, resuming, retrying, and canceling asynchronous tasks.
+### [`fetch()` Function](./fetch.md)
 
-## Key Components
+The primary entry point for making HTTP requests, inspired by JavaScript's fetch API:
 
-### **`fetch()` Function**
+```php
+// Basic GET request
+$response = fetch('https://api.example.com/users');
 
-The `fetch()` function is the core API for making HTTP requests. It allows you to perform synchronous and asynchronous requests, similar to the JavaScript `fetch()` API. It supports various HTTP methods, flexible configuration through options, and automatic JSON handling.
+// POST request with JSON body
+$response = fetch('https://api.example.com/users', [
+    'method' => 'POST',
+    'body' => ['name' => 'John Doe', 'email' => 'john@example.com'],
+]);
 
-For more details, check the [fetch() API Reference](./fetch.md).
+// Return a ClientHandler for fluent API usage
+$client = fetch();
+$response = $client->get('https://api.example.com/users');
+```
 
-### **ClientHandler Class**
+### [ClientHandler Class](./client-handler.md)
 
-The `ClientHandler` class provides a fluent interface for constructing complex HTTP requests. By chaining methods like `withHeaders()`, `withBody()`, and `withToken()`, you can easily build and send requests with full control over the request's configuration.
+A powerful class for building and sending HTTP requests with a fluent, chainable API:
 
-For more information, refer to the [ClientHandler API](./client-handler.md).
+```php
+$response = fetch()
+    ->baseUri('https://api.example.com')
+    ->withHeaders(['Accept' => 'application/json'])
+    ->withToken('your-access-token')
+    ->withJson(['name' => 'John Doe', 'email' => 'john@example.com'])
+    ->post('/users');
+```
 
-### **Response Handling**
+### [Response Class](./response.md)
 
-FetchPHP’s response object allows you to interact with the data returned from HTTP requests. You can easily parse JSON, retrieve status codes, and access response headers. The `Response` class provides methods like `json()`, `text()`, `status()`, and `headers()` for processing responses.
+Comprehensive methods for working with HTTP responses:
 
-Learn more about response handling in the [Response API](./response.md).
+```php
+$response = fetch('https://api.example.com/users/1');
 
-### **Asynchronous Requests**
+// Check response status
+if ($response->ok()) {
+    // Parse JSON response
+    $user = $response->json();
 
-FetchPHP enables asynchronous HTTP requests using PHP Fibers, providing true concurrency. The `async()` function allows you to perform non-blocking requests while handling the results using `.then()` and `.catch()` for success and error scenarios. You can also manage the lifecycle of asynchronous tasks, including pausing, resuming, canceling, and retrying tasks.
+    // Access response properties
+    $id = $user['id'];
+    $name = $user['name'];
 
-Explore the [Async API](https://fetch-php.thavarshan.com/guide/async-requests.md) for details on making asynchronous requests.
+    // Check specific status codes
+    if ($response->isCreated()) {
+        echo "New resource created!";
+    }
+}
+```
 
-### **Task Lifecycle Management**
+### [Asynchronous API](./async.md)
 
-For asynchronous tasks, FetchPHP provides control mechanisms to manage long-running processes or tasks. The `Task` class, powered by the Matrix package, allows you to start, pause, resume, cancel, and retry tasks, making it ideal for handling asynchronous workflows that require fine-grained control.
+Methods for non-blocking HTTP requests powered by PHP Fibers:
 
-Refer to the [Task Management API](https://github.com/Thavarshan/matrix) for more information.
+```php
+use function Matrix\async;
+use function Matrix\await;
 
-### Error Handling
+// Promise-based pattern
+async(fn () => fetch('https://api.example.com/users'))
+    ->then(fn ($response) => $response->json())
+    ->catch(fn ($error) => handleError($error));
 
-FetchPHP offers robust error-handling mechanisms for both synchronous and asynchronous requests. You can manage exceptions using `try/catch` blocks, disable automatic HTTP error exceptions, and implement custom retry logic for failed requests.
+// Async/await pattern
+try {
+    $response = await(async(fn () => fetch('https://api.example.com/users')));
+    $users = $response->json();
+} catch (\Throwable $e) {
+    handleError($e);
+}
+```
 
-Detailed information can be found in the [Error Handling API](https://fetch-php.thavarshan.com/guide/error-handling.md).
+### [Promise Operations](./promises.md)
+
+Utilities for working with multiple promises:
+
+```php
+use function Matrix\async;
+use function Matrix\await;
+use function Matrix\all;
+
+// Run multiple requests in parallel
+$userPromise = async(fn () => fetch('https://api.example.com/users'));
+$postsPromise = async(fn () => fetch('https://api.example.com/posts'));
+
+// Wait for all to complete
+$results = await(all([
+    'users' => $userPromise,
+    'posts' => $postsPromise,
+]));
+
+// Access results
+$users = $results['users']->json();
+$posts = $results['posts']->json();
+```
+
+## Types and Interfaces
+
+Fetch PHP provides several interfaces and types that define the structure of its components:
+
+- `Fetch\Interfaces\ClientHandler` - Interface for the client handler
+- `Fetch\Interfaces\Response` - Interface for HTTP responses
+- `React\Promise\PromiseInterface` - Interface for promises (provided by React\Promise)
+
+## Error Handling
+
+Fetch PHP provides robust error handling mechanisms:
+
+```php
+try {
+    $response = fetch('https://api.example.com/nonexistent');
+
+    if ($response->failed()) {
+        // Handle HTTP error responses (4xx, 5xx)
+        echo "Request failed with status: " . $response->status();
+    }
+} catch (\Throwable $e) {
+    // Handle exceptions (connection errors, timeouts, etc.)
+    echo "Error: " . $e->getMessage();
+}
+```
+
+## Common Patterns
+
+### Making Authenticated Requests
+
+```php
+// Using Bearer token
+$response = fetch()
+    ->withToken('your-access-token')
+    ->get('https://api.example.com/profile');
+
+// Using Basic Auth
+$response = fetch()
+    ->withAuth('username', 'password')
+    ->get('https://api.example.com/secure');
+```
+
+### File Uploads
+
+```php
+$response = fetch()
+    ->withMultipart([
+        [
+            'name' => 'file',
+            'contents' => fopen('/path/to/file.jpg', 'r'),
+            'filename' => 'upload.jpg',
+        ],
+        [
+            'name' => 'description',
+            'contents' => 'File description',
+        ]
+    ])
+    ->post('https://api.example.com/upload');
+```
+
+### Handling Large Datasets
+
+```php
+// Process a large collection in batches
+$page = 1;
+$pageSize = 100;
+$allItems = [];
+
+do {
+    $response = fetch('https://api.example.com/items', [
+        'query' => ['page' => $page, 'limit' => $pageSize]
+    ]);
+
+    $data = $response->json();
+    $items = $data['items'];
+    $allItems = array_merge($allItems, $items);
+
+    $hasMorePages = count($items) === $pageSize;
+    $page++;
+} while ($hasMorePages);
+```
+
+### Retrying Failed Requests
+
+```php
+$response = fetch()
+    ->retry(3, 100)  // 3 retries with 100ms initial delay
+    ->get('https://api.example.com/unstable');
+```
+
+### Streaming Responses
+
+```php
+$response = fetch()
+    ->withStream(true)
+    ->get('https://api.example.com/large-file');
+
+$stream = $response->getBody();
+while (!$stream->eof()) {
+    echo $stream->read(1024);
+}
+```
+
+For more detailed information on each component, follow the links to the specific API documentation pages.

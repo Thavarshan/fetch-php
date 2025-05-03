@@ -1,175 +1,359 @@
-# Synchronous HTTP Requests
+# Synchronous Requests
 
-FetchPHP provides an easy-to-use API for making synchronous HTTP requests. You can use either the familiar JavaScript-like `fetch()` function or the powerful Fluent API to build and send requests.
+Fetch PHP provides an intuitive API for making synchronous HTTP requests that should feel familiar to JavaScript developers while leveraging the power of PHP. You can choose between using the straightforward `fetch()` function or the more flexible fluent API.
 
-## JavaScript-like Fetch API
+## Basic Usage
 
-Here’s an example of a basic synchronous GET request using the JavaScript-like `fetch()` function:
+### Making GET Requests
 
-### **GET Request Example**
+The simplest way to make a GET request is to pass a URL to the `fetch()` function:
 
 ```php
-$response = fetch('https://example.com/api/resource');
+$response = fetch('https://api.example.com/users');
 
 if ($response->ok()) {
-    $data = $response->json();  // Parse the response as JSON
+    $data = $response->json();
     print_r($data);
 } else {
     echo "Error: " . $response->statusText();
 }
 ```
 
-### **POST Request Example with JSON**
+### Making POST Requests
+
+For POST requests with a JSON body:
 
 ```php
-$response = fetch('https://example.com/api/resource', [
+$response = fetch('https://api.example.com/users', [
     'method' => 'POST',
     'headers' => [
         'Content-Type' => 'application/json',
     ],
-    'body' => json_encode(['key' => 'value']),
+    'body' => ['name' => 'John Doe', 'email' => 'john@example.com'],
 ]);
 
-$data = $response->json();
-echo $data['key'];
+if ($response->ok()) {
+    $newUser = $response->json();
+    echo "Created user with ID: " . $newUser['id'];
+}
+```
+
+Note that when you pass an array as the `body`, Fetch PHP automatically JSON-encodes it and sets the appropriate `Content-Type` header if not already specified.
+
+### Other HTTP Methods
+
+Fetch PHP supports all standard HTTP methods:
+
+```php
+// PUT request
+$response = fetch('https://api.example.com/users/1', [
+    'method' => 'PUT',
+    'body' => ['name' => 'Updated Name'],
+]);
+
+// DELETE request
+$response = fetch('https://api.example.com/users/1', [
+    'method' => 'DELETE',
+]);
+
+// PATCH request
+$response = fetch('https://api.example.com/users/1', [
+    'method' => 'PATCH',
+    'body' => ['status' => 'inactive'],
+]);
 ```
 
 ## Fluent API
 
-The Fluent API in FetchPHP allows for more flexible request building by chaining methods. This API makes it easier to manage headers, body content, query parameters, authentication, and more, in a clean and readable way.
+For more complex requests, Fetch PHP offers a fluent API that allows you to chain methods for a more readable syntax.
 
-### **POST Request Example Using Fluent API**
+### Building Requests with the Fluent API
+
+To use the fluent API, call `fetch()` without any parameters to get a `ClientHandler` instance:
 
 ```php
 $response = fetch()
-    ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
-    ->withBody(['key' => 'value'])
-    ->withToken('fake-bearer-auth-token')
-    ->post('/posts');
+    ->baseUri('https://api.example.com')
+    ->withHeaders(['Accept' => 'application/json'])
+    ->withToken('your-access-token')
+    ->get('/users');
 
-$data = $response->json();
+$users = $response->json();
 ```
 
-In this example:
+### HTTP Methods with the Fluent API
 
-- `baseUri()`: Sets the base URI for the request.
-- `withHeaders()`: Adds custom headers like `Content-Type`.
-- `withBody()`: Sets the request body, which in this case is JSON.
-- `withToken()`: Adds a Bearer token to the request for authentication.
-- `post()`: Sends the request as a POST to the specified endpoint.
-
-### **GET Request Example Using Fluent API**
+The fluent API provides dedicated methods for different HTTP methods:
 
 ```php
+// GET request
 $response = fetch()
-    ->baseUri('https://example.com')
-    ->withQueryParameters(['page' => 2])
-    ->withToken('fake-bearer-auth-token')
-    ->get('/resources');
+    ->baseUri('https://api.example.com')
+    ->get('/users');
 
-$data = $response->json();
+// POST request
+$response = fetch()
+    ->baseUri('https://api.example.com')
+    ->withJson(['name' => 'John Doe', 'email' => 'john@example.com'])
+    ->post('/users');
+
+// PUT request
+$response = fetch()
+    ->baseUri('https://api.example.com')
+    ->withJson(['name' => 'Updated Name'])
+    ->put('/users/1');
+
+// PATCH request
+$response = fetch()
+    ->baseUri('https://api.example.com')
+    ->withJson(['status' => 'inactive'])
+    ->patch('/users/1');
+
+// DELETE request
+$response = fetch()
+    ->baseUri('https://api.example.com')
+    ->delete('/users/1');
 ```
 
-In this example:
+## Request Configuration
 
-- `withQueryParameters()`: Adds query parameters to the request URL.
-- `get()`: Sends a GET request to the `/resources` endpoint.
-
-## Available Fluent API Methods
-
-The following methods are available in FetchPHP’s Fluent API:
-
-- **baseUri(string $uri)**: Set the base URI for the request.
-- **withHeaders(array $headers)**: Add or modify headers for the request.
-- **withBody(mixed $body)**: Set the request body (e.g., JSON, form data).
-- **withQueryParameters(array $params)**: Add query parameters to the URL.
-- **withToken(string $token)**: Add a Bearer token for authentication.
-- **withAuth(string $username, string $password)**: Add Basic authentication credentials.
-- **timeout(int $seconds)**: Set a timeout for the request in seconds.
-- **retry(int $retries, int $delay = 100)**: Configure retry logic for failed requests.
-- **withProxy(string|array $proxy)**: Add a proxy server for the request.
-- **withCookies(bool|CookieJarInterface $cookies)**: Manage cookies for the request.
-- **withRedirects(bool|array $redirects = true)**: Enable or disable redirects.
-- **withCert(string|array $cert)**: Specify SSL certificates for secure requests.
-- **withSslKey(string|array $sslKey)**: Provide an SSL key for the request.
-- **withStream(bool $stream)**: Set the response to be streamed.
-
-## Advanced Examples
-
-### **PUT Request with Fluent API**
+### Adding Headers
 
 ```php
-$response = fetch()
-    ->baseUri('https://example.com')
-    ->withHeaders('Content-Type', 'application/json')
-    ->withBody(json_encode(['key' => 'updated_value']))
-    ->put('/resource/1');
+// Using options array
+$response = fetch('https://api.example.com/users', [
+    'headers' => [
+        'Accept' => 'application/json',
+        'Authorization' => 'Bearer your-token',
+        'X-Custom-Header' => 'Value',
+    ],
+]);
 
-$data = $response->json();
-echo $data['key'];
+// Using fluent API
+$response = fetch()
+    ->withHeaders([
+        'Accept' => 'application/json',
+        'X-Custom-Header' => 'Value',
+    ])
+    ->withToken('your-token')
+    ->get('https://api.example.com/users');
+
+// Adding a single header
+$response = fetch()
+    ->withHeader('Accept', 'application/json')
+    ->get('https://api.example.com/users');
 ```
 
-### **DELETE Request with Fluent API**
+### Query Parameters
 
 ```php
-$response = fetch()
-    ->baseUri('https://example.com')
-    ->delete('/resource/1');
+// Using URL
+$response = fetch('https://api.example.com/users?page=1&limit=10');
 
-if ($response->ok()) {
-    echo "Resource deleted successfully.";
-} else {
-    echo "Error: " . $response->statusText();
-}
+// Using options array
+$response = fetch('https://api.example.com/users', [
+    'query' => ['page' => 1, 'limit' => 10],
+]);
+
+// Using fluent API
+$response = fetch()
+    ->withQueryParameters(['page' => 1, 'limit' => 10])
+    ->get('https://api.example.com/users');
+
+// Adding a single query parameter
+$response = fetch()
+    ->withQueryParameter('page', 1)
+    ->withQueryParameter('limit', 10)
+    ->get('https://api.example.com/users');
 ```
 
-### **Using Proxies with Fluent API**
+### Authentication
 
 ```php
+// Bearer token (Authorization header)
 $response = fetch()
-    ->baseUri('https://example.com')
-    ->withProxy('tcp://localhost:8080')
-    ->get('/resource');
+    ->withToken('your-access-token')
+    ->get('https://api.example.com/users');
 
-$data = $response->json();
-```
-
-### **Basic Authentication with Fluent API**
-
-```php
+// Basic authentication
 $response = fetch()
-    ->baseUri('https://example.com')
     ->withAuth('username', 'password')
-    ->get('/secure-endpoint');
+    ->get('https://api.example.com/users');
+```
 
-$data = $response->json();
+### Request Body
+
+```php
+// JSON body (automatically encoded)
+$response = fetch()
+    ->withJson(['name' => 'John Doe', 'email' => 'john@example.com'])
+    ->post('https://api.example.com/users');
+
+// Form parameters (application/x-www-form-urlencoded)
+$response = fetch()
+    ->withFormParams(['name' => 'John Doe', 'email' => 'john@example.com'])
+    ->post('https://api.example.com/users');
+
+// Multipart form data (multipart/form-data)
+$response = fetch()
+    ->withMultipart([
+        [
+            'name' => 'file',
+            'contents' => fopen('/path/to/file.jpg', 'r'),
+            'filename' => 'upload.jpg',
+        ],
+        [
+            'name' => 'name',
+            'contents' => 'John Doe',
+        ],
+    ])
+    ->post('https://api.example.com/upload');
+
+// Raw body with custom content type
+$response = fetch()
+    ->withBody('<user><name>John Doe</name></user>', 'application/xml')
+    ->post('https://api.example.com/users');
+```
+
+### Timeouts and Retries
+
+```php
+// Set request timeout
+$response = fetch()
+    ->timeout(5) // 5 seconds
+    ->get('https://api.example.com/users');
+
+// Configure retry behavior
+$response = fetch()
+    ->retry(3, 100) // 3 retries with 100ms initial delay
+    ->get('https://api.example.com/users');
+```
+
+### Proxies and Redirects
+
+```php
+// Use a proxy
+$response = fetch()
+    ->withProxy('http://proxy.example.com:8080')
+    ->get('https://api.example.com/users');
+
+// Configure redirects
+$response = fetch()
+    ->withRedirects(true) // Default: follow redirects
+    ->get('https://api.example.com/redirecting-url');
+
+$response = fetch()
+    ->withRedirects(false) // Don't follow redirects
+    ->get('https://api.example.com/redirecting-url');
 ```
 
 ## Handling Responses
 
-FetchPHP provides several methods to handle and process the response data:
-
-- **json()**: Parse the response body as JSON.
-- **text()**: Get the raw response body as plain text.
-- **statusText()**: Get the response's status text (e.g., "OK" for 200 responses).
-- **ok()**: Returns `true` if the response status code is in the 2xx range.
-- **status()**: Get the response status code (e.g., 200, 404, etc.).
-- **headers()**: Retrieve the response headers as an associative array.
-
-Example:
+Fetch PHP provides several methods to inspect and process response data:
 
 ```php
-$response = fetch('https://example.com/api/resource');
+$response = fetch('https://api.example.com/users/1');
 
+// Check if the request was successful
 if ($response->ok()) {
+    // HTTP status code (e.g., 200, 201)
+    $statusCode = $response->status();
+
+    // Status text (e.g., "OK", "Created")
+    $statusText = $response->statusText();
+
+    // Response body as JSON (parsed into array or object)
     $data = $response->json();
-    echo "JSON Response: " . print_r($data, true);
-} else {
-    echo "Error: " . $response->getStatusCode() . " - " . $response->statusText();
+
+    // Response body as string
+    $body = $response->body();
+
+    // Get a specific header value
+    $contentType = $response->header('Content-Type');
+
+    // Get all headers
+    $headers = $response->headers();
+}
+
+// Check for specific status categories
+if ($response->successful()) {
+    // 2xx status code
+    echo "Request was successful";
+} elseif ($response->clientError()) {
+    // 4xx status code
+    echo "Client error: " . $response->status();
+} elseif ($response->serverError()) {
+    // 5xx status code
+    echo "Server error: " . $response->status();
 }
 ```
 
----
+## Error Handling
 
-The Fluent API provides a more flexible and chainable way of building and sending HTTP requests with FetchPHP. For more advanced usage, check out the [Asynchronous Requests](./async-requests.md) page.
+```php
+try {
+    $response = fetch('https://api.example.com/nonexistent');
+
+    if ($response->failed()) {
+        // Handle HTTP error responses (4xx, 5xx)
+        echo "Request failed with status: " . $response->status();
+
+        // You can still access the response body even for error responses
+        $errorData = $response->json();
+        echo "Error message: " . $errorData['message'] ?? 'Unknown error';
+    }
+} catch (\Throwable $e) {
+    // Handle exceptions (connection errors, timeouts, etc.)
+    echo "Error: " . $e->getMessage();
+}
+```
+
+## Available Fluent API Methods
+
+Here's a complete list of methods available in the fluent API:
+
+### HTTP Methods
+
+- `get(string $uri)`
+- `post(string $uri, mixed $body = null, string $contentType = 'application/json')`
+- `put(string $uri, mixed $body = null, string $contentType = 'application/json')`
+- `patch(string $uri, mixed $body = null, string $contentType = 'application/json')`
+- `delete(string $uri)`
+- `head(string $uri)`
+- `options(string $uri)`
+
+### Request Configuration
+
+- `baseUri(string $baseUri)`
+- `withHeaders(array $headers)`
+- `withHeader(string $header, mixed $value)`
+- `withQueryParameters(array $queryParams)`
+- `withQueryParameter(string $name, mixed $value)`
+- `withBody(array|string $body, string $contentType = 'application/json')`
+- `withJson(array $data)`
+- `withFormParams(array $params)`
+- `withMultipart(array $multipart)`
+- `withToken(string $token)`
+- `withAuth(string $username, string $password)`
+- `timeout(int $seconds)`
+- `retry(int $retries, int $delay = 100)`
+- `withProxy(string|array $proxy)`
+- `withCookies(bool|CookieJarInterface $cookies)`
+- `withRedirects(bool|array $redirects = true)`
+- `withCert(string|array $cert)`
+- `withSslKey(string|array $sslKey)`
+- `withStream(bool $stream)`
+- `withOption(string $key, mixed $value)`
+- `withOptions(array $options)`
+
+### Utility Methods
+
+- `reset()`
+- `debug()`
+- `getSyncClient()`
+- `setSyncClient(ClientInterface $syncClient)`
+- `isAsync()`
+- `getOptions()`
+- `getHeaders()`
+- `hasHeader(string $header)`
+- `hasOption(string $option)`
