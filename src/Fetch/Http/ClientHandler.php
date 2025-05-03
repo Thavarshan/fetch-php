@@ -157,11 +157,33 @@ class ClientHandler implements ClientHandlerInterface
                 if ($i === $attempts - 1) {
                     throw $e; // Rethrow if all retries failed
                 }
-                usleep($delay * 1000); // Convert milliseconds to microseconds
+
+                // Only retry on server errors or network issues
+                if (! $this->isRetryableError($e)) {
+                    throw $e;
+                }
+
+                // Exponential backoff with jitter
+                $jitter = mt_rand(0, 100) / 100; // Random value between 0 and 1
+                usleep((int) (($delay * (1 + $jitter)) * 1000)); // Convert milliseconds to microseconds
+                $delay *= 2; // Exponential backoff
             }
         }
 
         throw new RuntimeException('Request failed after all retries.');
+    }
+
+    /**
+     * Determine if an error is retryable.
+     */
+    protected function isRetryableError(RequestException $e): bool
+    {
+        $statusCode = $e->getCode();
+
+        // Retry server errors (5xx) and specific client errors
+        return ($statusCode >= 500 && $statusCode < 600) ||
+               in_array($statusCode, [408, 429]) ||
+               $e->getPrevious() instanceof \GuzzleHttp\Exception\ConnectException;
     }
 
     /**
@@ -182,21 +204,37 @@ class ClientHandler implements ClientHandlerInterface
 
         // If the URI is an absolute URL, return it as is
         if (filter_var($uri, \FILTER_VALIDATE_URL)) {
+            // If query parameters exist, append them to the URL
+            if (! empty($this->options['query'])) {
+                $parsedUrl = parse_url($uri);
+                $separator = ! empty($parsedUrl['query']) ? '&' : '?';
+
+                return $uri . $separator . http_build_query($this->options['query']);
+            }
+
             return $uri;
         }
 
         // If base URI is empty, return the URI with leading slashes trimmed
         if (empty($baseUri)) {
-            return ltrim($uri, '/');
+            $result = ltrim($uri, '/');
+        } else {
+            // Ensure base URI is a valid URL
+            if (! filter_var($baseUri, \FILTER_VALIDATE_URL)) {
+                throw new InvalidArgumentException("Invalid base URI: $baseUri");
+            }
+
+            // Concatenate base URI and URI ensuring no double slashes
+            $result = rtrim($baseUri, '/') . '/' . ltrim($uri, '/');
         }
 
-        // Ensure base URI is a valid URL
-        if (! filter_var($baseUri, \FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException("Invalid base URI: $baseUri");
+        // If query parameters exist, append them to the URL
+        if (! empty($this->options['query'])) {
+            $separator = strpos($result, '?') !== false ? '&' : '?';
+            $result .= $separator . http_build_query($this->options['query']);
         }
 
-        // Concatenate base URI and URI ensuring no double slashes
-        return rtrim($baseUri, '/') . '/' . ltrim($uri, '/');
+        return $result;
     }
 
     /**
@@ -254,6 +292,26 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
+     * Set the query parameters for the request.
+     */
+    public function withFormParams(array $params): self
+    {
+        $this->options['form_params'] = $params;
+
+        return $this;
+    }
+
+    /**
+     * Set the multipart data for the request.
+     */
+    public function withMultipart(array $multipart): self
+    {
+        $this->options['multipart'] = $multipart;
+
+        return $this;
+    }
+
+    /**
      * Set the token for the request.
      */
     public function withToken(string $token): self
@@ -299,9 +357,40 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Set the body for the request.
      */
-    public function withBody(array $body): self
+    public function withBody(array|string $body, string $contentType = 'application/json'): self
     {
-        $this->options['body'] = json_encode($body);
+        if (is_array($body) && $contentType === 'application/json') {
+            $this->options['body'] = json_encode($body);
+
+            // Set JSON content type header if not already set
+            if (! $this->hasHeader('Content-Type')) {
+                $this->withHeader('Content-Type', 'application/json');
+            }
+        } elseif (is_array($body) && $contentType === 'application/x-www-form-urlencoded') {
+            $this->options['form_params'] = $body;
+        } elseif (is_array($body) && $contentType === 'multipart/form-data') {
+            $this->options['multipart'] = $body;
+        } else {
+            $this->options['body'] = $body;
+
+            if (! $this->hasHeader('Content-Type')) {
+                $this->withHeader('Content-Type', $contentType);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set the JSON body for the request.
+     */
+    public function withJson(array $data): self
+    {
+        $this->options['json'] = $data;
+
+        if (! $this->hasHeader('Content-Type')) {
+            $this->withHeader('Content-Type', 'application/json');
+        }
 
         return $this;
     }
@@ -311,7 +400,20 @@ class ClientHandler implements ClientHandlerInterface
      */
     public function withQueryParameters(array $queryParams): self
     {
-        $this->options['query'] = $queryParams;
+        $this->options['query'] = array_merge(
+            $this->options['query'] ?? [],
+            $queryParams
+        );
+
+        return $this;
+    }
+
+    /**
+     * Set a single query parameter for the request.
+     */
+    public function withQueryParameter(string $name, mixed $value): self
+    {
+        $this->options['query'][$name] = $value;
 
         return $this;
     }
@@ -408,6 +510,14 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
+     * Set the sink option for the request.
+     */
+    public function head(string $uri): mixed
+    {
+        return $this->finalizeRequest('HEAD', $uri);
+    }
+
+    /**
      * Finalize and send a GET request.
      */
     public function get(string $uri): mixed
@@ -418,25 +528,47 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Finalize and send a POST request.
      */
-    public function post(string $uri, mixed $body = null): mixed
+    public function post(string $uri, mixed $body = null, string $contentType = 'application/json'): mixed
     {
-        if ($body !== null) {
-            $this->withBody($body);
-        }
+        $this->configurePostableRequest($uri, $body, $contentType);
 
         return $this->finalizeRequest('POST', $uri);
     }
 
     /**
+     * Finalize and send a PATCH request.
+     */
+    public function patch(string $uri, mixed $body = null, string $contentType = 'application/json'): mixed
+    {
+        $this->configurePostableRequest($uri, $body, $contentType);
+
+        return $this->finalizeRequest('PATCH', $uri);
+    }
+
+    /**
      * Finalize and send a PUT request.
      */
-    public function put(string $uri, mixed $body = null): mixed
+    public function put(string $uri, mixed $body = null, string $contentType = 'application/json'): mixed
     {
-        if ($body !== null) {
-            $this->withBody($body);
-        }
+        $this->configurePostableRequest($uri, $body, $contentType);
 
         return $this->finalizeRequest('PUT', $uri);
+    }
+
+    /**
+     * Finalize and send a POST/PATCH/PUT request.
+     */
+    protected function configurePostableRequest(string $uri, mixed $body = null, string $contentType = 'application/json'): void
+    {
+        if ($body !== null) {
+            if (is_array($body) && $contentType === 'application/json') {
+                $this->withJson($body);
+            } elseif (is_array($body) && $contentType === 'application/x-www-form-urlencoded') {
+                $this->withFormParams($body);
+            } else {
+                $this->withBody($body, $contentType);
+            }
+        }
     }
 
     /**
@@ -493,5 +625,18 @@ class ClientHandler implements ClientHandlerInterface
     public function hasOption(string $option): bool
     {
         return isset($this->options[$option]);
+    }
+
+    /**
+     * Debug the request and return its details.
+     */
+    public function debug(): array
+    {
+        return [
+            'uri'     => $this->getFullUri(),
+            'method'  => $this->options['method'] ?? 'GET',
+            'headers' => $this->getHeaders(),
+            'options' => array_diff_key($this->options, ['headers' => true]),
+        ];
     }
 }

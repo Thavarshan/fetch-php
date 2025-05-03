@@ -1,6 +1,99 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.5...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.6...HEAD)
+
+## [v2.0.6](https://github.com/Thavarshan/fetch-php/compare/v2.0.5...v2.0.6) - 2025-05-03
+
+## Added
+
+- Added `withQueryParameter()` method for adding a single query parameter
+- Added `withJson()` method as a convenient way to set JSON request bodies
+- Added `withFormParams()` and `withMultipart()` helper methods for form submissions
+- Added `configurePostableRequest()` helper method to standardize request body handling
+
+## Changed
+
+- Enhanced `withBody()` method to support multiple content types (JSON, form-encoded, multipart)
+- Improved `post()` and `put()` methods to properly handle different content types
+- Improved retry mechanism with exponential backoff and jitter for better reliability
+- Enhanced error handling to be more selective about which errors trigger retries
+
+## Fixed
+
+- Fixed query parameter handling to properly merge with existing parameters instead of overwriting
+- Fixed URL construction in `getFullUri()` to correctly append query parameters
+- Fixed retry logic to perform exactly the specified number of retries (not one extra)
+- Fixed duplicate implementation of `isRetryableError()` method
+- Fixed retry failure detection to properly identify the last retry attempt
+
+## [v2.0.5](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5) - 2025-03-30
+
+### Added
+
+- Added the following utility methods to `ClientHandler`:
+  - `getOptions()`: Retrieve the full request options array.
+  - `getHeaders()`: Retrieve the headers array from the request options.
+  - `hasHeader(string $header): bool`: Check if a specific header is set in the request.
+  - `hasOption(string $option): bool`: Check if a specific option is set in the request.
+
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.4...2.0.5>
+
+## [v2.0.4](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4) - 2025-03-30
+
+### Added
+
+- Added support for setting a single request header via `withHeader()` method in `ClientHandler`.
+- Introduced new methods in `ClientHandler` interface:
+  - `withToken(string $token): self`
+  - `withAuth(string $username, string $password): self`
+  - `withHeader(string $header, mixed $value): self`
+- Added `laravel/pint` as a development dependency.
+
+### Changed
+
+- Updated package version in `composer.json` from `2.0.3` to `2.0.4`.
+- Bump dependabot/fetch-metadata from 2.2.0 to 2.3.0 by @dependabot in <https://github.com/Thavarshan/fetch-php/pull/13>
+- Update README fixing syntax error by @tresbach in <https://github.com/Thavarshan/fetch-php/pull/14>
+
+### Fixed
+
+- Restored required dependencies `jerome/matrix` and `psr/http-message` to `composer.json`.
+
+### New Contributors
+
+- @tresbach made their first contribution in <https://github.com/Thavarshan/fetch-php/pull/14>
+
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.3...2.0.4>
+
+## [v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3) - 2024-12-06
+
+### Added
+
+- Support all PHP `8.x` versions
+
+### Changed
+
+- Updated dependencies
+- Updated dev dependencies
+
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.2...2.0.3>
+
+## [v2.0.2](https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2) - 2024-10-19
+
+### Added
+
+- Add Laravel Pint by @patinthehat in <https://github.com/Thavarshan/fetch-php/pull/8>
+- Add `isAsync` method to `ClientHandler`
+
+### Changed
+
+- Update `async` method to accept arguments
+
+#### New Contributors
+
+- @patinthehat made their first contribution in <https://github.com/Thavarshan/fetch-php/pull/8>
+
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.1...2.0.2>
 
 ## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
 
@@ -96,30 +189,28 @@ Initial release.
   - `getHeaders()`: Retrieve the headers array from the request options.
   - `hasHeader(string $header): bool`: Check if a specific header is set in the request.
   - `hasOption(string $option): bool`: Check if a specific option is set in the request.
-  
 
-**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.4...2.0.5
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.4...2.0.5>
 
 ## [v2.0.4](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4) - 2025-03-29
 
 ### Added
 
 - Added support for setting a single request header via `withHeader()` method in `ClientHandler`.
-  
+
 - Introduced new methods in `ClientHandler` interface:
-  
+
   - `withToken(string $token): self`
   - `withAuth(string $username, string $password): self`
   - `withHeader(string $header, mixed $value): self`
-  
+
 - Added `laravel/pint` as a development dependency.
-  
 
 ### Changed
 
 - Updated package version in `composer.json` from `2.0.3` to `2.0.4`.
-- Bump dependabot/fetch-metadata from 2.2.0 to 2.3.0 by @dependabot in https://github.com/Thavarshan/fetch-php/pull/13
-- Update README fixing syntax error by @tresbach in https://github.com/Thavarshan/fetch-php/pull/14
+- Bump dependabot/fetch-metadata from 2.2.0 to 2.3.0 by @dependabot in <https://github.com/Thavarshan/fetch-php/pull/13>
+- Update README fixing syntax error by @tresbach in <https://github.com/Thavarshan/fetch-php/pull/14>
 
 ### Fixed
 
@@ -127,36 +218,36 @@ Initial release.
 
 ### New Contributors
 
-- @tresbach made their first contribution in https://github.com/Thavarshan/fetch-php/pull/14
+- @tresbach made their first contribution in <https://github.com/Thavarshan/fetch-php/pull/14>
 
-**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.3...2.0.4
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.3...2.0.4>
 
 ## [v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3) - 2024-12-06
 
 ### Added
 
-* Support all PHP `8.x` versions
+- Support all PHP `8.x` versions
 
 ### Changed
 
-* Updated dependencies
-* Updated dev dependencies
+- Updated dependencies
+- Updated dev dependencies
 
-**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.2...2.0.3
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.2...2.0.3>
 
 ## [v2.0.2](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.2) - 2024-10-19
 
 ### Added
 
-* Add Laravel Pint by @patinthehat in https://github.com/Thavarshan/fetch-php/pull/8
-* Add `isAsync` method to `ClientHandler`
+- Add Laravel Pint by @patinthehat in <https://github.com/Thavarshan/fetch-php/pull/8>
+- Add `isAsync` method to `ClientHandler`
 
 ### Changed
 
-* Update `async` method to accept arguments
+- Update `async` method to accept arguments
 
 #### New Contributors
 
-* @patinthehat made their first contribution in https://github.com/Thavarshan/fetch-php/pull/8
+- @patinthehat made their first contribution in <https://github.com/Thavarshan/fetch-php/pull/8>
 
-**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/2.0.1...2.0.2
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/2.0.1...2.0.2>
