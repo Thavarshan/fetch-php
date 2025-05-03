@@ -11,6 +11,11 @@ use SimpleXMLElement;
 interface Response extends ArrayAccess, PsrResponseInterface
 {
     /**
+     * Create a new response from a base response.
+     */
+    public static function createFromBase(PsrResponseInterface $response): self;
+
+    /**
      * Get the body as a JSON-decoded array or object.
      *
      * @param  bool  $assoc  Whether to return associative array (true) or object (false)
@@ -62,11 +67,6 @@ interface Response extends ArrayAccess, PsrResponseInterface
      * Get the status text for the response.
      */
     public function statusText(): string;
-
-    /**
-     * Create a new response from a base response.
-     */
-    public static function createFromBase(PsrResponseInterface $response): self;
 
     /**
      * Get the status code of the response.

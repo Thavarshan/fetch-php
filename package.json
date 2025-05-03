@@ -4,9 +4,11 @@
     "scripts": {
         "dev": "vitepress dev docs",
         "build": "vitepress build docs",
-        "preview": "vitepress preview docs"
+        "preview": "vitepress preview docs",
+        "prepare": "husky"
     },
     "devDependencies": {
-        "vitepress": "latest"
+        "vitepress": "latest",
+        "husky": "^9.1.7"
     }
 }

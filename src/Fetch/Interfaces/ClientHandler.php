@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJarInterface;
-use Psr\Http\Client\ClientInterface;
 
 interface ClientHandler
 {
@@ -13,6 +13,11 @@ interface ClientHandler
      * Handle the request with the given method, URI, and options.
      */
     public static function handle(string $method, string $uri, array $options = []): mixed;
+
+    /**
+     * Get the default options for the request.
+     */
+    public static function getDefaultOptions(): array;
 
     /**
      * Set the token for the request.
@@ -123,11 +128,6 @@ interface ClientHandler
      * Set the synchronous HTTP client.
      */
     public function setSyncClient(ClientInterface $syncClient): self;
-
-    /**
-     * Get the default options for the request.
-     */
-    public static function getDefaultOptions(): array;
 
     /**
      * Get the request options.

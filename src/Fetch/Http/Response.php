@@ -36,6 +36,22 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     }
 
     /**
+     * Create a new response from a base response.
+     *
+     * Note: The response body will be fully read into memory.
+     */
+    public static function createFromBase(PsrResponseInterface $response): self
+    {
+        return new self(
+            $response->getStatusCode(),
+            $response->getHeaders(),
+            (string) $response->getBody(),
+            $response->getProtocolVersion(),
+            $response->getReasonPhrase()
+        );
+    }
+
+    /**
      * Get the body as a JSON-decoded array or object.
      *
      * @param  bool  $assoc  Whether to return associative array (true) or object (false)
@@ -57,7 +73,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
             );
         } catch (JsonException $e) {
             if ($throwOnError) {
-                throw new RuntimeException('Failed to decode JSON: ' . $e->getMessage(), $e->getCode(), $e);
+                throw new RuntimeException('Failed to decode JSON: '.$e->getMessage(), $e->getCode(), $e);
             }
 
             return $assoc ? [] : (object) [];
@@ -133,22 +149,6 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     public function statusText(): string
     {
         return $this->getReasonPhrase() ?: 'No reason phrase available';
-    }
-
-    /**
-     * Create a new response from a base response.
-     *
-     * Note: The response body will be fully read into memory.
-     */
-    public static function createFromBase(PsrResponseInterface $response): self
-    {
-        return new self(
-            $response->getStatusCode(),
-            $response->getHeaders(),
-            (string) $response->getBody(),
-            $response->getProtocolVersion(),
-            $response->getReasonPhrase()
-        );
     }
 
     /**
@@ -296,7 +296,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
             libxml_use_internal_errors(false);
 
             if ($throwOnError) {
-                throw new RuntimeException('Failed to parse XML: ' . $e->getMessage(), $e->getCode(), $e);
+                throw new RuntimeException('Failed to parse XML: '.$e->getMessage(), $e->getCode(), $e);
             }
 
             return null;
@@ -477,14 +477,6 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     }
 
     /**
-     * Get the body of the response.
-     */
-    public function __toString(): string
-    {
-        return $this->bodyContents;
-    }
-
-    /**
      * Get the value for a given key from the JSON response.
      */
     public function get(string $key, mixed $default = null): mixed
@@ -496,5 +488,13 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
         }
 
         return $default;
+    }
+
+    /**
+     * Get the body of the response.
+     */
+    public function __toString(): string
+    {
+        return $this->bodyContents;
     }
 }

@@ -1,24 +1,57 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v2.0.6...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.0.0...HEAD)
+
+## [v3.0.0](https://github.com/Thavarshan/fetch-php/compare/v2.0.6...v3.0.0) - 2025-05-04
+
+### Added
+
+- **True Asynchronous Support**: Completely reimplemented asynchronous functionality using Matrix's PHP Fiber-based library
+- **JavaScript-like Syntax**: Added support for JavaScript-like async/await patterns with `async()` and `await()` functions
+- **Promise-based API**: Introduced a clean Promise interface with `then()`, `catch()`, and `finally()` methods
+- **Concurrent Request Helpers**: Added support for managing multiple concurrent requests with `all()`, `race()`, and `any()` functions
+- **Task Lifecycle Management**: Implemented proper task lifecycle control (start, pause, resume, cancel, retry)
+- **Enhanced Error Handling**: Added improved error handling with customizable error handlers
+- **New Helper Methods**:
+  - `wrapAsync()`: For wrapping callables in async functions
+  - `awaitPromise()`: For awaiting promise resolution
+
+### Changed
+
+- **New Matrix Integration**: Migrated from legacy AsyncHelper to the new Matrix Fiber-based promises
+- **Return Type Changes**: Updated method signatures to use union types (`ResponseInterface|PromiseInterface`)
+- **Simplified API**: Streamlined the API to match JavaScript's fetch pattern more closely
+- **Improved Retry Logic**: Enhanced retry mechanisms for both synchronous and asynchronous requests
+- **Updated Documentation**: Completely revised documentation to reflect the new async patterns
+
+### Removed
+
+- **AsyncHelper Class**: Removed the legacy AsyncHelper class in favor of direct Matrix integration
+
+### Fixed
+
+- **Promise Handling**: Fixed various issues with Promise resolution and rejection
+- **Retry Mechanism**: Fixed retry logic to properly handle both network and server errors
+- **Error Propagation**: Improved how errors are propagated through Promise chains
+- **Event Loop Management**: Fixed event loop management for proper async task execution
 
 ## [v2.0.6](https://github.com/Thavarshan/fetch-php/compare/v2.0.5...v2.0.6) - 2025-05-03
 
-## Added
+### Added
 
 - Added `withQueryParameter()` method for adding a single query parameter
 - Added `withJson()` method as a convenient way to set JSON request bodies
 - Added `withFormParams()` and `withMultipart()` helper methods for form submissions
 - Added `configurePostableRequest()` helper method to standardize request body handling
 
-## Changed
+### Changed
 
 - Enhanced `withBody()` method to support multiple content types (JSON, form-encoded, multipart)
 - Improved `post()` and `put()` methods to properly handle different content types
 - Improved retry mechanism with exponential backoff and jitter for better reliability
 - Enhanced error handling to be more selective about which errors trigger retries
 
-## Fixed
+### Fixed
 
 - Fixed query parameter handling to properly merge with existing parameters instead of overwriting
 - Fixed URL construction in `getFullUri()` to correctly append query parameters
