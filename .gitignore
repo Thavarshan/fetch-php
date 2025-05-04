@@ -33,3 +33,4 @@ coverage
 notes.md
 docs/.vitepress/dist
 docs/.vitepress/cache
+/duster_*
