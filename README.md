@@ -7,11 +7,11 @@
 [![Check & fix styling](https://github.com/Thavarshan/fetch-php/actions/workflows/laravel-pint.yml/badge.svg)](https://github.com/Thavarshan/fetch-php/actions/workflows/laravel-pint.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
 
-**Fetch PHP** is a modern HTTP client library for PHP that brings JavaScript's `fetch` API experience to PHP. Built on top of Guzzle and powered by the **Matrix** package for true asynchronous capabilities using PHP Fibers, Fetch PHP allows you to write asynchronous HTTP code with a clean, intuitive JavaScript-like syntax.
+**Fetch PHP** is a modern HTTP client library for PHP that brings JavaScript's `fetch` API experience to PHP. Built on top of Guzzle and powered by the **Matrix** package for true asynchronous capabilities using ReactPHP, Fetch PHP allows you to write asynchronous HTTP code with a clean, intuitive JavaScript-like syntax.
 
 With support for both synchronous and asynchronous requests, a fluent chainable API, and powerful retry mechanics, Fetch PHP streamlines HTTP operations in your PHP applications.
 
-Make sure to check out [Matrix](https://github.com/Thavarshan/matrix) for more information on how Fetch PHP is powered by PHP Fibers.
+Make sure to check out [Matrix](https://github.com/Thavarshan/matrix) for more information on how Fetch PHP is powered by ReactPHP.
 
 Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 
@@ -20,7 +20,7 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 ## Key Features
 
 - **JavaScript-like Syntax**: Write HTTP requests just like you would in JavaScript with the `fetch()` function
-- **True Async with PHP Fibers**: Leverage PHP 8.1+ Fibers for non-blocking I/O
+- **True Async with ReactPHP**: Leverage ReactPHP for non-blocking I/O
 - **Promise-based API**: Use familiar `.then()` and `.catch()` methods for async operations
 - **Fluent Interface**: Build requests with a clean, chainable API
 - **Built on Guzzle**: Benefit from Guzzle's robust functionality with a more elegant API
@@ -32,14 +32,14 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 
 While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by providing:
 
-- **True async with PHP Fibers**: Unlike Guzzle's Promise-based concurrency, Fetch PHP uses PHP Fibers for genuine asynchronous operations
+- **True async with ReactPHP**: Unlike Guzzle's Promise-based concurrency, Fetch PHP uses ReactPHP for genuine asynchronous operations
 - **JavaScript-like API**: Enjoy the familiar `async`/`await` pattern from JavaScript
 - **Task Lifecycle Management**: Start, pause, resume, cancel, and retry tasks with fine-grained control
 - **Simplified Error Handling**: Handle errors more elegantly with promise-based callbacks
 
 | Feature | Fetch PHP | Guzzle |
 |---------|-----------|--------|
-| Async Operations | True async with PHP Fibers | Promise-based concurrency |
+| Async Operations | True async with ReactPHP | Promise-based concurrency |
 | API Style | JavaScript-like fetch + async/await | PHP-style Promises |
 | Task Control | Full lifecycle management | Limited to Promise chains |
 | Error Handling | Customizable error handlers | Standard Promise rejection |
