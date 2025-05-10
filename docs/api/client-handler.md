@@ -68,7 +68,7 @@ public function get(string $uri): ResponseInterface|PromiseInterface
 Sends a POST request.
 
 ```php
-public function post(string $uri, mixed $body = null, string $contentType = 'application/json'): ResponseInterface|PromiseInterface
+public function post(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json'): ResponseInterface|PromiseInterface
 ```
 
 ### `put()`
@@ -76,7 +76,7 @@ public function post(string $uri, mixed $body = null, string $contentType = 'app
 Sends a PUT request.
 
 ```php
-public function put(string $uri, mixed $body = null, string $contentType = 'application/json'): ResponseInterface|PromiseInterface
+public function put(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json'): ResponseInterface|PromiseInterface
 ```
 
 ### `patch()`
@@ -84,7 +84,7 @@ public function put(string $uri, mixed $body = null, string $contentType = 'appl
 Sends a PATCH request.
 
 ```php
-public function patch(string $uri, mixed $body = null, string $contentType = 'application/json'): ResponseInterface|PromiseInterface
+public function patch(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json'): ResponseInterface|PromiseInterface
 ```
 
 ### `delete()`
@@ -142,7 +142,7 @@ public function withHeader(string $header, mixed $value): self
 Sets the request body.
 
 ```php
-public function withBody(array|string $body, string $contentType = 'application/json'): self
+public function withBody(array|string $body, ContentType|string $contentType = 'application/json'): self
 ```
 
 ### `withJson()`

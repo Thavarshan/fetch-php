@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.0.0...HEAD)
 
+## [v3.1.0](https://github.com/Thavarshan/fetch-php/compare/v3.0.0...v3.1.0) - 2025-05-10
+
+<!--  -->
+
 ## [v3.0.0](https://github.com/Thavarshan/fetch-php/compare/v2.0.6...v3.0.0) - 2025-05-04
 
 ### Added
