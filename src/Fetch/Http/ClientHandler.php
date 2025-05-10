@@ -4,443 +4,210 @@ declare(strict_types=1);
 
 namespace Fetch\Http;
 
+use Fetch\Concerns\ConfiguresRequests;
+use Fetch\Concerns\HandlesUris;
+use Fetch\Concerns\ManagesPromises;
+use Fetch\Concerns\ManagesRetries;
+use Fetch\Concerns\PerformsHttpRequests;
+use Fetch\Concerns\SendsRequests;
+use Fetch\Enum\ContentType;
+use Fetch\Enum\Method;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
-use Fetch\Interfaces\Response as ResponseInterface;
-use GuzzleHttp\Client as SyncClient;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Cookie\CookieJarInterface;
-use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
-use React\Promise\PromiseInterface;
-use RuntimeException;
-
-use function all;
-use function any;
-use function async;
-use function await;
-use function race;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class ClientHandler implements ClientHandlerInterface
 {
+    use ConfiguresRequests,
+        HandlesUris,
+        ManagesPromises,
+        ManagesRetries,
+        PerformsHttpRequests,
+        SendsRequests;
+
     /**
      * Default options for the request.
+     *
+     * @var array<string, mixed>
      */
     protected static array $defaultOptions = [
-        'method' => 'GET',
+        'method' => Method::GET->value,
         'headers' => [],
-        'timeout' => self::DEFAULT_TIMEOUT,
     ];
 
     /**
      * Default timeout for requests in seconds.
      */
-    private const DEFAULT_TIMEOUT = 30;
+    public const DEFAULT_TIMEOUT = 30;
 
     /**
      * Default number of retries.
      */
-    private const DEFAULT_RETRIES = 1;
+    public const DEFAULT_RETRIES = 1;
 
     /**
      * Default delay between retries in milliseconds.
      */
-    private const DEFAULT_RETRY_DELAY = 100;
+    public const DEFAULT_RETRY_DELAY = 100;
+
+    /**
+     * Options prepared for Guzzle.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $preparedOptions = [];
+
+    /**
+     * Logger instance.
+     */
+    protected LoggerInterface $logger;
 
     /**
      * ClientHandler constructor.
      *
-     * @param  ClientInterface|null  $syncClient  The synchronous HTTP client.
-     * @param  array  $options  The options for the request.
-     * @param  int|null  $timeout  Timeout for the request.
-     * @param  int|null  $retries  Number of retries for the request.
-     * @param  int|null  $retryDelay  Delay between retries.
-     * @param  bool  $isAsync  Whether the request is asynchronous.
-     * @return void
+     * @param  ClientInterface|null  $syncClient  The synchronous HTTP client
+     * @param  array<string, mixed>  $options  The options for the request
+     * @param  int|null  $timeout  Timeout for the request in seconds
+     * @param  int|null  $maxRetries  Number of retries for the request
+     * @param  int|null  $retryDelay  Delay between retries in milliseconds
+     * @param  bool  $isAsync  Whether the request is asynchronous
+     * @param  LoggerInterface|null  $logger  Logger for request/response details
      */
     public function __construct(
         protected ?ClientInterface $syncClient = null,
         protected array $options = [],
         protected ?int $timeout = null,
-        protected ?int $retries = null,
-        protected ?int $retryDelay = null,
-        protected bool $isAsync = false
-    ) {}
+        ?int $maxRetries = null,
+        ?int $retryDelay = null,
+        bool $isAsync = false,
+        ?LoggerInterface $logger = null
+    ) {
+        $this->logger = $logger ?? new NullLogger;
+
+        $this->maxRetries = $maxRetries ?? self::DEFAULT_RETRIES;
+        $this->retryDelay = $retryDelay ?? self::DEFAULT_RETRY_DELAY;
+        $this->isAsync = $isAsync;
+
+        // Initialize with default options
+        $this->options = array_merge(self::getDefaultOptions(), $this->options);
+
+        // Set the timeout in options as well
+        if ($this->timeout !== null) {
+            $this->options['timeout'] = $this->timeout;
+        } else {
+            $this->timeout = $this->options['timeout'] ?? self::DEFAULT_TIMEOUT;
+            $this->options['timeout'] = $this->timeout;
+        }
+    }
 
     /**
-     * Apply options and execute the request.
+     * Create a new client handler with factory defaults.
+     *
+     * @return static New client handler instance
      */
-    public static function handle(string $method, string $uri, array $options = []): ResponseInterface|PromiseInterface
+    public static function create(): static
     {
-        $handler = new static;
-        $handler->applyOptions($options);
+        return new static;
+    }
 
-        return $handler->finalizeRequest($method, $uri);
+    /**
+     * Create a client handler with preconfigured base URI.
+     *
+     * @param  string  $baseUri  Base URI for all requests
+     * @return static New client handler instance
+     *
+     * @throws InvalidArgumentException If the base URI is invalid
+     */
+    public static function createWithBaseUri(string $baseUri): static
+    {
+        $instance = new static;
+        $instance->baseUri($baseUri);
+
+        return $instance;
+    }
+
+    /**
+     * Create a client handler with a custom HTTP client.
+     *
+     * @param  ClientInterface  $client  Custom HTTP client
+     * @return static New client handler instance
+     */
+    public static function createWithClient(ClientInterface $client): static
+    {
+        return new static(syncClient: $client);
     }
 
     /**
      * Get the default options for the request.
+     *
+     * @return array<string, mixed> Default options
      */
     public static function getDefaultOptions(): array
     {
-        return self::$defaultOptions;
+        return array_merge(self::$defaultOptions, [
+            'timeout' => self::DEFAULT_TIMEOUT,
+        ]);
     }
 
     /**
-     * Reset the handler state.
+     * Set the default options for all instances.
+     *
+     * @param  array<string, mixed>  $options  Default options
      */
-    public function reset(): self
+    public static function setDefaultOptions(array $options): void
     {
-        $this->options = [];
-        $this->timeout = null;
-        $this->retries = null;
-        $this->retryDelay = null;
-        $this->isAsync = false;
-
-        return $this;
+        self::$defaultOptions = array_merge(self::$defaultOptions, $options);
     }
 
     /**
-     * Get the synchronous HTTP client.
+     * Create a new mock response for testing.
+     *
+     * @param  int  $statusCode  HTTP status code
+     * @param  array<string, string|string[]>  $headers  Response headers
+     * @param  string|null  $body  Response body
+     * @param  string  $version  HTTP protocol version
+     * @param  string|null  $reason  Reason phrase
+     * @return Response Mock response
      */
-    public function getSyncClient(): ClientInterface
-    {
-        if (! $this->syncClient) {
-            $this->syncClient = new SyncClient;
-        }
-
-        return $this->syncClient;
+    public static function createMockResponse(
+        int $statusCode = 200,
+        array $headers = [],
+        ?string $body = null,
+        string $version = '1.1',
+        ?string $reason = null
+    ): Response {
+        return new Response($statusCode, $headers, $body, $version, $reason);
     }
 
     /**
-     * Set the synchronous HTTP client.
+     * Create a JSON response for testing.
+     *
+     * @param  array<mixed>|object  $data  JSON data
+     * @param  int  $statusCode  HTTP status code
+     * @param  array<string, string|string[]>  $headers  Additional headers
+     * @return Response Mock JSON response
      */
-    public function setSyncClient(ClientInterface $syncClient): self
-    {
-        $this->syncClient = $syncClient;
+    public static function createJsonResponse(
+        array|object $data,
+        int $statusCode = 200,
+        array $headers = []
+    ): Response {
+        $jsonData = json_encode($data, JSON_PRETTY_PRINT);
 
-        return $this;
-    }
-
-    /**
-     * Set the base URI for the request.
-     */
-    public function baseUri(string $baseUri): self
-    {
-        $this->options['base_uri'] = $baseUri;
-
-        return $this;
-    }
-
-    /**
-     * Set multiple options for the request.
-     */
-    public function withOptions(array $options): self
-    {
-        $this->options = array_merge($this->options, $options);
-
-        return $this;
-    }
-
-    /**
-     * Set a single option for the request.
-     */
-    public function withOption(string $key, mixed $value): self
-    {
-        $this->options[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the query parameters for the request.
-     */
-    public function withFormParams(array $params): self
-    {
-        $this->options['form_params'] = $params;
-
-        return $this;
-    }
-
-    /**
-     * Set the multipart data for the request.
-     */
-    public function withMultipart(array $multipart): self
-    {
-        $this->options['multipart'] = $multipart;
-
-        return $this;
-    }
-
-    /**
-     * Set the token for the request.
-     */
-    public function withToken(string $token): self
-    {
-        $this->options['headers']['Authorization'] = 'Bearer '.$token;
-
-        return $this;
-    }
-
-    /**
-     * Set the basic auth for the request.
-     */
-    public function withAuth(string $username, string $password): self
-    {
-        $this->options['auth'] = [$username, $password];
-
-        return $this;
-    }
-
-    /**
-     * Set the headers for the request.
-     */
-    public function withHeaders(array $headers): self
-    {
-        $this->options['headers'] = array_merge(
-            $this->options['headers'] ?? [],
+        $headers = array_merge(
+            ['Content-Type' => ContentType::JSON->value],
             $headers
         );
 
-        return $this;
+        return self::createMockResponse($statusCode, $headers, $jsonData);
     }
 
     /**
-     * Set a single header for the request.
-     */
-    public function withHeader(string $header, mixed $value): self
-    {
-        $this->options['headers'][$header] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the body for the request.
-     */
-    public function withBody(array|string $body, string $contentType = 'application/json'): self
-    {
-        if (is_array($body) && $contentType === 'application/json') {
-            $this->options['body'] = json_encode($body);
-
-            // Set JSON content type header if not already set
-            if (! $this->hasHeader('Content-Type')) {
-                $this->withHeader('Content-Type', 'application/json');
-            }
-        } elseif (is_array($body) && $contentType === 'application/x-www-form-urlencoded') {
-            $this->options['form_params'] = $body;
-        } elseif (is_array($body) && $contentType === 'multipart/form-data') {
-            $this->options['multipart'] = $body;
-        } else {
-            $this->options['body'] = $body;
-
-            if (! $this->hasHeader('Content-Type')) {
-                $this->withHeader('Content-Type', $contentType);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the JSON body for the request.
-     */
-    public function withJson(array $data): self
-    {
-        $this->options['json'] = $data;
-
-        if (! $this->hasHeader('Content-Type')) {
-            $this->withHeader('Content-Type', 'application/json');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the query parameters for the request.
-     */
-    public function withQueryParameters(array $queryParams): self
-    {
-        $this->options['query'] = array_merge(
-            $this->options['query'] ?? [],
-            $queryParams
-        );
-
-        return $this;
-    }
-
-    /**
-     * Set a single query parameter for the request.
-     */
-    public function withQueryParameter(string $name, mixed $value): self
-    {
-        $this->options['query'][$name] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the timeout for the request.
-     */
-    public function timeout(int $seconds): self
-    {
-        $this->timeout = $seconds;
-
-        return $this;
-    }
-
-    /**
-     * Set the retry logic for the request.
-     */
-    public function retry(int $retries, int $delay = 100): self
-    {
-        $this->retries = $retries;
-        $this->retryDelay = $delay;
-
-        return $this;
-    }
-
-    /**
-     * Set the request to be asynchronous or not.
-     */
-    public function async(?bool $async = true): self
-    {
-        $this->isAsync = $async;
-
-        return $this;
-    }
-
-    /**
-     * Set the proxy for the request.
-     */
-    public function withProxy(string|array $proxy): self
-    {
-        $this->options['proxy'] = $proxy;
-
-        return $this;
-    }
-
-    /**
-     * Set the cookies for the request.
-     */
-    public function withCookies(bool|CookieJarInterface $cookies): self
-    {
-        $this->options['cookies'] = $cookies;
-
-        return $this;
-    }
-
-    /**
-     * Set whether to follow redirects.
-     */
-    public function withRedirects(bool|array $redirects = true): self
-    {
-        $this->options['allow_redirects'] = $redirects;
-
-        return $this;
-    }
-
-    /**
-     * Set the certificate for the request.
-     */
-    public function withCert(string|array $cert): self
-    {
-        $this->options['cert'] = $cert;
-
-        return $this;
-    }
-
-    /**
-     * Set the SSL key for the request.
-     */
-    public function withSslKey(string|array $sslKey): self
-    {
-        $this->options['ssl_key'] = $sslKey;
-
-        return $this;
-    }
-
-    /**
-     * Set the stream option for the request.
-     */
-    public function withStream(bool $stream): self
-    {
-        $this->options['stream'] = $stream;
-
-        return $this;
-    }
-
-    /**
-     * Finalize and send a HEAD request.
-     */
-    public function head(string $uri): ResponseInterface|PromiseInterface
-    {
-        return $this->finalizeRequest('HEAD', $uri);
-    }
-
-    /**
-     * Finalize and send a GET request.
-     */
-    public function get(string $uri): ResponseInterface|PromiseInterface
-    {
-        return $this->finalizeRequest('GET', $uri);
-    }
-
-    /**
-     * Finalize and send a POST request.
-     */
-    public function post(string $uri, mixed $body = null, string $contentType = 'application/json'): ResponseInterface|PromiseInterface
-    {
-        $this->configurePostableRequest($uri, $body, $contentType);
-
-        return $this->finalizeRequest('POST', $uri);
-    }
-
-    /**
-     * Finalize and send a PATCH request.
-     */
-    public function patch(string $uri, mixed $body = null, string $contentType = 'application/json'): ResponseInterface|PromiseInterface
-    {
-        $this->configurePostableRequest($uri, $body, $contentType);
-
-        return $this->finalizeRequest('PATCH', $uri);
-    }
-
-    /**
-     * Finalize and send a PUT request.
-     */
-    public function put(string $uri, mixed $body = null, string $contentType = 'application/json'): ResponseInterface|PromiseInterface
-    {
-        $this->configurePostableRequest($uri, $body, $contentType);
-
-        return $this->finalizeRequest('PUT', $uri);
-    }
-
-    /**
-     * Finalize and send a DELETE request.
-     */
-    public function delete(string $uri): ResponseInterface|PromiseInterface
-    {
-        return $this->finalizeRequest('DELETE', $uri);
-    }
-
-    /**
-     * Finalize and send an OPTIONS request.
-     */
-    public function options(string $uri): ResponseInterface|PromiseInterface
-    {
-        return $this->finalizeRequest('OPTIONS', $uri);
-    }
-
-    /**
-     * Indicate that the request is asynchronous.
-     */
-    public function isAsync(): bool
-    {
-        return $this->isAsync;
-    }
-
-    /**
-     * Get the request options.
+     * Get the current request options.
+     *
+     * @return array<string, mixed> Current options
      */
     public function getOptions(): array
     {
@@ -449,6 +216,8 @@ class ClientHandler implements ClientHandlerInterface
 
     /**
      * Get the request headers.
+     *
+     * @return array<string, mixed> Current headers
      */
     public function getHeaders(): array
     {
@@ -456,7 +225,10 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
-     * Determine if the request has a specific header.
+     * Check if the request has a specific header.
+     *
+     * @param  string  $header  Header name
+     * @return bool Whether the header exists
      */
     public function hasHeader(string $header): bool
     {
@@ -464,7 +236,10 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
-     * Determine if the request has a specific option.
+     * Check if the request has a specific option.
+     *
+     * @param  string  $option  Option name
+     * @return bool Whether the option exists
      */
     public function hasOption(string $option): bool
     {
@@ -472,285 +247,123 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
-     * Debug the request and return its details.
+     * Get debug information about the request.
+     *
+     * @return array<string, mixed> Debug information
      */
     public function debug(): array
     {
         return [
             'uri' => $this->getFullUri(),
-            'method' => $this->options['method'] ?? 'GET',
+            'method' => $this->options['method'] ?? Method::GET->value,
             'headers' => $this->getHeaders(),
             'options' => array_diff_key($this->options, ['headers' => true]),
+            'is_async' => $this->isAsync,
+            'timeout' => $this->timeout,
+            'retries' => $this->maxRetries,
+            'retry_delay' => $this->retryDelay,
         ];
     }
 
     /**
-     * Wrap a callable to run asynchronously and return a promise.
-     */
-    public function wrapAsync(callable $callable): PromiseInterface
-    {
-        return async($callable);
-    }
-
-    /**
-     * Wait for a promise to resolve and return its value.
+     * Set the logger instance.
      *
-     * @throws \Throwable If the promise is rejected
+     * @param  LoggerInterface  $logger  PSR-3 logger
+     * @return $this
      */
-    public function awaitPromise(PromiseInterface $promise): mixed
+    public function setLogger(LoggerInterface $logger): self
     {
-        return await($promise);
+        $this->logger = $logger;
+
+        return $this;
     }
 
     /**
-     * Execute multiple promises concurrently and wait for all to complete.
+     * Clone this client handler with the given options.
      *
-     * @param  array<PromiseInterface>  $promises  Array of promises
-     * @return PromiseInterface Promise that resolves with an array of results
+     * @param  array<string, mixed>  $options  Options to apply to the clone
+     * @return static New client handler instance with the applied options
      */
-    public function all(array $promises): PromiseInterface
+    public function withClonedOptions(array $options): static
     {
-        return all($promises);
+        $clone = clone $this;
+        $clone->withOptions($options);
+
+        return $clone;
     }
 
     /**
-     * Execute multiple promises concurrently and return the first to complete.
+     * Log a retry attempt.
      *
-     * @param  array<PromiseInterface>  $promises  Array of promises
-     * @return PromiseInterface Promise that resolves with the first result
+     * @param  int  $attempt  Current attempt number
+     * @param  int  $maxAttempts  Maximum attempts
+     * @param  \Throwable  $exception  The exception that caused the retry
      */
-    public function race(array $promises): PromiseInterface
+    protected function logRetry(int $attempt, int $maxAttempts, \Throwable $exception): void
     {
-        return race($promises);
+        $this->logger->info(
+            'Retrying request',
+            [
+                'attempt' => $attempt,
+                'max_attempts' => $maxAttempts,
+                'uri' => $this->getFullUri(),
+                'method' => $this->options['method'] ?? Method::GET->value,
+                'error' => $exception->getMessage(),
+                'code' => $exception->getCode(),
+            ]
+        );
     }
 
     /**
-     * Execute multiple promises concurrently and return the first to succeed.
+     * Log a request.
      *
-     * @param  array<PromiseInterface>  $promises  Array of promises
-     * @return PromiseInterface Promise that resolves with the first successful result
-     *                          or rejects with an array of all rejection reasons
+     * @param  string  $method  HTTP method
+     * @param  string  $uri  Request URI
+     * @param  array<string, mixed>  $options  Request options
      */
-    public function any(array $promises): PromiseInterface
+    protected function logRequest(string $method, string $uri, array $options): void
     {
-        return any($promises);
-    }
+        // Remove potentially sensitive data
+        $sanitizedOptions = $options;
 
-    /**
-     * Add a callback to be executed when the promise resolves.
-     */
-    public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface
-    {
-        // Make sure we're in async mode
-        $this->async();
-
-        // Create a promise from the next request
-        $promise = $this->sendAsync();
-
-        // Add callbacks
-        return $promise->then($onFulfilled, $onRejected);
-    }
-
-    /**
-     * Add a callback to be executed when the promise is rejected.
-     */
-    public function catch(callable $onRejected): PromiseInterface
-    {
-        // Make sure we're in async mode
-        $this->async();
-
-        // Create a promise from the next request
-        $promise = $this->sendAsync();
-
-        // Add rejection callback
-        return $promise->otherwise($onRejected);
-    }
-
-    /**
-     * Add a callback to be executed when the promise settles (either resolves or rejects).
-     */
-    public function finally(callable $onFinally): PromiseInterface
-    {
-        // Make sure we're in async mode
-        $this->async();
-
-        // Create a promise from the next request
-        $promise = $this->sendAsync();
-
-        // Add finally callback
-        return $promise->always($onFinally);
-    }
-
-    /**
-     * Apply the options to the handler.
-     */
-    protected function applyOptions(array $options): void
-    {
-        if (isset($options['client'])) {
-            $this->setSyncClient($options['client']);
+        // Mask authorization headers
+        if (isset($sanitizedOptions['headers']['Authorization'])) {
+            $sanitizedOptions['headers']['Authorization'] = '[REDACTED]';
         }
 
-        $this->options = array_merge($this->options, $options);
-
-        $this->timeout = $options['timeout'] ?? $this->timeout;
-        $this->retries = $options['retries'] ?? $this->retries;
-        $this->retryDelay = $options['retry_delay'] ?? $this->retryDelay;
-        $this->isAsync = ! empty($options['async']);
-
-        if (isset($options['base_uri'])) {
-            $this->baseUri($options['base_uri']);
-        }
-    }
-
-    /**
-     * Finalize the request and send it.
-     */
-    protected function finalizeRequest(string $method, string $uri): ResponseInterface|PromiseInterface
-    {
-        $this->options['method'] = $method;
-        $this->options['uri'] = $uri;
-
-        $this->mergeOptionsAndProperties();
-
-        return $this->isAsync ? $this->sendAsync() : $this->sendSync();
-    }
-
-    /**
-     * Merge class properties and options into the final options array.
-     */
-    protected function mergeOptionsAndProperties(): void
-    {
-        $this->options['timeout'] = $this->timeout ?? self::DEFAULT_TIMEOUT;
-        $this->options['retries'] = $this->retries ?? self::DEFAULT_RETRIES;
-        $this->options['retry_delay'] = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
-    }
-
-    /**
-     * Send a synchronous HTTP request.
-     */
-    protected function sendSync(): ResponseInterface
-    {
-        return $this->retryRequest(function (): ResponseInterface {
-            $psrResponse = $this->getSyncClient()->request(
-                $this->options['method'],
-                $this->getFullUri(),
-                $this->options
-            );
-
-            return Response::createFromBase($psrResponse);
-        });
-    }
-
-    /**
-     * Send an asynchronous HTTP request.
-     */
-    protected function sendAsync(): PromiseInterface
-    {
-        return async(function (): ResponseInterface {
-            return $this->sendSync();
-        });
-    }
-
-    /**
-     * Implement retry logic for the request with exponential backoff.
-     */
-    protected function retryRequest(callable $request): ResponseInterface
-    {
-        $attempts = $this->retries ?? self::DEFAULT_RETRIES;
-        $delay = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
-
-        for ($i = 0; $i < $attempts; $i++) {
-            try {
-                return $request();
-            } catch (RequestException $e) {
-                if ($i === $attempts - 1) {
-                    throw $e; // Rethrow if all retries failed
-                }
-
-                // Only retry on server errors or network issues
-                if (! $this->isRetryableError($e)) {
-                    throw $e;
-                }
-
-                // Exponential backoff with jitter
-                $jitter = mt_rand(0, 100) / 100; // Random value between 0 and 1
-                usleep((int) (($delay * (1 + $jitter)) * 1000)); // Convert milliseconds to microseconds
-                $delay *= 2; // Exponential backoff
-            }
+        // Mask auth credentials
+        if (isset($sanitizedOptions['auth'])) {
+            $sanitizedOptions['auth'] = '[REDACTED]';
         }
 
-        throw new RuntimeException('Request failed after all retries.');
+        $this->logger->debug(
+            'Sending HTTP request',
+            [
+                'method' => $method,
+                'uri' => $uri,
+                'options' => $sanitizedOptions,
+            ]
+        );
     }
 
     /**
-     * Determine if an error is retryable.
+     * Log a response.
+     *
+     * @param  Response  $response  HTTP response
+     * @param  float  $duration  Request duration in seconds
      */
-    protected function isRetryableError(RequestException $e): bool
+    protected function logResponse(Response $response, float $duration): void
     {
-        $statusCode = $e->getCode();
-
-        // Retry server errors (5xx) and specific client errors
-        return ($statusCode >= 500 && $statusCode < 600) ||
-               in_array($statusCode, [408, 429]) ||
-               $e->getPrevious() instanceof \GuzzleHttp\Exception\ConnectException;
-    }
-
-    /**
-     * Get the full URI for the request.
-     */
-    protected function getFullUri(): string
-    {
-        $baseUri = $this->options['base_uri'] ?? '';
-        $uri = $this->options['uri'] ?? '';
-
-        // If the URI is an absolute URL, return it as is
-        if (filter_var($uri, \FILTER_VALIDATE_URL)) {
-            // If query parameters exist, append them to the URL
-            if (! empty($this->options['query'])) {
-                $parsedUrl = parse_url($uri);
-                $separator = ! empty($parsedUrl['query']) ? '&' : '?';
-
-                return $uri.$separator.http_build_query($this->options['query']);
-            }
-
-            return $uri;
-        }
-
-        // If base URI is empty, return the URI with leading slashes trimmed
-        if (empty($baseUri)) {
-            $result = ltrim($uri, '/');
-        } else {
-            // Ensure base URI is a valid URL
-            if (! filter_var($baseUri, \FILTER_VALIDATE_URL)) {
-                throw new InvalidArgumentException("Invalid base URI: $baseUri");
-            }
-
-            // Concatenate base URI and URI ensuring no double slashes
-            $result = rtrim($baseUri, '/').'/'.ltrim($uri, '/');
-        }
-
-        // If query parameters exist, append them to the URL
-        if (! empty($this->options['query'])) {
-            $separator = strpos($result, '?') !== false ? '&' : '?';
-            $result .= $separator.http_build_query($this->options['query']);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Finalize and send a POST/PATCH/PUT request.
-     */
-    protected function configurePostableRequest(string $uri, mixed $body = null, string $contentType = 'application/json'): void
-    {
-        if ($body !== null) {
-            if (is_array($body) && $contentType === 'application/json') {
-                $this->withJson($body);
-            } elseif (is_array($body) && $contentType === 'application/x-www-form-urlencoded') {
-                $this->withFormParams($body);
-            } else {
-                $this->withBody($body, $contentType);
-            }
-        }
+        $this->logger->debug(
+            'Received HTTP response',
+            [
+                'status_code' => $response->getStatusCode(),
+                'reason' => $response->getReasonPhrase(),
+                'duration' => round($duration, 3),
+                'content_length' => $response->hasHeader('Content-Length')
+                    ? $response->getHeaderLine('Content-Length')
+                    : strlen($response->getBody()->getContents()),
+            ]
+        );
     }
 }

@@ -315,9 +315,9 @@ Here's a complete list of methods available in the fluent API:
 ### HTTP Methods
 
 - `get(string $uri)`
-- `post(string $uri, mixed $body = null, string $contentType = 'application/json')`
-- `put(string $uri, mixed $body = null, string $contentType = 'application/json')`
-- `patch(string $uri, mixed $body = null, string $contentType = 'application/json')`
+- `post(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json')`
+- `put(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json')`
+- `patch(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json')`
 - `delete(string $uri)`
 - `head(string $uri)`
 - `options(string $uri)`
@@ -329,7 +329,7 @@ Here's a complete list of methods available in the fluent API:
 - `withHeader(string $header, mixed $value)`
 - `withQueryParameters(array $queryParams)`
 - `withQueryParameter(string $name, mixed $value)`
-- `withBody(array|string $body, string $contentType = 'application/json')`
+- `withBody(array|string $body, ContentType|string $contentType = 'application/json')`
 - `withJson(array $data)`
 - `withFormParams(array $params)`
 - `withMultipart(array $multipart)`

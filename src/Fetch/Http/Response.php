@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Fetch\Http;
 
 use ArrayAccess;
+use Fetch\Enum\ContentType;
+use Fetch\Enum\Status;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Traits\ResponseImmutabilityTrait;
 use GuzzleHttp\Psr7\Response as BaseResponse;
 use JsonException;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
@@ -14,6 +17,8 @@ use SimpleXMLElement;
 
 class Response extends BaseResponse implements ArrayAccess, ResponseInterface
 {
+    use ResponseImmutabilityTrait;
+
     /**
      * The buffered content of the body.
      */
@@ -23,13 +28,16 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      * Create new response instance.
      */
     public function __construct(
-        int $status = 200,
+        int|Status $status = Status::OK,
         array $headers = [],
         string $body = '',
         string $version = '1.1',
         ?string $reason = null
     ) {
-        parent::__construct($status, $headers, $body, $version, $reason);
+        // Convert Status enum to its value if provided
+        $statusCode = $status instanceof Status ? $status->value : $status;
+
+        parent::__construct($statusCode, $headers, $body, $version, $reason);
 
         // Buffer the body contents to handle it appropriately.
         $this->bodyContents = (string) $body;
@@ -52,17 +60,68 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     }
 
     /**
+     * Create a response with JSON content.
+     */
+    public static function withJson(
+        mixed $data,
+        int|Status $status = Status::OK,
+        array $headers = [],
+        int $options = 0
+    ): self {
+        $json = json_encode($data, $options | JSON_THROW_ON_ERROR);
+
+        // Set JSON content type if not already set
+        if (! isset($headers['Content-Type'])) {
+            $headers['Content-Type'] = ContentType::JSON->value;
+        }
+
+        return new self($status, $headers, $json);
+    }
+
+    /**
+     * Create a response with no content.
+     */
+    public static function noContent(array $headers = []): self
+    {
+        return new self(Status::NO_CONTENT, $headers);
+    }
+
+    /**
+     * Create a response for a created resource.
+     */
+    public static function created(
+        string $location,
+        mixed $data = null,
+        array $headers = []
+    ): self {
+        $headers['Location'] = $location;
+
+        if ($data !== null) {
+            return static::withJson($data, Status::CREATED, $headers);
+        }
+
+        return new self(Status::CREATED, $headers);
+    }
+
+    /**
+     * Create a redirect response.
+     */
+    public static function withRedirect(
+        string $location,
+        int|Status $status = Status::FOUND,
+        array $headers = []
+    ): self {
+        $headers['Location'] = $location;
+
+        return new self($status, $headers);
+    }
+
+    /**
      * Get the body as a JSON-decoded array or object.
      *
-     * @param  bool  $assoc  Whether to return associative array (true) or object (false)
-     * @param  bool  $throwOnError  Whether to throw an exception on JSON decode errors
-     * @param  int  $depth  Maximum nesting depth
-     * @param  int  $options  JSON decode options
-     * @return mixed
-     *
-     * @throws \JsonException When JSON cannot be decoded and $throwOnError is true
+     * @throws \RuntimeException When JSON cannot be decoded and $throwOnError is true
      */
-    public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0)
+    public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed
     {
         try {
             return json_decode(
@@ -82,19 +141,14 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
 
     /**
      * Get the body as a JSON-decoded object.
-     *
-     * @param  bool  $throwOnError  Whether to throw an exception on JSON decode errors
-     * @return object
      */
-    public function object(bool $throwOnError = true)
+    public function object(bool $throwOnError = true): object
     {
         return $this->json(false, $throwOnError);
     }
 
     /**
      * Get the body as a JSON-decoded array.
-     *
-     * @param  bool  $throwOnError  Whether to throw an exception on JSON decode errors
      */
     public function array(bool $throwOnError = true): array
     {
@@ -157,6 +211,14 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     public function status(): int
     {
         return $this->getStatusCode();
+    }
+
+    /**
+     * Get the status as an enum.
+     */
+    public function statusEnum(): ?Status
+    {
+        return Status::tryFrom($this->getStatusCode());
     }
 
     /**
@@ -244,7 +306,51 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function contentType(): ?string
     {
-        return $this->getHeaderLine('Content-Type');
+        return $this->getHeaderLine('Content-Type') ?: null;
+    }
+
+    /**
+     * Get the Content-Type as an enum.
+     */
+    public function contentTypeEnum(): ?ContentType
+    {
+        $contentType = $this->contentType();
+        if (! $contentType) {
+            return null;
+        }
+
+        // Strip parameters like charset
+        if (($pos = strpos($contentType, ';')) !== false) {
+            $contentType = trim(substr($contentType, 0, $pos));
+        }
+
+        return ContentType::tryFromString($contentType);
+    }
+
+    /**
+     * Check if the response has JSON content.
+     */
+    public function hasJsonContent(): bool
+    {
+        return $this->contentTypeEnum() === ContentType::JSON;
+    }
+
+    /**
+     * Check if the response has HTML content.
+     */
+    public function hasHtmlContent(): bool
+    {
+        return $this->contentTypeEnum() === ContentType::HTML;
+    }
+
+    /**
+     * Check if the response has text content.
+     */
+    public function hasTextContent(): bool
+    {
+        $contentType = $this->contentTypeEnum();
+
+        return $contentType !== null && $contentType->isText();
     }
 
     /**
@@ -276,8 +382,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Parse the body as XML.
      *
-     * @param  int  $options  SimpleXML options
-     * @param  bool  $throwOnError  Whether to throw an exception on XML parse errors
+     * @throws \RuntimeException When XML cannot be parsed and $throwOnError is true
      */
     public function xml(int $options = 0, bool $throwOnError = true): ?SimpleXMLElement
     {
@@ -293,7 +398,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
             return $xml;
         } catch (\Throwable $e) {
             // Restore previous error handling
-            libxml_use_internal_errors(false);
+            libxml_use_internal_errors($previous);
 
             if ($throwOnError) {
                 throw new RuntimeException('Failed to parse XML: '.$e->getMessage(), $e->getCode(), $e);
@@ -305,29 +410,22 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
 
     /**
      * Determine if the given offset exists in the JSON response.
-     *
-     * @param  string|int  $offset
      */
     public function offsetExists($offset): bool
     {
-        return isset($this->array()[$offset]);
+        return isset($this->array(false)[$offset]);
     }
 
     /**
      * Get the value at the given offset from the JSON response.
-     *
-     * @param  string|int  $offset
      */
     public function offsetGet($offset): mixed
     {
-        return $this->array()[$offset];
+        return $this->array(false)[$offset] ?? null;
     }
 
     /**
      * Set the value at the given offset in the JSON response (unsupported).
-     *
-     * @param  string|int  $offset
-     * @param  mixed  $value
      *
      * @throws \RuntimeException
      */
@@ -339,8 +437,6 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Unset the value at the given offset from the JSON response (unsupported).
      *
-     * @param  string|int  $offset
-     *
      * @throws \RuntimeException
      */
     public function offsetUnset($offset): void
@@ -351,9 +447,11 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Check if the response has the given status code.
      */
-    public function isStatus(int $status): bool
+    public function isStatus(int|Status $status): bool
     {
-        return $this->getStatusCode() === $status;
+        $statusCode = $status instanceof Status ? $status->value : $status;
+
+        return $this->getStatusCode() === $statusCode;
     }
 
     /**
@@ -361,7 +459,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isOk(): bool
     {
-        return $this->isStatus(200);
+        return $this->isStatus(Status::OK);
     }
 
     /**
@@ -369,7 +467,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isCreated(): bool
     {
-        return $this->isStatus(201);
+        return $this->isStatus(Status::CREATED);
     }
 
     /**
@@ -377,7 +475,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isAccepted(): bool
     {
-        return $this->isStatus(202);
+        return $this->isStatus(Status::ACCEPTED);
     }
 
     /**
@@ -385,7 +483,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isNoContent(): bool
     {
-        return $this->isStatus(204);
+        return $this->isStatus(Status::NO_CONTENT);
     }
 
     /**
@@ -393,7 +491,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isMovedPermanently(): bool
     {
-        return $this->isStatus(301);
+        return $this->isStatus(Status::MOVED_PERMANENTLY);
     }
 
     /**
@@ -401,7 +499,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isFound(): bool
     {
-        return $this->isStatus(302);
+        return $this->isStatus(Status::FOUND);
     }
 
     /**
@@ -409,7 +507,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isBadRequest(): bool
     {
-        return $this->isStatus(400);
+        return $this->isStatus(Status::BAD_REQUEST);
     }
 
     /**
@@ -417,7 +515,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isUnauthorized(): bool
     {
-        return $this->isStatus(401);
+        return $this->isStatus(Status::UNAUTHORIZED);
     }
 
     /**
@@ -425,7 +523,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isForbidden(): bool
     {
-        return $this->isStatus(403);
+        return $this->isStatus(Status::FORBIDDEN);
     }
 
     /**
@@ -433,7 +531,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isNotFound(): bool
     {
-        return $this->isStatus(404);
+        return $this->isStatus(Status::NOT_FOUND);
     }
 
     /**
@@ -441,7 +539,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isConflict(): bool
     {
-        return $this->isStatus(409);
+        return $this->isStatus(Status::CONFLICT);
     }
 
     /**
@@ -449,7 +547,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isUnprocessableEntity(): bool
     {
-        return $this->isStatus(422);
+        return $this->isStatus(Status::UNPROCESSABLE_ENTITY);
     }
 
     /**
@@ -457,7 +555,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isTooManyRequests(): bool
     {
-        return $this->isStatus(429);
+        return $this->isStatus(Status::TOO_MANY_REQUESTS);
     }
 
     /**
@@ -465,7 +563,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isInternalServerError(): bool
     {
-        return $this->isStatus(500);
+        return $this->isStatus(Status::INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -473,7 +571,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function isServiceUnavailable(): bool
     {
-        return $this->isStatus(503);
+        return $this->isStatus(Status::SERVICE_UNAVAILABLE);
     }
 
     /**

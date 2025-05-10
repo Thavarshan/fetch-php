@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Fetch\Interfaces;
 
 use ArrayAccess;
+use Fetch\Enum\ContentType;
+use Fetch\Enum\Status;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use SimpleXMLElement;
 
@@ -16,28 +18,55 @@ interface Response extends ArrayAccess, PsrResponseInterface
     public static function createFromBase(PsrResponseInterface $response): self;
 
     /**
-     * Get the body as a JSON-decoded array or object.
-     *
-     * @param  bool  $assoc  Whether to return associative array (true) or object (false)
-     * @param  bool  $throwOnError  Whether to throw an exception on JSON decode errors
-     * @param  int  $depth  Maximum nesting depth
-     * @param  int  $options  JSON decode options
-     * @return mixed
+     * Create a response with JSON content.
      */
-    public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0);
+    public static function withJson(
+        mixed $data,
+        int|Status $status = Status::OK,
+        array $headers = [],
+        int $options = 0
+    ): self;
+
+    /**
+     * Create a redirect response.
+     */
+    public static function withRedirect(
+        string $location,
+        int|Status $status = Status::FOUND,
+        array $headers = []
+    ): self;
+
+    /**
+     * Create a response with no content.
+     */
+    public static function noContent(array $headers = []): self;
+
+    /**
+     * Create a response for a created resource.
+     */
+    public static function created(
+        string $location,
+        mixed $data = null,
+        array $headers = []
+    ): self;
+
+    /**
+     * Get the body as a JSON-decoded array or object.
+     */
+    public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed;
+
+    /**
+     * Check if the response status code is a redirect (3xx).
+     */
+    public function redirect(): bool;
 
     /**
      * Get the body as a JSON-decoded object.
-     *
-     * @param  bool  $throwOnError  Whether to throw an exception on JSON decode errors
-     * @return object
      */
-    public function object(bool $throwOnError = true);
+    public function object(bool $throwOnError = true): object;
 
     /**
      * Get the body as a JSON-decoded array.
-     *
-     * @param  bool  $throwOnError  Whether to throw an exception on JSON decode errors
      */
     public function array(bool $throwOnError = true): array;
 
@@ -74,6 +103,11 @@ interface Response extends ArrayAccess, PsrResponseInterface
     public function status(): int;
 
     /**
+     * Get the status as an enum.
+     */
+    public function statusEnum(): ?Status;
+
+    /**
      * Check if the response status code is informational (1xx).
      */
     public function isInformational(): bool;
@@ -92,11 +126,6 @@ interface Response extends ArrayAccess, PsrResponseInterface
      * Check if the response status code is a redirection (3xx).
      */
     public function isRedirection(): bool;
-
-    /**
-     * Check if the response status code is a redirect (3xx).
-     */
-    public function redirect(): bool;
 
     /**
      * Check if the response status code is a client error (4xx).
@@ -129,6 +158,26 @@ interface Response extends ArrayAccess, PsrResponseInterface
     public function contentType(): ?string;
 
     /**
+     * Get the Content-Type as an enum.
+     */
+    public function contentTypeEnum(): ?ContentType;
+
+    /**
+     * Check if the response has JSON content.
+     */
+    public function hasJsonContent(): bool;
+
+    /**
+     * Check if the response has HTML content.
+     */
+    public function hasHtmlContent(): bool;
+
+    /**
+     * Check if the response has text content.
+     */
+    public function hasTextContent(): bool;
+
+    /**
      * Get the headers from the response as an array.
      */
     public function headers(): array;
@@ -140,16 +189,88 @@ interface Response extends ArrayAccess, PsrResponseInterface
 
     /**
      * Parse the body as XML.
-     *
-     * @param  int  $options  SimpleXML options
-     * @param  bool  $throwOnError  Whether to throw an exception on XML parse errors
      */
     public function xml(int $options = 0, bool $throwOnError = true): ?SimpleXMLElement;
 
     /**
      * Check if the response has the given status code.
      */
-    public function isStatus(int $status): bool;
+    public function isStatus(int|Status $status): bool;
+
+    /**
+     * Check if the response has a 200 status code.
+     */
+    public function isOk(): bool;
+
+    /**
+     * Check if the response has a 201 status code.
+     */
+    public function isCreated(): bool;
+
+    /**
+     * Check if the response has a 202 status code.
+     */
+    public function isAccepted(): bool;
+
+    /**
+     * Check if the response has a 204 status code.
+     */
+    public function isNoContent(): bool;
+
+    /**
+     * Check if the response has a 301 status code.
+     */
+    public function isMovedPermanently(): bool;
+
+    /**
+     * Check if the response has a 302 status code.
+     */
+    public function isFound(): bool;
+
+    /**
+     * Check if the response has a 400 status code.
+     */
+    public function isBadRequest(): bool;
+
+    /**
+     * Check if the response has a 401 status code.
+     */
+    public function isUnauthorized(): bool;
+
+    /**
+     * Check if the response has a 403 status code.
+     */
+    public function isForbidden(): bool;
+
+    /**
+     * Check if the response has a 404 status code.
+     */
+    public function isNotFound(): bool;
+
+    /**
+     * Check if the response has a 409 status code.
+     */
+    public function isConflict(): bool;
+
+    /**
+     * Check if the response has a 422 status code.
+     */
+    public function isUnprocessableEntity(): bool;
+
+    /**
+     * Check if the response has a 429 status code.
+     */
+    public function isTooManyRequests(): bool;
+
+    /**
+     * Check if the response has a 500 status code.
+     */
+    public function isInternalServerError(): bool;
+
+    /**
+     * Check if the response has a 503 status code.
+     */
+    public function isServiceUnavailable(): bool;
 
     /**
      * Get the value for a given key from the JSON response.
