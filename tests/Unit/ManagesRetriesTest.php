@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Concerns;
 
 use Exception;
-use Fetch\Concerns\ManagesRetries;
 use Fetch\Http\Response;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
@@ -14,24 +13,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionProperty;
 use RuntimeException;
-use Throwable;
-
-/**
- * A simple test class that uses the ManagesRetries trait for testing.
- */
-class ManagesRetriesTestClass
-{
-    use ManagesRetries;
-
-    public const DEFAULT_RETRIES = 1;
-
-    public const DEFAULT_RETRY_DELAY = 100;
-
-    public function logRetry(int $attempt, int $maxAttempts, Throwable $exception): void
-    {
-        // Do nothing in the test implementation
-    }
-}
+use Tests\Mocks\ManagesRetriesTestClass;
 
 class ManagesRetriesTest extends TestCase
 {
