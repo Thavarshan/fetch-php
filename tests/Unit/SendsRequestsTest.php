@@ -8,11 +8,14 @@ use Closure;
 use Fetch\Concerns\SendsRequests;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Http\Request;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestInterface;
 use React\Promise\PromiseInterface;
 use ReflectionObject;
 
@@ -22,10 +25,10 @@ class SendsRequestsTest extends TestCase
     {
         $uri = 'https://api.example.com/test';
 
-        $verifyCallback = function ($method, $requestUri, $options, $preparedOptions) use ($uri) {
-            $this->assertEquals(Method::GET->value, $method);
-            $this->assertEquals($uri, $requestUri);
-            $this->assertArrayNotHasKey('postable_request', $options); // Body should not be set for GET
+        $verifyCallback = function (RequestInterface $request) use ($uri) {
+            $this->assertEquals(Method::GET->value, $request->getMethod());
+            $this->assertEquals($uri, (string) $request->getUri());
+            $this->assertEmpty((string) $request->getBody()); // Body should not be set for GET
         };
 
         $instance = $this->createTraitImplementation($verifyCallback);
@@ -39,12 +42,16 @@ class SendsRequestsTest extends TestCase
         $uri = 'https://api.example.com/test';
         $body = ['name' => 'test', 'value' => 123];
 
-        $verifyCallback = function ($method, $requestUri, $options, $preparedOptions) use ($uri, $body) {
-            $this->assertEquals(Method::POST->value, $method);
-            $this->assertEquals($uri, $requestUri);
-            $this->assertArrayHasKey('postable_request', $options);
-            $this->assertEquals($body, $options['postable_request']['body']);
-            $this->assertEquals(ContentType::JSON->value, $options['postable_request']['contentType']);
+        $verifyCallback = function (RequestInterface $request) use ($uri, $body) {
+            $this->assertEquals(Method::POST->value, $request->getMethod());
+            $this->assertEquals($uri, (string) $request->getUri());
+            $this->assertNotEmpty((string) $request->getBody());
+            $this->assertEquals(ContentType::JSON->value, $request->getHeaderLine('Content-Type'));
+
+            // Test request should be instance of our Request class with helper methods
+            if ($request instanceof Request) {
+                $this->assertEquals($body, $request->getBodyAsJson());
+            }
         };
 
         $instance = $this->createTraitImplementation($verifyCallback);
@@ -57,9 +64,9 @@ class SendsRequestsTest extends TestCase
     {
         $uri = 'https://api.example.com/test';
 
-        $verifyCallback = function ($method, $requestUri, $options, $preparedOptions) use ($uri) {
-            $this->assertEquals(Method::GET->value, $method); // Should be converted to uppercase
-            $this->assertEquals($uri, $requestUri);
+        $verifyCallback = function (RequestInterface $request) use ($uri) {
+            $this->assertEquals(Method::GET->value, $request->getMethod()); // Should be converted to uppercase
+            $this->assertEquals($uri, (string) $request->getUri());
         };
 
         $instance = $this->createTraitImplementation($verifyCallback);
@@ -84,11 +91,11 @@ class SendsRequestsTest extends TestCase
         $uri = 'https://api.example.com/test';
         $options = ['timeout' => 60, 'verify' => false];
 
-        $verifyCallback = function ($method, $requestUri, $options, $preparedOptions) use ($uri) {
-            $this->assertEquals(Method::GET->value, $method);
-            $this->assertEquals($uri, $requestUri);
-            $this->assertEquals(60, $options['timeout']); // This check was failing before
-            $this->assertFalse($options['verify']);
+        $verifyCallback = function (RequestInterface $request, array $extractedOptions) use ($uri) {
+            $this->assertEquals(Method::GET->value, $request->getMethod());
+            $this->assertEquals($uri, (string) $request->getUri());
+            $this->assertEquals(60, $extractedOptions['timeout']);
+            $this->assertFalse($extractedOptions['verify']);
         };
 
         $instance = $this->createTraitImplementation($verifyCallback);
@@ -103,12 +110,11 @@ class SendsRequestsTest extends TestCase
         $body = 'test body content';
         $contentType = ContentType::TEXT;
 
-        $verifyCallback = function ($method, $requestUri, $options, $preparedOptions) use ($uri, $body, $contentType) {
-            $this->assertEquals(Method::POST->value, $method);
-            $this->assertEquals($uri, $requestUri);
-            $this->assertArrayHasKey('postable_request', $options);
-            $this->assertEquals($body, $options['postable_request']['body']);
-            $this->assertEquals($contentType, $options['postable_request']['contentType']);
+        $verifyCallback = function (RequestInterface $request) use ($uri, $body, $contentType) {
+            $this->assertEquals(Method::POST->value, $request->getMethod());
+            $this->assertEquals($uri, (string) $request->getUri());
+            $this->assertEquals($body, (string) $request->getBody());
+            $this->assertEquals($contentType->value, $request->getHeaderLine('Content-Type'));
         };
 
         $instance = $this->createTraitImplementation($verifyCallback);
@@ -119,12 +125,47 @@ class SendsRequestsTest extends TestCase
 
     public function test_handle_static_method(): void
     {
-        // This is trickier to test because it creates a new instance
-        // of the class internally. We'll have to mock the finalizeRequest method
-        // in a different way.
+        $uri = 'https://api.example.com/static';
+        // Create an anonymous class with required properties for trait
+        $class = new class
+        {
+            use SendsRequests;
 
-        // For simplicity, we'll skip this test for now
-        $this->markTestSkipped('Testing static methods requires a different approach');
+            // Required trait-backed properties with defaults
+            private array $options = [];
+
+            private array $preparedOptions = [];
+
+            private ?int $timeout = null;
+
+            private ?int $retries = null;
+
+            private ?int $retryDelay = null;
+
+            private bool $isAsync = false;
+
+            private ?ClientInterface $syncClient = null;
+
+            public static bool $called = false;
+
+            public static RequestInterface $lastRequest;
+
+            protected function sendSyncRequest(RequestInterface $request): ResponseInterface
+            {
+                self::$called = true;
+                self::$lastRequest = $request;
+
+                return new Response(204, [], '');
+            }
+        };
+
+        $className = get_class($class);
+        $response = $className::handle(Method::DELETE->value, $uri, ['timeout' => 42]);
+
+        $this->assertTrue($className::$called);
+        $this->assertEquals(Method::DELETE->value, $className::$lastRequest->getMethod());
+        $this->assertEquals($uri, (string) $className::$lastRequest->getUri());
+        $this->assertInstanceOf(ResponseInterface::class, $response);
     }
 
     public function test_get_sync_client(): void
@@ -132,9 +173,21 @@ class SendsRequestsTest extends TestCase
         $verifyCallback = function () {};
         $instance = $this->createTraitImplementation($verifyCallback);
 
-        // Since we're using an anonymous class, we can't really test this directly
-        // without making real HTTP requests, so we'll skip this test
-        $this->markTestSkipped('Testing getSyncClient would require real HTTP requests');
+        // First call returns a Client and sets internal property
+        $client1 = $instance->getSyncClient();
+        $this->assertInstanceOf(ClientInterface::class, $client1);
+
+        // Ensure default connect timeout is applied
+        if ($client1 instanceof Client) {
+            $this->assertEquals(
+                $instance::DEFAULT_TIMEOUT,
+                $client1->getConfig('connect_timeout')
+            );
+        }
+
+        // Subsequent calls return the same instance
+        $client2 = $instance->getSyncClient();
+        $this->assertSame($client1, $client2);
     }
 
     public function test_apply_options_with_client(): void
@@ -198,49 +251,119 @@ class SendsRequestsTest extends TestCase
         $this->assertEquals('https://api.example.com', $resultOptions['base_uri']);
     }
 
-    public function test_finalize_request(): void
+    public function test_create_request(): void
     {
-        $method = Method::GET->value;
         $uri = 'https://api.example.com/test';
 
-        $verifyCallback = function ($resultMethod, $resultUri, $options, $preparedOptions) use ($method, $uri) {
-            $this->assertEquals($method, $resultMethod);
-            $this->assertEquals($uri, $resultUri);
-            $this->assertEquals($method, $options['method']);
-            $this->assertEquals($uri, $options['uri']);
-        };
-
+        $verifyCallback = function () {};
         $instance = $this->createTraitImplementation($verifyCallback);
 
         // Call the protected method using reflection
         $reflection = new ReflectionObject($instance);
-        $method = $reflection->getMethod('finalizeRequest');
+        $method = $reflection->getMethod('createRequest');
         $method->setAccessible(true);
-        $response = $method->invoke($instance, Method::GET->value, $uri);
+        $request = $method->invoke($instance, Method::GET->value, $uri);
 
-        $this->assertSame($instance->getMockResponse(), $response);
+        $this->assertInstanceOf(Request::class, $request);
+        $this->assertEquals(Method::GET->value, $request->getMethod());
+        $this->assertEquals($uri, (string) $request->getUri());
     }
 
-    public function test_get_prepared_options(): void
+    public function test_configure_request_body_json(): void
+    {
+        $body = ['name' => 'test', 'value' => 123];
+        $contentType = ContentType::JSON;
+
+        $verifyCallback = function () {};
+        $instance = $this->createTraitImplementation($verifyCallback);
+
+        // Create a request to configure
+        $request = new Request(Method::POST->value, 'https://api.example.com/test');
+
+        // Call the protected method using reflection
+        $reflection = new ReflectionObject($instance);
+        $method = $reflection->getMethod('configureRequestBody');
+        $method->setAccessible(true);
+        $configuredRequest = $method->invoke($instance, $request, $body, $contentType);
+
+        $this->assertInstanceOf(Request::class, $configuredRequest);
+        $this->assertEquals(ContentType::JSON->value, $configuredRequest->getHeaderLine('Content-Type'));
+        $this->assertEquals($body, $configuredRequest->getBodyAsJson());
+    }
+
+    public function test_apply_options_to_request(): void
     {
         $verifyCallback = function () {};
         $instance = $this->createTraitImplementation($verifyCallback);
 
-        // Set some options
-        $instance->withOptions(['timeout' => 60, 'verify' => false]);
+        // Set some test options
+        $instance->withOptions([
+            'headers' => ['X-Test' => 'test-value'],
+            'query' => ['page' => 1, 'limit' => 10],
+            'auth' => ['username', 'password'],
+            'token' => 'test-token',
+        ]);
 
-        // Make sure prepared options are generated before we check them
+        // Create a request to apply options to
+        $request = new Request(Method::GET->value, 'https://api.example.com/test');
+
+        // Call the protected method using reflection
         $reflection = new ReflectionObject($instance);
-        $prepareMethod = $reflection->getMethod('prepareOptionsForGuzzle');
-        $prepareMethod->setAccessible(true);
-        $prepareMethod->invoke($instance);
+        $method = $reflection->getMethod('applyOptionsToRequest');
+        $method->setAccessible(true);
+        $configuredRequest = $method->invoke($instance, $request);
 
-        // Get the prepared options
-        $preparedOptions = $instance->getPreparedOptions();
+        // Verify headers were applied
+        $this->assertEquals('test-value', $configuredRequest->getHeaderLine('X-Test'));
 
-        // Verify they have our options
-        $this->assertEquals(60, $preparedOptions['timeout']);
-        $this->assertFalse($preparedOptions['verify']);
+        // Verify query parameters were applied
+        $this->assertStringContainsString('page=1', (string) $configuredRequest->getUri());
+        $this->assertStringContainsString('limit=10', (string) $configuredRequest->getUri());
+
+        // Verify authorization was applied (we'll test just one to keep it simple)
+        $this->assertTrue($configuredRequest->hasHeader('Authorization'));
+    }
+
+    public function test_extract_options_from_request(): void
+    {
+        $verifyCallback = function () {};
+        $instance = $this->createTraitImplementation($verifyCallback);
+
+        // Create a request with some headers and body
+        $request = (new Request(Method::POST->value, 'https://api.example.com/test'))
+            ->withHeader('Content-Type', ContentType::JSON->value)
+            ->withHeader('X-Test', 'test-value')
+            ->withJsonBody(['name' => 'test']);
+
+        // Call the protected method using reflection
+        $reflection = new ReflectionObject($instance);
+        $method = $reflection->getMethod('extractOptionsFromRequest');
+        $method->setAccessible(true);
+        $options = $method->invoke($instance, $request);
+
+        // Verify headers were extracted
+        $this->assertArrayHasKey('headers', $options);
+        $this->assertEquals(ContentType::JSON->value, $options['headers']['Content-Type']);
+        $this->assertEquals('test-value', $options['headers']['X-Test']);
+
+        // Verify body was extracted
+        $this->assertArrayHasKey('body', $options);
+        $this->assertNotEmpty($options['body']);
+    }
+
+    public function test_send_request(): void
+    {
+        $request = new Request(Method::GET->value, 'https://api.example.com/test');
+
+        $verifyCallback = function (RequestInterface $request) {
+            $this->assertEquals(Method::GET->value, $request->getMethod());
+            $this->assertEquals('https://api.example.com/test', (string) $request->getUri());
+        };
+
+        $instance = $this->createTraitImplementation($verifyCallback);
+        $response = $instance->sendRequest($request);
+
+        $this->assertSame($instance->getMockResponse(), $response);
     }
 
     /**
@@ -251,7 +374,6 @@ class SendsRequestsTest extends TestCase
      */
     private function createTraitImplementation(Closure $verifyCallback)
     {
-        // Create an anonymous class that uses the trait
         return new class($verifyCallback)
         {
             use SendsRequests;
@@ -276,31 +398,17 @@ class SendsRequestsTest extends TestCase
 
             public const DEFAULT_TIMEOUT = 30;
 
-            public const DEFAULT_RETRIES = 1;
-
-            public const DEFAULT_RETRY_DELAY = 100;
-
-            public function __construct(\Closure $verifyCallback)
+            public function __construct(Closure $verifyCallback)
             {
                 $this->verifyCallback = $verifyCallback;
                 $this->mockResponse = new Response(200, [], 'Test response');
             }
 
-            // Mock the methods that the trait depends on
             public function withOptions(array $options): self
             {
                 $this->options = array_merge($this->options, $options);
 
                 return $this;
-            }
-
-            public function configurePostableRequest(mixed $body, $contentType): void
-            {
-                // Record that this was called with these arguments
-                $this->options['postable_request'] = [
-                    'body' => $body,
-                    'contentType' => $contentType,
-                ];
             }
 
             public function baseUri(string $uri): self
@@ -324,72 +432,20 @@ class SendsRequestsTest extends TestCase
 
             protected function retryRequest(callable $callback): mixed
             {
-                // Just call the callback directly for testing
                 return $callback();
             }
 
-            // Override mergeOptionsAndProperties to correctly set timeout from options
-            protected function mergeOptionsAndProperties(): void
+            protected function sendSyncRequest(RequestInterface $request): ResponseInterface
             {
-                // We need to properly implement this to fix the timeout test
-                if (isset($this->options['timeout'])) {
-                    $this->timeout = $this->options['timeout'];
-                }
-                $this->options['timeout'] = $this->timeout ?? self::DEFAULT_TIMEOUT;
-                $this->options['retries'] = $this->retries ?? self::DEFAULT_RETRIES;
-                $this->options['retry_delay'] = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
-            }
-
-            // Override prepareOptionsForGuzzle to correctly set prepared options
-            protected function prepareOptionsForGuzzle(): void
-            {
-                // Copy all options to prepared options
-                $this->preparedOptions = $this->options;
-
-                // Remove our custom options that aren't supported by Guzzle
-                unset(
-                    $this->preparedOptions['method'],
-                    $this->preparedOptions['uri'],
-                    $this->preparedOptions['retries'],
-                    $this->preparedOptions['retry_delay'],
-                    $this->preparedOptions['async']
-                );
-            }
-
-            // Override sendSync to avoid making real HTTP requests
-            protected function sendSync(): ResponseInterface
-            {
-                // Make sure our options are properly prepared
-                $this->mergeOptionsAndProperties();
-                $this->prepareOptionsForGuzzle();
-
-                // Call the verify callback
-                ($this->verifyCallback)(
-                    $this->options['method'] ?? null,
-                    $this->getFullUri(),
-                    $this->options,
-                    $this->preparedOptions ?? []
-                );
+                ($this->verifyCallback)($request, $this->extractOptionsFromRequest($request));
 
                 return $this->mockResponse;
             }
 
-            // Override sendAsync to avoid making real HTTP requests
-            protected function sendAsync(): PromiseInterface
+            protected function sendAsyncRequest(RequestInterface $request): PromiseInterface
             {
-                // Make sure our options are properly prepared
-                $this->mergeOptionsAndProperties();
-                $this->prepareOptionsForGuzzle();
+                ($this->verifyCallback)($request, $this->extractOptionsFromRequest($request));
 
-                // Call the verify callback
-                ($this->verifyCallback)(
-                    $this->options['method'] ?? null,
-                    $this->getFullUri(),
-                    $this->options,
-                    $this->preparedOptions ?? []
-                );
-
-                // Return a mock promise that resolves with our mock response
                 return new class($this->mockResponse) implements PromiseInterface
                 {
                     private ResponseInterface $response;
@@ -420,14 +476,10 @@ class SendsRequestsTest extends TestCase
                         return $this;
                     }
 
-                    public function cancel(): void
-                    {
-                        // Do nothing
-                    }
+                    public function cancel(): void {}
                 };
             }
 
-            // Helper methods to access private properties for testing
             public function getMockResponse(): ResponseInterface
             {
                 return $this->mockResponse;
@@ -438,14 +490,24 @@ class SendsRequestsTest extends TestCase
                 return $this->options;
             }
 
-            public function getPreparedOptions(): array
+            public function publicCreateRequest(string $method, string $uri): Request
             {
-                // Make sure we have prepared options
-                if (empty($this->preparedOptions)) {
-                    $this->prepareOptionsForGuzzle();
-                }
+                return $this->createRequest($method, $uri);
+            }
 
-                return $this->preparedOptions;
+            public function publicConfigureRequestBody(Request $request, mixed $body, ContentType|string $contentType): Request
+            {
+                return $this->configureRequestBody($request, $body, $contentType);
+            }
+
+            public function publicApplyOptionsToRequest(Request $request): Request
+            {
+                return $this->applyOptionsToRequest($request);
+            }
+
+            public function publicExtractOptionsFromRequest(RequestInterface $request): array
+            {
+                return $this->extractOptionsFromRequest($request);
             }
         };
     }

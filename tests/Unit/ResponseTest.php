@@ -13,7 +13,7 @@ use stdClass;
 
 class ResponseTest extends TestCase
 {
-    public function test_constructor_and_basic_accessors()
+    public function test_constructor_and_basic_accessors(): void
     {
         $response = new Response(
             200,
@@ -26,7 +26,7 @@ class ResponseTest extends TestCase
         $this->assertEquals('{"name":"Test","value":123}', $response->body());
     }
 
-    public function test_create_from_base()
+    public function test_create_from_base(): void
     {
         $baseResponse = new GuzzleResponse(
             204,
@@ -41,7 +41,7 @@ class ResponseTest extends TestCase
         $this->assertEquals('Test Body', $response->body());
     }
 
-    public function test_json_decoding()
+    public function test_json_decoding(): void
     {
         $response = new Response(
             200,
@@ -74,7 +74,7 @@ class ResponseTest extends TestCase
         $this->assertEquals('Test', $object->name);
     }
 
-    public function test_json_decoding_exception()
+    public function test_json_decoding_exception(): void
     {
         $response = new Response(
             200,
@@ -86,7 +86,7 @@ class ResponseTest extends TestCase
         $response->json();
     }
 
-    public function test_json_decoding_exception_suppression()
+    public function test_json_decoding_exception_suppression(): void
     {
         $response = new Response(
             200,
@@ -101,7 +101,7 @@ class ResponseTest extends TestCase
         $this->assertEquals(new stdClass, $objResult);
     }
 
-    public function test_xml_decoding()
+    public function test_xml_decoding(): void
     {
         $response = new Response(
             200,
@@ -115,7 +115,7 @@ class ResponseTest extends TestCase
         $this->assertEquals('123', (string) $xml->value);
     }
 
-    public function test_xml_decoding_exception()
+    public function test_xml_decoding_exception(): void
     {
         $response = new Response(
             200,
@@ -127,7 +127,7 @@ class ResponseTest extends TestCase
         $response->xml();
     }
 
-    public function test_xml_decoding_exception_suppression()
+    public function test_xml_decoding_exception_suppression(): void
     {
         $response = new Response(
             200,
@@ -139,7 +139,7 @@ class ResponseTest extends TestCase
         $this->assertNull($result);
     }
 
-    public function test_status_code_checkers()
+    public function test_status_code_checkers(): void
     {
         // 1xx - Informational
         $response = new Response(100);
@@ -189,7 +189,7 @@ class ResponseTest extends TestCase
         $this->assertTrue($response->failed());
     }
 
-    public function test_specific_status_code_checkers()
+    public function test_specific_status_code_checkers(): void
     {
         $this->assertTrue((new Response(200))->isOk());
         $this->assertTrue((new Response(201))->isCreated());
@@ -208,13 +208,13 @@ class ResponseTest extends TestCase
         $this->assertTrue((new Response(503))->isServiceUnavailable());
     }
 
-    public function test_to_string()
+    public function test_to_string(): void
     {
         $response = new Response(200, [], 'Test Body');
         $this->assertEquals('Test Body', (string) $response);
     }
 
-    public function test_header_accessors()
+    public function test_header_accessors(): void
     {
         $response = new Response(
             200,
@@ -235,7 +235,7 @@ class ResponseTest extends TestCase
         $this->assertArrayHasKey('X-Test-Header', $headers);
     }
 
-    public function test_array_access()
+    public function test_array_access(): void
     {
         $response = new Response(
             200,
@@ -252,7 +252,7 @@ class ResponseTest extends TestCase
         $response['name'] = 'Modified';
     }
 
-    public function test_array_unset()
+    public function test_array_unset(): void
     {
         $response = new Response(
             200,
@@ -264,7 +264,7 @@ class ResponseTest extends TestCase
         unset($response['name']);
     }
 
-    public function test_blob()
+    public function test_blob(): void
     {
         $response = new Response(200, [], 'Binary Data');
         $blob = $response->blob();
@@ -274,7 +274,7 @@ class ResponseTest extends TestCase
         $this->assertEquals('Binary Data', $contents);
     }
 
-    public function test_array_buffer()
+    public function test_array_buffer(): void
     {
         $response = new Response(200, [], 'Binary Data');
         $buffer = $response->arrayBuffer();
@@ -283,7 +283,7 @@ class ResponseTest extends TestCase
         $this->assertEquals('Binary Data', $buffer);
     }
 
-    public function test_get_method()
+    public function test_get_method(): void
     {
         $response = new Response(
             200,

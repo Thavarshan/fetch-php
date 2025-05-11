@@ -6,6 +6,7 @@ namespace Fetch\Concerns;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Http\Request;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Client as SyncClient;
@@ -13,6 +14,7 @@ use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
 use InvalidArgumentException;
+use Psr\Http\Message\RequestInterface;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 
@@ -38,7 +40,10 @@ trait SendsRequests
         $handler = new static;
         $handler->applyOptions($options);
 
-        return $handler->finalizeRequest($method, $uri);
+        // Create a Request object and send it
+        $request = $handler->createRequest($method, $uri);
+
+        return $handler->sendRequest($request);
     }
 
     /**
@@ -76,12 +81,19 @@ trait SendsRequests
             throw new InvalidArgumentException("Invalid HTTP method: {$method}");
         }
 
+        // Create a base request
+        $request = $this->createRequest($method, $uri);
+
         // Configure request body for methods that accept one
         if ($methodEnum->supportsRequestBody() && $body !== null) {
-            $this->configurePostableRequest($body, $contentType);
+            $request = $this->configureRequestBody($request, $body, $contentType);
         }
 
-        return $this->finalizeRequest($method, $uri);
+        // Apply any additional options to the request
+        $request = $this->applyOptionsToRequest($request);
+
+        // Send the request
+        return $this->sendRequest($request);
     }
 
     /**
@@ -144,69 +156,196 @@ trait SendsRequests
     }
 
     /**
-     * Finalize the request and send it.
-     *
-     * @param  string  $method  The HTTP method to use
-     * @param  string  $uri  The URI to request
-     * @return ResponseInterface|PromiseInterface The response or promise
-     *
-     * @throws RuntimeException If the request fails
+     * Create a Request object with the specified method and URI.
      */
-    protected function finalizeRequest(string $method, string $uri): ResponseInterface|PromiseInterface
+    protected function createRequest(string $method, string $uri): Request
     {
-        $this->options['method'] = $method;
-        $this->options['uri'] = $uri;
-
-        $this->mergeOptionsAndProperties();
-        $this->prepareOptionsForGuzzle();
-
-        return $this->isAsync ? $this->sendAsync() : $this->sendSync();
+        // Create a basic request with the method and URI
+        return new Request($method, $uri);
     }
 
     /**
-     * Merge class properties and options into the final options array.
+     * Configure the body for a request.
      */
-    protected function mergeOptionsAndProperties(): void
+    protected function configureRequestBody(Request $request, mixed $body, ContentType|string $contentType): Request
     {
-        $this->options['timeout'] = $this->timeout ?? self::DEFAULT_TIMEOUT;
-        $this->options['retries'] = $this->retries ?? self::DEFAULT_RETRIES;
-        $this->options['retry_delay'] = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
+        // Convert string content type to enum if necessary
+        if (is_string($contentType)) {
+            try {
+                $contentType = ContentType::tryFromString($contentType, ContentType::JSON);
+            } catch (\ValueError $e) {
+                // If it's not a valid enum value, keep it as a string
+            }
+        }
+
+        // Handle different body types based on content type
+        if (is_array($body)) {
+            if ($contentType === ContentType::JSON) {
+                // Use the JSON body method
+                return $request->withJsonBody($body);
+            } elseif ($contentType === ContentType::FORM_URLENCODED) {
+                // Use the form body method
+                return $request->withFormBody($body);
+            } else {
+                // For any other content type, serialize the array to JSON
+                $json = json_encode($body);
+                if ($json === false) {
+                    throw new InvalidArgumentException('Failed to encode array body as JSON');
+                }
+
+                $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
+
+                return $request->withBody($json)->withContentType($contentTypeValue);
+            }
+        } else {
+            // For string bodies
+            $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
+
+            return $request->withBody($body)->withContentType($contentTypeValue);
+        }
     }
 
     /**
-     * Prepare options for Guzzle by removing custom options.
+     * Apply the current options to a Request object.
      */
-    protected function prepareOptionsForGuzzle(): void
+    protected function applyOptionsToRequest(Request $request): Request
     {
-        $guzzleOptions = $this->options;
+        // Apply headers from options
+        if (isset($this->options['headers']) && is_array($this->options['headers'])) {
+            foreach ($this->options['headers'] as $name => $value) {
+                $request = $request->withHeader($name, $value);
+            }
+        }
 
-        // Remove our custom options that aren't supported by Guzzle
-        unset(
-            $guzzleOptions['method'],
-            $guzzleOptions['uri'],
-            $guzzleOptions['retries'],
-            $guzzleOptions['retry_delay'],
-            $guzzleOptions['async']
-        );
+        // Apply query parameters
+        if (isset($this->options['query']) && is_array($this->options['query'])) {
+            foreach ($this->options['query'] as $name => $value) {
+                $request = $request->withQueryParam($name, $value);
+            }
+        }
 
-        $this->preparedOptions = $guzzleOptions;
+        // Apply basic auth if set
+        if (isset($this->options['auth']) && is_array($this->options['auth']) && count($this->options['auth']) >= 2) {
+            $request = $request->withBasicAuth($this->options['auth'][0], $this->options['auth'][1]);
+        }
+
+        // Apply bearer token if set
+        if (isset($this->options['token'])) {
+            $request = $request->withBearerToken($this->options['token']);
+        }
+
+        // Apply protocol version if specified
+        if (isset($this->options['protocol_version'])) {
+            $request = $request->withProtocolVersion($this->options['protocol_version']);
+        }
+
+        return $request;
+    }
+
+    /**
+     * Extract options from a Request object to prepare for Guzzle.
+     */
+    protected function extractOptionsFromRequest(RequestInterface $request): array
+    {
+        $options = [];
+
+        // Add headers
+        $headers = [];
+        foreach ($request->getHeaders() as $name => $values) {
+            $headers[$name] = implode(', ', $values);
+        }
+
+        if (! empty($headers)) {
+            $options['headers'] = $headers;
+        }
+
+        // Add body if present
+        $body = (string) $request->getBody();
+        if (! empty($body)) {
+            $options['body'] = $body;
+        }
+
+        // Add our custom options
+        $options = array_merge($options, $this->getCustomOptions());
+
+        return $options;
+    }
+
+    /**
+     * Get the custom options that are not part of the Request object.
+     */
+    protected function getCustomOptions(): array
+    {
+        $customOptions = [];
+
+        // Add timeout
+        if (isset($this->timeout)) {
+            $customOptions['timeout'] = $this->timeout;
+        } else {
+            $customOptions['timeout'] = $this->options['timeout'] ?? self::DEFAULT_TIMEOUT;
+        }
+
+        if (array_key_exists('verify', $this->options)) {
+            $customOptions['verify'] = $this->options['verify'];
+        }
+
+        // Add other custom options...
+        if (isset($this->options['proxy'])) {
+            $customOptions['proxy'] = $this->options['proxy'];
+        }
+
+        if (isset($this->options['cookies'])) {
+            $customOptions['cookies'] = $this->options['cookies'];
+        }
+
+        if (isset($this->options['allow_redirects'])) {
+            $customOptions['allow_redirects'] = $this->options['allow_redirects'];
+        }
+
+        if (isset($this->options['cert'])) {
+            $customOptions['cert'] = $this->options['cert'];
+        }
+
+        if (isset($this->options['ssl_key'])) {
+            $customOptions['ssl_key'] = $this->options['ssl_key'];
+        }
+
+        if (isset($this->options['stream'])) {
+            $customOptions['stream'] = $this->options['stream'];
+        }
+
+        return $customOptions;
+    }
+
+    /**
+     * Send a request and return the response.
+     */
+    public function sendRequest(RequestInterface $request): ResponseInterface|PromiseInterface
+    {
+        // Extract the necessary information for logging
+        $method = $request->getMethod();
+        $uri = (string) $request->getUri();
+
+        // Prepare options for Guzzle
+        $options = $this->extractOptionsFromRequest($request);
+
+        // Store for future reference
+        $this->preparedOptions = $options;
+
+        // Send async or sync based on configuration
+        return $this->isAsync ? $this->sendAsyncRequest($request) : $this->sendSyncRequest($request);
     }
 
     /**
      * Send a synchronous HTTP request.
-     *
-     * @return ResponseInterface The HTTP response
-     *
-     * @throws RuntimeException If the request fails
      */
-    protected function sendSync(): ResponseInterface
+    protected function sendSyncRequest(RequestInterface $request): ResponseInterface
     {
-        return $this->retryRequest(function (): ResponseInterface {
+        return $this->retryRequest(function () use ($request): ResponseInterface {
             try {
-                $psrResponse = $this->getSyncClient()->request(
-                    $this->options['method'],
-                    $this->getFullUri(),
-                    $this->preparedOptions ?? $this->options
+                $psrResponse = $this->getSyncClient()->send(
+                    $request,
+                    $this->preparedOptions ?? []
                 );
 
                 return Response::createFromBase($psrResponse);
@@ -214,8 +353,8 @@ trait SendsRequests
                 throw new RuntimeException(
                     sprintf(
                         'Request %s %s failed: %s',
-                        $this->options['method'],
-                        $this->getFullUri(),
+                        $request->getMethod(),
+                        (string) $request->getUri(),
                         $e->getMessage()
                     ),
                     $e->getCode(),
@@ -227,13 +366,11 @@ trait SendsRequests
 
     /**
      * Send an asynchronous HTTP request.
-     *
-     * @return PromiseInterface The promise for the HTTP response
      */
-    protected function sendAsync(): PromiseInterface
+    protected function sendAsyncRequest(RequestInterface $request): PromiseInterface
     {
-        return async(function (): ResponseInterface {
-            return $this->sendSync();
+        return async(function () use ($request): ResponseInterface {
+            return $this->sendSyncRequest($request);
         });
     }
 }

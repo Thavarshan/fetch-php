@@ -185,7 +185,7 @@ trait ManagesPromises
      */
     public function resolve(mixed $value): PromiseInterface
     {
-        return \React\Promise\resolve($value);
+        return resolve($value);
     }
 
     /**
@@ -196,7 +196,7 @@ trait ManagesPromises
      */
     public function reject(mixed $reason): PromiseInterface
     {
-        return \React\Promise\reject($reason);
+        return reject($reason);
     }
 
     /**
@@ -210,7 +210,7 @@ trait ManagesPromises
     public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
     {
         if (empty($items)) {
-            return \React\Promise\resolve([]);
+            return resolve([]);
         }
 
         if ($concurrency <= 0) {
@@ -308,7 +308,7 @@ trait ManagesPromises
     {
         // If no more callables, resolve with the results
         if (empty($callables)) {
-            return \React\Promise\resolve($results);
+            return resolve($results);
         }
 
         // Take the first callable
@@ -387,7 +387,7 @@ trait ManagesPromises
                     function ($reason) use ($key, &$pendingPromises) {
                         unset($pendingPromises[$key]);
 
-                        return \React\Promise\reject($reason); // Propagate the rejection
+                        return reject($reason); // Propagate the rejection
                     }
                 );
 
@@ -396,17 +396,17 @@ trait ManagesPromises
 
             // If we've processed all items and have no more pending promises, resolve
             if ($i >= $totalItems && empty($pendingPromises)) {
-                return \React\Promise\resolve($results);
+                return resolve($results);
             }
 
             // Return a promise that resolves when all pending promises are done
             if (! empty($pendingPromises)) {
-                return \React\Promise\all($pendingPromises)->then(function () use (&$results) {
+                return all($pendingPromises)->then(function () use (&$results) {
                     return $results;
                 });
             }
 
-            return \React\Promise\resolve($results);
+            return resolve($results);
         };
 
         // Start the process

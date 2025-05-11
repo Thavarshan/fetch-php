@@ -1,320 +1,378 @@
+---
+title: Error Handling
+description: Learn how to handle errors and exceptions with the Fetch HTTP package
+---
+
 # Error Handling
 
-Properly handling errors is crucial when working with HTTP requests. Fetch PHP provides robust error handling mechanisms for both synchronous and asynchronous requests, allowing you to gracefully manage network failures, server errors, and invalid responses.
+This guide explains how to handle errors when making HTTP requests with the Fetch HTTP package.
 
 ## Response Status Checking
 
-Before diving into exception handling, it's important to understand how Fetch PHP allows you to check response status:
+The most common way to handle HTTP errors is by checking the response status:
 
 ```php
-$response = fetch('https://api.example.com/users/1');
+use function Fetch\Http\get;
 
-// Check if the response was successful (status code 200-299)
-if ($response->ok()) {
+$response = get('https://api.example.com/users/123');
+
+if ($response->successful()) {
+    // Status code is 2xx - process the response
     $user = $response->json();
+    echo "Found user: {$user['name']}";
 } else {
-    // Handle error response
+    // Error occurred - handle based on status code
     echo "Error: " . $response->status() . " " . $response->statusText();
 }
+```
 
-// More specific status checks
-if ($response->successful()) {  // 200-299
-    echo "Success!";
-} elseif ($response->failed()) {  // 400+
-    echo "Request failed";
-} elseif ($response->clientError()) {  // 400-499
-    echo "Client error";
-} elseif ($response->serverError()) {  // 500-599
-    echo "Server error";
+## Status Category Methods
+
+The `Response` class provides methods to check different status code categories:
+
+```php
+$response = get('https://api.example.com/users/123');
+
+if ($response->successful()) {
+    // Status code is 2xx
+    $user = $response->json();
+    echo "Found user: {$user['name']}";
+} elseif ($response->clientError()) {
+    // Status code is 4xx
+    echo "Client error: " . $response->status();
+} elseif ($response->serverError()) {
+    // Status code is 5xx
+    echo "Server error: " . $response->status();
+} elseif ($response->redirect()) {
+    // Status code is 3xx
+    echo "Redirect to: " . $response->header('Location');
 }
 ```
 
-## Synchronous Error Handling
+## Specific Status Code Methods
 
-For synchronous requests, you can use PHP's standard `try/catch` blocks to handle exceptions:
-
-```php
-try {
-    $response = fetch('https://api.example.com/nonexistent');
-
-    if ($response->ok()) {
-        $data = $response->json();
-        print_r($data);
-    } else {
-        echo "HTTP Error: " . $response->status() . " - " . $response->statusText();
-    }
-} catch (\Throwable $e) {
-    echo "Exception: " . $e->getMessage();
-}
-```
-
-### Handling Specific Exceptions
-
-You can catch specific exception types to handle different error scenarios:
+For handling specific status codes, the `Response` class provides dedicated methods:
 
 ```php
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
-
-try {
-    $response = fetch('https://api.example.com/users');
+if ($response->isOk()) {
+    // 200 OK
     $data = $response->json();
-} catch (ConnectException $e) {
-    // Handle connection errors (e.g., network down, DNS failure)
-    echo "Connection error: " . $e->getMessage();
-} catch (RequestException $e) {
-    // Handle request errors with response (e.g., 404, 500)
-    if ($e->hasResponse()) {
-        $response = $e->getResponse();
-        echo "API error: " . $response->getStatusCode() . " " . $response->getReasonPhrase();
-    } else {
-        echo "Request error without response: " . $e->getMessage();
+} elseif ($response->isNotFound()) {
+    // 404 Not Found
+    echo "Resource not found";
+} elseif ($response->isUnauthorized()) {
+    // 401 Unauthorized
+    echo "Authentication required";
+} elseif ($response->isForbidden()) {
+    // 403 Forbidden
+    echo "Access denied";
+} elseif ($response->isUnprocessableEntity()) {
+    // 422 Unprocessable Entity
+    $errors = $response->json()['errors'] ?? [];
+    foreach ($errors as $field => $messages) {
+        echo "{$field}: " . implode(', ', $messages) . "\n";
     }
-} catch (\Throwable $e) {
-    // Handle any other exceptions
-    echo "Other error: " . $e->getMessage();
 }
 ```
 
-## Asynchronous Error Handling
+## Exception Handling
 
-For asynchronous requests, Fetch PHP uses Promise-based error handling with the `.catch()` method:
-
-```php
-use function async;
-use Fetch\Interfaces\Response as ResponseInterface;
-
-async(fn () => fetch('https://api.example.com/nonexistent'))
-    ->then(function (ResponseInterface $response) {
-        if ($response->ok()) {
-            return $response->json();
-        }
-        // Convert HTTP errors to exceptions to be caught below
-        throw new \Exception("HTTP error: " . $response->status() . " " . $response->statusText());
-    })
-    ->then(function ($data) {
-        echo "Data: " . json_encode($data);
-    })
-    ->catch(function (\Throwable $e) {
-        echo "Error: " . $e->getMessage();
-    });
-```
-
-### Async/Await Error Handling
-
-You can also use try/catch with await for a more synchronous-looking code structure:
+When network errors or other exceptions occur, they are thrown as PHP exceptions:
 
 ```php
-use function async;
-use function await;
+use Fetch\Exceptions\NetworkException;
+use Fetch\Exceptions\RequestException;
+use Fetch\Exceptions\ClientException;
+use Fetch\Exceptions\TimeoutException;
 
 try {
-    $response = await(async(fn () => fetch('https://api.example.com/nonexistent')));
+    $response = get('https://api.example.com/users');
 
-    if ($response->ok()) {
-        $data = $response->json();
-        print_r($data);
-    } else {
-        throw new \Exception("HTTP error: " . $response->status() . " " . $response->statusText());
+    if ($response->failed()) {
+        throw new \Exception("Request failed with status: " . $response->status());
     }
-} catch (\Throwable $e) {
+
+    $users = $response->json();
+} catch (NetworkException $e) {
+    // Network-related issues (DNS failure, connection refused, etc.)
+    echo "Network error: " . $e->getMessage();
+} catch (TimeoutException $e) {
+    // Request timed out
+    echo "Request timed out: " . $e->getMessage();
+} catch (RequestException $e) {
+    // HTTP request errors
+    echo "Request error: " . $e->getMessage();
+
+    // If the exception has a response, you can still access it
+    if ($e->hasResponse()) {
+        $errorResponse = $e->getResponse();
+        $statusCode = $errorResponse->status();
+        $errorDetails = $errorResponse->json()['error'] ?? 'Unknown error';
+        echo "Status: {$statusCode}, Error: {$errorDetails}";
+    }
+} catch (ClientException $e) {
+    // General client errors
+    echo "Client error: " . $e->getMessage();
+} catch (\Exception $e) {
+    // Catch any other exceptions
     echo "Error: " . $e->getMessage();
 }
 ```
 
-## Configuring HTTP Error Handling
+## Handling JSON Decoding Errors
 
-By default, Fetch PHP will throw exceptions for HTTP errors (4xx and 5xx responses). You can disable this behavior using the `http_errors` option:
-
-```php
-$response = fetch('https://api.example.com/nonexistent', [
-    'http_errors' => false  // Don't throw exceptions for 4xx/5xx responses
-]);
-
-if ($response->ok()) {
-    $data = $response->json();
-} else {
-    echo "HTTP Error: " . $response->status() . " - " . $response->statusText();
-}
-```
-
-## Retry Mechanism
-
-Fetch PHP includes built-in retry functionality for handling transient errors:
-
-```php
-// Retry up to 3 times with exponential backoff starting at 100ms
-$response = fetch('https://api.example.com/unstable', [
-    'retries' => 3,
-    'retry_delay' => 100
-]);
-
-// Using the fluent API
-$response = fetch()
-    ->retry(3, 100)  // 3 retries, 100ms initial delay
-    ->get('https://api.example.com/unstable');
-```
-
-The retry mechanism uses exponential backoff with jitter:
-- First retry: ~100ms delay
-- Second retry: ~200ms delay
-- Third retry: ~400ms delay
-
-Only certain types of errors trigger retries by default:
-- Server errors (5xx status codes)
-- Specific client errors (408 Request Timeout, 429 Too Many Requests)
-- Connection exceptions
-
-## Custom Retry Logic
-
-For more advanced retry scenarios, you can implement custom retry logic:
-
-```php
-use function async;
-use function await;
-
-$maxRetries = 5;
-$backoffDelay = 100; // milliseconds
-
-$attemptRequest = function ($retriesLeft = $maxRetries, $delay = $backoffDelay) use (&$attemptRequest) {
-    return async(function () use ($retriesLeft, $delay, $attemptRequest) {
-        try {
-            $response = fetch('https://api.example.com/unstable');
-
-            // Retry on certain status codes even with successful connection
-            if ($response->status() === 429 || $response->status() >= 500) {
-                if ($retriesLeft > 0) {
-                    echo "Got status " . $response->status() . ", retrying...\n";
-
-                    // Add jitter to prevent thundering herd
-                    $jitter = rand(-20, 20) / 100; // ±20% jitter
-                    $actualDelay = $delay * (1 + $jitter);
-
-                    // Sleep with microseconds (convert ms to μs)
-                    usleep($actualDelay * 1000);
-
-                    // Retry with exponential backoff
-                    return await($attemptRequest($retriesLeft - 1, $delay * 2));
-                }
-            }
-
-            return $response;
-        } catch (\Throwable $e) {
-            if ($retriesLeft > 0) {
-                echo "Request failed: " . $e->getMessage() . ", retrying...\n";
-
-                // Sleep with jitter
-                $jitter = rand(-20, 20) / 100;
-                $actualDelay = $delay * (1 + $jitter);
-                usleep($actualDelay * 1000);
-
-                // Retry with exponential backoff
-                return await($attemptRequest($retriesLeft - 1, $delay * 2));
-            }
-
-            // No more retries, rethrow the exception
-            throw $e;
-        }
-    });
-};
-
-try {
-    $response = await($attemptRequest());
-    $data = $response->json();
-    echo "Success after retries!";
-} catch (\Throwable $e) {
-    echo "All retry attempts failed: " . $e->getMessage();
-}
-```
-
-## Handling Timeouts
-
-You can configure request timeouts to prevent your application from hanging:
-
-```php
-// Set a 5-second timeout
-$response = fetch('https://api.example.com/slow-endpoint', [
-    'timeout' => 5
-]);
-
-// Using the fluent API
-$response = fetch()
-    ->timeout(5)
-    ->get('https://api.example.com/slow-endpoint');
-```
-
-When a request times out, Fetch PHP will throw an exception:
+When decoding JSON responses, you may encounter parsing errors:
 
 ```php
 try {
-    $response = fetch('https://api.example.com/slow-endpoint', ['timeout' => 2]);
     $data = $response->json();
-} catch (\Throwable $e) {
-    echo "Request timed out or failed: " . $e->getMessage();
-}
-```
+} catch (\RuntimeException $e) {
+    // JSON parsing failed
+    echo "Failed to decode JSON: " . $e->getMessage();
 
-## Handling JSON Parsing Errors
-
-When working with JSON responses, parsing errors can occur if the server returns invalid JSON:
-
-```php
-try {
-    $response = fetch('https://api.example.com/users');
-
-    // This will throw if the response is not valid JSON
-    $data = $response->json();
-} catch (\Throwable $e) {
-    echo "Failed to parse JSON: " . $e->getMessage();
-
-    // You can still access the raw response body
+    // You can access the raw response body
     $rawBody = $response->body();
     echo "Raw response: " . $rawBody;
 }
 ```
 
-## Best Practices for Error Handling
+To suppress JSON decoding errors:
 
-1. **Always check response status**: Use `$response->ok()` or more specific status methods before processing the response.
+```php
+// Pass false to disable throwing exceptions
+$data = $response->json(true, false);
 
-2. **Use appropriate exception handling**: Wrap request code in try/catch blocks to handle network errors and other exceptions.
+// Or use the get method with a default
+$value = $response->get('key', 'default value');
+```
 
-3. **Implement retries for transient errors**: Use the retry mechanism for operations that may fail temporarily.
+## Handling Validation Errors
 
-4. **Set reasonable timeouts**: Configure timeouts to prevent hanging requests.
+Many APIs return validation errors with status 422 (Unprocessable Entity):
 
-5. **Provide meaningful error messages**: Convert technical errors to user-friendly messages when appropriate.
+```php
+$response = post('https://api.example.com/users', [
+    'email' => 'invalid-email',
+    'password' => '123'  // Too short
+]);
 
-6. **Log errors for debugging**: Log detailed error information while showing simplified messages to users.
+if ($response->isUnprocessableEntity()) {
+    $errors = $response->json()['errors'] ?? [];
 
-7. **Handle different content types properly**: Use the appropriate method for parsing the response based on its content type.
+    foreach ($errors as $field => $messages) {
+        echo "- {$field}: " . implode(', ', $messages) . "\n";
+    }
+}
+```
 
-Example of comprehensive error handling:
+## Common API Error Formats
+
+Different APIs structure their error responses differently. Here's how to handle some common formats:
+
+### Standard JSON API Errors
+
+```php
+if ($response->failed()) {
+    $errorData = $response->json();
+
+    // Format: { "error": { "code": "invalid_token", "message": "The token is invalid" } }
+    if (isset($errorData['error']['message'])) {
+        echo "Error: " . $errorData['error']['message'];
+        echo "Code: " . $errorData['error']['code'] ?? 'unknown';
+    }
+    // Format: { "errors": [{ "title": "Invalid token", "detail": "The token is expired" }] }
+    elseif (isset($errorData['errors']) && is_array($errorData['errors'])) {
+        foreach ($errorData['errors'] as $error) {
+            echo $error['title'] . ": " . $error['detail'] . "\n";
+        }
+    }
+    // Format: { "message": "Validation failed", "errors": { "email": ["Invalid email"] } }
+    elseif (isset($errorData['message']) && isset($errorData['errors'])) {
+        echo $errorData['message'] . "\n";
+        foreach ($errorData['errors'] as $field => $messages) {
+            echo "- {$field}: " . implode(', ', $messages) . "\n";
+        }
+    }
+    // Simple format: { "message": "An error occurred" }
+    elseif (isset($errorData['message'])) {
+        echo "Error: " . $errorData['message'];
+    }
+    // Fallback
+    else {
+        echo "Unknown error occurred. Status code: " . $response->status();
+    }
+}
+```
+
+## Retry on Error
+
+You can automatically retry requests that fail due to transient errors:
+
+```php
+use Fetch\Http\ClientHandler;
+
+$response = ClientHandler::create()
+    // Retry up to 3 times with exponential backoff
+    ->retry(3, 100)
+    // Customize which status codes to retry
+    ->retryStatusCodes([429, 503, 504])
+    // Customize which exceptions to retry
+    ->retryExceptions([\GuzzleHttp\Exception\ConnectException::class])
+    ->get('https://api.example.com/unstable-endpoint');
+```
+
+## Handling Rate Limits
+
+Many APIs implement rate limiting. Here's how to handle 429 Too Many Requests responses:
+
+```php
+$response = get('https://api.example.com/users');
+
+if ($response->isTooManyRequests()) {
+    // Check for Retry-After header (might be in seconds or a timestamp)
+    $retryAfter = $response->header('Retry-After');
+
+    if ($retryAfter !== null) {
+        if (is_numeric($retryAfter)) {
+            $waitSeconds = (int) $retryAfter;
+        } else {
+            // Parse HTTP date
+            $waitSeconds = strtotime($retryAfter) - time();
+        }
+
+        echo "Rate limited. Please try again after {$waitSeconds} seconds.";
+
+        // You could wait and retry automatically
+        if ($waitSeconds > 0 && $waitSeconds < 60) {  // Only wait if reasonable
+            sleep($waitSeconds);
+            return get('https://api.example.com/users');
+        }
+    } else {
+        echo "Rate limited. Please try again later.";
+    }
+}
+```
+
+## Custom Error Handling Class
+
+For more advanced applications, you might want to create a dedicated error handler:
+
+```php
+class ApiErrorHandler
+{
+    /**
+     * Handle a response that might contain errors.
+     */
+    public function handleResponse($response)
+    {
+        if ($response->successful()) {
+            return $response;
+        }
+
+        switch ($response->status()) {
+            case 401:
+                throw new AuthenticationException("Authentication required");
+
+            case 403:
+                throw new AuthorizationException("You don't have permission to access this resource");
+
+            case 404:
+                throw new ResourceNotFoundException("The requested resource was not found");
+
+            case 422:
+                $errors = $response->json()['errors'] ?? [];
+                throw new ValidationException("Validation failed", $errors);
+
+            case 429:
+                $retryAfter = $response->header('Retry-After');
+                throw new RateLimitException("Too many requests", $retryAfter);
+
+            case 500:
+            case 502:
+            case 503:
+            case 504:
+                throw new ServerException("Server error: " . $response->status());
+
+            default:
+                throw new ApiException("API error: " . $response->status());
+        }
+    }
+}
+
+// Usage
+$errorHandler = new ApiErrorHandler();
+
+try {
+    $response = get('https://api.example.com/users');
+    $errorHandler->handleResponse($response);
+
+    // Process successful response
+    $users = $response->json();
+} catch (AuthenticationException $e) {
+    // Handle authentication error
+} catch (ValidationException $e) {
+    // Handle validation errors
+    $errors = $e->getErrors();
+} catch (ApiException $e) {
+    // Handle other API errors
+}
+```
+
+## Debugging Errors
+
+For debugging, you can use the `debug()` method to get detailed information about a request:
 
 ```php
 try {
-    $response = fetch('https://api.example.com/users')
-        ->retry(3, 100)  // Retry up to 3 times
-        ->timeout(5);    // 5-second timeout
+    $client = fetch();
+    $debug = $client->debug();
 
-    if ($response->ok()) {
-        try {
-            $data = $response->json();
-            // Process data...
-        } catch (\Throwable $e) {
-            // Handle JSON parsing errors
-            log_error("JSON parsing error: " . $e->getMessage());
-            return "Unable to process the response data";
-        }
-    } else {
-        // Handle HTTP error responses
-        $errorMessage = "API error: " . $response->status();
-        log_error($errorMessage . " - " . $response->body());
-        return "Unable to fetch users at this time";
+    // Attempt the request
+    $response = $client->get('https://api.example.com/users');
+
+    if ($response->failed()) {
+        echo "Request failed with status: " . $response->status() . "\n";
+        echo "Debug information:\n";
+        print_r($debug);
     }
-} catch (\Throwable $e) {
-    // Handle network errors and other exceptions
-    log_error("Request exception: " . $e->getMessage());
-    return "Connection error. Please try again later";
+} catch (\Exception $e) {
+    echo "Exception: " . $e->getMessage() . "\n";
+    echo "Debug information:\n";
+    print_r($debug);
 }
 ```
+
+## Error Logging
+
+You can use a PSR-3 compatible logger to log errors:
+
+```php
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// Create a logger
+$logger = new Logger('api');
+$logger->pushHandler(new StreamHandler('logs/api.log', Logger::ERROR));
+
+// Configure the client with the logger
+fetch_client(logger: $logger);
+
+// Now errors will be logged
+try {
+    $response = get('https://api.example.com/users');
+
+    if ($response->failed()) {
+        // This will be logged by the client
+        throw new \Exception("API request failed: " . $response->status());
+    }
+} catch (\Exception $e) {
+    // Additional custom logging if needed
+    $logger->error("Custom error handler: " . $e->getMessage());
+}
+```
+
+## Next Steps
+
+- Learn about [Retry Handling](/guide/retry-handling) for automatic recovery from errors
+- Explore [Logging](/guide/logging) for more advanced error logging
+- See [Authentication](/guide/authentication) for handling authentication errors

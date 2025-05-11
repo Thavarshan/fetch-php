@@ -14,7 +14,9 @@ trait RequestImmutabilityTrait
      */
     public function withAddedHeader($name, $value): static
     {
-        return $this->toStatic(parent::withAddedHeader($name, $value));
+        $new = parent::withAddedHeader($name, $value);
+
+        return $this->toStatic($new);
     }
 
     /**
@@ -22,7 +24,9 @@ trait RequestImmutabilityTrait
      */
     public function withoutHeader($name): static
     {
-        return $this->toStatic(parent::withoutHeader($name));
+        $new = parent::withoutHeader($name);
+
+        return $this->toStatic($new);
     }
 
     /**
@@ -30,7 +34,9 @@ trait RequestImmutabilityTrait
      */
     public function withHeader($name, $value): static
     {
-        return $this->toStatic(parent::withHeader($name, $value));
+        $new = parent::withHeader($name, $value);
+
+        return $this->toStatic($new);
     }
 
     /**
@@ -38,7 +44,9 @@ trait RequestImmutabilityTrait
      */
     public function withProtocolVersion($version): static
     {
-        return $this->toStatic(parent::withProtocolVersion($version));
+        $new = parent::withProtocolVersion($version);
+
+        return $this->toStatic($new);
     }
 
     /**
@@ -46,7 +54,9 @@ trait RequestImmutabilityTrait
      */
     public function withUri(UriInterface $uri, $preserveHost = false): static
     {
-        return $this->toStatic(parent::withUri($uri, $preserveHost));
+        $new = parent::withUri($uri, $preserveHost);
+
+        return $this->toStatic($new);
     }
 
     /**
@@ -54,27 +64,45 @@ trait RequestImmutabilityTrait
      */
     public function withMethod($method): static
     {
-        return $this->toStatic(parent::withMethod($method));
-    }
+        $new = parent::withMethod($method);
 
-    /**
-     * Return an instance with the specified request target.
-     */
-    public function withRequestTarget($requestTarget): static
-    {
-        return $this->toStatic(parent::withRequestTarget($requestTarget));
+        return $this->toStatic($new);
     }
 
     /**
      * Convert a parent method result to the current class type.
+     * This preserves all properties including custom request target.
      */
     protected function toStatic(RequestInterface $new): static
     {
-        return new static(
+        // Get the custom request target if this class has it set
+        $requestTarget = null;
+        if (property_exists($this, 'customRequestTarget') && $this->customRequestTarget !== null) {
+            $requestTarget = $this->customRequestTarget;
+        }
+
+        // If the new instance has a different request target than what's derived from its URI,
+        // it means it has a custom request target set
+        $defaultTarget = '/'.ltrim($new->getUri()->getPath(), '/');
+        $query = $new->getUri()->getQuery();
+        if ($query !== '') {
+            $defaultTarget .= '?'.$query;
+        }
+
+        if ($new->getRequestTarget() !== $defaultTarget) {
+            $requestTarget = $new->getRequestTarget();
+        }
+
+        // Create new instance with all properties
+        $instance = new static(
             $new->getMethod(),
             $new->getUri(),
             $new->getHeaders(),
-            $new->getBody()
+            $new->getBody(),
+            $new->getProtocolVersion(),
+            $requestTarget
         );
+
+        return $instance;
     }
 }

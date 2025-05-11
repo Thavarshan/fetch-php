@@ -1,6 +1,11 @@
-# ClientHandler Class
+---
+title: ClientHandler API Reference
+description: API reference for the ClientHandler class in the Fetch HTTP client package
+---
 
-The `ClientHandler` class provides a fluent, chainable API for building and sending HTTP requests. It offers extensive configuration options, including headers, authentication, request body, and more.
+# ClientHandler API Reference
+
+The complete API reference for the `ClientHandler` class in the Fetch HTTP client package.
 
 ## Class Declaration
 
@@ -13,44 +18,82 @@ class ClientHandler implements ClientHandlerInterface
 }
 ```
 
+## Constants
+
+```php
+/**
+ * Default timeout for requests in seconds.
+ */
+public const DEFAULT_TIMEOUT = 30;
+
+/**
+ * Default number of retries.
+ */
+public const DEFAULT_RETRIES = 1;
+
+/**
+ * Default delay between retries in milliseconds.
+ */
+public const DEFAULT_RETRY_DELAY = 100;
+```
+
 ## Constructor
 
 ```php
+/**
+ * ClientHandler constructor.
+ *
+ * @param  ClientInterface|null  $syncClient  The synchronous HTTP client
+ * @param  array<string, mixed>  $options  The options for the request
+ * @param  int|null  $timeout  Timeout for the request in seconds
+ * @param  int|null  $maxRetries  Number of retries for the request
+ * @param  int|null  $retryDelay  Delay between retries in milliseconds
+ * @param  bool  $isAsync  Whether the request is asynchronous
+ * @param  LoggerInterface|null  $logger  Logger for request/response details
+ */
 public function __construct(
     protected ?ClientInterface $syncClient = null,
     protected array $options = [],
     protected ?int $timeout = null,
-    protected ?int $retries = null,
-    protected ?int $retryDelay = null,
-    protected bool $isAsync = false
+    ?int $maxRetries = null,
+    ?int $retryDelay = null,
+    bool $isAsync = false,
+    ?LoggerInterface $logger = null
 )
 ```
 
-### Parameters
+## Factory Methods
 
-- `$syncClient` (optional): A custom Guzzle HTTP client
-- `$options` (optional): Request options array
-- `$timeout` (optional): Request timeout in seconds
-- `$retries` (optional): Number of retry attempts
-- `$retryDelay` (optional): Delay between retry attempts in milliseconds
-- `$isAsync` (optional): Whether requests should be asynchronous
+### `create()`
 
-## Static Methods
+Creates a new client handler with factory defaults.
+
+```php
+public static function create(): static
+```
+
+### `createWithBaseUri()`
+
+Creates a client handler with preconfigured base URI.
+
+```php
+public static function createWithBaseUri(string $baseUri): static
+```
+
+### `createWithClient()`
+
+Creates a client handler with a custom HTTP client.
+
+```php
+public static function createWithClient(ClientInterface $client): static
+```
 
 ### `handle()`
 
-Creates and executes an HTTP request.
+Creates and executes an HTTP request with a single static method call.
 
 ```php
 public static function handle(string $method, string $uri, array $options = []): ResponseInterface|PromiseInterface
-```
-
-### `getDefaultOptions()`
-
-Returns the default request options.
-
-```php
-public static function getDefaultOptions(): array
 ```
 
 ## HTTP Methods
@@ -60,7 +103,7 @@ public static function getDefaultOptions(): array
 Sends a GET request.
 
 ```php
-public function get(string $uri): ResponseInterface|PromiseInterface
+public function get(string $uri, array $queryParams = []): ResponseInterface|PromiseInterface
 ```
 
 ### `post()`
@@ -68,7 +111,11 @@ public function get(string $uri): ResponseInterface|PromiseInterface
 Sends a POST request.
 
 ```php
-public function post(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json'): ResponseInterface|PromiseInterface
+public function post(
+    string $uri,
+    mixed $body = null,
+    ContentType|string $contentType = ContentType::JSON
+): ResponseInterface|PromiseInterface
 ```
 
 ### `put()`
@@ -76,7 +123,11 @@ public function post(string $uri, mixed $body = null, ContentType|string $conten
 Sends a PUT request.
 
 ```php
-public function put(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json'): ResponseInterface|PromiseInterface
+public function put(
+    string $uri,
+    mixed $body = null,
+    ContentType|string $contentType = ContentType::JSON
+): ResponseInterface|PromiseInterface
 ```
 
 ### `patch()`
@@ -84,7 +135,11 @@ public function put(string $uri, mixed $body = null, ContentType|string $content
 Sends a PATCH request.
 
 ```php
-public function patch(string $uri, mixed $body = null, ContentType|string $contentType = 'application/json'): ResponseInterface|PromiseInterface
+public function patch(
+    string $uri,
+    mixed $body = null,
+    ContentType|string $contentType = ContentType::JSON
+): ResponseInterface|PromiseInterface
 ```
 
 ### `delete()`
@@ -92,7 +147,11 @@ public function patch(string $uri, mixed $body = null, ContentType|string $conte
 Sends a DELETE request.
 
 ```php
-public function delete(string $uri): ResponseInterface|PromiseInterface
+public function delete(
+    string $uri,
+    mixed $body = null,
+    ContentType|string $contentType = ContentType::JSON
+): ResponseInterface|PromiseInterface
 ```
 
 ### `head()`
@@ -111,15 +170,47 @@ Sends an OPTIONS request.
 public function options(string $uri): ResponseInterface|PromiseInterface
 ```
 
-## Request Configuration Methods
+### `request()`
+
+Sends a custom HTTP request.
+
+```php
+public function request(
+    string $method,
+    string $uri,
+    mixed $body = null,
+    ContentType|string $contentType = ContentType::JSON,
+    array $options = []
+): ResponseInterface|PromiseInterface
+```
+
+## URI Configuration
 
 ### `baseUri()`
 
-Sets the base URI for requests.
+Sets the base URI for all requests.
 
 ```php
 public function baseUri(string $baseUri): self
 ```
+
+### `getFullUri()`
+
+Gets the full URI for the request, combining base URI, relative URI, and query parameters.
+
+```php
+protected function getFullUri(): string
+```
+
+### `normalizeUri()`
+
+Normalizes a URI by ensuring it has the correct format.
+
+```php
+protected function normalizeUri(string $uri): string
+```
+
+## Headers Configuration
 
 ### `withHeaders()`
 
@@ -137,12 +228,30 @@ Sets a single request header.
 public function withHeader(string $header, mixed $value): self
 ```
 
-### `withBody()`
+### `getHeaders()`
 
-Sets the request body.
+Gets the current request headers.
 
 ```php
-public function withBody(array|string $body, ContentType|string $contentType = 'application/json'): self
+public function getHeaders(): array
+```
+
+### `hasHeader()`
+
+Checks if a header is set.
+
+```php
+public function hasHeader(string $header): bool
+```
+
+## Request Body Configuration
+
+### `withBody()`
+
+Sets the request body with content type.
+
+```php
+public function withBody(array|string $body, ContentType|string $contentType = ContentType::JSON): self
 ```
 
 ### `withJson()`
@@ -150,7 +259,7 @@ public function withBody(array|string $body, ContentType|string $contentType = '
 Sets a JSON request body.
 
 ```php
-public function withJson(array $data): self
+public function withJson(array $data, int $options = 0): self
 ```
 
 ### `withFormParams()`
@@ -169,9 +278,11 @@ Sets multipart form data (for file uploads).
 public function withMultipart(array $multipart): self
 ```
 
+## Query Parameters
+
 ### `withQueryParameters()`
 
-Sets query parameters.
+Sets multiple query parameters.
 
 ```php
 public function withQueryParameters(array $queryParams): self
@@ -184,6 +295,8 @@ Sets a single query parameter.
 ```php
 public function withQueryParameter(string $name, mixed $value): self
 ```
+
+## Authentication
 
 ### `withToken()`
 
@@ -199,6 +312,24 @@ Sets Basic authentication credentials.
 
 ```php
 public function withAuth(string $username, string $password): self
+```
+
+## Request Configuration
+
+### `timeout()`
+
+Sets the request timeout in seconds.
+
+```php
+public function timeout(int $seconds): self
+```
+
+### `applyOptions()`
+
+Applies an array of options to the handler.
+
+```php
+protected function applyOptions(array $options): void
 ```
 
 ### `withProxy()`
@@ -265,39 +396,221 @@ Sets multiple request options.
 public function withOptions(array $options): self
 ```
 
-### `timeout()`
+### `getOptions()`
 
-Sets the request timeout.
+Gets the current request options.
 
 ```php
-public function timeout(int $seconds): self
+public function getOptions(): array
 ```
+
+### `hasOption()`
+
+Checks if an option is set.
+
+```php
+public function hasOption(string $option): bool
+```
+
+### `withClonedOptions()`
+
+Clones the client handler with new options.
+
+```php
+public function withClonedOptions(array $options): static
+```
+
+## Retry Configuration
 
 ### `retry()`
 
-Sets retry configuration.
+Configures retry behavior for failed requests.
 
 ```php
 public function retry(int $retries, int $delay = 100): self
 ```
 
+### `retryStatusCodes()`
+
+Sets which HTTP status codes should trigger a retry.
+
+```php
+public function retryStatusCodes(array $statusCodes): self
+```
+
+### `retryExceptions()`
+
+Sets which exception types should trigger a retry.
+
+```php
+public function retryExceptions(array $exceptions): self
+```
+
+### `getMaxRetries()`
+
+Gets the current maximum retry count.
+
+```php
+public function getMaxRetries(): int
+```
+
+### `getRetryDelay()`
+
+Gets the current retry delay in milliseconds.
+
+```php
+public function getRetryDelay(): int
+```
+
+### `getRetryableStatusCodes()`
+
+Gets the list of status codes that trigger retries.
+
+```php
+public function getRetryableStatusCodes(): array
+```
+
+### `getRetryableExceptions()`
+
+Gets the list of exception types that trigger retries.
+
+```php
+public function getRetryableExceptions(): array
+```
+
+## Request Execution
+
+### `sendRequest()`
+
+Sends a request and returns the response.
+
+```php
+public function sendRequest(RequestInterface $request): ResponseInterface|PromiseInterface
+```
+
+### `finalizeRequest()`
+
+Finalizes and sends a request with the specified method and URI.
+
+```php
+protected function finalizeRequest(string $method, string $uri): ResponseInterface|PromiseInterface
+```
+
+## Asynchronous Request Handling
+
 ### `async()`
 
-Sets asynchronous mode.
+Sets the request to be asynchronous.
 
 ```php
 public function async(?bool $async = true): self
 ```
 
-## Utility Methods
+### `isAsync()`
 
-### `reset()`
-
-Resets the handler state.
+Checks if the request will be executed asynchronously.
 
 ```php
-public function reset(): self
+public function isAsync(): bool
 ```
+
+### `wrapAsync()`
+
+Wraps a callable to run asynchronously.
+
+```php
+public function wrapAsync(callable $callable): PromiseInterface
+```
+
+### `awaitPromise()`
+
+Waits for a promise to resolve and return its value.
+
+```php
+public function awaitPromise(PromiseInterface $promise, ?float $timeout = null): mixed
+```
+
+### `all()`
+
+Executes multiple promises concurrently and waits for all to complete.
+
+```php
+public function all(array $promises): PromiseInterface
+```
+
+### `race()`
+
+Executes multiple promises concurrently and returns the first to complete.
+
+```php
+public function race(array $promises): PromiseInterface
+```
+
+### `any()`
+
+Executes multiple promises concurrently and returns the first to succeed.
+
+```php
+public function any(array $promises): PromiseInterface
+```
+
+### `sequence()`
+
+Executes multiple promises in sequence.
+
+```php
+public function sequence(array $callables): PromiseInterface
+```
+
+### `map()`
+
+Maps an array of items through an async callback.
+
+```php
+public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
+```
+
+### `then()`
+
+Adds a callback to be executed when the promise resolves.
+
+```php
+public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface
+```
+
+### `catch()`
+
+Adds a callback to be executed when the promise is rejected.
+
+```php
+public function catch(callable $onRejected): PromiseInterface
+```
+
+### `finally()`
+
+Adds a callback to be executed when the promise settles.
+
+```php
+public function finally(callable $onFinally): PromiseInterface
+```
+
+### `resolve()`
+
+Creates a resolved promise with the given value.
+
+```php
+public function resolve(mixed $value): PromiseInterface
+```
+
+### `reject()`
+
+Creates a rejected promise with the given reason.
+
+```php
+public function reject(mixed $reason): PromiseInterface
+```
+
+## Client Management
 
 ### `getSyncClient()`
 
@@ -315,44 +628,32 @@ Sets the underlying Guzzle client.
 public function setSyncClient(ClientInterface $syncClient): self
 ```
 
-### `isAsync()`
+### `getPreparedOptions()`
 
-Checks if async mode is enabled.
+Gets the raw prepared options array for Guzzle.
 
 ```php
-public function isAsync(): bool
+public function getPreparedOptions(): array
 ```
 
-### `getOptions()`
+## Logging
 
-Gets the current request options.
+### `setLogger()`
+
+Sets the PSR-3 logger instance.
 
 ```php
-public function getOptions(): array
+public function setLogger(LoggerInterface $logger): self
 ```
 
-### `getHeaders()`
+## Utility Methods
 
-Gets the current request headers.
+### `reset()`
 
-```php
-public function getHeaders(): array
-```
-
-### `hasHeader()`
-
-Checks if a header is set.
+Resets the handler state.
 
 ```php
-public function hasHeader(string $header): bool
-```
-
-### `hasOption()`
-
-Checks if an option is set.
-
-```php
-public function hasOption(string $option): bool
+public function reset(): self
 ```
 
 ### `debug()`
@@ -363,192 +664,48 @@ Returns debug information about the request.
 public function debug(): array
 ```
 
-## Asynchronous Methods
+## Testing Utilities
 
-### `wrapAsync()`
+### `createMockResponse()`
 
-Wraps a callable to run asynchronously.
+Creates a new mock response for testing.
 
 ```php
-public function wrapAsync(callable $callable): PromiseInterface
+public static function createMockResponse(
+    int $statusCode = 200,
+    array $headers = [],
+    ?string $body = null,
+    string $version = '1.1',
+    ?string $reason = null
+): Response
 ```
 
-### `awaitPromise()`
+### `createJsonResponse()`
 
-Waits for a promise to resolve.
+Creates a JSON response for testing.
 
 ```php
-public function awaitPromise(PromiseInterface $promise): mixed
+public static function createJsonResponse(
+    array|object $data,
+    int $statusCode = 200,
+    array $headers = []
+): Response
 ```
 
-### `all()`
+## Static Options
 
-Waits for all promises to resolve.
+### `getDefaultOptions()`
+
+Gets the default options for all requests.
 
 ```php
-public function all(array $promises): PromiseInterface
+public static function getDefaultOptions(): array
 ```
 
-### `race()`
+### `setDefaultOptions()`
 
-Returns the first promise to resolve.
-
-```php
-public function race(array $promises): PromiseInterface
-```
-
-### `any()`
-
-Returns the first promise to succeed.
+Sets the default options for all client instances.
 
 ```php
-public function any(array $promises): PromiseInterface
-```
-
-### `then()`
-
-Adds a fulfillment handler.
-
-```php
-public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface
-```
-
-### `catch()`
-
-Adds a rejection handler.
-
-```php
-public function catch(callable $onRejected): PromiseInterface
-```
-
-### `finally()`
-
-Adds a handler for promise settlement.
-
-```php
-public function finally(callable $onFinally): PromiseInterface
-```
-
-## Examples
-
-### Basic GET Request
-
-```php
-$client = new ClientHandler();
-$response = $client->get('https://api.example.com/users');
-$users = $response->json();
-```
-
-### Configuring Headers and Authentication
-
-```php
-$client = new ClientHandler();
-$response = $client
-    ->withHeaders([
-        'Accept' => 'application/json',
-        'X-API-Key' => 'your-api-key'
-    ])
-    ->withToken('your-oauth-token')
-    ->get('https://api.example.com/users');
-```
-
-### POST Request with JSON Body
-
-```php
-$client = new ClientHandler();
-$response = $client
-    ->baseUri('https://api.example.com')
-    ->withJson([
-        'name' => 'John Doe',
-        'email' => 'john@example.com'
-    ])
-    ->post('/users');
-```
-
-### File Upload
-
-```php
-$client = new ClientHandler();
-$response = $client
-    ->withMultipart([
-        [
-            'name' => 'file',
-            'contents' => fopen('/path/to/file.jpg', 'r'),
-            'filename' => 'upload.jpg',
-        ],
-        [
-            'name' => 'description',
-            'contents' => 'File description',
-        ]
-    ])
-    ->post('https://api.example.com/upload');
-```
-
-### Setting Timeout and Retries
-
-```php
-$client = new ClientHandler();
-$response = $client
-    ->timeout(5)           // 5 second timeout
-    ->retry(3, 100)        // Retry up to 3 times with 100ms initial delay
-    ->get('https://api.example.com/unstable');
-```
-
-### Asynchronous Request with Promise Chain
-
-```php
-$client = new ClientHandler();
-$client
-    ->withToken('your-oauth-token')
-    ->async()                // Enable async mode
-    ->get('https://api.example.com/users')
-    ->then(function ($response) {
-        $users = $response->json();
-        echo "Fetched " . count($users) . " users";
-        return $users;
-    })
-    ->catch(function ($error) {
-        echo "Error: " . $error->getMessage();
-    });
-```
-
-### Multiple Concurrent Requests
-
-```php
-$client = new ClientHandler();
-
-// Create promises for multiple requests
-$usersPromise = $client->async()->get('https://api.example.com/users');
-$postsPromise = $client->async()->get('https://api.example.com/posts');
-
-// Wait for all to complete
-$client->all([
-    'users' => $usersPromise,
-    'posts' => $postsPromise
-])->then(function ($results) {
-    $users = $results['users']->json();
-    $posts = $results['posts']->json();
-
-    echo "Fetched " . count($users) . " users and " . count($posts) . " posts";
-});
-```
-
-### Get the First to Complete
-
-```php
-$client = new ClientHandler();
-
-// Create promises for multiple endpoints
-$promises = [
-    $client->async()->get('https://api1.example.com/data'),
-    $client->async()->get('https://api2.example.com/data'),
-    $client->async()->get('https://api3.example.com/data')
-];
-
-// Get the result from whichever completes first
-$client->race($promises)
-    ->then(function ($response) {
-        $data = $response->json();
-        echo "Got data from the fastest source";
-    });
+public static function setDefaultOptions(array $options): void
 ```
