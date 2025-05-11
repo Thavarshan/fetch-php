@@ -34,7 +34,7 @@ if (! function_exists('fetch')) {
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function fetch(string|RequestInterface|null $resource = null, ?array $options = []): ResponseInterface|ClientHandler
+    function fetch(string|RequestInterface|null $resource = null, ?array $options = []): ResponseInterface|ClientHandler|Client
     {
         $options = $options ?? [];
 

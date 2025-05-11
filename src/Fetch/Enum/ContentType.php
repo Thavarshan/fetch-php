@@ -67,13 +67,13 @@ enum ContentType: string
      */
     public function isText(): bool
     {
-        return in_array($this, [
-            self::TEXT,
-            self::HTML,
-            self::XML_TEXT,
-            self::CSV,
-            self::CSS,
-            self::JAVASCRIPT,
-        ]);
+        return match ($this) {
+            // These are text-based content types
+            self::JSON, self::FORM_URLENCODED, self::TEXT, self::HTML, self::XML, self::CSV => true,
+            // These are binary/non-text content types
+            self::MULTIPART => false,
+            // Default for any new enum values added in the future
+            default => false,
+        };
     }
 }

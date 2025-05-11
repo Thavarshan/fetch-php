@@ -202,26 +202,23 @@ class ManagesPromisesTest extends TestCase
 
     public function test_any(): void
     {
-        $this->markTestSkipped('This test can cause memory issues - skipping for now');
-
         $instance = $this->createTraitImplementation();
 
-        // Create a mix of resolving and rejecting promises
         $promises = [
             \React\Promise\reject(new Exception('error1')),
             \React\Promise\resolve('success'),
             \React\Promise\reject(new Exception('error2')),
         ];
 
-        $result = $instance->any($promises);
+        $resultPromise = $instance->any($promises);
+        $this->assertInstanceOf(PromiseInterface::class, $resultPromise);
 
-        $this->assertInstanceOf(PromiseInterface::class, $result);
+        $resultValue = $instance->awaitPromise($resultPromise);
+        $this->assertSame('success', $resultValue);
     }
 
     public function test_sequence(): void
     {
-        $this->markTestSkipped('This test can cause memory issues - skipping for now');
-
         $instance = $this->createTraitImplementation();
 
         $callables = [
@@ -233,9 +230,12 @@ class ManagesPromisesTest extends TestCase
             },
         ];
 
-        $result = $instance->sequence($callables);
+        $sequencePromise = $instance->sequence($callables);
+        $this->assertInstanceOf(PromiseInterface::class, $sequencePromise);
 
-        $this->assertInstanceOf(PromiseInterface::class, $result);
+        $sequenceResults = $instance->awaitPromise($sequencePromise);
+        $this->assertIsArray($sequenceResults);
+        $this->assertSame(['result1', 'result2'], $sequenceResults);
     }
 
     public function test_map_empty_items(): void
@@ -249,6 +249,8 @@ class ManagesPromisesTest extends TestCase
         });
 
         $this->assertInstanceOf(PromiseInterface::class, $result);
+        $value = $instance->awaitPromise($result);
+        $this->assertSame([], $value);
     }
 
     public function test_map_invalid_concurrency(): void
@@ -262,22 +264,22 @@ class ManagesPromisesTest extends TestCase
 
         $instance->map($items, function ($item) {
             return \React\Promise\resolve('mapped '.$item);
-        }, 0); // Invalid concurrency
+        }, 0);
     }
 
     public function test_map_with_valid_items(): void
     {
-        $this->markTestSkipped('This test can cause memory issues - skipping for now');
-
         $instance = $this->createTraitImplementation();
 
         $items = ['item1', 'item2'];
 
-        $result = $instance->map($items, function ($item) {
+        $mapPromise = $instance->map($items, function ($item) {
             return \React\Promise\resolve('mapped '.$item);
         });
 
-        $this->assertInstanceOf(PromiseInterface::class, $result);
+        $this->assertInstanceOf(PromiseInterface::class, $mapPromise);
+        $mappedResults = $instance->awaitPromise($mapPromise);
+        $this->assertSame(['mapped item1', 'mapped item2'], $mappedResults);
     }
 
     private function createTraitImplementation()
@@ -288,7 +290,6 @@ class ManagesPromisesTest extends TestCase
 
             private $asyncResult = null;
 
-            // Required implementation method that returns a promise
             public function sendAsync(): PromiseInterface
             {
                 if ($this->asyncResult instanceof Throwable) {
@@ -305,7 +306,6 @@ class ManagesPromisesTest extends TestCase
                 return $this;
             }
 
-            // Stub implementations of methods not relevant to our tests
             public function getFullUri(): string
             {
                 return 'https://example.com';

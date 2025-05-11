@@ -1,115 +1,66 @@
+---
+title: Installation
+description: How to install the Fetch HTTP package in your PHP project
+---
+
 # Installation
 
-## Prerequisites
+The Fetch HTTP package can be installed using Composer, the PHP dependency manager.
 
-Before installing Fetch PHP, ensure your environment meets the following requirements:
+## Requirements
 
-- **PHP 8.1 or higher**: Fetch PHP relies on PHP Fibers, which were introduced in PHP 8.1
-- **The `sockets` PHP extension**: Required for the underlying ReactPHP event loop
-- **Composer**: Fetch PHP is distributed via Composer
+- PHP 8.1 or higher
+- Composer
 
-## Installing Fetch PHP
+## Install via Composer
 
-To install Fetch PHP in your project, run the following command:
+### 1. Add to your project
 
 ```bash
-composer require jerome/fetch-php
+composer require fetch/http-client
 ```
 
-This will download and install Fetch PHP along with its required dependencies, including:
+### 2. Update your autoloader
 
-- **Guzzle** for HTTP client handling
-- **Matrix** for asynchronous task management with PHP Fibers
+If you haven't already done so, make sure you include the Composer autoloader in your project:
+
+```php
+require __DIR__ . '/vendor/autoload.php';
+```
+
+## Manual Installation (Not Recommended)
+
+While we strongly recommend using Composer, you can also manually download the package and include it in your project:
+
+1. Download the latest release from [GitHub](https://github.com/Thavarshan/fetch-php/releases)
+2. Extract the files into your project directory
+3. Set up your own autoloading system or include files manually
 
 ## Verifying Installation
 
-You can verify that Fetch PHP was installed correctly by running a simple test:
+After installation, you can verify that everything is working correctly by creating a simple script:
 
 ```php
 <?php
 
-require 'vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
-$response = fetch('https://example.com');
+// Import the helper function
+use function Fetch\Http\fetch;
 
-if ($response->ok()) {
-    echo "Fetch PHP is working correctly!";
+// Make a simple request
+$response = fetch('https://httpbin.org/get');
+
+// Check the response
+if ($response->successful()) {
+    echo "Installation successful!\n";
+    echo "Response status: " . $response->status() . "\n";
+    echo "Response body: " . $response->body() . "\n";
+} else {
+    echo "Something went wrong. HTTP status: " . $response->status() . "\n";
 }
 ```
 
-## Configuration Options
+## Next Steps
 
-Fetch PHP uses Guzzle as its underlying HTTP client. You can configure various options by passing them into the `fetch()` function or by using the fluent API.
-
-### Common Options
-
-- **method**: HTTP method (GET, POST, PUT, etc.). Default is `'GET'`.
-- **headers**: Associative array of request headers.
-- **body**: Request body (arrays are automatically JSON-encoded).
-- **timeout**: Request timeout in seconds. Default is `30`.
-- **retries**: Number of retry attempts for failed requests. Default is `1`.
-- **retry_delay**: Delay between retries in milliseconds. Default is `100`.
-- **base_uri**: Base URI to prepend to all request URLs.
-- **query**: Associative array of query parameters.
-
-### Authentication Options
-
-- **auth**: Array for HTTP Basic authentication, e.g., `['username', 'password']`.
-- **token**: Bearer token for OAuth authentication.
-
-### Advanced Options
-
-- **proxy**: Proxy server URL or configuration.
-- **cookies**: Enable cookies for requests.
-- **allow_redirects**: Control redirect behavior.
-- **verify**: SSL certificate verification settings.
-- **cert**: SSL client certificate.
-- **ssl_key**: SSL client key.
-- **stream**: Stream the response instead of loading it all into memory.
-- **async**: Set to `true` to make asynchronous requests.
-
-## Using a Custom Guzzle Client
-
-You can use a custom Guzzle client with Fetch PHP for more advanced configuration:
-
-```php
-use GuzzleHttp\Client;
-use Fetch\Http\ClientHandler;
-
-// Create a custom Guzzle client
-$client = new Client([
-    'base_uri' => 'https://api.example.com',
-    'timeout' => 5,
-    'headers' => ['User-Agent' => 'My-App'],
-    'auth' => ['username', 'password'],
-]);
-
-// Method 1: Use with fetch()
-$response = fetch('/users', ['client' => $client]);
-
-// Method 2: Create a ClientHandler directly
-$handler = new ClientHandler(syncClient: $client);
-$response = $handler->get('/users');
-
-// Method 3: Use with async
-use function async;
-use function await;
-
-$response = await(async(fn () => fetch('/users', ['client' => $client])));
-```
-
-## Updating Fetch PHP
-
-To update Fetch PHP to the latest version:
-
-```bash
-composer update jerome/fetch-php
-```
-
-## Uninstalling Fetch PHP
-
-If you need to remove Fetch PHP from your project:
-
-```bash
-composer remove jerome/fetch-php
-```
+After installation, check out the [Quickstart](/guide/quickstart) guide to begin using the Fetch HTTP package.

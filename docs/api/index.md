@@ -1,211 +1,117 @@
+---
+title: API Reference for Fetch PHP
+description: API reference for the Fetch HTTP client package
+---
+
 # API Reference
 
-This API reference provides detailed documentation for all components of the Fetch PHP library. Use this reference to understand the available functions, classes, and methods for making HTTP requests in PHP with a JavaScript-like interface.
+Welcome to the API reference for the Fetch HTTP client package. This section provides detailed documentation for all the components, functions, classes, and interfaces available in the package.
 
 ## Core Components
 
-### [`fetch()` Function](./fetch.md)
+The Fetch package is built around several key components:
 
-The primary entry point for making HTTP requests, inspired by JavaScript's fetch API:
+### Functions
+
+- [`fetch()`](./fetch.md) - The primary function for making HTTP requests
+- [`fetch_client()`](./fetch-client.md) - Function to create a configured HTTP client
+
+### Classes
+
+- [`Client`](./client.md) - Main HTTP client class
+- [`ClientHandler`](./client-handler.md) - Low-level HTTP client implementation
+- [`Request`](./request.md) - HTTP request representation
+- [`Response`](./response.md) - HTTP response representation
+
+### Enums
+
+- [`Method`](./method-enum.md) - HTTP request methods
+- [`ContentType`](./content-type-enum.md) - Content type (MIME type) constants
+- [`Status`](./status-enum.md) - HTTP status codes
+
+## Architectural Overview
+
+The Fetch package is designed with a layered architecture:
+
+1. **User-facing API**: The `fetch()` and `fetch_client()` functions provide a simple, expressive API for common HTTP operations.
+
+2. **Client Layer**: The `Client` class provides a higher-level, feature-rich API with method chaining and fluent interface.
+
+3. **Handler Layer**: The `ClientHandler` class provides the core HTTP functionality, handling the low-level details of making HTTP requests.
+
+4. **HTTP Message Layer**: The `Request` and `Response` classes represent HTTP messages and provide methods for working with them.
+
+5. **Utilities and Constants**: Enums and other utilities provide standardized constants and helper functions.
+
+## Usage Patterns
+
+The API is designed to be used in several ways, depending on your needs:
+
+### One-line Requests
 
 ```php
-// Basic GET request
+// Quick GET request
 $response = fetch('https://api.example.com/users');
 
-// POST request with JSON body
+// Quick POST request with JSON data
 $response = fetch('https://api.example.com/users', [
-    'method' => 'POST',
-    'body' => ['name' => 'John Doe', 'email' => 'john@example.com'],
-]);
-
-// Return a ClientHandler for fluent API usage
-$client = fetch();
-$response = $client->get('https://api.example.com/users');
+    'name' => 'John Doe',
+    'email' => 'john@example.com'
+], 'POST');
 ```
 
-### [ClientHandler Class](./client-handler.md)
-
-A powerful class for building and sending HTTP requests with a fluent, chainable API:
+### Fluent Interface with Client
 
 ```php
-$response = fetch()
-    ->baseUri('https://api.example.com')
-    ->withHeaders(['Accept' => 'application/json'])
-    ->withToken('your-access-token')
-    ->withJson(['name' => 'John Doe', 'email' => 'john@example.com'])
-    ->post('/users');
+// Create a client with a base URI
+$client = fetch_client('https://api.example.com');
+
+// Chain method calls for a more complex request
+$response = $client
+    ->withHeader('X-API-Key', 'your-api-key')
+    ->withQueryParameter('page', 1)
+    ->timeout(5)
+    ->get('/users');
 ```
 
-### [Response Class](./response.md)
-
-Comprehensive methods for working with HTTP responses:
+### Asynchronous Requests
 
 ```php
-$response = fetch('https://api.example.com/users/1');
+// Make an asynchronous request
+$promise = fetch_client()
+    ->async()
+    ->get('https://api.example.com/users');
 
-// Check response status
-if ($response->ok()) {
-    // Parse JSON response
-    $user = $response->json();
-
-    // Access response properties
-    $id = $user['id'];
-    $name = $user['name'];
-
-    // Check specific status codes
-    if ($response->isCreated()) {
-        echo "New resource created!";
+// Add callbacks
+$promise->then(
+    function ($response) {
+        // Handle successful response
+    },
+    function ($exception) {
+        // Handle error
     }
-}
+);
 ```
 
-### [Asynchronous API](./asynchronous.md)
-
-Methods for non-blocking HTTP requests powered by PHP Fibers:
+### Request Batching
 
 ```php
-use function async;
-use function await;
+// Create a client for reuse
+$client = fetch_client('https://api.example.com');
 
-// Promise-based pattern
-async(fn () => fetch('https://api.example.com/users'))
-    ->then(fn ($response) => $response->json())
-    ->catch(fn ($error) => handleError($error));
-
-// Async/await pattern
-try {
-    $response = await(async(fn () => fetch('https://api.example.com/users')));
-    $users = $response->json();
-} catch (\Throwable $e) {
-    handleError($e);
-}
+// Make multiple requests in parallel
+$responses = $client->map([1, 2, 3], function ($id) use ($client) {
+    return $client->get("/users/{$id}");
+});
 ```
 
-### [Promise Operations](./promise-operations.md)
+## Extending the Package
 
-Utilities for working with multiple promises:
+The package is designed to be extensible. You can:
 
-```php
-use function async;
-use function await;
-use function all;
+- Create custom client handlers
+- Extend the base client with additional functionality
+- Add middleware for request/response processing
+- Create specialized clients for specific APIs
 
-// Run multiple requests in parallel
-$userPromise = async(fn () => fetch('https://api.example.com/users'));
-$postsPromise = async(fn () => fetch('https://api.example.com/posts'));
-
-// Wait for all to complete
-$results = await(all([
-    'users' => $userPromise,
-    'posts' => $postsPromise,
-]));
-
-// Access results
-$users = $results['users']->json();
-$posts = $results['posts']->json();
-```
-
-## Types and Interfaces
-
-Fetch PHP provides several interfaces and types that define the structure of its components:
-
-- `Fetch\Interfaces\ClientHandler` - Interface for the client handler
-- `Fetch\Interfaces\Response` - Interface for HTTP responses
-- `React\Promise\PromiseInterface` - Interface for promises (provided by React\Promise)
-
-## Error Handling
-
-Fetch PHP provides robust error handling mechanisms:
-
-```php
-try {
-    $response = fetch('https://api.example.com/nonexistent');
-
-    if ($response->failed()) {
-        // Handle HTTP error responses (4xx, 5xx)
-        echo "Request failed with status: " . $response->status();
-    }
-} catch (\Throwable $e) {
-    // Handle exceptions (connection errors, timeouts, etc.)
-    echo "Error: " . $e->getMessage();
-}
-```
-
-## Common Patterns
-
-### Making Authenticated Requests
-
-```php
-// Using Bearer token
-$response = fetch()
-    ->withToken('your-access-token')
-    ->get('https://api.example.com/profile');
-
-// Using Basic Auth
-$response = fetch()
-    ->withAuth('username', 'password')
-    ->get('https://api.example.com/secure');
-```
-
-### File Uploads
-
-```php
-$response = fetch()
-    ->withMultipart([
-        [
-            'name' => 'file',
-            'contents' => fopen('/path/to/file.jpg', 'r'),
-            'filename' => 'upload.jpg',
-        ],
-        [
-            'name' => 'description',
-            'contents' => 'File description',
-        ]
-    ])
-    ->post('https://api.example.com/upload');
-```
-
-### Handling Large Datasets
-
-```php
-// Process a large collection in batches
-$page = 1;
-$pageSize = 100;
-$allItems = [];
-
-do {
-    $response = fetch('https://api.example.com/items', [
-        'query' => ['page' => $page, 'limit' => $pageSize]
-    ]);
-
-    $data = $response->json();
-    $items = $data['items'];
-    $allItems = array_merge($allItems, $items);
-
-    $hasMorePages = count($items) === $pageSize;
-    $page++;
-} while ($hasMorePages);
-```
-
-### Retrying Failed Requests
-
-```php
-$response = fetch()
-    ->retry(3, 100)  // 3 retries with 100ms initial delay
-    ->get('https://api.example.com/unstable');
-```
-
-### Streaming Responses
-
-```php
-$response = fetch()
-    ->withStream(true)
-    ->get('https://api.example.com/large-file');
-
-$stream = $response->getBody();
-while (!$stream->eof()) {
-    echo $stream->read(1024);
-}
-```
-
-For more detailed information on each component, follow the links to the specific API documentation pages.
+See the [Custom Clients](../guide/custom-clients.md) guide for more information on extending the package.

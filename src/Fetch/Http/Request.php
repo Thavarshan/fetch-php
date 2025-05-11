@@ -8,6 +8,7 @@ use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Traits\RequestImmutabilityTrait;
 use GuzzleHttp\Psr7\Request as BaseRequest;
+use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\Utils;
 use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
@@ -16,6 +17,37 @@ use Psr\Http\Message\UriInterface;
 class Request extends BaseRequest implements RequestInterface
 {
     use RequestImmutabilityTrait;
+
+    /**
+     * The custom request target, if set.
+     */
+    protected ?string $customRequestTarget = null;
+
+    /**
+     * Create a new Request instance.
+     */
+    public function __construct(
+        string|Method $method,
+        string|UriInterface $uri,
+        array $headers = [],
+        $body = null,
+        string $version = '1.1',
+        ?string $requestTarget = null
+    ) {
+        // Normalize the method
+        $methodValue = $method instanceof Method ? $method->value : strtoupper($method);
+
+        // Convert string URI to UriInterface if needed
+        $uriObject = is_string($uri) ? new Uri($uri) : $uri;
+
+        // Initialize with parent constructor
+        parent::__construct($methodValue, $uriObject, $headers, $body, $version);
+
+        // Store custom request target if provided
+        if ($requestTarget !== null) {
+            $this->customRequestTarget = $requestTarget;
+        }
+    }
 
     /**
      * Create a new Request instance with a JSON body.
@@ -218,6 +250,29 @@ class Request extends BaseRequest implements RequestInterface
     public static function options(string|UriInterface $uri, array $headers = []): static
     {
         return new static(Method::OPTIONS->value, $uri, $headers);
+    }
+
+    /**
+     * Override getRequestTarget to use our custom target if set.
+     */
+    public function getRequestTarget(): string
+    {
+        if ($this->customRequestTarget !== null) {
+            return $this->customRequestTarget;
+        }
+
+        return parent::getRequestTarget();
+    }
+
+    /**
+     * Override withRequestTarget to store the custom target.
+     */
+    public function withRequestTarget($requestTarget): static
+    {
+        $new = clone $this;
+        $new->customRequestTarget = $requestTarget;
+
+        return $new;
     }
 
     /**

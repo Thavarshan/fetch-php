@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Concerns;
+namespace Tests\Unit;
 
 use Exception;
 use Fetch\Http\Response;
