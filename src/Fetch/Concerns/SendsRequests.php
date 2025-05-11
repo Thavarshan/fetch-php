@@ -124,6 +124,25 @@ trait SendsRequests
     }
 
     /**
+     * Send a request and return the response.
+     */
+    public function sendRequest(RequestInterface $request): ResponseInterface|PromiseInterface
+    {
+        // Extract the necessary information for logging
+        $method = $request->getMethod();
+        $uri = (string) $request->getUri();
+
+        // Prepare options for Guzzle
+        $options = $this->extractOptionsFromRequest($request);
+
+        // Store for future reference
+        $this->preparedOptions = $options;
+
+        // Send async or sync based on configuration
+        return $this->isAsync ? $this->sendAsyncRequest($request) : $this->sendSyncRequest($request);
+    }
+
+    /**
      * Apply the options to the handler.
      *
      * @param  array<string, mixed>  $options  The request options
@@ -315,25 +334,6 @@ trait SendsRequests
         }
 
         return $customOptions;
-    }
-
-    /**
-     * Send a request and return the response.
-     */
-    public function sendRequest(RequestInterface $request): ResponseInterface|PromiseInterface
-    {
-        // Extract the necessary information for logging
-        $method = $request->getMethod();
-        $uri = (string) $request->getUri();
-
-        // Prepare options for Guzzle
-        $options = $this->extractOptionsFromRequest($request);
-
-        // Store for future reference
-        $this->preparedOptions = $options;
-
-        // Send async or sync based on configuration
-        return $this->isAsync ? $this->sendAsyncRequest($request) : $this->sendSyncRequest($request);
     }
 
     /**
