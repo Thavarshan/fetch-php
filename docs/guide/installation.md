@@ -17,7 +17,7 @@ The Fetch HTTP package can be installed using Composer, the PHP dependency manag
 ### 1. Add to your project
 
 ```bash
-composer require fetch/http-client
+composer require jerome/fetch-php
 ```
 
 ### 2. Update your autoloader

@@ -10,7 +10,7 @@ This guide will help you get started with the Fetch HTTP package quickly.
 ## Installation
 
 ```bash
-composer require fetch/http-client
+composer require jerome/fetch-php
 ```
 
 ## Basic Usage
