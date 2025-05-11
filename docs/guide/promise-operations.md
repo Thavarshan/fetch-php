@@ -438,4 +438,3 @@ $promise->then(
 
 - Explore [Asynchronous Requests](/guide/async-requests) for practical examples
 - Learn about [Error Handling](/guide/error-handling) in asynchronous code
-- See [Performance Optimization](/guide/performance-optimization) for making efficient async requests
