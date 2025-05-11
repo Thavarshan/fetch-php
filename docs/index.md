@@ -87,7 +87,7 @@ Fetch PHP brings the simplicity of JavaScript's fetch API to PHP, while adding p
 ### Getting Started
 
 ```bash
-composer require fetch/http-client
+composer require jerome/fetch-php
 ```
 
 Read the [quick start guide](/guide/quickstart) to begin working with Fetch PHP.
