@@ -98,7 +98,7 @@ export default defineConfig({
             { icon: 'github', link: 'https://github.com/Thavarshan/fetch-php' }
         ],
         footer: {
-            message: 'Released under the MIT License.',
+            message: 'Created by Jerome Thayananthajothy and released under the MIT License.',
             copyright: 'Copyright © ' + new Date().getFullYear() + ' Fetch PHP'
         },
         search: {
