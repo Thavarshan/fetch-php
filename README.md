@@ -5,7 +5,6 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
 [![Tests](https://github.com/Thavarshan/fetch-php/actions/workflows/tests.yml/badge.svg?label=tests&branch=main)](https://github.com/Thavarshan/fetch-php/actions/workflows/tests.yml)
 [![Lint](https://github.com/Thavarshan/fetch-php/actions/workflows/lint.yml/badge.svg)](https://github.com/Thavarshan/fetch-php/actions/workflows/lint.yml)
-[![Lint](https://github.com/Thavarshan/fetch-php/actions/workflows/lint.yml/badge.svg)](https://github.com/Thavarshan/fetch-php/actions/workflows/lint.yml)
 [![CodeQL](https://github.com/Thavarshan/fetch-php/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/Thavarshan/fetch-php/actions/workflows/github-code-scanning/codeql)
 [![PHPStan](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](https://phpstan.org/)
 [![PHP Version](https://img.shields.io/packagist/php-v/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
