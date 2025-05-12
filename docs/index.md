@@ -68,11 +68,16 @@ $response = fetch('https://api.example.com/private', [
 
 ```php
 // Create promises for parallel requests
-$usersPromise = fetch()->async()->get('https://api.example.com/users');
-$postsPromise = fetch()->async()->get('https://api.example.com/posts');
+$usersPromise = async(function() {
+    return fetch('https://api.example.com/users');
+});
+
+$postsPromise = async(function() {
+    return fetch('https://api.example.com/posts');
+});
 
 // Wait for all to complete
-fetch()->all(['users' => $usersPromise, 'posts' => $postsPromise])
+all(['users' => $usersPromise, 'posts' => $postsPromise])
     ->then(function ($results) {
         // Process results from both requests
         $users = $results['users']->json();
@@ -80,11 +85,28 @@ fetch()->all(['users' => $usersPromise, 'posts' => $postsPromise])
     });
 ```
 
-### Why Fetch PHP?
+### Modern Await-Style Syntax
+
+```php
+await(async(function() {
+    // Process multiple requests in parallel
+    $results = await(all([
+        'users' => async(fn() => fetch('https://api.example.com/users')),
+        'posts' => async(fn() => fetch('https://api.example.com/posts'))
+    ]));
+
+    // Work with results as if they were synchronous
+    foreach ($results['users']->json() as $user) {
+        echo $user['name'] . "\n";
+    }
+}));
+```
+
+## Why Fetch PHP?
 
 Fetch PHP brings the simplicity of JavaScript's fetch API to PHP, while adding powerful features like retry handling, promise-based asynchronous requests, and fluent interface for request building. It's designed to be both simple for beginners and powerful for advanced users.
 
-### Getting Started
+## Getting Started
 
 ```bash
 composer require jerome/fetch-php

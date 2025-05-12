@@ -5,46 +5,42 @@ description: Learn how to work with promises in the Fetch HTTP package
 
 # Promise Operations
 
-This guide covers the various promise operations available in the Fetch HTTP package for working with asynchronous requests. The package implements a Promise-based API similar to JavaScript promises, allowing for sophisticated asynchronous programming patterns.
+This guide covers how to work with promises in the Fetch HTTP package. The package implements a Promise-based API similar to JavaScript promises through the Matrix library, allowing for sophisticated asynchronous programming patterns.
 
 ## Basic Promise Concepts
 
-Promises represent values that may not be available yet. They're used for asynchronous operations like HTTP requests. In the Fetch HTTP package, promises are represented by the `PromiseInterface`.
+Promises represent values that may not be available yet. They're used for asynchronous operations like HTTP requests. In the Fetch HTTP package, promises are represented by the `PromiseInterface` from React's Promise library.
 
 ## Creating Promises
 
 There are several ways to create promises:
 
 ```php
-use Fetch\Http\ClientHandler;
-
-$client = new ClientHandler();
-
-// Create a promise from an async HTTP request
-$promise = $client->async()->get('https://api.example.com/users');
+// Create a promise from an async function
+$promise = async(function() {
+    return fetch('https://api.example.com/users');
+});
 
 // Create a resolved promise with a value
-$resolvedPromise = $client->resolve(['name' => 'John', 'email' => 'john@example.com']);
+$resolvedPromise = resolve(['name' => 'John', 'email' => 'john@example.com']);
 
 // Create a rejected promise with an error
-$rejectedPromise = $client->reject(new \Exception('Something went wrong'));
+$rejectedPromise = reject(new \Exception('Something went wrong'));
 
-// Wrap a callable to run asynchronously
-$customPromise = $client->wrapAsync(function () {
-    // Perform some operation
-    $result = ['status' => 'success'];
-    return $result;
-});
+// Create a promise that resolves after a delay
+$delayedPromise = delay(2.5, 'Delayed result');
 ```
 
 ## Promise Methods
 
 ### then()
 
-The `then()` method is used to register callbacks for when a promise resolves successfully or fails:
+The `then()` method registers callbacks for when a promise resolves successfully or fails:
 
 ```php
-$promise = $client->async()->get('https://api.example.com/users');
+$promise = async(function() {
+    return fetch('https://api.example.com/users');
+});
 
 $promise->then(
     function ($response) {
@@ -67,7 +63,9 @@ The `then()` method returns a new promise that resolves with the return value of
 The `catch()` method is a shorthand for handling errors:
 
 ```php
-$promise = $client->async()->get('https://api.example.com/users');
+$promise = async(function() {
+    return fetch('https://api.example.com/users');
+});
 
 $promise
     ->then(function ($response) {
@@ -85,7 +83,9 @@ $promise
 The `finally()` method registers a callback that runs when the promise settles, regardless of whether it was resolved or rejected:
 
 ```php
-$promise = $client->async()->get('https://api.example.com/users');
+$promise = async(function() {
+    return fetch('https://api.example.com/users');
+});
 
 $promise
     ->then(function ($response) {
@@ -102,20 +102,28 @@ $promise
 
 ## Combining Multiple Promises
 
-The Fetch HTTP package provides several methods for working with multiple promises:
+The package provides several functions for working with multiple promises:
 
 ### all()
 
-The `all()` method waits for all promises to resolve, or rejects if any promise fails:
+The `all()` function waits for all promises to resolve, or rejects if any promise fails:
 
 ```php
 // Create multiple promises
-$usersPromise = $client->async()->get('https://api.example.com/users');
-$postsPromise = $client->async()->get('https://api.example.com/posts');
-$commentsPromise = $client->async()->get('https://api.example.com/comments');
+$usersPromise = async(function() {
+    return fetch('https://api.example.com/users');
+});
+
+$postsPromise = async(function() {
+    return fetch('https://api.example.com/posts');
+});
+
+$commentsPromise = async(function() {
+    return fetch('https://api.example.com/comments');
+});
 
 // Wait for all to complete
-$client->all([
+all([
     'users' => $usersPromise,
     'posts' => $postsPromise,
     'comments' => $commentsPromise
@@ -134,7 +142,7 @@ $client->all([
 If you use numeric keys, the results will be returned in the same order:
 
 ```php
-$client->all([
+all([
     $usersPromise,
     $postsPromise,
     $commentsPromise
@@ -148,18 +156,18 @@ $client->all([
 
 ### race()
 
-The `race()` method waits for the first promise to settle (resolve or reject):
+The `race()` function waits for the first promise to settle (resolve or reject):
 
 ```php
 // Create promises for redundant endpoints
 $promises = [
-    $client->async()->get('https://api1.example.com/data'),
-    $client->async()->get('https://api2.example.com/data'),
-    $client->async()->get('https://api3.example.com/data')
+    async(fn() => fetch('https://api1.example.com/data')),
+    async(fn() => fetch('https://api2.example.com/data')),
+    async(fn() => fetch('https://api3.example.com/data'))
 ];
 
 // Get the result from whichever completes first (success or failure)
-$client->race($promises)
+race($promises)
     ->then(function ($response) {
         $data = $response->json();
         echo "Got data from the fastest source";
@@ -168,18 +176,18 @@ $client->race($promises)
 
 ### any()
 
-The `any()` method waits for the first promise to resolve, ignoring rejections unless all promises reject:
+The `any()` function waits for the first promise to resolve, ignoring rejections unless all promises reject:
 
 ```php
 // Create promises with some that might fail
 $promises = [
-    $client->async()->get('https://api1.example.com/data'), // Might fail
-    $client->async()->get('https://api2.example.com/data'), // Might fail
-    $client->async()->get('https://api3.example.com/data')
+    async(fn() => fetch('https://api1.example.com/data')), // Might fail
+    async(fn() => fetch('https://api2.example.com/data')), // Might fail
+    async(fn() => fetch('https://api3.example.com/data'))
 ];
 
 // Get the first successful result
-$client->any($promises)
+any($promises)
     ->then(function ($response) {
         $data = $response->json();
         echo "Got data from the first successful source";
@@ -189,98 +197,182 @@ $client->any($promises)
     });
 ```
 
-### sequence()
+### Using await() with Promise Combinators
 
-The `sequence()` method executes promises in sequence, with each promise potentially depending on the result of the previous one:
+You can also use `await()` with the promise combinators for a more synchronous-looking code:
 
 ```php
-$client->sequence([
-    // First function - returns a promise
-    function () use ($client) {
-        return $client->async()->get('https://api.example.com/users');
-    },
+await(async(function() {
+    // Wait for multiple promises with all()
+    $results = await(all([
+        'users' => async(fn() => fetch('https://api.example.com/users')),
+        'posts' => async(fn() => fetch('https://api.example.com/posts'))
+    ]));
 
-    // Second function - uses result from first promise
-    function ($usersResponse) use ($client) {
-        $users = $usersResponse->json();
-        $firstUserId = $users[0]['id'];
+    $users = $results['users']->json();
+    $posts = $results['posts']->json();
 
-        return $client->async()->get("https://api.example.com/users/{$firstUserId}/posts");
-    },
-
-    // Third function - uses result from second promise
-    function ($postsResponse) use ($client) {
-        $posts = $postsResponse->json();
-        $firstPostId = $posts[0]['id'];
-
-        return $client->async()->get("https://api.example.com/posts/{$firstPostId}/comments");
-    }
-])->then(function ($results) {
-    // $results is an array containing the response from each promise
-    $users = $results[0]->json();
-    $posts = $results[1]->json();
-    $comments = $results[2]->json();
-
-    echo "Fetched " . count($users) . " users, " .
-         count($posts) . " posts for first user, and " .
-         count($comments) . " comments for first post";
-});
+    echo "Fetched " . count($users) . " users and " . count($posts) . " posts";
+}));
 ```
 
-### map()
+## Sequential Operations
 
-The `map()` method applies a function to each item in an array, which returns a promise, with controlled concurrency:
+You can perform sequential asynchronous operations using `await()`:
+
+```php
+await(async(function() {
+    // First, get users
+    $usersResponse = await(async(function() {
+        return fetch('https://api.example.com/users');
+    }));
+
+    $users = $usersResponse->json();
+    $firstUserId = $users[0]['id'];
+
+    // Then, get the first user's posts
+    $postsResponse = await(async(function() use ($firstUserId) {
+        return fetch("https://api.example.com/users/{$firstUserId}/posts");
+    }));
+
+    $posts = $postsResponse->json();
+    $firstPostId = $posts[0]['id'];
+
+    // Finally, get the first post's comments
+    $commentsResponse = await(async(function() use ($firstPostId) {
+        return fetch("https://api.example.com/posts/{$firstPostId}/comments");
+    }));
+
+    $comments = $commentsResponse->json();
+
+    return [
+        'user' => $users[0],
+        'posts' => $posts,
+        'comments' => $comments
+    ];
+}));
+```
+
+## Controlled Concurrency with map()
+
+The `map()` function applies an async function to each item in an array with controlled concurrency:
 
 ```php
 // List of user IDs
 $userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 // Fetch user details for each ID, with at most 3 concurrent requests
-$client->map($userIds, function ($userId) use ($client) {
-    return $client->async()->get("https://api.example.com/users/{$userId}");
-}, 3)->then(function ($responses) {
-    $users = [];
-    foreach ($responses as $userId => $response) {
-        $users[] = $response->json();
+$responses = await(map($userIds, function ($userId) {
+    return async(function() use ($userId) {
+        return fetch("https://api.example.com/users/{$userId}");
+    });
+}, 3));
+
+$users = [];
+foreach ($responses as $response) {
+    $users[] = $response->json();
+}
+
+echo "Fetched details for " . count($users) . " users";
+```
+
+## Batch Processing
+
+For processing items in batches rather than one at a time:
+
+```php
+// List of user IDs
+$userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+// Process in batches of 5 with max 2 concurrent batches
+$results = await(batch(
+    $userIds,
+    function ($batchOfIds) {
+        return async(function() use ($batchOfIds) {
+            $queryString = implode(',', $batchOfIds);
+            return fetch("https://api.example.com/users?ids={$queryString}");
+        });
+    },
+    5,   // Batch size
+    2    // Concurrency
+));
+
+// Process results from each batch
+foreach ($results as $response) {
+    $batchUsers = $response->json();
+    echo "Processed batch with " . count($batchUsers) . " users\n";
+}
+```
+
+## Timeout Handling
+
+You can add timeouts to promises:
+
+```php
+try {
+    // Add a 5-second timeout to a request
+    $response = await(timeout(
+        async(fn() => fetch('https://api.example.com/slow-endpoint')),
+        5.0,
+        "Request to slow-endpoint timed out"
+    ));
+
+    $data = $response->json();
+} catch (\Exception $e) {
+    echo "Timeout occurred: " . $e->getMessage();
+}
+```
+
+## Retry Handling
+
+For operations that might fail, you can use the `retry()` function:
+
+```php
+$result = await(retry(
+    function() {
+        return async(function() {
+            return fetch('https://api.example.com/unstable-endpoint');
+        });
+    },
+    3,  // Max attempts
+    function ($attempt, $error) {
+        // Exponential backoff strategy
+        // Return seconds to wait, or null to stop retrying
+        if ($attempt >= 3) {
+            return null;  // Stop retrying
+        }
+        return pow(2, $attempt) * 0.1;  // 0.2s, 0.4s, 0.8s
     }
+));
 
-    echo "Fetched details for " . count($users) . " users";
-    return $users;
-});
+// Process the successful response
+$data = $result->json();
 ```
 
-## Waiting for Promises
+## Delay and Scheduling
 
-### awaitPromise()
-
-The `awaitPromise()` method waits for a promise to resolve and returns its value:
+You can create delayed promises:
 
 ```php
-// Create a promise
-$promise = $client->async()->get('https://api.example.com/users');
+// Create a promise that resolves after 2 seconds
+$delayedValue = await(delay(2.0, "I was delayed"));
+echo $delayedValue;  // "I was delayed"
 
-// Do other work...
+// Useful for rate limiting
+await(async(function() {
+    for ($i = 0; $i < 5; $i++) {
+        // Make a request
+        $response = await(async(fn() => fetch('https://api.example.com/endpoint')));
 
-// Wait for the promise to resolve
-try {
-    $response = $client->awaitPromise($promise);
-    $users = $response->json();
-    echo "Fetched " . count($users) . " users";
-} catch (\Throwable $e) {
-    echo "Error: " . $e->getMessage();
-}
-```
+        // Process the response
+        echo "Request " . ($i + 1) . " complete\n";
 
-You can also set a timeout:
-
-```php
-try {
-    // Wait for at most 5 seconds
-    $response = $client->awaitPromise($promise, 5.0);
-    $users = $response->json();
-} catch (\RuntimeException $e) {
-    echo "Request timed out or failed: " . $e->getMessage();
-}
+        // Wait 1 second before the next request
+        if ($i < 4) {
+            await(delay(1.0));
+        }
+    }
+}));
 ```
 
 ## Advanced Promise Patterns
@@ -290,54 +382,56 @@ try {
 You can chain promises to transform values or perform sequential operations:
 
 ```php
-$client->async()
-    ->get('https://api.example.com/users')
-    ->then(function ($response) {
-        return $response->json();
-    })
-    ->then(function ($users) {
-        // Filter users
-        return array_filter($users, function ($user) {
-            return $user['active'] === true;
-        });
-    })
-    ->then(function ($activeUsers) {
-        // Extract emails
-        return array_map(function ($user) {
-            return $user['email'];
-        }, $activeUsers);
-    })
-    ->then(function ($emails) {
-        echo "Active user emails: " . implode(', ', $emails);
+async(function() {
+    return fetch('https://api.example.com/users');
+})
+->then(function ($response) {
+    return $response->json();
+})
+->then(function ($users) {
+    // Filter users
+    return array_filter($users, function ($user) {
+        return $user['active'] === true;
     });
+})
+->then(function ($activeUsers) {
+    // Extract emails
+    return array_map(function ($user) {
+        return $user['email'];
+    }, $activeUsers);
+})
+->then(function ($emails) {
+    echo "Active user emails: " . implode(', ', $emails);
+});
 ```
 
-### Error Propagation
+### Error Handling with try/catch
 
-Errors propagate through promise chains until caught:
+Using `await()` allows for traditional try/catch error handling:
 
 ```php
-$client->async()
-    ->get('https://api.example.com/users')
-    ->then(function ($response) {
+await(async(function() {
+    try {
+        $response = await(async(function() {
+            return fetch('https://api.example.com/users');
+        }));
+
         if ($response->failed()) {
             throw new \Exception("API error: " . $response->status());
         }
-        return $response->json();
-    })
-    ->then(function ($users) {
+
+        $users = $response->json();
+
         if (empty($users)) {
             throw new \Exception("No users found");
         }
-        return $users[0];
-    })
-    ->then(function ($firstUser) {
-        echo "First user: " . $firstUser['name'];
-    })
-    ->catch(function ($error) {
-        // This catches any error thrown in any of the previous promises
-        echo "Error: " . $error->getMessage();
-    });
+
+        return $users[0]['name'];
+    } catch (\Exception $e) {
+        echo "Error: " . $e->getMessage();
+        return "Unknown user";
+    }
+}));
 ```
 
 ### Dynamic Promise Creation
@@ -345,96 +439,88 @@ $client->async()
 You can create promises dynamically based on previous results:
 
 ```php
-$client->async()
-    ->get('https://api.example.com/users')
-    ->then(function ($response) use ($client) {
-        $users = $response->json();
+await(async(function() {
+    // Get all users
+    $usersResponse = await(async(function() {
+        return fetch('https://api.example.com/users');
+    }));
 
-        // Create an array of promises for each user
-        $promises = [];
-        foreach ($users as $user) {
-            $promises[$user['id']] = $client->async()
-                ->get("https://api.example.com/users/{$user['id']}/posts");
-        }
+    $users = $usersResponse->json();
 
-        // Execute all the promises
-        return $client->all($promises);
-    })
-    ->then(function ($userPostsResponses) {
-        $userPosts = [];
-        foreach ($userPostsResponses as $userId => $response) {
-            $userPosts[$userId] = $response->json();
-        }
+    // Create an array of promises for each user's posts
+    $promises = [];
+    foreach ($users as $user) {
+        $userId = $user['id'];
+        $promises[$userId] = async(function() use ($userId) {
+            return fetch("https://api.example.com/users/{$userId}/posts");
+        });
+    }
 
-        return $userPosts;
-    })
-    ->then(function ($userPosts) {
-        // Process all users' posts
-        foreach ($userPosts as $userId => $posts) {
-            echo "User {$userId} has " . count($posts) . " posts\n";
-        }
-    });
+    // Execute all promises concurrently
+    $postResponses = await(all($promises));
+
+    // Process the results
+    $userPosts = [];
+    foreach ($postResponses as $userId => $response) {
+        $userPosts[$userId] = $response->json();
+    }
+
+    return $userPosts;
+}));
 ```
 
 ## Best Practices
 
-1. **Always Handle Errors**: Use `catch()` to handle errors in promise chains.
+1. **Use async/await for Readability**: The async/await pattern makes asynchronous code more readable by making it look like synchronous code.
 
-2. **Return Values**: Always return values from promise callbacks to pass them to the next step.
+   ```php
+   // Instead of nested then() callbacks:
+   async(function() {
+       $response = await(async(fn() => fetch('https://api.example.com/users')));
+       $users = $response->json();
+       // Process users directly
+   });
+   ```
 
-3. **Avoid Nesting**: Instead of nesting promises, use chaining for better readability.
+2. **Always Handle Errors**: Use try/catch with await or catch() with promises to handle errors.
 
-4. **Manage Concurrency**: Use `map()` with a reasonable concurrency limit to avoid overloading servers.
+3. **Avoid Nesting**: Use async/await to avoid the "callback hell" or "pyramid of doom" problem.
 
-5. **Consider Memory Usage**: When working with large datasets, be mindful of memory usage when all promises resolve.
+4. **Manage Concurrency**: Use `map()` or `batch()` with reasonable concurrency limits to avoid server overload.
 
-6. **Timeout Management**: Set appropriate timeouts with `awaitPromise()` to avoid hanging operations.
+5. **Control Timeouts**: Set appropriate timeouts with the `timeout()` function to prevent operations from hanging.
 
-## Debugging Promises
+6. **Use Promise Combinators**: Leverage `all()`, `race()`, and `any()` for managing multiple concurrent operations.
+
+7. **Consider Memory Usage**: Be mindful of memory usage when working with large datasets.
+
+## Debugging Async/Await Code
 
 Debugging asynchronous code can be challenging. Here are some tips:
 
-1. **Log at Each Step**:
+1. **Break Complex Operations**: Split complex async operations into smaller steps.
 
-```php
-$client->async()
-    ->get('https://api.example.com/users')
-    ->then(function ($response) {
-        echo "Response received: " . $response->status() . "\n";
-        return $response->json();
-    })
-    ->then(function ($users) {
-        echo "Parsed users: " . count($users) . "\n";
-        return $users;
-    });
-```
+2. **Add Logging**: Log interim results to track the flow of execution.
 
-2. **Use finally() for Logging**:
+   ```php
+   await(async(function() {
+       echo "Fetching users...\n";
+       $response = await(async(fn() => fetch('https://api.example.com/users')));
 
-```php
-$client->async()
-    ->get('https://api.example.com/users')
-    ->finally(function () {
-        echo "Request completed at: " . date('Y-m-d H:i:s') . "\n";
-    });
-```
+       echo "Processing response...\n";
+       $users = $response->json();
 
-3. **Handle Rejections Explicitly**:
+       echo "Found " . count($users) . " users\n";
+       return $users;
+   }));
+   ```
 
-```php
-$promise->then(
-    function ($value) {
-        echo "Success: ";
-        print_r($value);
-    },
-    function ($reason) {
-        echo "Failure: ";
-        print_r($reason);
-    }
-);
-```
+3. **Use try/catch Blocks**: Place try/catch blocks around specific operations to catch errors at their source.
+
+4. **Check Promise States**: If things aren't working as expected, check if promises are resolving or rejecting.
 
 ## Next Steps
 
 - Explore [Asynchronous Requests](/guide/async-requests) for practical examples
 - Learn about [Error Handling](/guide/error-handling) in asynchronous code
+- See [Retry Handling](/guide/retry-handling) for making async requests more resilient
