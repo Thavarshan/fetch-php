@@ -16,12 +16,6 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Change to project root directory
 cd "$PROJECT_ROOT"
 
-# Check if we're in the right directory (has artisan file)
-if [ ! -f "artisan" ]; then
-    echo "Error: Could not find artisan file. Make sure you're running this from the project root or bin directory."
-    exit 1
-fi
-
 # Variables for customizing test behavior
 COVERAGE=0
 PARALLEL=0
@@ -69,27 +63,14 @@ done
 PHP_VERSION=$(php -r 'echo PHP_VERSION;')
 echo "Using PHP version: $PHP_VERSION"
 
-# Check if .env exists and create it from .env.example if it doesn't
-if [ ! -f ".env" ]; then
-    echo "Creating .env file from .env.example..."
-    cp .env.example .env
-fi
-
 # Run composer install if vendor directory is missing
 if [ ! -d "vendor" ]; then
     echo "Vendor directory missing. Running composer install..."
     composer install
 fi
 
-# Clear cache before running tests
-echo "Clearing application cache..."
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-
 # Build test command
-TEST_CMD="php artisan test"
+TEST_CMD="vendor/bin/phpunit"
 
 if [ -n "$FILTER" ]; then
     TEST_CMD="$TEST_CMD --filter=$FILTER"
@@ -100,16 +81,18 @@ if [ -n "$SPECIFIC_TEST" ]; then
 fi
 
 if [ "$PARALLEL" -eq 1 ]; then
-    TEST_CMD="$TEST_CMD --parallel"
+    TEST_CMD="vendor/bin/paratest"
+    if [ -n "$FILTER" ]; then
+        echo "Warning: --filter is not supported with parallel testing. Ignoring filter."
+    fi
 fi
 
 # Run the tests
-echo "Running tests with command: $TEST_CMD"
 if [ "$COVERAGE" -eq 1 ]; then
     # Check if Xdebug is installed
     if php -m | grep -q xdebug; then
         echo "Generating test coverage report..."
-        XDEBUG_MODE=coverage $TEST_CMD --coverage
+        XDEBUG_MODE=coverage $TEST_CMD --coverage-text --coverage-html=coverage
     else
         echo "Warning: Xdebug is not installed. Cannot generate coverage report."
         $TEST_CMD

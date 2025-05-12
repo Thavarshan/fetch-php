@@ -1,4 +1,4 @@
-name: Check & fix styling
+name: Lint
 
 on: [push]
 
@@ -21,14 +21,11 @@ jobs:
           extensions: json, dom, curl, libxml, mbstring
           coverage: none
 
-      - name: Install Pint
-        run: composer global require laravel/pint
+      - name: Run lint
+        run: composer lint
 
-      - name: Run Pint
-        run: pint
-
-      - name: Commit linted files
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Fix coding style"
+      # - name: Commit linted files
+      #   uses: stefanzweifel/git-auto-commit-action@v5
+      #   with:
+      #     commit_message: "Fix coding style"
 
