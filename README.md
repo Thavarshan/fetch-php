@@ -22,7 +22,7 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 
 ## Key Features
 
-- **JavaScript-like Syntax**: Write HTTP requests just like you would in JavaScript with the `fetch()` function
+- **JavaScript-like Syntax**: Write HTTP requests just like you would in JavaScript with the `fetch()` function and `async`/`await` patterns
 - **Promise-based API**: Use familiar `.then()`, `.catch()`, and `.finally()` methods for async operations
 - **Fluent Interface**: Build requests with a clean, chainable API
 - **Built on Guzzle**: Benefit from Guzzle's robust functionality with a more elegant API
@@ -35,7 +35,7 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 
 While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by providing:
 
-- **JavaScript-like API**: Enjoy the familiar `fetch()` API from JavaScript
+- **JavaScript-like API**: Enjoy the familiar `fetch()` API and `async`/`await` patterns from JavaScript
 - **Global client management**: Configure once, use everywhere with the global client
 - **Simplified requests**: Make common HTTP requests with less code
 - **Enhanced error handling**: Reliable retry mechanics and clear error information
@@ -43,7 +43,7 @@ While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by pro
 
 | Feature | Fetch PHP | Guzzle |
 |---------|-----------|--------|
-| API Style | JavaScript-like fetch + PHP-style helpers | PHP-style only |
+| API Style | JavaScript-like fetch + async/await + PHP-style helpers | PHP-style only |
 | Client Management | Global client + instance options | Instance-based only |
 | Request Syntax | Clean, minimal | More verbose |
 | Types | Modern PHP 8.1+ enums | String constants |
@@ -98,7 +98,112 @@ $response = fetch_client()
     ->get('/users');
 ```
 
-### Asynchronous Requests
+## Async/Await Pattern
+
+### Using Async/Await
+
+```php
+// Import async/await functions
+use function async;
+use function await;
+
+// Wrap your fetch call in an async function
+$promise = async(function() {
+    return fetch('https://api.example.com/users');
+});
+
+// Await the result
+$response = await($promise);
+$users = $response->json();
+
+echo "Fetched " . count($users) . " users";
+```
+
+### Multiple Concurrent Requests with Async/Await
+
+```php
+use function async;
+use function await;
+use function all;
+
+// Execute an async function
+await(async(function() {
+    // Create multiple requests
+    $results = await(all([
+        'users' => async(fn() => fetch('https://api.example.com/users')),
+        'posts' => async(fn() => fetch('https://api.example.com/posts')),
+        'comments' => async(fn() => fetch('https://api.example.com/comments'))
+    ]));
+
+    // Process the results
+    $users = $results['users']->json();
+    $posts = $results['posts']->json();
+    $comments = $results['comments']->json();
+
+    echo "Fetched " . count($users) . " users, " .
+         count($posts) . " posts, and " .
+         count($comments) . " comments";
+}));
+```
+
+### Sequential Requests with Async/Await
+
+```php
+use function async;
+use function await;
+
+await(async(function() {
+    // First request: get auth token
+    $authResponse = await(async(fn() =>
+        fetch('https://api.example.com/auth/login', [
+            'method' => 'POST',
+            'json' => [
+                'username' => 'user',
+                'password' => 'pass'
+            ]
+        ])
+    ));
+
+    $token = $authResponse->json()['token'];
+
+    // Second request: use token to get user data
+    $userResponse = await(async(fn() =>
+        fetch('https://api.example.com/me', [
+            'token' => $token
+        ])
+    ));
+
+    return $userResponse->json();
+}));
+```
+
+### Error Handling with Async/Await
+
+```php
+use function async;
+use function await;
+
+try {
+    $data = await(async(function() {
+        $response = await(async(fn() =>
+            fetch('https://api.example.com/users/999')
+        ));
+
+        if ($response->isNotFound()) {
+            throw new \Exception("User not found");
+        }
+
+        return $response->json();
+    }));
+
+    // Process the data
+
+} catch (\Exception $e) {
+    echo "Error: " . $e->getMessage();
+}
+```
+
+## Traditional Promise-based Pattern
 
 ```php
 // Set up an async request
@@ -122,103 +227,95 @@ $promise->then(
 );
 ```
 
-## Advanced Usage
+## Advanced Async Usage
 
-### Concurrent Requests
+### Concurrent Requests with Promise Utilities
 
 ```php
-use Fetch\Http\fetch_client;
+use function race;
 
-$client = fetch_client(['base_uri' => 'https://api.example.com']);
+// Create promises for redundant endpoints
+$promises = [
+    async(fn() => fetch('https://api1.example.com/data')),
+    async(fn() => fetch('https://api2.example.com/data')),
+    async(fn() => fetch('https://api3.example.com/data'))
+];
 
-// Set up multiple concurrent requests
-$userPromise = $client->async()->get('/users');
-$postsPromise = $client->async()->get('/posts');
-$commentsPromise = $client->async()->get('/comments');
-
-// Wait for all to complete
-$results = $client->all([
-    'users' => $userPromise,
-    'posts' => $postsPromise,
-    'comments' => $commentsPromise
-]);
-
-// Process results when all are complete
-$results->then(function ($responses) {
-    $users = $responses['users']->json();
-    $posts = $responses['posts']->json();
-    $comments = $responses['comments']->json();
-
-    // Do something with the data
-});
+// Get the result from whichever completes first
+$response = await(race($promises));
+$data = $response->json();
+echo "Got data from the fastest source";
 ```
 
-### Handling Multiple Asynchronous Requests
+### Controlled Concurrency with Map
 
 ```php
-use Fetch\Http\fetch_client;
+use function map;
 
-$client = fetch_client(['base_uri' => 'https://api.example.com']);
+// List of user IDs to fetch
+$userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-// Map over an array of IDs and fetch data for each
-$ids = [1, 2, 3, 4, 5];
+// Process at most 3 requests at a time
+$responses = await(map($userIds, function($id) {
+    return async(function() use ($id) {
+        return fetch("https://api.example.com/users/{$id}");
+    });
+}, 3));
 
-$client->map($ids, function ($id) use ($client) {
-    return $client->get("/users/{$id}");
-}, 3) // Maximum 3 concurrent requests
-->then(function ($responses) {
-    foreach ($responses as $response) {
-        $user = $response->json();
-        echo "User: " . $user['name'] . PHP_EOL;
-    }
-});
-```
-
-### Configuring Retries
-
-```php
-// Retry up to 3 times with a 100ms delay between retries
-$response = fetch('https://api.example.com/unstable-endpoint', [
-    'retries' => 3,
-    'retry_delay' => 100
-]);
-
-// Or with fluent API
-$response = fetch_client()
-    ->retry(3, 100)
-    ->get('https://api.example.com/unstable-endpoint');
-
-// Configure which status codes should trigger retries
-$response = fetch_client()
-    ->retry(3)
-    ->retryStatusCodes([429, 503, 504])
-    ->get('https://api.example.com/users');
-```
-
-### Working with Responses
-
-```php
-$response = fetch('https://api.example.com/users/1');
-
-// Check if request was successful
-if ($response->isSuccess()) {
-    // HTTP status code
-    echo $response->getStatusCode(); // 200
-
-    // Response body as JSON
+// Process the responses
+foreach ($responses as $index => $response) {
     $user = $response->json();
-
-    // Response body as string
-    $body = $response->getBody()->getContents();
-
-    // Get a specific header
-    $contentType = $response->getHeaderLine('Content-Type');
-
-    // Check status code categories
-    if ($response->getStatus()->isSuccess()) {
-        echo "Request succeeded";
-    }
+    echo "Processed user {$user['name']}\n";
 }
+```
+
+### Batch Processing
+
+```php
+use function batch;
+
+// Array of items to process
+$items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Process in batches of 3 with max 2 concurrent batches
+$results = await(batch(
+    $items,
+    function($batch) {
+        // Process a batch
+        return async(function() use ($batch) {
+            $batchResults = [];
+            foreach ($batch as $id) {
+                $response = await(async(fn() =>
+                    fetch("https://api.example.com/users/{$id}")
+                ));
+                $batchResults[] = $response->json();
+            }
+            return $batchResults;
+        });
+    },
+    3, // batch size
+    2  // concurrency
+));
+```
+
+### With Retries
+
+```php
+use function retry;
+
+// Retry a flaky request up to 3 times with exponential backoff
+$data = await(retry(
+    function() {
+        return async(function() {
+            return fetch('https://api.example.com/unstable-endpoint');
+        });
+    },
+    3, // max attempts
+    function($attempt) {
+        // Exponential backoff strategy
+        return min(pow(2, $attempt) * 100, 1000);
+    }
+));
 ```
 
 ## Advanced Configuration
@@ -273,6 +370,52 @@ function createUser($userData) {
 }
 ```
 
+## Working with Responses
+
+```php
+$response = fetch('https://api.example.com/users/1');
+
+// Check if request was successful
+if ($response->isSuccess()) {
+    // HTTP status code
+    echo $response->getStatusCode(); // 200
+
+    // Response body as JSON
+    $user = $response->json();
+
+    // Response body as string
+    $body = $response->getBody()->getContents();
+
+    // Get a specific header
+    $contentType = $response->getHeaderLine('Content-Type');
+
+    // Check status code categories
+    if ($response->getStatus()->isSuccess()) {
+        echo "Request succeeded";
+    }
+}
+```
+
+## Working with Type-Safe Enums
+
+```php
+use Fetch\Enum\Method;
+use Fetch\Enum\ContentType;
+use Fetch\Enum\Status;
+
+// Use enums for HTTP methods
+$client = fetch_client();
+$response = $client->request(Method::POST, '/users', $userData);
+
+// Check HTTP status with enums
+if ($response->getStatus() === Status::OK) {
+    // Process successful response
+}
+
+// Content type handling
+$response = $client->withBody($data, ContentType::JSON)->post('/users');
+```
+
 ## Error Handling
 
 ```php
@@ -300,26 +443,6 @@ fetch_client()
     ->catch(function (\Throwable $e) {
         echo "Error: " . $e->getMessage();
     });
-```
-
-## Working with Type-Safe Enums
-
-```php
-use Fetch\Enum\Method;
-use Fetch\Enum\ContentType;
-use Fetch\Enum\Status;
-
-// Use enums for HTTP methods
-$client = fetch_client();
-$response = $client->request(Method::POST, '/users', $userData);
-
-// Check HTTP status with enums
-if ($response->getStatus() === Status::OK) {
-    // Process successful response
-}
-
-// Content type handling
-$response = $client->withBody($data, ContentType::JSON)->post('/users');
 ```
 
 ## License
