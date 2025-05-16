@@ -129,19 +129,33 @@ trait PerformsHttpRequests
      */
     protected function finalizeRequest(string $method, string $uri): ResponseInterface|PromiseInterface
     {
-        // Create a local copy of the options
-        $options = $this->options;
+        // Create a copy of options to avoid modifying the original
+        $requestOptions = $this->options;
 
-        // Set the method in the local options
-        $options['method'] = $method;
+        // Set the method and URI in the copied options
+        $requestOptions['method'] = $method;
+        $requestOptions['uri'] = $uri;
 
-        // Create a request object
-        $request = $this->createRequest($method, $uri);
+        // Store the original options
+        $originalOptions = $this->options;
 
-        // Apply any configured options to the request
-        $request = $this->applyOptionsToRequest($request, $options);
+        // Temporarily set the options for this request
+        $this->options = $requestOptions;
 
-        // Send the request
-        return $this->sendRequest($request);
+        try {
+            // Create a request object
+            $request = $this->createRequest($method, $uri);
+
+            // Apply any configured options to the request
+            $request = $this->applyOptionsToRequest($request);
+
+            // Send the request and capture the response
+            $response = $this->sendRequest($request);
+
+            return $response;
+        } finally {
+            // Always restore the original options, even if an exception occurs
+            $this->options = $originalOptions;
+        }
     }
 }
