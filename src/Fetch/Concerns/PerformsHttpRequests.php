@@ -119,4 +119,26 @@ trait PerformsHttpRequests
     {
         return $this->finalizeRequest(Method::OPTIONS->value, $uri);
     }
+
+    /**
+     * Finalize and send a request with the specified method and URI.
+     *
+     * @param  string  $method  The HTTP method to use
+     * @param  string  $uri  The URI to request
+     * @return ResponseInterface|PromiseInterface The response or promise
+     */
+    protected function finalizeRequest(string $method, string $uri): ResponseInterface|PromiseInterface
+    {
+        // Set the method in the options
+        $this->options['method'] = $method;
+
+        // Create a request object
+        $request = $this->createRequest($method, $uri);
+
+        // Apply any configured options to the request
+        $request = $this->applyOptionsToRequest($request);
+
+        // Send the request
+        return $this->sendRequest($request);
+    }
 }
