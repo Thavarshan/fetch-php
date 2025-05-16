@@ -22,6 +22,8 @@ use function async;
 
 trait SendsRequests
 {
+    use HandlesUris;
+
     /**
      * Apply options and execute the request.
      *
