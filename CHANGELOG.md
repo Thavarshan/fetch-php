@@ -1,6 +1,26 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.1.1...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.2.0...HEAD)
+
+## [v3.2.0](https://github.com/Thavarshan/fetch-php/compare/v3.1.1...v3.2.0) - 2025-05-16
+
+### Added
+
+* Added tests for various HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS) with appropriate assertions.
+
+### Changed
+
+* Simplified **`ManagesRetriesTest`** by using a mock class for retry-logic testing.
+* Consolidated tests for retryable status codes and exceptions into a single method.
+* Updated **`PerformsHttpRequestsTest`** to use `GuzzleHttp` client mocks for more accurate request simulation.
+* Enhanced exception-handling tests to verify error messages and retry behaviour.
+* Removed unnecessary reflection methods and streamlined test setup.
+
+### Fixed
+
+* Improved back-off delay calculations in retry tests to ensure correct timing.
+
+**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/3.1.1...3.2.0
 
 ## [v3.1.1](https://github.com/Thavarshan/fetch-php/compare/v3.1.0...v3.1.1) - 2025-05-16
 
