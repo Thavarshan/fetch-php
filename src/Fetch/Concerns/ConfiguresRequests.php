@@ -8,7 +8,6 @@ use Fetch\Enum\ContentType;
 use Fetch\Interfaces\ClientHandler;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use InvalidArgumentException;
-use ValueError;
 
 trait ConfiguresRequests
 {
@@ -171,7 +170,7 @@ trait ConfiguresRequests
     public function withBody(array|string $body, string|ContentType $contentType = ContentType::JSON): ClientHandler
     {
         // Convert string content type to enum if necessary
-        $contentTypeEnum = $this->normalizeContentType($contentType);
+        $contentTypeEnum = ContentType::normalizeContentType($contentType);
         $contentTypeValue = $contentTypeEnum instanceof ContentType
             ? $contentTypeEnum->value
             : $contentTypeEnum;
@@ -389,7 +388,7 @@ trait ConfiguresRequests
         }
 
         // Normalize content type
-        $contentTypeEnum = $this->normalizeContentType($contentType);
+        $contentTypeEnum = ContentType::normalizeContentType($contentType);
 
         if (is_array($body)) {
             match ($contentTypeEnum) {
@@ -403,25 +402,5 @@ trait ConfiguresRequests
         }
 
         $this->withBody($body, $contentType);
-    }
-
-    /**
-     * Normalize a content type to an enum if possible.
-     *
-     * @param  string|ContentType  $contentType  The content type
-     * @return string|ContentType The normalized content type
-     */
-    protected function normalizeContentType(string|ContentType $contentType): string|ContentType
-    {
-        if ($contentType instanceof ContentType) {
-            return $contentType;
-        }
-
-        try {
-            return ContentType::tryFromString($contentType, ContentType::JSON);
-        } catch (ValueError $e) {
-            // If it's not a valid enum value, keep it as a string
-            return $contentType;
-        }
     }
 }

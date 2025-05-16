@@ -108,14 +108,6 @@ class Client implements ClientInterface, LoggerAwareInterface
      *
      * @throws ClientExceptionInterface If an error happens while processing the request
      */
-    /**
-     * Sends a PSR-7 request and returns a PSR-7 response.
-     *
-     * @param  RequestInterface  $request  PSR-7 request
-     * @return PsrResponseInterface PSR-7 response
-     *
-     * @throws ClientExceptionInterface If an error happens while processing the request
-     */
     public function sendRequest(RequestInterface $request): PsrResponseInterface
     {
         try {
@@ -243,15 +235,28 @@ class Client implements ClientInterface, LoggerAwareInterface
 
         // Send the request using the new unified approach
         try {
-            return $this->handler
-                ->withOptions($options)
-                ->withBody($body, $contentType)
-                ->sendRequest($method, $url);
-        } catch (GuzzleRequestException $e) {
-            // Rest of the method unchanged
-        }
+            $handler = $this->handler->withOptions($options);
 
-        return $this->handler;
+            if ($body !== null) {
+                $handler = $handler->withBody($body, $contentType);
+            }
+
+            return $handler->sendRequest($method, $url);
+        } catch (GuzzleRequestException $e) {
+            // Handle Guzzle exceptions - Note: this catch block is incomplete in the original
+            $this->logger->error('Request exception', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            // If the exception has a response, return it
+            if ($e->hasResponse()) {
+                return Response::createFromBase($e->getResponse());
+            }
+
+            // Otherwise, re-throw
+            throw $e;
+        }
     }
 
     /**
@@ -265,13 +270,12 @@ class Client implements ClientInterface, LoggerAwareInterface
     public function get(string $url, ?array $queryParams = null, ?array $options = []): ResponseInterface
     {
         $options = $options ?? [];
-        $options['method'] = Method::GET->value;
 
         if ($queryParams) {
             $options['query'] = $queryParams;
         }
 
-        return $this->fetch($url, $options);
+        return $this->methodRequest(Method::GET, $url, null, ContentType::JSON, $options);
     }
 
     /**
@@ -289,20 +293,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = []
     ): ResponseInterface {
-        $options = $options ?? [];
-        $options['method'] = Method::POST->value;
-
-        if ($body !== null) {
-            $options['body'] = $body;
-
-            if ($contentType instanceof ContentType) {
-                $options['headers']['Content-Type'] = $contentType->value;
-            } else {
-                $options['headers']['Content-Type'] = $contentType;
-            }
-        }
-
-        return $this->fetch($url, $options);
+        return $this->methodRequest(Method::POST, $url, $body, $contentType, $options);
     }
 
     /**
@@ -320,20 +311,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = []
     ): ResponseInterface {
-        $options = $options ?? [];
-        $options['method'] = Method::PUT->value;
-
-        if ($body !== null) {
-            $options['body'] = $body;
-
-            if ($contentType instanceof ContentType) {
-                $options['headers']['Content-Type'] = $contentType->value;
-            } else {
-                $options['headers']['Content-Type'] = $contentType;
-            }
-        }
-
-        return $this->fetch($url, $options);
+        return $this->methodRequest(Method::PUT, $url, $body, $contentType, $options);
     }
 
     /**
@@ -351,20 +329,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = []
     ): ResponseInterface {
-        $options = $options ?? [];
-        $options['method'] = Method::PATCH->value;
-
-        if ($body !== null) {
-            $options['body'] = $body;
-
-            if ($contentType instanceof ContentType) {
-                $options['headers']['Content-Type'] = $contentType->value;
-            } else {
-                $options['headers']['Content-Type'] = $contentType;
-            }
-        }
-
-        return $this->fetch($url, $options);
+        return $this->methodRequest(Method::PATCH, $url, $body, $contentType, $options);
     }
 
     /**
@@ -382,20 +347,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = []
     ): ResponseInterface {
-        $options = $options ?? [];
-        $options['method'] = Method::DELETE->value;
-
-        if ($body !== null) {
-            $options['body'] = $body;
-
-            if ($contentType instanceof ContentType) {
-                $options['headers']['Content-Type'] = $contentType->value;
-            } else {
-                $options['headers']['Content-Type'] = $contentType;
-            }
-        }
-
-        return $this->fetch($url, $options);
+        return $this->methodRequest(Method::DELETE, $url, $body, $contentType, $options);
     }
 
     /**
@@ -407,10 +359,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      */
     public function head(string $url, ?array $options = []): ResponseInterface
     {
-        $options = $options ?? [];
-        $options['method'] = Method::HEAD->value;
-
-        return $this->fetch($url, $options);
+        return $this->methodRequest(Method::HEAD, $url, null, ContentType::JSON, $options);
     }
 
     /**
@@ -422,10 +371,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      */
     public function options(string $url, ?array $options = []): ResponseInterface
     {
-        $options = $options ?? [];
-        $options['method'] = Method::OPTIONS->value;
-
-        return $this->fetch($url, $options);
+        return $this->methodRequest(Method::OPTIONS, $url, null, ContentType::JSON, $options);
     }
 
     /**
@@ -434,6 +380,42 @@ class Client implements ClientInterface, LoggerAwareInterface
     public function getHttpClient(): ClientInterface
     {
         return $this->handler->getHttpClient();
+    }
+
+    /**
+     * Make a request with a specific HTTP method.
+     *
+     * @param  Method  $method  The HTTP method
+     * @param  string  $url  The URL to fetch
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type
+     * @param  array<string, mixed>|null  $options  Request options
+     * @return ResponseInterface The response
+     */
+    protected function methodRequest(
+        Method $method,
+        string $url,
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+        ?array $options = []
+    ): ResponseInterface {
+        $options = $options ?? [];
+        $options['method'] = $method->value;
+
+        if ($body !== null) {
+            $options['body'] = $body;
+
+            // Use the global normalize_content_type function
+            $normalizedContentType = ContentType::normalizeContentType($contentType);
+
+            if ($normalizedContentType instanceof ContentType) {
+                $options['headers']['Content-Type'] = $normalizedContentType->value;
+            } else {
+                $options['headers']['Content-Type'] = $normalizedContentType;
+            }
+        }
+
+        return $this->fetch($url, $options);
     }
 
     /**

@@ -1,5 +1,3 @@
-[![Fetch PHP](./assets/Banner.png)](https://github.com/Thavarshan/fetch-php)
-
 # Fetch PHP
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
@@ -207,9 +205,12 @@ try {
 
 ```php
 // Set up an async request
-$promise = fetch_client()
-    ->async()
-    ->get('https://api.example.com/users');
+// Get the handler for async operations
+$handler = fetch_client()->getHandler();
+$handler->async();
+
+// Make the async request
+$promise = $handler->get('https://api.example.com/users');
 
 // Handle the result with callbacks
 $promise->then(
@@ -431,9 +432,10 @@ try {
 }
 
 // Asynchronous error handling
-fetch_client()
-    ->async()
-    ->get('https://api.example.com/nonexistent')
+$handler = fetch_client()->getHandler();
+$handler->async();
+
+$promise = $handler->get('https://api.example.com/nonexistent')
     ->then(function ($response) {
         if ($response->isSuccess()) {
             return $response->json();

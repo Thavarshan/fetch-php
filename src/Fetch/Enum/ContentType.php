@@ -39,6 +39,22 @@ enum ContentType: string
     }
 
     /**
+     * Normalize a content type to a ContentType enum value.
+     */
+    public static function normalizeContentType(string|ContentType $contentType): string|ContentType
+    {
+        if ($contentType instanceof ContentType) {
+            return $contentType;
+        }
+
+        // Try to convert to enum without a default
+        $result = self::tryFromString($contentType);
+
+        // Return the enum if found, otherwise return the original string
+        return $result !== null ? $result : $contentType;
+    }
+
+    /**
      * Check if the content type is JSON.
      */
     public function isJson(): bool

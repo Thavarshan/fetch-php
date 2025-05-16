@@ -6,6 +6,7 @@ namespace Fetch\Concerns;
 
 use Fetch\Interfaces\ClientHandler;
 use InvalidArgumentException;
+use Matrix\Exceptions\TimeoutException;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 use Throwable;
@@ -197,7 +198,7 @@ trait ManagesPromises
      */
     public function reject(mixed $reason): PromiseInterface
     {
-        return reject($reason);
+        return reject(is_string($reason) ? new RuntimeException($reason) : $reason);
     }
 
     /**
@@ -242,45 +243,13 @@ trait ManagesPromises
      */
     protected function awaitWithTimeout(PromiseInterface $promise, float $timeout): mixed
     {
-        $timeoutMicro = (int) ($timeout * 1000000);
-        $result = null;
-        $isResolved = false;
-        $error = null;
-
-        // Create a promise that will resolve or reject after the timeout
-        $timeoutPromise = $this->createTimeoutPromise($timeout);
-
-        // Race the original promise against the timeout
-        $racePromise = race([$promise, $timeoutPromise]);
-
-        // Set up the callback for when the promise resolves
-        $promise->then(
-            function ($value) use (&$result, &$isResolved) {
-                $result = $value;
-                $isResolved = true;
-            },
-            function ($reason) use (&$error) {
-                $error = $reason;
-            }
-        );
-
-        // Wait for either the promise to resolve or the timeout to occur
-        await($racePromise);
-
-        // If we have an error, throw it
-        if ($error !== null) {
-            if ($error instanceof Throwable) {
-                throw $error;
-            }
-            throw new RuntimeException('Promise rejected: '.(string) $error);
+        try {
+            // Use Matrix's built-in timeout function
+            return await(timeout($promise, $timeout));
+        } catch (TimeoutException $e) {
+            // Convert to RuntimeException for consistency with your API
+            throw new RuntimeException("Promise timed out after {$timeout} seconds", 0, $e);
         }
-
-        // If we didn't resolve, it means we timed out
-        if (! $isResolved) {
-            throw new RuntimeException("Promise timed out after {$timeout} seconds");
-        }
-
-        return $result;
     }
 
     /**

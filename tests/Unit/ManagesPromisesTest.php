@@ -1,320 +1,338 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Tests\Unit;
 
 use Exception;
-use Fetch\Concerns\ManagesPromises;
+use Fetch\Http\ClientHandler;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
-use ReflectionObject;
-use Throwable;
+use ReflectionClass;
 
 class ManagesPromisesTest extends TestCase
 {
-    public function test_async_default_value(): void
+    private $handler;
+
+    protected function setUp(): void
     {
-        $instance = $this->createTraitImplementation();
+        $this->handler = new class extends ClientHandler
+        {
+            // Expose the sendAsync method for testing
+            public function exposeSendAsync(): PromiseInterface
+            {
+                return async(function () {
+                    return 'success';
+                });
+            }
 
-        $result = $instance->async();
-
-        $this->assertTrue($instance->isAsync());
-        $this->assertSame($instance, $result);
+            // Override sendAsync for testing
+            protected function sendAsync(): PromiseInterface
+            {
+                return async(function () {
+                    return 'success';
+                });
+            }
+        };
     }
 
-    public function test_async_explicit_values(): void
+    public function test_async_mode_setting(): void
     {
-        $instance = $this->createTraitImplementation();
+        // Default should be false
+        $this->assertFalse($this->handler->isAsync());
 
         // Set to true
-        $result = $instance->async(true);
-        $this->assertTrue($instance->isAsync());
-        $this->assertSame($instance, $result);
+        $handler = $this->handler->async();
+        $this->assertTrue($handler->isAsync());
 
         // Set to false
-        $result = $instance->async(false);
-        $this->assertFalse($instance->isAsync());
-        $this->assertSame($instance, $result);
+        $handler = $this->handler->async(false);
+        $this->assertFalse($handler->isAsync());
 
-        // Set to null (should default to true)
-        $result = $instance->async(null);
-        $this->assertTrue($instance->isAsync());
-        $this->assertSame($instance, $result);
-    }
-
-    public function test_is_async(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        // Default should be false
-        $this->assertFalse($instance->isAsync());
-
-        // After setting to true
-        $instance->async(true);
-        $this->assertTrue($instance->isAsync());
-
-        // After setting to false
-        $instance->async(false);
-        $this->assertFalse($instance->isAsync());
+        // Set with null (should default to true)
+        $handler = $this->handler->async(null);
+        $this->assertTrue($handler->isAsync());
     }
 
     public function test_wrap_async(): void
     {
-        $instance = $this->createTraitImplementation();
-
-        $result = $instance->wrapAsync(function () {
+        $promise = $this->handler->wrapAsync(function () {
             return 'test result';
         });
 
-        $this->assertInstanceOf(PromiseInterface::class, $result);
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+        $result = await($promise);
+        $this->assertEquals('test result', $result);
     }
 
-    public function test_then(): void
+    public function test_await_promise(): void
     {
-        $instance = $this->createTraitImplementation();
-        $instance->setAsyncResult('promise result');
+        $promise = resolve('test value');
+        $result = $this->handler->awaitPromise($promise);
 
-        $result = $instance->then(function ($value) {
-            return 'then: '.$value;
+        $this->assertEquals('test value', $result);
+    }
+
+    public function test_await_promise_with_rejection(): void
+    {
+        $promise = reject(new Exception('test error'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('test error');
+
+        $this->handler->awaitPromise($promise);
+    }
+
+    public function test_await_with_timeout_success(): void
+    {
+        // Create a promise that resolves quickly
+        $promise = async(function () {
+            return 'quick result';
         });
 
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-        $this->assertTrue($instance->isAsync());
+        // Use reflection to access protected method
+        $reflection = new ReflectionClass($this->handler);
+        $method = $reflection->getMethod('awaitWithTimeout');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->handler, $promise, 1.0);
+        $this->assertEquals('quick result', $result);
     }
 
-    public function test_catch(): void
+    public function test_all_with_promises(): void
     {
-        $instance = $this->createTraitImplementation();
-        $instance->setAsyncResult(new Exception('test exception'));
-
-        $result = $instance->catch(function ($error) {
-            return 'error: '.$error->getMessage();
-        });
-
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-        $this->assertTrue($instance->isAsync());
-    }
-
-    public function test_finally(): void
-    {
-        $instance = $this->createTraitImplementation();
-        $instance->setAsyncResult('promise result');
-
-        $result = $instance->finally(function () {
-            return 'finally called';
-        });
-
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-        $this->assertTrue($instance->isAsync());
-    }
-
-    public function test_resolve(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $value = 'test value';
-        $result = $instance->resolve($value);
-
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-    }
-
-    public function test_reject(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $error = new Exception('test error');
-        $result = $instance->reject($error);
-
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-    }
-
-    public function test_validate_promises_with_valid_promises(): void
-    {
-        $instance = $this->createTraitImplementation();
-
         $promises = [
-            \React\Promise\resolve('test1'),
-            \React\Promise\resolve('test2'),
-            \React\Promise\resolve('test3'),
+            resolve('first'),
+            resolve('second'),
+            resolve('third'),
         ];
 
-        // Call the protected method using reflection
-        $reflection = new ReflectionObject($instance);
+        $combinedPromise = $this->handler->all($promises);
+        $this->assertInstanceOf(PromiseInterface::class, $combinedPromise);
+
+        $results = await($combinedPromise);
+        $this->assertEquals(['first', 'second', 'third'], $results);
+    }
+
+    public function test_all_with_invalid_promises(): void
+    {
+        $promises = [
+            resolve('first'),
+            'not a promise',
+            resolve('third'),
+        ];
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Item at index 1 is not a promise');
+
+        $this->handler->all($promises);
+    }
+
+    public function test_race_with_promises(): void
+    {
+        // Create deferreds to control resolution order
+        $deferred1 = new Deferred;
+        $deferred2 = new Deferred;
+        $deferred3 = new Deferred;
+
+        $promises = [
+            $deferred1->promise(),
+            $deferred2->promise(),
+            $deferred3->promise(),
+        ];
+
+        $racePromise = $this->handler->race($promises);
+        $this->assertInstanceOf(PromiseInterface::class, $racePromise);
+
+        $result = null;
+        $racePromise->then(function ($value) use (&$result) {
+            $result = $value;
+        });
+
+        // Resolve the promises in a specific order
+        $deferred2->resolve('winner');
+        $deferred1->resolve('too late');
+        $deferred3->resolve('also too late');
+
+        $this->assertEquals('winner', $result);
+    }
+
+    public function test_any_with_promises(): void
+    {
+        $promises = [
+            reject(new Exception('first error')),
+            resolve('success'),
+            reject(new Exception('third error')),
+        ];
+
+        $anyPromise = $this->handler->any($promises);
+        $this->assertInstanceOf(PromiseInterface::class, $anyPromise);
+
+        $result = await($anyPromise);
+        $this->assertEquals('success', $result);
+    }
+
+    public function test_sequence_with_callables(): void
+    {
+        $callables = [
+            function () {
+                return resolve('first');
+            },
+            function () {
+                return resolve('second');
+            },
+            function () {
+                return resolve('third');
+            },
+        ];
+
+        $sequencePromise = $this->handler->sequence($callables);
+        $this->assertInstanceOf(PromiseInterface::class, $sequencePromise);
+
+        $results = await($sequencePromise);
+        $this->assertEquals(['first', 'second', 'third'], $results);
+    }
+
+    public function test_then_method(): void
+    {
+        $this->handler->async();
+
+        $promise = $this->handler->then(function ($result) {
+            return $result.' with then';
+        });
+
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+        $result = await($promise);
+        $this->assertEquals('success with then', $result);
+    }
+
+    public function test_catch_method(): void
+    {
+        $mockHandler = new class extends ClientHandler
+        {
+            protected function sendAsync(): PromiseInterface
+            {
+                return reject(new Exception('test error'));
+            }
+        };
+
+        $mockHandler->async();
+
+        $promise = $mockHandler->catch(function ($error) {
+            return 'caught: '.$error->getMessage();
+        });
+
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+        $result = await($promise);
+        $this->assertEquals('caught: test error', $result);
+    }
+
+    public function test_finally_method(): void
+    {
+        $this->handler->async();
+
+        $finallyRun = false;
+
+        $promise = $this->handler->finally(function () use (&$finallyRun) {
+            $finallyRun = true;
+        });
+
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+        await($promise);
+        $this->assertTrue($finallyRun);
+    }
+
+    public function test_resolve_method(): void
+    {
+        $promise = $this->handler->resolve('test value');
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+
+        $result = await($promise);
+        $this->assertEquals('test value', $result);
+    }
+
+    public function test_reject_method(): void
+    {
+        $promise = $this->handler->reject('test reason');
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+
+        try {
+            await($promise);
+            $this->fail('Promise should have been rejected');
+        } catch (\Throwable $e) {
+            $this->assertEquals('test reason', $e->getMessage());
+        }
+    }
+
+    public function test_map_with_empty_items(): void
+    {
+        $items = [];
+        $mapPromise = $this->handler->map($items, function ($item) {
+            return resolve($item);
+        });
+
+        $results = await($mapPromise);
+        $this->assertEquals([], $results);
+    }
+
+    public function test_map_with_items_under_concurrency_limit(): void
+    {
+        $items = [1, 2, 3];
+        $mapPromise = $this->handler->map($items, function ($item) {
+            return resolve($item * 2);
+        }, 5); // Concurrency higher than item count
+
+        $results = await($mapPromise);
+        $this->assertEquals([2, 4, 6], $results);
+    }
+
+    public function test_map_throws_with_invalid_concurrency(): void
+    {
+        $items = [1, 2, 3];
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Concurrency must be greater than 0');
+
+        $this->handler->map($items, function ($item) {
+            return resolve($item);
+        }, 0); // Invalid concurrency
+    }
+
+    public function test_validate_promises(): void
+    {
+        $promises = [
+            resolve('first'),
+            resolve('second'),
+        ];
+
+        // Use reflection to access protected method
+        $reflection = new ReflectionClass($this->handler);
         $method = $reflection->getMethod('validatePromises');
         $method->setAccessible(true);
 
-        // No exception should be thrown
-        $method->invoke($instance, $promises);
+        // Should not throw an exception
+        $method->invoke($this->handler, $promises);
 
-        $this->assertTrue(true); // Just to assert something
+        // Assert passes if no exception is thrown
+        $this->assertTrue(true);
     }
 
-    public function test_validate_promises_with_invalid_items(): void
+    public function test_validate_promises_with_invalid_item(): void
     {
-        $instance = $this->createTraitImplementation();
-
         $promises = [
-            \React\Promise\resolve('test1'),
+            resolve('first'),
             'not a promise',
-            \React\Promise\resolve('test3'),
+            resolve('third'),
         ];
 
-        // Call the protected method using reflection
-        $reflection = new ReflectionObject($instance);
+        // Use reflection to access protected method
+        $reflection = new ReflectionClass($this->handler);
         $method = $reflection->getMethod('validatePromises');
         $method->setAccessible(true);
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Item at index 1 is not a promise');
 
-        $method->invoke($instance, $promises);
-    }
-
-    public function test_all(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $promises = [
-            \React\Promise\resolve('test1'),
-            \React\Promise\resolve('test2'),
-        ];
-
-        $result = $instance->all($promises);
-
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-    }
-
-    public function test_race(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $promises = [
-            \React\Promise\resolve('test1'),
-            \React\Promise\resolve('test2'),
-        ];
-
-        $result = $instance->race($promises);
-
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-    }
-
-    public function test_any(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $promises = [
-            \React\Promise\reject(new Exception('error1')),
-            \React\Promise\resolve('success'),
-            \React\Promise\reject(new Exception('error2')),
-        ];
-
-        $resultPromise = $instance->any($promises);
-        $this->assertInstanceOf(PromiseInterface::class, $resultPromise);
-
-        $resultValue = $instance->awaitPromise($resultPromise);
-        $this->assertSame('success', $resultValue);
-    }
-
-    public function test_sequence(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $callables = [
-            function () {
-                return \React\Promise\resolve('result1');
-            },
-            function () {
-                return \React\Promise\resolve('result2');
-            },
-        ];
-
-        $sequencePromise = $instance->sequence($callables);
-        $this->assertInstanceOf(PromiseInterface::class, $sequencePromise);
-
-        $sequenceResults = $instance->awaitPromise($sequencePromise);
-        $this->assertIsArray($sequenceResults);
-        $this->assertSame(['result1', 'result2'], $sequenceResults);
-    }
-
-    public function test_map_empty_items(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $items = [];
-
-        $result = $instance->map($items, function ($item) {
-            return \React\Promise\resolve('mapped '.$item);
-        });
-
-        $this->assertInstanceOf(PromiseInterface::class, $result);
-        $value = $instance->awaitPromise($result);
-        $this->assertSame([], $value);
-    }
-
-    public function test_map_invalid_concurrency(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $items = ['item1', 'item2', 'item3'];
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Concurrency must be greater than 0');
-
-        $instance->map($items, function ($item) {
-            return \React\Promise\resolve('mapped '.$item);
-        }, 0);
-    }
-
-    public function test_map_with_valid_items(): void
-    {
-        $instance = $this->createTraitImplementation();
-
-        $items = ['item1', 'item2'];
-
-        $mapPromise = $instance->map($items, function ($item) {
-            return \React\Promise\resolve('mapped '.$item);
-        });
-
-        $this->assertInstanceOf(PromiseInterface::class, $mapPromise);
-        $mappedResults = $instance->awaitPromise($mapPromise);
-        $this->assertSame(['mapped item1', 'mapped item2'], $mappedResults);
-    }
-
-    private function createTraitImplementation()
-    {
-        return new class
-        {
-            use ManagesPromises;
-
-            private $asyncResult = null;
-
-            public function sendAsync(): PromiseInterface
-            {
-                if ($this->asyncResult instanceof Throwable) {
-                    return \React\Promise\reject($this->asyncResult);
-                }
-
-                return \React\Promise\resolve($this->asyncResult ?? 'default result');
-            }
-
-            public function setAsyncResult($result): self
-            {
-                $this->asyncResult = $result;
-
-                return $this;
-            }
-
-            public function getFullUri(): string
-            {
-                return 'https://example.com';
-            }
-
-            public function request(string $method, string $uri, mixed $body = null, $contentType = 'application/json', array $options = [])
-            {
-                return $this->sendAsync();
-            }
-        };
+        $method->invoke($this->handler, $promises);
     }
 }

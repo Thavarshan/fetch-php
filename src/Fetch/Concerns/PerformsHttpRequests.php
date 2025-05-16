@@ -9,6 +9,7 @@ use Fetch\Enum\Method;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use Matrix\Exceptions\AsyncException;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 
@@ -30,7 +31,7 @@ trait PerformsHttpRequests
         array $options = []
     ): Response|PromiseInterface {
         $handler = new static;
-        $handler->applyOptions($options);
+        $handler->withOptions($options);
 
         return $handler->sendRequest($method, $uri);
     }
@@ -146,50 +147,49 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $options  Additional options
      * @return ResponseInterface|PromiseInterface The response or promise
      */
+    /**
+     * Send an HTTP request.
+     *
+     * @param  Method|string  $method  The HTTP method
+     * @param  string  $uri  The URI to request
+     * @param  array<string, mixed>  $options  Additional options
+     * @return ResponseInterface|PromiseInterface The response or promise
+     */
     public function sendRequest(
         Method|string $method,
         string $uri,
         array $options = []
     ): ResponseInterface|PromiseInterface {
-        // Store original options for later restoration
-        $originalOptions = $this->options;
+        // Create a new handler with the combined options
+        $handler = clone $this;
+        $handler->withOptions($options);
 
-        try {
-            // Normalize method to string
-            $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+        // Normalize method to string
+        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
 
-            // Merge options
-            if (! empty($options)) {
-                $this->withOptions($options);
-            }
+        // Store URI in handler options
+        $handler->options['uri'] = $uri;
+        $handler->options['method'] = $methodStr;
 
-            // Store URI in options for building full URI
-            $this->options['uri'] = $uri;
-            $this->options['method'] = $methodStr;
+        // Build the full URI
+        $fullUri = $handler->buildFullUri($uri);
 
-            // Build the full URI
-            $fullUri = $this->buildFullUri($uri);
+        // Prepare Guzzle options
+        $guzzleOptions = $handler->prepareGuzzleOptions();
 
-            // Prepare Guzzle options
-            $guzzleOptions = $this->prepareGuzzleOptions();
+        // Start timing for logging
+        $startTime = microtime(true);
 
-            // Start timing for logging
-            $startTime = microtime(true);
+        // Log the request if method exists
+        if (method_exists($handler, 'logRequest')) {
+            $handler->logRequest($methodStr, $fullUri, $guzzleOptions);
+        }
 
-            // Log the request if method exists
-            if (method_exists($this, 'logRequest')) {
-                $this->logRequest($methodStr, $fullUri, $guzzleOptions);
-            }
-
-            // Send the request (async or sync)
-            if ($this->isAsync) {
-                return $this->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions);
-            } else {
-                return $this->executeSyncRequest($methodStr, $fullUri, $guzzleOptions, $startTime);
-            }
-        } finally {
-            // Always restore original options
-            $this->options = $originalOptions;
+        // Send the request (async or sync)
+        if ($handler->isAsync) {
+            return $handler->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions);
+        } else {
+            return $handler->executeSyncRequest($methodStr, $fullUri, $guzzleOptions, $startTime);
         }
     }
 
@@ -228,6 +228,27 @@ trait PerformsHttpRequests
     }
 
     /**
+     * Get the effective timeout for the request.
+     *
+     * @return int The timeout in seconds
+     */
+    public function getEffectiveTimeout(): int
+    {
+        // Next check options array
+        if (isset($this->options['timeout']) && is_int($this->options['timeout'])) {
+            return $this->options['timeout'];
+        }
+
+        // First check explicitly set timeout property
+        if (isset($this->timeout) && is_int($this->timeout)) {
+            return $this->timeout;
+        }
+
+        // Fall back to default
+        return self::DEFAULT_TIMEOUT;
+    }
+
+    /**
      * Send an HTTP request with a body.
      *
      * @param  Method|string  $method  The HTTP method
@@ -249,24 +270,19 @@ trait PerformsHttpRequests
             return $this->sendRequest($method, $uri, $options);
         }
 
-        // Store original options for later restoration
-        $originalOptions = $this->options;
+        // Create a new handler instance with cloned options
+        $handler = clone $this;
 
-        try {
-            // Merge options
-            if (! empty($options)) {
-                $this->withOptions($options);
-            }
-
-            // Configure the request body
-            $this->configureRequestBody($body, $contentType);
-
-            // Send the request
-            return $this->sendRequest($method, $uri);
-        } finally {
-            // Always restore original options
-            $this->options = $originalOptions;
+        // Merge options if provided
+        if (! empty($options)) {
+            $handler->withOptions($options);
         }
+
+        // Configure the request body on the cloned handler
+        $handler->configureRequestBody($body, $contentType);
+
+        // Send the request using the configured handler
+        return $handler->sendRequest($method, $uri);
     }
 
     /**
@@ -299,7 +315,7 @@ trait PerformsHttpRequests
         } elseif (isset($this->options['timeout'])) {
             $guzzleOptions['timeout'] = $this->options['timeout'];
         } else {
-            $guzzleOptions['timeout'] = self::DEFAULT_TIMEOUT;
+            $guzzleOptions['timeout'] = $this->getEffectiveTimeout();
         }
 
         return $guzzleOptions;
@@ -367,18 +383,33 @@ trait PerformsHttpRequests
     ): PromiseInterface {
         return async(function () use ($method, $uri, $options): ResponseInterface {
             $startTime = microtime(true);
+
+            // Since this is in an async context, we can use try-catch for proper promise rejection
             try {
-                return $this->executeSyncRequest($method, $uri, $options, $startTime);
+                // Execute the synchronous request inside the async function
+                $response = $this->executeSyncRequest($method, $uri, $options, $startTime);
+
+                return $response;
             } catch (\Throwable $e) {
-                // Log the error if possible
-                if (method_exists($this, 'logger')) {
+                // Log the error without interfering with promise rejection
+                if (method_exists($this, 'logger') && isset($this->logger)) {
                     $this->logger->error('Async request failed', [
                         'method' => $method,
                         'uri' => $uri,
                         'error' => $e->getMessage(),
+                        'exception_class' => get_class($e),
                     ]);
                 }
-                throw $e; // Re-throw to maintain promise rejection
+
+                // Use withErrorContext to add request information to the error
+                $contextMessage = "Request $method $uri failed";
+
+                // Throw the exception - in the async context, this will properly reject the promise
+                throw new AsyncException(
+                    $contextMessage.': '.$e->getMessage(),
+                    $e->getCode(),
+                    $e // Preserve the original exception as previous
+                );
             }
         });
     }

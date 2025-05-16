@@ -18,31 +18,25 @@ trait HandlesUris
      */
     protected function buildFullUri(string $uri): string
     {
+        // Get base URI and query parameters from options
         $baseUri = $this->options['base_uri'] ?? '';
         $queryParams = $this->options['query'] ?? [];
 
-        // Early return if URI is empty
-        if (empty($uri) && empty($baseUri)) {
-            throw new InvalidArgumentException('URI cannot be empty');
+        // Normalize URIs before processing
+        $uri = $this->normalizeUri($uri);
+        if (! empty($baseUri)) {
+            $baseUri = $this->normalizeUri($baseUri);
         }
 
-        // Handle absolute URLs
-        if ($this->isAbsoluteUrl($uri)) {
-            return $this->appendQueryParameters($uri, $queryParams);
-        }
+        // Validate inputs
+        $this->validateUriInputs($uri, $baseUri);
 
-        // For relative URLs, require a base URI
-        if (empty($baseUri)) {
-            throw new InvalidArgumentException(
-                "Relative URI '{$uri}' cannot be used without a base URI. ".
-                'Set a base URI using the baseUri() method.'
-            );
-        }
+        // Build the final URI
+        $fullUri = $this->isAbsoluteUrl($uri)
+            ? $uri
+            : $this->joinUriPaths($baseUri, $uri);
 
-        // Handle relative URLs with base URI
-        $fullUri = $this->combineBaseWithRelativeUri($baseUri, $uri);
-
-        // Append query parameters if they exist
+        // Add query parameters if any
         return $this->appendQueryParameters($fullUri, $queryParams);
     }
 
@@ -61,6 +55,35 @@ trait HandlesUris
     }
 
     /**
+     * Validate URI and base URI inputs.
+     *
+     * @param  string  $uri  The URI or path
+     * @param  string  $baseUri  The base URI
+     *
+     * @throws InvalidArgumentException If validation fails
+     */
+    protected function validateUriInputs(string $uri, string $baseUri): void
+    {
+        // Check if we have any URI to work with
+        if (empty($uri) && empty($baseUri)) {
+            throw new InvalidArgumentException('URI cannot be empty');
+        }
+
+        // For relative URIs, ensure we have a base URI
+        if (! $this->isAbsoluteUrl($uri) && empty($baseUri)) {
+            throw new InvalidArgumentException(
+                "Relative URI '{$uri}' cannot be used without a base URI. ".
+                'Set a base URI using the baseUri() method.'
+            );
+        }
+
+        // Ensure base URI is valid if provided
+        if (! empty($baseUri) && ! $this->isAbsoluteUrl($baseUri)) {
+            throw new InvalidArgumentException("Invalid base URI: {$baseUri}");
+        }
+    }
+
+    /**
      * Check if a URI is an absolute URL.
      *
      * @param  string  $uri  The URI to check
@@ -72,22 +95,15 @@ trait HandlesUris
     }
 
     /**
-     * Combine a base URI with a relative URI.
+     * Join base URI with a path properly.
      *
      * @param  string  $baseUri  The base URI
-     * @param  string  $relativeUri  The relative URI
+     * @param  string  $path  The path to append
      * @return string The combined URI
      */
-    protected function combineBaseWithRelativeUri(string $baseUri, string $relativeUri): string
+    protected function joinUriPaths(string $baseUri, string $path): string
     {
-        // Ensure base URI is valid if not empty
-        if (! empty($baseUri) && ! $this->isAbsoluteUrl($baseUri)) {
-            throw new InvalidArgumentException("Invalid base URI: {$baseUri}");
-        }
-
-        // Remove trailing slash from base URI and leading slash from relative URI
-        // Then combine them with a forward slash
-        return rtrim($baseUri, '/').'/'.ltrim($relativeUri, '/');
+        return rtrim($baseUri, '/').'/'.ltrim($path, '/');
     }
 
     /**
@@ -103,41 +119,66 @@ trait HandlesUris
             return $uri;
         }
 
-        // Check if the URI has a fragment
-        $fragments = explode('#', $uri, 2);
-        $baseUri = $fragments[0];
-        $fragment = isset($fragments[1]) ? '#'.$fragments[1] : '';
+        // Split URI to preserve any fragment
+        [$baseUri, $fragment] = $this->splitUriFragment($uri);
 
-        // Parse the URI to determine if it already has query parameters
-        $parsedUrl = parse_url($baseUri);
-
-        // Determine the separator based on whether the URI already has query parameters
-        $separator = isset($parsedUrl['query']) && ! empty($parsedUrl['query']) ? '&' : '?';
+        // Determine the separator based on URI structure
+        $separator = $this->getQuerySeparator($baseUri);
 
         // Build the query string
         $queryString = http_build_query($queryParams);
 
-        // Handle special case: URI already ends with a question mark
-        if (str_ends_with($baseUri, '?')) {
-            return $baseUri.$queryString.$fragment;
-        }
-
-        // Append the query string to the URI before any fragment
+        // Combine everything
         return $baseUri.$separator.$queryString.$fragment;
     }
 
     /**
-     * Normalize a URI by ensuring it has the correct format.
+     * Split a URI into its base and fragment parts.
+     *
+     * @param  string  $uri  The URI to split
+     * @return array{0: string, 1: string} [baseUri, fragment]
+     */
+    protected function splitUriFragment(string $uri): array
+    {
+        $fragments = explode('#', $uri, 2);
+        $baseUri = $fragments[0];
+        $fragment = isset($fragments[1]) ? '#'.$fragments[1] : '';
+
+        return [$baseUri, $fragment];
+    }
+
+    /**
+     * Determine the appropriate query string separator for a URI.
+     *
+     * @param  string  $uri  The URI
+     * @return string The separator ('?' or '&' or '')
+     */
+    protected function getQuerySeparator(string $uri): string
+    {
+        // Handle special case: URI already ends with a question mark
+        if (str_ends_with($uri, '?')) {
+            return '';
+        }
+
+        // Check if the URI already has query parameters
+        $parsedUrl = parse_url($uri);
+
+        return isset($parsedUrl['query']) && ! empty($parsedUrl['query']) ? '&' : '?';
+    }
+
+    /**
+     * Normalize a URI by removing redundant slashes.
      *
      * @param  string  $uri  The URI to normalize
      * @return string The normalized URI
      */
     protected function normalizeUri(string $uri): string
     {
-        // Remove multiple consecutive slashes (except in the scheme)
+        // Extract scheme if present (e.g., http://)
         if (preg_match('~^(https?://)~i', $uri, $matches)) {
             $scheme = $matches[1];
             $rest = substr($uri, strlen($scheme));
+            // Normalize consecutive slashes in the path
             $rest = preg_replace('~//+~', '/', $rest);
 
             return $scheme.$rest;
