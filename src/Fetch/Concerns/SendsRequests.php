@@ -179,8 +179,14 @@ trait SendsRequests
      */
     protected function createRequest(string $method, string $uri): Request
     {
-        // Create a basic request with the method and URI
-        return new Request($method, $uri);
+        // Store the URI in options for getFullUri() to use
+        $this->options['uri'] = $uri;
+
+        // Get the full URI (which combines base_uri and uri)
+        $fullUri = $this->getFullUri();
+
+        // Create a basic request with the method and the full URI
+        return new Request($method, $fullUri);
     }
 
     /**
