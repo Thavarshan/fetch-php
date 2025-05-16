@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Fetch\Http;
+namespace Tests\Unit;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
