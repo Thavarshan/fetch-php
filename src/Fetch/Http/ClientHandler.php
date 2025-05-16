@@ -9,11 +9,12 @@ use Fetch\Concerns\HandlesUris;
 use Fetch\Concerns\ManagesPromises;
 use Fetch\Concerns\ManagesRetries;
 use Fetch\Concerns\PerformsHttpRequests;
-use Fetch\Concerns\SendsRequests;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
+use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\RequestOptions;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -24,8 +25,7 @@ class ClientHandler implements ClientHandlerInterface
         HandlesUris,
         ManagesPromises,
         ManagesRetries,
-        PerformsHttpRequests,
-        SendsRequests;
+        PerformsHttpRequests;
 
     /**
      * Default options for the request.
@@ -53,11 +53,9 @@ class ClientHandler implements ClientHandlerInterface
     public const DEFAULT_RETRY_DELAY = 100;
 
     /**
-     * Options prepared for Guzzle.
-     *
-     * @var array<string, mixed>
+     * Whether the request should be asynchronous.
      */
-    protected array $preparedOptions = [];
+    protected bool $isAsync = false;
 
     /**
      * Logger instance.
@@ -67,7 +65,7 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * ClientHandler constructor.
      *
-     * @param  ClientInterface|null  $syncClient  The synchronous HTTP client
+     * @param  ClientInterface|null  $httpClient  The HTTP client
      * @param  array<string, mixed>  $options  The options for the request
      * @param  int|null  $timeout  Timeout for the request in seconds
      * @param  int|null  $maxRetries  Number of retries for the request
@@ -76,7 +74,7 @@ class ClientHandler implements ClientHandlerInterface
      * @param  LoggerInterface|null  $logger  Logger for request/response details
      */
     public function __construct(
-        protected ?ClientInterface $syncClient = null,
+        protected ?ClientInterface $httpClient = null,
         protected array $options = [],
         protected ?int $timeout = null,
         ?int $maxRetries = null,
@@ -85,15 +83,14 @@ class ClientHandler implements ClientHandlerInterface
         ?LoggerInterface $logger = null
     ) {
         $this->logger = $logger ?? new NullLogger;
-
+        $this->isAsync = $isAsync;
         $this->maxRetries = $maxRetries ?? self::DEFAULT_RETRIES;
         $this->retryDelay = $retryDelay ?? self::DEFAULT_RETRY_DELAY;
-        $this->isAsync = $isAsync;
 
         // Initialize with default options
         $this->options = array_merge(self::getDefaultOptions(), $this->options);
 
-        // Set the timeout in options as well
+        // Set the timeout in options
         if ($this->timeout !== null) {
             $this->options['timeout'] = $this->timeout;
         } else {
@@ -136,7 +133,7 @@ class ClientHandler implements ClientHandlerInterface
      */
     public static function createWithClient(ClientInterface $client): static
     {
-        return new static(syncClient: $client);
+        return new static(httpClient: $client);
     }
 
     /**
@@ -202,6 +199,36 @@ class ClientHandler implements ClientHandlerInterface
         );
 
         return self::createMockResponse($statusCode, $headers, $jsonData);
+    }
+
+    /**
+     * Get the HTTP client.
+     *
+     * @return ClientInterface The HTTP client
+     */
+    public function getHttpClient(): ClientInterface
+    {
+        if (! $this->httpClient) {
+            $this->httpClient = new GuzzleClient([
+                RequestOptions::CONNECT_TIMEOUT => $this->options['timeout'] ?? self::DEFAULT_TIMEOUT,
+                RequestOptions::HTTP_ERRORS => false, // We'll handle HTTP errors ourselves
+            ]);
+        }
+
+        return $this->httpClient;
+    }
+
+    /**
+     * Set the HTTP client.
+     *
+     * @param  ClientInterface  $client  The HTTP client
+     * @return $this
+     */
+    public function setHttpClient(ClientInterface $client): self
+    {
+        $this->httpClient = $client;
+
+        return $this;
     }
 
     /**
@@ -324,17 +351,7 @@ class ClientHandler implements ClientHandlerInterface
     protected function logRequest(string $method, string $uri, array $options): void
     {
         // Remove potentially sensitive data
-        $sanitizedOptions = $options;
-
-        // Mask authorization headers
-        if (isset($sanitizedOptions['headers']['Authorization'])) {
-            $sanitizedOptions['headers']['Authorization'] = '[REDACTED]';
-        }
-
-        // Mask auth credentials
-        if (isset($sanitizedOptions['auth'])) {
-            $sanitizedOptions['auth'] = '[REDACTED]';
-        }
+        $sanitizedOptions = $this->sanitizeOptions($options);
 
         $this->logger->debug(
             'Sending HTTP request',
@@ -360,10 +377,51 @@ class ClientHandler implements ClientHandlerInterface
                 'status_code' => $response->getStatusCode(),
                 'reason' => $response->getReasonPhrase(),
                 'duration' => round($duration, 3),
-                'content_length' => $response->hasHeader('Content-Length')
-                    ? $response->getHeaderLine('Content-Length')
-                    : strlen($response->getBody()->getContents()),
+                'content_length' => $this->getResponseContentLength($response),
             ]
         );
+    }
+
+    /**
+     * Get the content length of a response.
+     *
+     * @param  Response  $response  The response
+     * @return int|string The content length
+     */
+    protected function getResponseContentLength(Response $response): int|string
+    {
+        if ($response->hasHeader('Content-Length')) {
+            return $response->getHeaderLine('Content-Length');
+        }
+
+        $body = $response->getBody();
+        $body->rewind();
+        $content = $body->getContents();
+        $body->rewind();
+
+        return strlen($content);
+    }
+
+    /**
+     * Sanitize options for logging.
+     *
+     * @param  array<string, mixed>  $options  The options to sanitize
+     * @return array<string, mixed> Sanitized options
+     */
+    protected function sanitizeOptions(array $options): array
+    {
+        $sanitizedOptions = $options;
+
+        // Mask authorization headers
+        if (isset($sanitizedOptions['headers']['Authorization'])) {
+            $sanitizedOptions['headers']['Authorization'] = '[REDACTED]';
+        }
+
+        // Mask auth credentials
+        if (isset($sanitizedOptions['auth'])) {
+            $sanitizedOptions['auth'] = '[REDACTED]';
+        }
+
+        return $sanitizedOptions;
     }
 }

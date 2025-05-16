@@ -30,7 +30,6 @@ show_usage() {
     echo "  -l, --lint-only         Skip Duster"
     echo "  -n, --no-install        Don't auto-install Duster"
     echo "  -s, --strict            Exit non-zero if any issues found"
-    echo "  -v, --verbose           Verbose output"
     echo "  -h, --help              Show this help"
 }
 

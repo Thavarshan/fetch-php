@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fetch\Concerns;
 
+use Fetch\Interfaces\ClientHandler;
 use InvalidArgumentException;
 use React\Promise\PromiseInterface;
 use RuntimeException;
@@ -22,7 +23,7 @@ trait ManagesPromises
      * @param  bool|null  $async  Whether to execute the request asynchronously
      * @return $this
      */
-    public function async(?bool $async = true): self
+    public function async(?bool $async = true): ClientHandler
     {
         $this->isAsync = $async ?? true;
 

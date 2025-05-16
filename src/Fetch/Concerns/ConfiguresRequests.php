@@ -6,26 +6,12 @@ namespace Fetch\Concerns;
 
 use Fetch\Enum\ContentType;
 use Fetch\Interfaces\ClientHandler;
-use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use InvalidArgumentException;
 use ValueError;
 
 trait ConfiguresRequests
 {
-    /**
-     * Set the synchronous HTTP client.
-     *
-     * @param  ClientInterface  $syncClient  The Guzzle client to use
-     * @return $this
-     */
-    public function setSyncClient(ClientInterface $syncClient): ClientHandler
-    {
-        $this->syncClient = $syncClient;
-
-        return $this;
-    }
-
     /**
      * Set the base URI for the request.
      *
@@ -116,7 +102,7 @@ trait ConfiguresRequests
      */
     public function withToken(string $token): ClientHandler
     {
-        $this->options['headers']['Authorization'] = 'Bearer '.$token;
+        $this->withHeader('Authorization', 'Bearer '.$token);
 
         return $this;
     }
@@ -179,42 +165,39 @@ trait ConfiguresRequests
      * Set the request body.
      *
      * @param  array|string  $body  Request body
-     * @param  string  $contentType  Content type
+     * @param  string|ContentType  $contentType  Content type
      * @return $this
      */
     public function withBody(array|string $body, string|ContentType $contentType = ContentType::JSON): ClientHandler
     {
         // Convert string content type to enum if necessary
-        if (is_string($contentType)) {
-            try {
-                $contentType = ContentType::tryFromString($contentType, ContentType::JSON);
-            } catch (\ValueError $e) {
-                // If it's not a valid enum value, keep it as a string
-            }
-        }
-
-        $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
+        $contentTypeEnum = $this->normalizeContentType($contentType);
+        $contentTypeValue = $contentTypeEnum instanceof ContentType
+            ? $contentTypeEnum->value
+            : $contentTypeEnum;
 
         if (is_array($body)) {
-            if ($contentType === ContentType::JSON) {
-                $this->options['body'] = json_encode($body);
+            if ($contentTypeEnum === ContentType::JSON) {
+                // Use Guzzle's json option for proper JSON handling
+                $this->options['json'] = $body;
 
                 // Set JSON content type header if not already set
                 if (! $this->hasHeader('Content-Type')) {
                     $this->withHeader('Content-Type', ContentType::JSON->value);
                 }
-            } elseif ($contentType === ContentType::FORM_URLENCODED) {
+            } elseif ($contentTypeEnum === ContentType::FORM_URLENCODED) {
                 $this->withFormParams($body);
-            } elseif ($contentType === ContentType::MULTIPART) {
+            } elseif ($contentTypeEnum === ContentType::MULTIPART) {
                 $this->withMultipart($body);
             } else {
-                // For any other content type, serialize the array to JSON
+                // For any other content type, serialize the array to JSON in body
                 $this->options['body'] = json_encode($body);
                 if (! $this->hasHeader('Content-Type')) {
                     $this->withHeader('Content-Type', $contentTypeValue);
                 }
             }
         } else {
+            // For string bodies, use body option
             $this->options['body'] = $body;
 
             if (! $this->hasHeader('Content-Type')) {
@@ -386,7 +369,7 @@ trait ConfiguresRequests
     {
         $this->options = [];
         $this->timeout = null;
-        $this->retries = null;
+        $this->maxRetries = null;
         $this->retryDelay = null;
         $this->isAsync = false;
 
@@ -397,27 +380,19 @@ trait ConfiguresRequests
      * Configure the request body for POST/PUT/PATCH/DELETE requests.
      *
      * @param  mixed  $body  The request body
-     * @param  string  $contentType  The content type of the request
+     * @param  string|ContentType  $contentType  The content type of the request
      */
-    protected function configurePostableRequest(
-        mixed $body = null,
-        string|ContentType $contentType = ContentType::JSON
-    ): void {
+    protected function configureRequestBody(mixed $body = null, string|ContentType $contentType = ContentType::JSON): void
+    {
         if (is_null($body)) {
             return;
         }
 
-        // Convert string content type to enum if necessary
-        if (is_string($contentType)) {
-            try {
-                $contentType = ContentType::tryFromString($contentType, ContentType::JSON);
-            } catch (ValueError $e) {
-                // If it's not a valid enum value, keep it as a string
-            }
-        }
+        // Normalize content type
+        $contentTypeEnum = $this->normalizeContentType($contentType);
 
         if (is_array($body)) {
-            match ($contentType) {
+            match ($contentTypeEnum) {
                 ContentType::JSON => $this->withJson($body),
                 ContentType::FORM_URLENCODED => $this->withFormParams($body),
                 ContentType::MULTIPART => $this->withMultipart($body),
@@ -428,5 +403,25 @@ trait ConfiguresRequests
         }
 
         $this->withBody($body, $contentType);
+    }
+
+    /**
+     * Normalize a content type to an enum if possible.
+     *
+     * @param  string|ContentType  $contentType  The content type
+     * @return string|ContentType The normalized content type
+     */
+    protected function normalizeContentType(string|ContentType $contentType): string|ContentType
+    {
+        if ($contentType instanceof ContentType) {
+            return $contentType;
+        }
+
+        try {
+            return ContentType::tryFromString($contentType, ContentType::JSON);
+        } catch (ValueError $e) {
+            // If it's not a valid enum value, keep it as a string
+            return $contentType;
+        }
     }
 }

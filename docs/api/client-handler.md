@@ -628,14 +628,6 @@ Sets the underlying Guzzle client.
 public function setSyncClient(ClientInterface $syncClient): self
 ```
 
-### `getPreparedOptions()`
-
-Gets the raw prepared options array for Guzzle.
-
-```php
-public function getPreparedOptions(): array
-```
-
 ## Logging
 
 ### `setLogger()`

@@ -7,10 +7,10 @@ use Fetch\Enum\Method;
 use Fetch\Http\Client;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Request;
+use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestInterface;
-use Psr\Log\LoggerInterface;
 
 if (! function_exists('fetch')) {
     /**
@@ -34,7 +34,16 @@ if (! function_exists('fetch')) {
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function fetch(string|RequestInterface|null $resource = null, ?array $options = []): ResponseInterface|ClientHandler|Client
+    /**
+     * Perform an HTTP request similar to JavaScript's fetch API.
+     *
+     * @param  string|RequestInterface|null  $resource  URL to fetch or a pre-configured Request object
+     * @param  array<string, mixed>|null  $options  Request options
+     * @return ResponseInterface|ClientHandlerInterface|Client Response or handler for method chaining
+     *
+     * @throws ClientExceptionInterface If a client exception occurs
+     */
+    function fetch(string|RequestInterface|null $resource = null, ?array $options = []): ResponseInterface|ClientHandlerInterface|Client
     {
         $options = $options ?? [];
 
@@ -53,7 +62,7 @@ if (! function_exists('fetch')) {
 
         // Method (default to GET)
         $method = $options['method'] ?? Method::GET;
-        $processedOptions['method'] = $method instanceof Method ? $method->value : (string) $method;
+        $methodValue = $method instanceof Method ? $method->value : (string) $method;
 
         // Headers
         if (isset($options['headers'])) {
@@ -62,32 +71,22 @@ if (! function_exists('fetch')) {
 
         // Content type handling
         $contentType = null;
+        $body = null;
 
         // Body handling - json takes precedence, then form, then multipart, then raw body
         if (isset($options['json'])) {
-            $processedOptions['body'] = $options['json'];
+            $body = $options['json'];
             $contentType = ContentType::JSON;
         } elseif (isset($options['form'])) {
-            $processedOptions['body'] = $options['form'];
+            $body = $options['form'];
             $contentType = ContentType::FORM_URLENCODED;
         } elseif (isset($options['multipart'])) {
-            $processedOptions['body'] = $options['multipart'];
+            $body = $options['multipart'];
             $contentType = ContentType::MULTIPART;
         } elseif (isset($options['body'])) {
-            $processedOptions['body'] = $options['body'];
+            $body = $options['body'];
             // Use specified content type or default to JSON for arrays
             $contentType = $options['content_type'] ?? (is_array($options['body']) ? ContentType::JSON : null);
-        }
-
-        // Set content type if determined
-        if ($contentType !== null) {
-            $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
-            $processedOptions['content_type'] = $contentTypeValue;
-
-            // Set Content-Type header if not already set
-            if (! isset($processedOptions['headers']['Content-Type'])) {
-                $processedOptions['headers']['Content-Type'] = $contentTypeValue;
-            }
         }
 
         // Query parameters
@@ -97,7 +96,7 @@ if (! function_exists('fetch')) {
 
         // Other options
         $directPassOptions = [
-            'base_uri', 'timeout', 'retries', 'auth', 'token',
+            'timeout', 'retries', 'auth', 'token',
             'proxy', 'cookies', 'allow_redirects', 'cert', 'ssl_key', 'stream',
         ];
 
@@ -107,8 +106,40 @@ if (! function_exists('fetch')) {
             }
         }
 
-        // Send the request
-        return fetch_client()->fetch($resource, $processedOptions);
+        // Handle base URI if provided
+        if (isset($options['base_uri'])) {
+            $client = fetch_client();
+            $handler = $client->getHandler();
+            $handler->baseUri($options['base_uri']);
+
+            // Use the handler with the base URI set
+            if ($body !== null) {
+                // Apply processed options and body
+                $handler->withOptions($processedOptions);
+                if ($contentType !== null) {
+                    $handler->withBody($body, $contentType);
+                } else {
+                    $handler->withBody($body);
+                }
+
+                return $handler->sendRequest($methodValue, $resource);
+            } else {
+                // Just apply processed options
+                $handler->withOptions($processedOptions);
+
+                return $handler->sendRequest($methodValue, $resource);
+            }
+        }
+
+        // No base URI, use direct fetch with options
+        return fetch_client()->fetch($resource, array_merge(
+            $processedOptions,
+            [
+                'method' => $methodValue,
+                'body' => $body,
+                'content_type' => $contentType,
+            ]
+        ));
     }
 }
 
@@ -117,26 +148,27 @@ if (! function_exists('fetch_client')) {
      * Get or configure the global fetch client instance.
      *
      * @param  array<string, mixed>|null  $options  Global client options
-     * @param  LoggerInterface|null  $logger  PSR-3 compatible logger
      * @param  bool  $reset  Whether to reset the client instance
      * @return Client The client instance
      */
-    function fetch_client(?array $options = null, ?LoggerInterface $logger = null, bool $reset = false): Client
+    function fetch_client(?array $options = null, bool $reset = false): Client
     {
         static $client = null;
 
+        // Create a new client or reset the existing one
         if ($client === null || $reset) {
-            $client = new Client(options: $options ?? [], logger: $logger);
-        } elseif ($options !== null || $logger !== null) {
-            // Apply new options and/or logger to the existing client if provided
-            if ($options !== null) {
-                $client = new Client(
-                    handler: $client->getHandler()->withOptions($options),
-                    logger: $logger ?? ($client->hasLogger() ? $client->getLogger() : null)
-                );
-            } elseif ($logger !== null && method_exists($client, 'setLogger')) {
-                $client->setLogger($logger);
+            $client = new Client(options: $options ?? []);
+        }
+        // Apply new options to the existing client if provided
+        elseif ($options !== null) {
+            // Create a new client with the existing handler + new options
+            $handler = $client->getHandler();
+
+            if ($options) {
+                $handler = $handler->withClonedOptions($options);
             }
+
+            $client = new Client(handler: $handler);
         }
 
         return $client;
@@ -158,13 +190,12 @@ if (! function_exists('get')) {
     function get(string $url, ?array $query = null, ?array $options = []): ResponseInterface
     {
         $options = $options ?? [];
-        $options['method'] = 'GET';
 
         if ($query !== null) {
             $options['query'] = $query;
         }
 
-        return fetch($url, $options);
+        return fetch_client()->get($url, $options['query'] ?? []);
     }
 }
 
@@ -181,19 +212,17 @@ if (! function_exists('post')) {
      */
     function post(string $url, mixed $data = null, ?array $options = []): ResponseInterface
     {
-        $options = $options ?? [];
-        $options['method'] = 'POST';
+        $contentType = ContentType::JSON;
 
-        // Automatically handle the data appropriately
-        if ($data !== null) {
-            if (is_array($data)) {
-                $options['json'] = $data; // Treat arrays as JSON by default
-            } else {
-                $options['body'] = $data;
+        if (isset($options['headers']['Content-Type'])) {
+            try {
+                $contentType = ContentType::tryFromString($options['headers']['Content-Type']);
+            } catch (\ValueError $e) {
+                $contentType = $options['headers']['Content-Type'];
             }
         }
 
-        return fetch($url, $options);
+        return fetch_client()->post($url, $data, $contentType);
     }
 }
 

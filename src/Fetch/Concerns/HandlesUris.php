@@ -9,14 +9,16 @@ use InvalidArgumentException;
 trait HandlesUris
 {
     /**
-     * Get the full URI for the request.
+     * Build and get the full URI from a base URI and path.
      *
-     * @throws InvalidArgumentException If the base URI is invalid
+     * @param  string  $uri  The path or absolute URI
+     * @return string The full URI
+     *
+     * @throws InvalidArgumentException If the URI is invalid
      */
-    protected function getFullUri(): string
+    protected function buildFullUri(string $uri): string
     {
         $baseUri = $this->options['base_uri'] ?? '';
-        $uri = $this->options['uri'] ?? '';
         $queryParams = $this->options['query'] ?? [];
 
         // Early return if URI is empty
@@ -29,6 +31,14 @@ trait HandlesUris
             return $this->appendQueryParameters($uri, $queryParams);
         }
 
+        // For relative URLs, require a base URI
+        if (empty($baseUri)) {
+            throw new InvalidArgumentException(
+                "Relative URI '{$uri}' cannot be used without a base URI. ".
+                'Set a base URI using the baseUri() method.'
+            );
+        }
+
         // Handle relative URLs with base URI
         $fullUri = $this->combineBaseWithRelativeUri($baseUri, $uri);
 
@@ -37,7 +47,24 @@ trait HandlesUris
     }
 
     /**
+     * Get the full URI using the URI from options.
+     *
+     * @return string The full URI
+     *
+     * @throws InvalidArgumentException If the URI is invalid
+     */
+    protected function getFullUri(): string
+    {
+        $uri = $this->options['uri'] ?? '';
+
+        return $this->buildFullUri($uri);
+    }
+
+    /**
      * Check if a URI is an absolute URL.
+     *
+     * @param  string  $uri  The URI to check
+     * @return bool Whether the URI is absolute
      */
     protected function isAbsoluteUrl(string $uri): bool
     {
@@ -47,17 +74,14 @@ trait HandlesUris
     /**
      * Combine a base URI with a relative URI.
      *
-     * @throws InvalidArgumentException If the base URI is invalid when needed
+     * @param  string  $baseUri  The base URI
+     * @param  string  $relativeUri  The relative URI
+     * @return string The combined URI
      */
     protected function combineBaseWithRelativeUri(string $baseUri, string $relativeUri): string
     {
-        // If there's no base URI, just return the relative URI WITHOUT trimming leading slashes
-        if (empty($baseUri)) {
-            return $relativeUri; // Keep the leading slash if present
-        }
-
-        // Validate the base URI if it's not empty
-        if (! $this->isAbsoluteUrl($baseUri)) {
+        // Ensure base URI is valid if not empty
+        if (! empty($baseUri) && ! $this->isAbsoluteUrl($baseUri)) {
             throw new InvalidArgumentException("Invalid base URI: {$baseUri}");
         }
 
@@ -69,7 +93,9 @@ trait HandlesUris
     /**
      * Append query parameters to a URI.
      *
+     * @param  string  $uri  The URI
      * @param  array<string, mixed>  $queryParams  The query parameters
+     * @return string The URI with query parameters
      */
     protected function appendQueryParameters(string $uri, array $queryParams): string
     {
@@ -102,6 +128,9 @@ trait HandlesUris
 
     /**
      * Normalize a URI by ensuring it has the correct format.
+     *
+     * @param  string  $uri  The URI to normalize
+     * @return string The normalized URI
      */
     protected function normalizeUri(string $uri): string
     {
@@ -116,30 +145,5 @@ trait HandlesUris
 
         // For non-URLs, just normalize consecutive slashes
         return preg_replace('~//+~', '/', $uri);
-    }
-
-    /**
-     * Resolve a URI against a base URI according to RFC 3986.
-     * This is a more sophisticated version for future use if needed.
-     */
-    protected function resolveUri(string $baseUri, string $relativeUri): string
-    {
-        // If the relative URI is an absolute URL, just return it
-        if ($this->isAbsoluteUrl($relativeUri)) {
-            return $relativeUri;
-        }
-
-        // If the relative URI starts with a slash, it's absolute to the base URI's root
-        if (str_starts_with($relativeUri, '/')) {
-            $parsedBase = parse_url($baseUri);
-            $scheme = isset($parsedBase['scheme']) ? $parsedBase['scheme'].'://' : '';
-            $host = $parsedBase['host'] ?? '';
-            $port = isset($parsedBase['port']) ? ':'.$parsedBase['port'] : '';
-
-            return $scheme.$host.$port.$relativeUri;
-        }
-
-        // Otherwise, resolve it relative to the base URI
-        return $this->combineBaseWithRelativeUri($baseUri, $relativeUri);
     }
 }
