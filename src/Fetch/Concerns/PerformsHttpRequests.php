@@ -129,14 +129,17 @@ trait PerformsHttpRequests
      */
     protected function finalizeRequest(string $method, string $uri): ResponseInterface|PromiseInterface
     {
-        // Set the method in the options
-        $this->options['method'] = $method;
+        // Create a local copy of the options
+        $options = $this->options;
+
+        // Set the method in the local options
+        $options['method'] = $method;
 
         // Create a request object
         $request = $this->createRequest($method, $uri);
 
         // Apply any configured options to the request
-        $request = $this->applyOptionsToRequest($request);
+        $request = $this->applyOptionsToRequest($request, $options);
 
         // Send the request
         return $this->sendRequest($request);
