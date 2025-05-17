@@ -7,8 +7,9 @@
 ### Changed
 
 * Updated documentation
+* Updated dependencies
 
-**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/3.2.0...3.2.1
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/3.2.0...3.2.1>
 
 ## [v3.2.0](https://github.com/Thavarshan/fetch-php/compare/v3.1.1...v3.2.0) - 2025-05-16
 
@@ -28,45 +29,44 @@
 
 * Improved back-off delay calculations in retry tests to ensure correct timing.
 
-**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/3.1.1...3.2.0
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/3.1.1...3.2.0>
 
 ## [v3.1.1](https://github.com/Thavarshan/fetch-php/compare/v3.1.0...v3.1.1) - 2025-05-16
 
 ### Added
 
-- Implemented the missing `finalizeRequest()` method in the `PerformsHttpRequests` trait. This method centralizes request finalization logic, enabling internal shortcut methods like `get()`, `post()`, etc., to function correctly.
+* Implemented the missing `finalizeRequest()` method in the `PerformsHttpRequests` trait. This method centralizes request finalization logic, enabling internal shortcut methods like `get()`, `post()`, etc., to function correctly.
 
 ### Changed
 
-- Internal shortcut HTTP methods (`get()`, `post()`, `put()`, etc.) in `PerformsHttpRequests` now route through the newly added `finalizeRequest()` method for consistent request handling.
+* Internal shortcut HTTP methods (`get()`, `post()`, `put()`, etc.) in `PerformsHttpRequests` now route through the newly added `finalizeRequest()` method for consistent request handling.
 
 ### Fixed
 
-- Fixed a fatal error caused by calling an undefined `finalizeRequest()` method in `ClientHandler`. The missing method has now been properly defined and implemented.
+* Fixed a fatal error caused by calling an undefined `finalizeRequest()` method in `ClientHandler`. The missing method has now been properly defined and implemented.
 
 ## [v3.1.0](https://github.com/Thavarshan/fetch-php/compare/v3.0.0...v3.1.0) - 2025-05-10
 
 ### Added
 
 * **PSR-18 Client**: `Fetch\Http\Client` now implements `Psr\Http\Client\ClientInterface` for drop-in interoperability.
-  
+
 * **Fluent Request Builder**: Chainable helpers on `ClientHandler` for headers, query params, JSON/form/multipart bodies, bearer token, basic auth, timeouts, redirects, cookies, proxy, certificates.
-  
+
 * **Async/Promise Support**: Built-in ReactPHP-style promises (`async()`, `await()`, `all()`, `race()`, `any()`, `sequence()`), with `->async()` toggle and `wrapAsync()`/`awaitPromise()` helpers.
-  
+
 * **Automatic Retries**: Configurable max retries, retry delay, exponential backoff with jitter, and retry-on-status (408, 429, 5xx) or exceptions (`ConnectException`).
-  
+
 * **PSR-3 Logging**: Optional `LoggerInterface` injection on `Client` and `ClientHandler` with info/debug/error logs and sensitive-data masking for retries, requests, and responses.
-  
+
 * **Immutable PSR-7 Extensions**:
-  
+
   * `Fetch\Http\Request` extends Guzzle’s PSR-7 `Request` with immutability traits and JSON/form/multipart constructors.
   * `Fetch\Http\Response` extends Guzzle’s PSR-7 `Response` with buffered body, array-access to JSON payloads, and helpers: `->json()`, `->text()`, `->xml()`, `->blob()`, `->arrayBuffer()`, status inspectors, etc.
-  
+
 * **Enums for Safety**: `Fetch\Enum\Method`, `ContentType`, and `Status` enums for validating methods, content types, and status codes.
-  
+
 * **Test Helpers**: `ClientHandler::createMockResponse()` and `createJsonResponse()` to easily stub HTTP responses in unit tests.
-  
 
 ### Changed
 
@@ -80,7 +80,6 @@
 
 * None
 
-
 ---
 
 ## [v3.0.0](https://github.com/Thavarshan/fetch-php/compare/v2.0.6...v3.0.0) - 2025-05-04
@@ -88,22 +87,21 @@
 ### Added
 
 * **True Asynchronous Support**: Completely reimplemented asynchronous functionality using Matrix’s PHP Fiber-based library.
-  
+
 * **JavaScript-like Syntax**: Added support for JavaScript-like async/await patterns with `async()` and `await()` functions.
-  
+
 * **Promise-based API**: Introduced a clean Promise interface with `then()`, `catch()`, and `finally()` methods.
-  
+
 * **Concurrent Request Helpers**: Added support for managing multiple concurrent requests with `all()`, `race()`, and `any()` functions.
-  
+
 * **Task Lifecycle Management**: Implemented proper task lifecycle control (start, pause, resume, cancel, retry).
-  
+
 * **Enhanced Error Handling**: Added improved error handling with customizable error handlers.
-  
+
 * **New Helper Methods**:
-  
+
   * `wrapAsync()`: For wrapping callables in async functions
   * `awaitPromise()`: For awaiting promise resolution
-  
 
 ### Changed
 
@@ -123,7 +121,6 @@
 * **Retry Mechanism**: Fixed retry logic to properly handle both network and server errors.
 * **Error Propagation**: Improved how errors are propagated through Promise chains.
 * **Event Loop Management**: Fixed event loop management for proper async task execution.
-
 
 ---
 
@@ -151,7 +148,6 @@
 * Fixed duplicate implementation of `isRetryableError()` method.
 * Fixed retry failure detection to properly identify the last retry attempt.
 
-
 ---
 
 ## [v2.0.5](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5) - 2025-03-30
@@ -161,7 +157,6 @@
 * `getOptions()`, `getHeaders()`, `hasHeader(string $header)`, and `hasOption(string $option)` methods on `ClientHandler`.
 
 **Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5)
-
 
 ---
 
@@ -189,7 +184,6 @@
 
 **Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4)
 
-
 ---
 
 ## [v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3) - 2024-12-06
@@ -203,7 +197,6 @@
 * Updated dependencies and dev-dependencies.
 
 **Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3)
-
 
 ---
 
@@ -224,7 +217,6 @@
 
 **Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2](https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2)
 
-
 ---
 
 ## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
@@ -233,7 +225,6 @@
 
 * Refactored `withBody()` in `ClientHandler` to accept only arrays and JSON-encode them.
 * Documentation and typo fixes.
-
 
 ---
 
@@ -265,7 +256,6 @@
 * Async error handling.
 * Persistent Guzzle client reuse.
 
-
 ---
 
 ## [v1.2.0](https://github.com/Thavarshan/fetch-php/compare/v1.1.1...v1.2.0) - 2024-09-27
@@ -288,7 +278,6 @@
 * Composer dependency conflicts.
 * Async exception handling.
 
-
 ---
 
 ## [v1.1.1](https://github.com/Thavarshan/fetch-php/compare/v1.1.0...v1.1.1) - 2024-09-25
@@ -301,7 +290,6 @@
 ### Fixed
 
 * Resolved Laravel 10 install conflict.
-
 
 ---
 
@@ -316,7 +304,6 @@
 ### Fixed
 
 * Single-instance Guzzle instantiation.
-
 
 ---
 
