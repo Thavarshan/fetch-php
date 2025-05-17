@@ -1,6 +1,14 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.2.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.2.1...HEAD)
+
+## [v3.2.1](https://github.com/Thavarshan/fetch-php/compare/v3.2.0...v3.2.1) - 2025-05-17
+
+### Changed
+
+* Updated documentation
+
+**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/3.2.0...3.2.1
 
 ## [v3.2.0](https://github.com/Thavarshan/fetch-php/compare/v3.1.1...v3.2.0) - 2025-05-16
 
