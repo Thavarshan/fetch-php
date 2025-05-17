@@ -8,7 +8,8 @@
         "prepare": "husky"
     },
     "devDependencies": {
-        "vitepress": "latest",
-        "husky": "^9.1.7"
+        "@types/node": "^22.15.18",
+        "husky": "^9.1.7",
+        "vitepress": "latest"
     }
 }
