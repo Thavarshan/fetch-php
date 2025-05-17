@@ -16,8 +16,6 @@ The simplest way to make requests is using the global helper functions.
 The `fetch()` function is the primary way to make HTTP requests:
 
 ```php
-use function Fetch\Http\fetch;
-
 // Simple GET request
 $response = fetch('https://api.example.com/users');
 
@@ -33,12 +31,6 @@ $response = fetch('https://api.example.com/users', [
 For common HTTP methods, you can use the dedicated helper functions:
 
 ```php
-use function Fetch\Http\get;
-use function Fetch\Http\post;
-use function Fetch\Http\put;
-use function Fetch\Http\patch;
-use function Fetch\Http\delete;
-
 // GET request
 $response = get('https://api.example.com/users');
 
@@ -246,6 +238,42 @@ $response = ClientHandler::create()
     ->post('https://api.example.com/login');
 ```
 
+#### Multipart Form Data (File Uploads)
+
+```php
+// Using fetch()
+$response = fetch('https://api.example.com/upload', [
+    'method' => 'POST',
+    'multipart' => [
+        [
+            'name' => 'file',
+            'contents' => file_get_contents('/path/to/image.jpg'),
+            'filename' => 'upload.jpg',
+            'headers' => ['Content-Type' => 'image/jpeg']
+        ],
+        [
+            'name' => 'description',
+            'contents' => 'Profile picture'
+        ]
+    ]
+]);
+
+// Using ClientHandler
+$response = ClientHandler::create()
+    ->withMultipart([
+        [
+            'name' => 'file',
+            'contents' => fopen('/path/to/image.jpg', 'r'),
+            'filename' => 'upload.jpg',
+        ],
+        [
+            'name' => 'description',
+            'contents' => 'Profile picture'
+        ]
+    ])
+    ->post('https://api.example.com/upload');
+```
+
 #### Raw Body
 
 ```php
@@ -256,10 +284,16 @@ $response = fetch('https://api.example.com/webhook', [
     'headers' => ['Content-Type' => 'text/plain']
 ]);
 
-// Using ClientHandler
+// Using ClientHandler with string body
 $response = ClientHandler::create()
     ->withBody('Raw request content', 'text/plain')
     ->post('https://api.example.com/webhook');
+
+// Using ClientHandler with body and content type enum
+use Fetch\Enum\ContentType;
+$response = ClientHandler::create()
+    ->withBody('<user><name>John</name></user>', ContentType::XML)
+    ->post('https://api.example.com/users');
 ```
 
 ### Timeouts
@@ -276,6 +310,23 @@ $response = ClientHandler::create()
     ->get('https://api.example.com/slow-resource');
 ```
 
+### Retries
+
+```php
+// Using fetch()
+$response = fetch('https://api.example.com/flaky-resource', [
+    'retries' => 3,
+    'retry_delay' => 100 // 100ms initial delay with exponential backoff
+]);
+
+// Using ClientHandler
+$response = ClientHandler::create()
+    ->retry(3, 100) // 3 retries with 100ms initial delay
+    ->retryStatusCodes([408, 429, 500, 502, 503, 504]) // Customize retryable status codes
+    ->retryExceptions(['GuzzleHttp\Exception\ConnectException']) // Customize retryable exceptions
+    ->get('https://api.example.com/flaky-resource');
+```
+
 ### Base URI
 
 ```php
@@ -288,6 +339,25 @@ $response = fetch('/users', [
 $client = ClientHandler::createWithBaseUri('https://api.example.com');
 $response = $client->get('/users');
 $anotherResponse = $client->get('/posts');
+```
+
+### Working with Enums
+
+```php
+use Fetch\Enum\Method;
+use Fetch\Enum\ContentType;
+
+// Use method enum
+$response = ClientHandler::create()
+    ->request(Method::POST, 'https://api.example.com/users', [
+        'name' => 'John Doe',
+        'email' => 'john@example.com'
+    ]);
+
+// Use content type enum
+$response = ClientHandler::create()
+    ->withBody('{"name":"John Doe"}', ContentType::JSON)
+    ->post('https://api.example.com/users');
 ```
 
 ## Reusing Configuration
@@ -360,15 +430,59 @@ fetch_client([
 $users = get('/users')->json();
 ```
 
-## PSR-7 Compatibility
+## Logging
 
-The package implements PSR-7 interfaces, making it compatible with other PSR-7 HTTP clients and middleware:
+The Fetch PHP package supports PSR-3 logging:
+
+```php
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// Create a logger
+$logger = new Logger('fetch');
+$logger->pushHandler(new StreamHandler('path/to/your.log', Logger::DEBUG));
+
+// Set the logger on the client
+$client = fetch_client();
+$client->setLogger($logger);
+
+// Or set it on the handler
+$handler = fetch_client()->getHandler();
+$handler->setLogger($logger);
+
+// Now all requests and responses will be logged
+$response = get('https://api.example.com/users');
+```
+
+## Creating Mock Responses (For Testing)
+
+```php
+use Fetch\Http\ClientHandler;
+
+// Create a simple mock response
+$mockResponse = ClientHandler::createMockResponse(
+    statusCode: 200,
+    headers: ['Content-Type' => 'application/json'],
+    body: '{"name": "John", "email": "john@example.com"}'
+);
+
+// Create a JSON mock response
+$mockJsonResponse = ClientHandler::createJsonResponse(
+    data: ['name' => 'John', 'email' => 'john@example.com'],
+    statusCode: 200
+);
+```
+
+## PSR-7 and PSR-18 Compatibility
+
+The package implements PSR-7 and PSR-18 interfaces, making it compatible with other PSR-7 HTTP clients and middleware:
 
 ```php
 // Create a PSR-7 request
-use Fetch\Http\Request;
-$request = Request::get('https://api.example.com/users')
-    ->withHeader('Accept', 'application/json');
+use GuzzleHttp\Psr7\Request;
+$request = new Request('GET', 'https://api.example.com/users', [
+    'Accept' => 'application/json'
+]);
 
 // Use with any PSR-18 client
 $psr18Client = new SomePsr18Client();
@@ -379,8 +493,29 @@ $client = new \Fetch\Http\Client();
 $response = $client->sendRequest($request);
 ```
 
+## Error Handling
+
+```php
+try {
+    $response = fetch('https://api.example.com/users/999');
+
+    if ($response->failed()) {
+        echo "Request failed with status: " . $response->status();
+    }
+} catch (\Fetch\Exceptions\NetworkException $e) {
+    echo "Network error: " . $e->getMessage();
+} catch (\Fetch\Exceptions\RequestException $e) {
+    echo "Request error: " . $e->getMessage();
+} catch (\Fetch\Exceptions\ClientException $e) {
+    echo "Client error: " . $e->getMessage();
+} catch (\Exception $e) {
+    echo "Error: " . $e->getMessage();
+}
+```
+
 ## Next Steps
 
 - Learn more about [Working with Responses](/guide/working-with-responses)
 - Explore [Authentication](/guide/authentication) options
 - Discover [Asynchronous Requests](/guide/async-requests)
+- Learn about [Working with Enums](/guide/working-with-enums) for type-safe HTTP operations

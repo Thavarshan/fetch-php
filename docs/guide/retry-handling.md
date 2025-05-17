@@ -5,7 +5,7 @@ description: Learn how to configure automatic retry behavior for failed HTTP req
 
 # Retry Handling
 
-The Fetch HTTP package includes built-in retry functionality to handle transient failures gracefully. This guide explains how to configure and use the retry mechanism.
+The Fetch PHP package includes built-in retry functionality to handle transient failures gracefully. This guide explains how to configure and use the retry mechanism.
 
 ## Basic Retry Configuration
 
@@ -22,8 +22,6 @@ $response = ClientHandler::create()
 Using helper functions:
 
 ```php
-use function Fetch\Http\fetch;
-
 $response = fetch('https://api.example.com/unstable-endpoint', [
     'retries' => 3,        // Retry up to 3 times
     'retry_delay' => 100   // Initial delay of 100ms
@@ -47,6 +45,24 @@ The delay increases exponentially with each retry attempt:
 - And so on...
 
 The jitter (random variation) helps prevent multiple clients from retrying simultaneously, which can worsen outages.
+
+## Using Type-Safe Enums with Retries
+
+You can use the `Status` enum for more type-safe retry configuration:
+
+```php
+use Fetch\Http\ClientHandler;
+use Fetch\Enum\Status;
+
+$response = ClientHandler::create()
+    ->retry(3, 100)
+    ->retryStatusCodes([
+        Status::TOO_MANY_REQUESTS->value,
+        Status::SERVICE_UNAVAILABLE->value,
+        Status::GATEWAY_TIMEOUT->value
+    ])
+    ->get('https://api.example.com/unstable-endpoint');
+```
 
 ## Customizing Retryable Status Codes
 
@@ -103,8 +119,6 @@ $exceptions = $client->getRetryableExceptions();    // Array of exception classe
 You can set up global retry settings that apply to all requests:
 
 ```php
-use function Fetch\Http\fetch_client;
-
 // Configure global retry settings
 fetch_client([
     'retries' => 3,
@@ -129,9 +143,9 @@ $logger = new Logger('http');
 $logger->pushHandler(new StreamHandler('logs/http.log', Logger::INFO));
 
 // Create a client with logging and retries
-$client = ClientHandler::create()
-    ->setLogger($logger)
-    ->retry(3, 100);
+$client = ClientHandler::create();
+$client->setLogger($logger);
+$client->retry(3, 100);
 
 // Send a request that might require retries
 $response = $client->get('https://api.example.com/unstable-endpoint');
@@ -145,6 +159,33 @@ A typical retry log entry looks like:
 [2023-09-15 14:30:12] http.INFO: Retrying request {"attempt":1,"max_attempts":3,"uri":"https://api.example.com/unstable-endpoint","method":"GET","error":"Connection timed out","code":28}
 ```
 
+## Asynchronous Retries
+
+Retries also work with asynchronous requests:
+
+```php
+use function async;
+use function await;
+use function retry;
+
+// Retry asynchronous operations
+$result = await(retry(
+    function() {
+        return async(function() {
+            return fetch('https://api.example.com/unstable-endpoint');
+        });
+    },
+    3, // max attempts
+    function($attempt) {
+        // Exponential backoff strategy
+        return min(pow(2, $attempt) * 100, 1000);
+    }
+));
+
+// Process the result
+$data = $result->json();
+```
+
 ## Real-World Examples
 
 ### Handling Rate Limits
@@ -152,9 +193,11 @@ A typical retry log entry looks like:
 APIs often implement rate limiting. You can configure your client to automatically retry when hitting rate limits:
 
 ```php
+use Fetch\Enum\Status;
+
 $client = ClientHandler::create()
     ->retry(3, 1000)  // Longer initial delay for rate limits
-    ->retryStatusCodes([429])  // Only retry on Too Many Requests
+    ->retryStatusCodes([Status::TOO_MANY_REQUESTS->value])  // Only retry on Too Many Requests
     ->get('https://api.example.com/rate-limited-endpoint');
 ```
 
@@ -174,9 +217,22 @@ $client = ClientHandler::create()
 For APIs that might be temporarily down for maintenance:
 
 ```php
+use Fetch\Enum\Status;
+
 $client = ClientHandler::create()
     ->retry(10, 5000)  // Many retries with long delay (5 seconds)
-    ->retryStatusCodes([503])  // Service Unavailable
+    ->retryStatusCodes([Status::SERVICE_UNAVAILABLE->value])  // Service Unavailable
+    ->get('https://api.example.com/endpoint');
+```
+
+## Combining Retry with Timeout
+
+You can combine retry logic with timeout settings:
+
+```php
+$client = ClientHandler::create()
+    ->timeout(5)    // 5 second timeout for each attempt
+    ->retry(3, 100) // 3 retries with 100ms initial delay
     ->get('https://api.example.com/endpoint');
 ```
 
@@ -188,6 +244,7 @@ For more complex scenarios, you can implement custom retry logic:
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
 use GuzzleHttp\Exception\RequestException;
+use Fetch\Enum\Status;
 
 function makeRequestWithCustomRetry(string $url, int $maxAttempts = 3): Response {
     $attempt = 0;
@@ -203,7 +260,7 @@ function makeRequestWithCustomRetry(string $url, int $maxAttempts = 3): Response
             }
 
             // Handle specific status codes
-            if ($response->status() === 429) {
+            if ($response->statusEnum() === Status::TOO_MANY_REQUESTS) {
                 // Get retry-after header if available
                 $retryAfter = $response->header('Retry-After');
                 $delay = $retryAfter ? (int) $retryAfter * 1000 : 1000;
@@ -245,24 +302,57 @@ function makeRequestWithCustomRetry(string $url, int $maxAttempts = 3): Response
 $response = makeRequestWithCustomRetry('https://api.example.com/users');
 ```
 
+## Monitoring Retry Activity
+
+To monitor retry activity, you can combine logging with a custom callback:
+
+```php
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Fetch\Http\ClientHandler;
+
+// Create a logger
+$logger = new Logger('retry');
+$logger->pushHandler(new StreamHandler('logs/retry.log', Logger::INFO));
+
+// Create a client with the logger
+$client = ClientHandler::create();
+$client->setLogger($logger);
+$client->retry(3, 100);
+
+// Make the request
+$response = $client->get('https://api.example.com/unstable-endpoint');
+
+// After the request completes, you can get debug info
+$debugInfo = $client->debug();
+echo "Request required " . $debugInfo['retries'] . " retries\n";
+```
+
 ## Best Practices
 
-1. **Start with Conservative Settings**: Begin with a small number of retries (2-3) and moderate delays (100-200ms) and adjust based on your needs.
+1. **Use Type-Safe Enums**: Leverage the Status enum for clearer and safer code when configuring retryable status codes.
 
-2. **Be Mindful of Server Load**: Excessive retries can amplify problems during outages. Be respectful of the services you're calling.
+2. **Start with Conservative Settings**: Begin with a small number of retries (2-3) and moderate delays (100-200ms) and adjust based on your needs.
 
-3. **Use Appropriate Timeout Values**: Set reasonable timeouts in conjunction with retries to avoid long-running requests.
+3. **Be Mindful of Server Load**: Excessive retries can amplify problems during outages. Be respectful of the services you're calling.
 
-4. **Limit Retryable Status Codes**: Only retry on status codes that indicate transient issues. Don't retry on client errors like 400, 401, or 404.
+4. **Use Appropriate Timeout Values**: Set reasonable timeouts in conjunction with retries to avoid long-running requests.
 
-5. **Monitor Retry Activity**: Log retry attempts to identify recurring issues with specific endpoints.
+5. **Limit Retryable Status Codes**: Only retry on status codes that indicate transient issues. Don't retry on client errors like 400, 401, or 404.
 
-6. **Consider Retry-After Headers**: For rate limiting (429), respect the Retry-After header if provided by the server.
+6. **Monitor Retry Activity**: Log retry attempts to identify recurring issues with specific endpoints.
 
-7. **Add Jitter**: The built-in retry mechanism includes jitter, which helps prevent "thundering herd" problems.
+7. **Consider Retry-After Headers**: For rate limiting (429), respect the Retry-After header if provided by the server.
+
+8. **Add Jitter**: The built-in retry mechanism includes jitter, which helps prevent "thundering herd" problems.
+
+9. **Combine with Logging**: Always add logging when using retries to track and debug retry patterns.
+
+10. **Use Async Retries for Parallel Operations**: When working with async code, use the retry function for better integration with the async/await pattern.
 
 ## Next Steps
 
 - Learn about [Error Handling](/guide/error-handling) for comprehensive error management
 - Explore [Logging](/guide/logging) for monitoring request and retry activity
 - See [Authentication](/guide/authentication) for handling authentication errors and retries
+- Check out [Asynchronous Requests](/guide/async-requests) for integrating retries with async operations

@@ -5,227 +5,237 @@ description: API reference for the HTTP method helpers in the Fetch HTTP client 
 
 # HTTP Method Helpers
 
-The Fetch package provides a set of convenient helper methods for making HTTP requests with different HTTP methods. These helpers make your code more readable and expressive.
+The Fetch package provides a set of convenient global helper functions for making HTTP requests with different HTTP methods. These helper functions make your code more readable and expressive by providing simplified shortcuts for common operations.
 
-## Available Methods
+## Function Signatures
 
-All these methods are available on the `Client` and `ClientHandler` classes:
+### `get()`
 
-| Method | Description |
-|--------|-------------|
-| `head()` | Sends a HEAD request |
-| `get()` | Sends a GET request |
-| `post()` | Sends a POST request with optional body |
-| `put()` | Sends a PUT request with optional body |
-| `patch()` | Sends a PATCH request with optional body |
-| `delete()` | Sends a DELETE request with optional body |
-| `options()` | Sends an OPTIONS request |
-
-## Method Signatures
-
-### HEAD Request
+Perform a GET request.
 
 ```php
-public function head(string $uri): ResponseInterface|PromiseInterface
+/**
+ * @param  string  $url  URL to fetch
+ * @param  array<string, mixed>|null  $query  Query parameters
+ * @param  array<string, mixed>|null  $options  Additional request options
+ * @return ResponseInterface The response
+ *
+ * @throws ClientExceptionInterface If a client exception occurs
+ */
+function get(string $url, ?array $query = null, ?array $options = []): ResponseInterface
 ```
 
-**Parameters:**
+### `post()`
 
-- `$uri`: The URI to request
-
-**Returns:**
-
-- A `Response` object or a `Promise` if in async mode
-
-**Example:**
+Perform a POST request.
 
 ```php
-$response = fetch_client()->head('https://api.example.com/resource');
+/**
+ * @param  string  $url  URL to fetch
+ * @param  mixed  $data  Request body or JSON data
+ * @param  array<string, mixed>|null  $options  Additional request options
+ * @return ResponseInterface The response
+ *
+ * @throws ClientExceptionInterface If a client exception occurs
+ */
+function post(string $url, mixed $data = null, ?array $options = []): ResponseInterface
 ```
+
+### `put()`
+
+Perform a PUT request.
+
+```php
+/**
+ * @param  string  $url  URL to fetch
+ * @param  mixed  $data  Request body or JSON data
+ * @param  array<string, mixed>|null  $options  Additional request options
+ * @return ResponseInterface The response
+ *
+ * @throws ClientExceptionInterface If a client exception occurs
+ */
+function put(string $url, mixed $data = null, ?array $options = []): ResponseInterface
+```
+
+### `patch()`
+
+Perform a PATCH request.
+
+```php
+/**
+ * @param  string  $url  URL to fetch
+ * @param  mixed  $data  Request body or JSON data
+ * @param  array<string, mixed>|null  $options  Additional request options
+ * @return ResponseInterface The response
+ *
+ * @throws ClientExceptionInterface If a client exception occurs
+ */
+function patch(string $url, mixed $data = null, ?array $options = []): ResponseInterface
+```
+
+### `delete()`
+
+Perform a DELETE request.
+
+```php
+/**
+ * @param  string  $url  URL to fetch
+ * @param  mixed  $data  Request body or JSON data
+ * @param  array<string, mixed>|null  $options  Additional request options
+ * @return ResponseInterface The response
+ *
+ * @throws ClientExceptionInterface If a client exception occurs
+ */
+function delete(string $url, mixed $data = null, ?array $options = []): ResponseInterface
+```
+
+## Examples
 
 ### GET Request
 
 ```php
-public function get(string $uri, array $queryParams = []): ResponseInterface|PromiseInterface
-```
+// Simple GET request
+$response = get('https://api.example.com/users');
 
-**Parameters:**
-
-- `$uri`: The URI to request
-- `$queryParams`: Optional array of query parameters
-
-**Returns:**
-
-- A `Response` object or a `Promise` if in async mode
-
-**Example:**
-
-```php
-$response = fetch_client()->get('https://api.example.com/users', [
+// GET request with query parameters
+$response = get('https://api.example.com/users', [
     'page' => 1,
-    'limit' => 10
+    'limit' => 10,
+    'sort' => 'name'
 ]);
+
+// GET request with additional options
+$response = get('https://api.example.com/users', ['page' => 1], [
+    'headers' => [
+        'X-API-Key' => 'your-api-key'
+    ],
+    'timeout' => 5
+]);
+
+// Process the response
+$users = $response->json();
+foreach ($users as $user) {
+    echo $user['name'] . "\n";
+}
 ```
 
 ### POST Request
 
 ```php
-public function post(
-    string $uri,
-    mixed $body = null,
-    ContentType|string $contentType = 'application/json'
-): ResponseInterface|PromiseInterface
-```
-
-**Parameters:**
-
-- `$uri`: The URI to request
-- `$body`: The request body (can be array, string, or null)
-- `$contentType`: The content type of the request (defaults to JSON)
-
-**Returns:**
-
-- A `Response` object or a `Promise` if in async mode
-
-**Example:**
-
-```php
-$response = fetch_client()->post('https://api.example.com/users', [
+// POST request with JSON data
+$response = post('https://api.example.com/users', [
     'name' => 'John Doe',
     'email' => 'john@example.com'
 ]);
+
+// POST request with a string body
+$response = post('https://api.example.com/raw', 'Raw request body');
+
+// POST request with additional options
+$response = post('https://api.example.com/users',
+    ['name' => 'John Doe'],
+    [
+        'headers' => [
+            'X-Custom-Header' => 'value'
+        ],
+        'timeout' => 10
+    ]
+);
+
+// Check if the request was successful
+if ($response->isSuccess()) {
+    $user = $response->json();
+    echo "Created user with ID: " . $user['id'];
+}
 ```
 
 ### PUT Request
 
 ```php
-public function put(
-    string $uri,
-    mixed $body = null,
-    ContentType|string $contentType = 'application/json'
-): ResponseInterface|PromiseInterface
-```
-
-**Parameters:**
-
-- `$uri`: The URI to request
-- `$body`: The request body (can be array, string, or null)
-- `$contentType`: The content type of the request (defaults to JSON)
-
-**Returns:**
-
-- A `Response` object or a `Promise` if in async mode
-
-**Example:**
-
-```php
-$response = fetch_client()->put('https://api.example.com/users/1', [
+// PUT request to update a resource
+$response = put('https://api.example.com/users/1', [
     'name' => 'John Doe Updated',
     'email' => 'john.updated@example.com'
 ]);
+
+// Check the response
+if ($response->isSuccess()) {
+    echo "User updated successfully";
+}
 ```
 
 ### PATCH Request
 
 ```php
-public function patch(
-    string $uri,
-    mixed $body = null,
-    ContentType|string $contentType = 'application/json'
-): ResponseInterface|PromiseInterface
-```
-
-**Parameters:**
-
-- `$uri`: The URI to request
-- `$body`: The request body (can be array, string, or null)
-- `$contentType`: The content type of the request (defaults to JSON)
-
-**Returns:**
-
-- A `Response` object or a `Promise` if in async mode
-
-**Example:**
-
-```php
-$response = fetch_client()->patch('https://api.example.com/users/1', [
-    'email' => 'john.new@example.com'
+// PATCH request to partially update a resource
+$response = patch('https://api.example.com/users/1', [
+    'email' => 'new.email@example.com'
 ]);
+
+// Check the response
+if ($response->isSuccess()) {
+    echo "User email updated successfully";
+}
 ```
 
 ### DELETE Request
 
 ```php
-public function delete(
-    string $uri,
-    mixed $body = null,
-    ContentType|string $contentType = 'application/json'
-): ResponseInterface|PromiseInterface
-```
+// DELETE request to remove a resource
+$response = delete('https://api.example.com/users/1');
 
-**Parameters:**
-
-- `$uri`: The URI to request
-- `$body`: Optional request body (can be array, string, or null)
-- `$contentType`: The content type of the request (defaults to JSON)
-
-**Returns:**
-
-- A `Response` object or a `Promise` if in async mode
-
-**Example:**
-
-```php
-$response = fetch_client()->delete('https://api.example.com/users/1');
-
-// With request body
-$response = fetch_client()->delete('https://api.example.com/batch-delete', [
+// Delete with request body (for batch deletions)
+$response = delete('https://api.example.com/users', [
     'ids' => [1, 2, 3]
 ]);
+
+// Check if the resource was deleted
+if ($response->isSuccess()) {
+    echo "Resource deleted successfully";
+}
 ```
 
-### OPTIONS Request
+## Internal Implementation
+
+Internally, these helper functions use the `request_method()` function, which in turn calls the `fetch()` function with the appropriate HTTP method and data configuration:
 
 ```php
-public function options(string $uri): ResponseInterface|PromiseInterface
+function request_method(
+    string $method,
+    string $url,
+    mixed $data = null,
+    ?array $options = [],
+    bool $dataIsQuery = false
+): ResponseInterface
+{
+    $options = $options ?? [];
+    $options['method'] = $method;
+
+    if ($data !== null) {
+        if ($dataIsQuery) {
+            $options['query'] = $data;
+        } elseif (is_array($data)) {
+            $options['json'] = $data; // Treat arrays as JSON by default
+        } else {
+            $options['body'] = $data;
+        }
+    }
+
+    return fetch($url, $options);
+}
 ```
 
-**Parameters:**
+## Notes
 
-- `$uri`: The URI to request
+- These helpers provide a more concise way to make common HTTP requests compared to using `fetch()` directly
+- When passing an array as the data parameter in `post()`, `put()`, `patch()`, or `delete()`, it's automatically encoded as JSON
+- For GET requests, the data parameter is treated as query parameters
+- You can still use the full range of request options by passing them in the `$options` parameter
+- All helper functions use the global client instance from `fetch_client()` internally, so any global configuration applies
 
-**Returns:**
+## See Also
 
-- A `Response` object or a `Promise` if in async mode
-
-**Example:**
-
-```php
-$response = fetch_client()->options('https://api.example.com/users');
-```
-
-## Body Content Types
-
-When sending requests with a body, you can specify the content type:
-
-```php
-use Fetch\Enum\ContentType;
-
-// Using enum
-$response = fetch_client()->post('https://api.example.com/users', $data, ContentType::JSON);
-
-// Using string
-$response = fetch_client()->post('https://api.example.com/users', $data, 'application/json');
-```
-
-Available content types in the `ContentType` enum:
-
-- `ContentType::JSON` - For JSON requests
-- `ContentType::FORM_URLENCODED` - For form submissions
-- `ContentType::MULTIPART` - For multipart form data (file uploads)
-- `ContentType::XML` - For XML requests
-- `ContentType::TEXT` - For plain text requests
-
-## Internal Behavior
-
-Internally, these methods leverage the `finalizeRequest()` method which configures and sends the request with the appropriate HTTP method. For methods that can include a request body (`POST`, `PUT`, `PATCH`, `DELETE`), the body is processed using the `configurePostableRequest()` method to properly set up the request payload based on the specified content type.
+- [fetch()](/api/fetch) - Main function for making HTTP requests
+- [fetch_client()](/api/fetch-client) - Get or configure the global client instance
+- [Client](/api/client) - More details on the Client class
+- [Response](/api/response) - API for working with response objects

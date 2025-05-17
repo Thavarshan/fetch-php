@@ -12,8 +12,6 @@ This guide explains how to upload files and work with multipart form data using 
 To upload a file, you need to use multipart form data. The simplest way is with the helper functions:
 
 ```php
-use function Fetch\Http\fetch;
-
 // Upload a file
 $response = fetch('https://api.example.com/upload', [
     'method' => 'POST',
@@ -122,36 +120,6 @@ $response = fetch('https://api.example.com/upload', [
 fclose($stream);
 ```
 
-## Using the Request Class
-
-You can also create a multipart request using the Request class:
-
-```php
-use Fetch\Http\Request;
-use Fetch\Enum\Method;
-
-// Create a multipart request
-$request = Request::multipart(
-    Method::POST,
-    'https://api.example.com/upload',
-    [
-        [
-            'name' => 'file',
-            'contents' => file_get_contents('/path/to/image.jpg'),
-            'filename' => 'upload.jpg',
-            'headers' => ['Content-Type' => 'image/jpeg']
-        ],
-        [
-            'name' => 'description',
-            'contents' => 'Profile picture upload'
-        ]
-    ]
-);
-
-// Send the request using fetch()
-$response = fetch($request);
-```
-
 ## File Upload with Progress Tracking
 
 For large file uploads, you might want to track progress. This can be done using Guzzle's progress middleware:
@@ -228,6 +196,10 @@ try {
     } else {
         echo "Upload successful!";
     }
+} catch (\Fetch\Exceptions\NetworkException $e) {
+    echo "Network error: " . $e->getMessage();
+} catch (\Fetch\Exceptions\RequestException $e) {
+    echo "Request error: " . $e->getMessage();
 } catch (\Exception $e) {
     echo "Error: " . $e->getMessage();
 }
@@ -275,6 +247,32 @@ $response = ClientHandler::create()
     ->post('https://api.example.com/upload');
 ```
 
+## Using Enums for Content Types
+
+You can use the `ContentType` enum for specifying content types in your file uploads:
+
+```php
+use Fetch\Enum\ContentType;
+use Fetch\Http\ClientHandler;
+
+$response = ClientHandler::create()
+    ->withMultipart([
+        [
+            'name' => 'file',
+            'contents' => file_get_contents('/path/to/document.pdf'),
+            'filename' => 'document.pdf',
+            'headers' => ['Content-Type' => ContentType::PDF->value]
+        ],
+        [
+            'name' => 'image',
+            'contents' => file_get_contents('/path/to/image.jpg'),
+            'filename' => 'image.jpg',
+            'headers' => ['Content-Type' => ContentType::JPEG->value]
+        ]
+    ])
+    ->post('https://api.example.com/upload');
+```
+
 ## File Download
 
 Although not strictly an upload, you might also need to download files:
@@ -289,6 +287,9 @@ file_put_contents('downloaded-document.pdf', $response->body());
 $stream = $response->blob();
 $fileContents = stream_get_contents($stream);
 fclose($stream);
+
+// Or get it as a binary string
+$binaryData = $response->arrayBuffer();
 ```
 
 ## Handling Large File Downloads
@@ -318,6 +319,42 @@ while (!$body->eof()) {
 fclose($outputFile);
 ```
 
+## Asynchronous File Uploads
+
+For large files, you might want to use asynchronous uploads to prevent blocking:
+
+```php
+use function async;
+use function await;
+
+$result = await(async(function() {
+    // Open file as a stream
+    $stream = fopen('/path/to/large-file.zip', 'r');
+
+    // Upload the file
+    $response = await(async(function() use ($stream) {
+        return fetch('https://api.example.com/upload', [
+            'method' => 'POST',
+            'multipart' => [
+                [
+                    'name' => 'file',
+                    'contents' => $stream,
+                    'filename' => 'large-file.zip'
+                ]
+            ],
+            'timeout' => 300  // 5-minute timeout for large uploads
+        ]);
+    }));
+
+    // Close the stream
+    fclose($stream);
+
+    return $response->json();
+}));
+
+echo "Upload complete with ID: " . $result['id'];
+```
+
 ## Best Practices
 
 1. **Check File Size**: Verify file sizes before uploading to avoid timeouts or server rejections.
@@ -337,21 +374,39 @@ fclose($outputFile);
 4. **Add Retry Logic**: File uploads are prone to network issues, so add retry logic:
 
    ```php
-   $response = fetch('https://api.example.com/upload', [
-       'method' => 'POST',
-       'retries' => 3,
-       'multipart' => [/* ... */]
-   ]);
+   $response = fetch_client()
+       ->retry(3, 1000)  // 3 retries with 1 second initial delay
+       ->retryStatusCodes([408, 429, 500, 502, 503, 504])
+       ->withMultipart([/* ... */])
+       ->post('https://api.example.com/upload');
    ```
 
 5. **Validate Before Uploading**: Check file types, sizes, and other constraints before uploading.
 
 6. **Include Progress Tracking**: For large files, provide progress feedback to users.
 
-7. **Log Upload Attempts**: Log uploads for troubleshooting and auditing.
+7. **Log Upload Attempts**: Log uploads for troubleshooting and auditing:
+
+   ```php
+   use Monolog\Logger;
+   use Monolog\Handler\StreamHandler;
+
+   // Create a logger
+   $logger = new Logger('uploads');
+   $logger->pushHandler(new StreamHandler('logs/uploads.log', Logger::INFO));
+
+   // Set the logger on the client
+   $client = fetch_client();
+   $client->setLogger($logger);
+
+   // Make the upload request
+   $response = $client->withMultipart([/* ... */])
+       ->post('https://api.example.com/upload');
+   ```
 
 ## Next Steps
 
 - Learn about [Authentication](/guide/authentication) for secured file uploads
 - Explore [Error Handling](/guide/error-handling) for robust upload error management
 - See [Retry Handling](/guide/retry-handling) for handling transient upload failures
+- Check out [Asynchronous Requests](/guide/async-requests) for non-blocking uploads

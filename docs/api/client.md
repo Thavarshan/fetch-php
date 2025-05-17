@@ -1,6 +1,6 @@
 ---
 title: Client API Reference
-description: API reference for the Fetch HTTP client package
+description: API reference for the Client class in the Fetch HTTP client package
 ---
 
 # Client API Reference
@@ -149,6 +149,38 @@ Makes an OPTIONS request.
 public function options(string $url, ?array $options = []): ResponseInterface
 ```
 
+### `methodRequest()`
+
+Makes a request with a specific HTTP method (protected method used internally).
+
+```php
+protected function methodRequest(
+    Method $method,
+    string $url,
+    mixed $body = null,
+    string|ContentType $contentType = ContentType::JSON,
+    ?array $options = []
+): ResponseInterface
+```
+
+## Client Handling
+
+### `getHandler()`
+
+Gets the underlying client handler.
+
+```php
+public function getHandler(): ClientHandlerInterface
+```
+
+### `getHttpClient()`
+
+Gets the PSR-7 HTTP client.
+
+```php
+public function getHttpClient(): ClientInterface
+```
+
 ## Logger Integration
 
 ### `setLogger()`
@@ -157,16 +189,6 @@ Sets a PSR-3 logger. Implements PSR-3 LoggerAwareInterface.
 
 ```php
 public function setLogger(LoggerInterface $logger): void
-```
-
-## Utility Methods
-
-### `getHandler()`
-
-Gets the underlying client handler.
-
-```php
-public function getHandler(): ClientHandlerInterface
 ```
 
 ## Protected Methods

@@ -13,7 +13,7 @@ The Fetch HTTP package provides built-in utilities for creating mock responses:
 
 ```php
 use Fetch\Http\ClientHandler;
-use Fetch\Http\Response;
+use Fetch\Enum\Status;
 
 // Create a basic mock response
 $mockResponse = ClientHandler::createMockResponse(
@@ -22,11 +22,24 @@ $mockResponse = ClientHandler::createMockResponse(
     '{"name": "John Doe", "email": "john@example.com"}'  // Body
 );
 
+// Using Status enum
+$mockResponse = ClientHandler::createMockResponse(
+    Status::OK,  // Status code as enum
+    ['Content-Type' => 'application/json'],
+    '{"name": "John Doe", "email": "john@example.com"}'
+);
+
 // Create a JSON response directly from PHP data
 $mockJsonResponse = ClientHandler::createJsonResponse(
     ['name' => 'Jane Doe', 'email' => 'jane@example.com'],  // Data (will be JSON-encoded)
     201,  // Status code
     ['X-Custom-Header' => 'Value']  // Additional headers
+);
+
+// Using Status enum
+$mockJsonResponse = ClientHandler::createJsonResponse(
+    ['name' => 'Jane Doe', 'email' => 'jane@example.com'],
+    Status::CREATED
 );
 ```
 
@@ -237,6 +250,10 @@ class ClientHistoryTest extends \PHPUnit\Framework\TestCase
 For testing asynchronous code:
 
 ```php
+use function async;
+use function await;
+use function all;
+
 class AsyncTest extends \PHPUnit\Framework\TestCase
 {
     public function testAsyncRequests(): void
@@ -251,15 +268,32 @@ class AsyncTest extends \PHPUnit\Framework\TestCase
         $guzzleClient = new Client(['handler' => $stack]);
         $client = ClientHandler::createWithClient($guzzleClient);
 
-        // Create async requests
-        $promise1 = $client->async()->get('https://api.example.com/users/1');
-        $promise2 = $client->async()->get('https://api.example.com/users/2');
+        // Using modern async/await pattern
+        $result = await(async(function() use ($client) {
+            $results = await(all([
+                'user1' => async(fn() => $client->get('https://api.example.com/users/1')),
+                'user2' => async(fn() => $client->get('https://api.example.com/users/2'))
+            ]));
 
-        // Wait for both to complete
-        $results = $client->all(['user1' => $promise1, 'user2' => $promise2]);
+            return $results;
+        }));
 
-        // Convert the promise to a response
-        $responses = $client->awaitPromise($results);
+        // Assert responses
+        $this->assertEquals(200, $result['user1']->status());
+        $this->assertEquals('User 1', $result['user1']->json()['name']);
+
+        $this->assertEquals(200, $result['user2']->status());
+        $this->assertEquals('User 2', $result['user2']->json()['name']);
+
+        // Or using traditional promise pattern
+        $handler = $client->getHandler();
+        $handler->async();
+
+        $promise1 = $handler->get('https://api.example.com/users/1');
+        $promise2 = $handler->get('https://api.example.com/users/2');
+
+        $promises = $handler->all(['user1' => $promise1, 'user2' => $promise2]);
+        $responses = $handler->awaitPromise($promises);
 
         // Assert responses
         $this->assertEquals(200, $responses['user1']->status());
@@ -276,11 +310,14 @@ class AsyncTest extends \PHPUnit\Framework\TestCase
 You can create a helper for generating test responses:
 
 ```php
+use Fetch\Http\ClientHandler;
+use Fetch\Enum\Status;
+
 class ResponseFactory
 {
     public static function userResponse(int $id, string $name, string $email): \Fetch\Http\Response
     {
-        return \Fetch\Http\ClientHandler::createJsonResponse([
+        return ClientHandler::createJsonResponse([
             'id' => $id,
             'name' => $name,
             'email' => $email,
@@ -290,7 +327,7 @@ class ResponseFactory
 
     public static function usersListResponse(array $users): \Fetch\Http\Response
     {
-        return \Fetch\Http\ClientHandler::createJsonResponse([
+        return ClientHandler::createJsonResponse([
             'data' => $users,
             'meta' => [
                 'total' => count($users),
@@ -300,9 +337,9 @@ class ResponseFactory
         ]);
     }
 
-    public static function errorResponse(int $status, string $message): \Fetch\Http\Response
+    public static function errorResponse(int|Status $status, string $message): \Fetch\Http\Response
     {
-        return \Fetch\Http\ClientHandler::createJsonResponse(
+        return ClientHandler::createJsonResponse(
             ['error' => $message],
             $status
         );
@@ -310,12 +347,12 @@ class ResponseFactory
 
     public static function validationErrorResponse(array $errors): \Fetch\Http\Response
     {
-        return \Fetch\Http\ClientHandler::createJsonResponse(
+        return ClientHandler::createJsonResponse(
             [
                 'message' => 'Validation failed',
                 'errors' => $errors
             ],
-            422
+            Status::UNPROCESSABLE_ENTITY
         );
     }
 }
@@ -350,6 +387,8 @@ class UserServiceTest extends \PHPUnit\Framework\TestCase
 Test how your code handles various HTTP errors:
 
 ```php
+use Fetch\Exceptions\NetworkException;
+
 class ErrorHandlingTest extends \PHPUnit\Framework\TestCase
 {
     public function testHandles404Gracefully(): void
@@ -389,6 +428,99 @@ class ErrorHandlingTest extends \PHPUnit\Framework\TestCase
 
         $this->expectException(\RuntimeException::class);
         $userService->getUser(1);
+    }
+}
+```
+
+## Testing with Retry Logic
+
+Testing how your code handles retry logic:
+
+```php
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Client;
+use Fetch\Http\ClientHandler;
+use Fetch\Enum\Status;
+
+class RetryTest extends \PHPUnit\Framework\TestCase
+{
+    public function testRetriesOnServerError(): void
+    {
+        // Mock responses: first two are 503, last one is 200
+        $mock = new MockHandler([
+            new Response(503, [], '{"error": "Service Unavailable"}'),
+            new Response(503, [], '{"error": "Service Unavailable"}'),
+            new Response(200, [], '{"id": 1, "name": "Success after retry"}')
+        ]);
+
+        $container = [];
+        $history = \GuzzleHttp\Middleware::history($container);
+
+        $stack = HandlerStack::create($mock);
+        $stack->push($history);
+
+        $guzzleClient = new Client(['handler' => $stack]);
+        $client = ClientHandler::createWithClient($guzzleClient);
+
+        // Configure retry
+        $client->retry(2, 10)  // 2 retries, 10ms delay
+               ->retryStatusCodes([Status::SERVICE_UNAVAILABLE->value]);
+
+        // Make the request that should auto-retry
+        $response = $client->get('https://api.example.com/flaky');
+
+        // Should have 3 requests in history (initial + 2 retries)
+        $this->assertCount(3, $container);
+
+        // Final response should be success
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('Success after retry', $response->json()['name']);
+    }
+}
+```
+
+## Testing with Logging
+
+Testing that appropriate logging occurs:
+
+```php
+use Monolog\Logger;
+use Monolog\Handler\TestHandler;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Client;
+use Fetch\Http\ClientHandler;
+
+class LoggingTest extends \PHPUnit\Framework\TestCase
+{
+    public function testRequestsAreLogged(): void
+    {
+        // Create a test logger
+        $testHandler = new TestHandler();
+        $logger = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        // Set up mock responses
+        $mock = new MockHandler([
+            new Response(200, [], '{"status": "success"}')
+        ]);
+
+        $stack = HandlerStack::create($mock);
+        $guzzleClient = new Client(['handler' => $stack]);
+        $client = ClientHandler::createWithClient($guzzleClient);
+
+        // Set the logger
+        $client->setLogger($logger);
+
+        // Make a request
+        $client->get('https://api.example.com/test');
+
+        // Verify logs were created
+        $this->assertTrue($testHandler->hasInfoThatContains('Sending HTTP request'));
+        $this->assertTrue($testHandler->hasDebugThatContains('Received HTTP response'));
     }
 }
 ```
@@ -525,24 +657,26 @@ class UserService
 
 2. **Test Various Response Types**: Test how your code handles success, client errors, server errors, and network issues.
 
-3. **Use Test Data Factories**: Create factories for generating test data consistently.
+3. **Use Status Enums**: Use the type-safe Status enums for clear and maintainable tests.
 
-4. **Separate Integration Tests**: Keep integration tests that hit real APIs separate from unit tests.
+4. **Use Test Data Factories**: Create factories for generating test data consistently.
 
-5. **Test Asynchronous Code**: If you're using async features, test them specifically.
+5. **Separate Integration Tests**: Keep integration tests that hit real APIs separate from unit tests.
 
-6. **Verify Request Parameters**: Use history middleware to verify that requests are made with the expected parameters.
+6. **Test Asynchronous Code**: If you're using async features, test both the modern async/await and traditional promise patterns.
 
-7. **Abstract HTTP Logic**: Use the repository pattern to abstract HTTP logic, making it easier to mock for tests.
+7. **Verify Request Parameters**: Use history middleware to verify that requests are made with the expected parameters.
 
-8. **Test Response Parsing**: Test that your code correctly handles and parses various response formats.
+8. **Abstract HTTP Logic**: Use the repository pattern to abstract HTTP logic, making it easier to mock for tests.
 
-9. **Test Rate Limiting Handling**: Test that your code handles rate limiting (429 responses) appropriately.
+9. **Test Response Parsing**: Test that your code correctly handles and parses various response formats.
 
-10. **Test Authentication**: Test that authentication tokens are properly included in requests.
+10. **Test Retry Logic**: Test that your retry configuration works correctly for retryable errors.
+
+11. **Test Logging**: Verify that appropriate logging occurs for requests and responses.
 
 ## Next Steps
 
 - Explore [Dependency Injection](/guide/custom-clients#dependency-injection-with-clients) for more testable code
 - Learn about [Error Handling](/guide/error-handling) for robust applications
-- See [Custom Clients](/guide/custom-clients) for creating specialized clients
+- See [Asynchronous Requests](/guide/async-requests) for more on async testing patterns

@@ -13,7 +13,7 @@ The `fetch()` function is the primary way to make HTTP requests. It's designed t
 function fetch(
     string|RequestInterface|null $resource = null,
     ?array $options = []
-): ResponseInterface|ClientHandler|Client
+): ResponseInterface|ClientHandlerInterface|Client
 ```
 
 ## Parameters
@@ -62,9 +62,13 @@ An associative array of request options:
 
 The return value depends on the `$resource` parameter:
 
-- If `$resource` is `null`: Returns the client instance (`ClientHandler` or `Client`) for method chaining
-- If `$resource` is a URL string: Returns a `Response` object
-- If `$resource` is a `Request` object: Returns a `Response` object
+- If `$resource` is `null`: Returns the client instance (`ClientHandlerInterface` or `Client`) for method chaining
+- If `$resource` is a URL string: Returns a `ResponseInterface` object
+- If `$resource` is a `Request` object: Returns a `ResponseInterface` object
+
+## Throws
+
+- `ClientExceptionInterface` - If a client exception occurs during the request
 
 ## Examples
 
@@ -219,6 +223,15 @@ $request = Request::post('https://api.example.com/users')
 $response = fetch($request);
 ```
 
+## Internal Implementation
+
+The `fetch()` function works by:
+
+1. Processing the provided options with `process_request_options()`
+2. Handling base URI configuration if provided with `handle_request_with_base_uri()`
+3. Using the global client instance from `fetch_client()` to execute the request
+4. Returning appropriate responses based on the input parameters
+
 ## Notes
 
 - The `fetch()` function is not a direct implementation of the Web Fetch API; it's inspired by it but adapted for PHP
@@ -232,5 +245,4 @@ $response = fetch($request);
 - [fetch_client()](/api/fetch-client) - Get or configure the global client instance
 - [HTTP Method Helpers](/api/http-method-helpers) - Specialized helper functions for different HTTP methods
 - [ClientHandler](/api/client-handler) - More details on the underlying client implementation
-- [Request](/api/request) - API for creating custom request objects
 - [Response](/api/response) - API for working with response objects

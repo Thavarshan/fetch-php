@@ -3,24 +3,24 @@ title: Installation
 description: How to install the Fetch HTTP package in your PHP project
 ---
 
-# Installation
+**# Installation**
 
 The Fetch HTTP package can be installed using Composer, the PHP dependency manager.
 
-## Requirements
+**## Requirements**
 
 - PHP 8.1 or higher
 - Composer
 
-## Install via Composer
+**## Install via Composer**
 
-### 1. Add to your project
+**### 1. Add to your project**
 
 ```bash
 composer require jerome/fetch-php
 ```
 
-### 2. Update your autoloader
+**### 2. Update your autoloader**
 
 If you haven't already done so, make sure you include the Composer autoloader in your project:
 
@@ -28,7 +28,7 @@ If you haven't already done so, make sure you include the Composer autoloader in
 require __DIR__ . '/vendor/autoload.php';
 ```
 
-## Manual Installation (Not Recommended)
+**## Manual Installation (Not Recommended)**
 
 While we strongly recommend using Composer, you can also manually download the package and include it in your project:
 
@@ -36,19 +36,15 @@ While we strongly recommend using Composer, you can also manually download the p
 2. Extract the files into your project directory
 3. Set up your own autoloading system or include files manually
 
-## Verifying Installation
+**## Verifying Installation**
 
 After installation, you can verify that everything is working correctly by creating a simple script:
 
 ```php
 <?php
-
 require __DIR__ . '/vendor/autoload.php';
 
-// Import the helper function
-use function Fetch\Http\fetch;
-
-// Make a simple request
+// Make a simple request using the global helper
 $response = fetch('https://httpbin.org/get');
 
 // Check the response
@@ -61,6 +57,39 @@ if ($response->successful()) {
 }
 ```
 
-## Next Steps
+**## Testing Different Response Methods**
+
+You can also test some of the enhanced response methods:
+
+```php
+<?php
+require __DIR__ . '/vendor/autoload.php';
+
+// Make a request to the JSON endpoint
+$response = fetch('https://httpbin.org/json');
+
+// Test content type detection
+if ($response->hasJsonContent()) {
+    echo "Received JSON content\n";
+
+    // Parse the JSON data
+    $data = $response->json();
+    echo "JSON data successfully parsed\n";
+
+    // Access data using array syntax
+    if (isset($response['slideshow'])) {
+        echo "Slideshow title: " . $response['slideshow']['title'] . "\n";
+    }
+} else {
+    echo "Did not receive JSON content\n";
+}
+
+// Test status code helpers
+if ($response->isOk()) {
+    echo "Response has 200 OK status\n";
+}
+```
+
+**## Next Steps**
 
 After installation, check out the [Quickstart](/guide/quickstart) guide to begin using the Fetch HTTP package.

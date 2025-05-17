@@ -51,6 +51,20 @@ enum ContentType: string
     }
 
     /**
+     * Normalize a content type to a ContentType enum value.
+     */
+    public static function normalizeContentType(string|ContentType $contentType): string|ContentType
+    {
+        if ($contentType instanceof ContentType) {
+            return $contentType;
+        }
+        // Try to convert to enum without a default
+        $result = self::tryFromString($contentType);
+        // Return the enum if found, otherwise return the original string
+        return $result !== null ? $result : $contentType;
+    }
+
+    /**
      * Check if the content type is JSON.
      */
     public function isJson(): bool
@@ -159,6 +173,30 @@ public static function tryFromString(string $contentType, ?self $default = null)
 ```php
 $type = ContentType::tryFromString('application/json'); // Returns ContentType::JSON
 $type = ContentType::tryFromString('invalid/type', ContentType::JSON); // Returns ContentType::JSON
+```
+
+### normalizeContentType()
+
+Normalizes a content type to a ContentType enum value if possible. If the provided value is already a ContentType enum, it is returned as is. If the string matches a valid content type, the corresponding enum value is returned. Otherwise, the original string is returned.
+
+```php
+public static function normalizeContentType(string|ContentType $contentType): string|ContentType
+```
+
+**Parameters:**
+
+- `$contentType`: A string or ContentType enum value
+
+**Returns:**
+
+- The ContentType enum value if conversion is possible, or the original string
+
+**Example:**
+
+```php
+$type = ContentType::normalizeContentType('application/json'); // Returns ContentType::JSON
+$type = ContentType::normalizeContentType(ContentType::JSON); // Returns ContentType::JSON
+$type = ContentType::normalizeContentType('custom/type'); // Returns 'custom/type'
 ```
 
 ### isJson()
@@ -276,17 +314,28 @@ $client = fetch_client()
     ->post('https://api.example.com/users', $data);
 ```
 
-### Working with Request Body
+### Using The Normalizer
 
 ```php
 use Fetch\Enum\ContentType;
 
-// Configuring request body with specific content type
-$client = fetch_client()->withBody($data, ContentType::XML);
+// Function that accepts both strings and ContentType enums
+function processContent($data, string|ContentType $contentType) {
+    // Normalize the input content type
+    $normalizedType = ContentType::normalizeContentType($contentType);
 
-// Using with the Request object
-$request = new Request('POST', 'https://api.example.com/users');
-$request = $request->withContentType(ContentType::JSON->value);
+    // Now we can safely check if it's a known enum value
+    if ($normalizedType instanceof ContentType) {
+        if ($normalizedType->isJson()) {
+            return json_encode($data);
+        } elseif ($normalizedType->isForm()) {
+            return http_build_query($data);
+        }
+    }
+
+    // Handle custom content types
+    return $data;
+}
 ```
 
 ### Content Type Detection

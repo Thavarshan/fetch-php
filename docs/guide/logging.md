@@ -5,7 +5,7 @@ description: Learn how to configure and use logging with the Fetch HTTP package
 
 # Logging
 
-The Fetch HTTP package provides built-in support for logging HTTP requests and responses. This guide explains how to configure and use logging to help with debugging and monitoring.
+The Fetch PHP package provides built-in support for logging HTTP requests and responses. This guide explains how to configure and use logging to help with debugging and monitoring.
 
 ## PSR-3 Logger Integration
 
@@ -21,7 +21,8 @@ $logger = new Logger('http');
 $logger->pushHandler(new StreamHandler('logs/http.log', Logger::DEBUG));
 
 // Set the logger on a client
-$client = ClientHandler::create()->setLogger($logger);
+$client = ClientHandler::create();
+$client->setLogger($logger);
 
 // Now all requests and responses will be logged
 $response = $client->get('https://api.example.com/users');
@@ -32,7 +33,6 @@ $response = $client->get('https://api.example.com/users');
 You can also set a logger on the global client:
 
 ```php
-use function Fetch\Http\fetch_client;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
@@ -41,7 +41,8 @@ $logger = new Logger('http');
 $logger->pushHandler(new StreamHandler('logs/http.log', Logger::DEBUG));
 
 // Configure the global client with the logger
-fetch_client(logger: $logger);
+$client = fetch_client();
+$client->setLogger($logger);
 
 // All requests will now be logged
 $response = fetch('https://api.example.com/users');
@@ -117,7 +118,8 @@ $logger->pushHandler(new StreamHandler('logs/http.log', Logger::INFO));
 $logger->pushHandler(new StreamHandler('logs/http-error.log', Logger::ERROR));
 
 // Set the logger
-$client = ClientHandler::create()->setLogger($logger);
+$client = ClientHandler::create();
+$client->setLogger($logger);
 ```
 
 ## Logging Request and Response Bodies
@@ -165,6 +167,36 @@ $response = $client->post('https://api.example.com/users', [
     'name' => 'John Doe',
     'email' => 'john@example.com'
 ]);
+```
+
+## Logging with Status Enums
+
+When logging with status codes, you can use the type-safe Status enum for better readability:
+
+```php
+use Fetch\Enum\Status;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+$logger = new Logger('http');
+$logger->pushHandler(new StreamHandler('logs/http.log', Logger::DEBUG));
+
+// Custom log processing
+$logger->pushProcessor(function ($record) {
+    // If we have a response status in the context, convert it to a human-readable format
+    if (isset($record['context']['status_code'])) {
+        $statusCode = $record['context']['status_code'];
+        $statusEnum = Status::tryFrom($statusCode);
+        if ($statusEnum) {
+            $record['context']['status_text'] = $statusEnum->phrase();
+        }
+    }
+    return $record;
+});
+
+// Set the logger
+$client = ClientHandler::create();
+$client->setLogger($logger);
 ```
 
 ## Logging in Different Environments
@@ -216,7 +248,8 @@ function createLogger(): Logger
 }
 
 // Create a client with the environment-specific logger
-$client = ClientHandler::create()->setLogger(createLogger());
+$client = ClientHandler::create();
+$client->setLogger(createLogger());
 ```
 
 ## Log Analysis and Troubleshooting
@@ -281,7 +314,8 @@ $logger->pushHandler(new SlackWebhookHandler(
 ));
 
 // Use the logger
-$client = ClientHandler::create()->setLogger($logger);
+$client = ClientHandler::create();
+$client->setLogger($logger);
 ```
 
 ## Logging in Asynchronous Requests
@@ -289,19 +323,43 @@ $client = ClientHandler::create()->setLogger($logger);
 When making asynchronous requests, logging still works the same way:
 
 ```php
+use function async;
+use function await;
+use function all;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// Create a logger
 $logger = new Logger('http');
 $logger->pushHandler(new StreamHandler('logs/http-async.log', Logger::DEBUG));
 
-$client = ClientHandler::create()
-    ->setLogger($logger)
-    ->async();
+// Set up the client with the logger
+$client = ClientHandler::create();
+$client->setLogger($logger);
+
+// Use async/await pattern
+await(async(function() use ($client) {
+    // Process multiple requests in parallel
+    $results = await(all([
+        'users' => async(fn() => $client->get('https://api.example.com/users')),
+        'posts' => async(fn() => $client->get('https://api.example.com/posts')),
+        'comments' => async(fn() => $client->get('https://api.example.com/comments'))
+    ]));
+
+    // All requests will be logged
+    return $results;
+}));
+
+// Or using the traditional promise approach
+$handler = $client->getHandler();
+$handler->async();
 
 // Create promises for multiple requests
-$usersPromise = $client->get('https://api.example.com/users');
-$postsPromise = $client->get('https://api.example.com/posts');
+$usersPromise = $handler->get('https://api.example.com/users');
+$postsPromise = $handler->get('https://api.example.com/posts');
 
 // All requests will be logged, even though they're async
-$client->all(['users' => $usersPromise, 'posts' => $postsPromise])
+$handler->all(['users' => $usersPromise, 'posts' => $postsPromise])
     ->then(function ($results) {
         // Process results
     });
@@ -340,7 +398,8 @@ $logger->pushProcessor(function ($record) {
 });
 
 // Use the logger
-$client = ClientHandler::create()->setLogger($logger);
+$client = ClientHandler::create();
+$client->setLogger($logger);
 ```
 
 ## Structured Logging
@@ -361,7 +420,8 @@ $handler->setFormatter(new JsonFormatter());
 $logger->pushHandler($handler);
 
 // Use the logger
-$client = ClientHandler::create()->setLogger($logger);
+$client = ClientHandler::create();
+$client->setLogger($logger);
 ```
 
 This will produce logs in JSON format that can be easily parsed by log analysis tools.
@@ -386,10 +446,36 @@ $logger->pushProcessor($requestIdProcessor);
 $logger->pushHandler(new StreamHandler('logs/http.log', Logger::DEBUG));
 
 // Use the logger
-$client = ClientHandler::create()->setLogger($logger);
+$client = ClientHandler::create();
+$client->setLogger($logger);
 
 // Add the request ID to all requests as well
 $client->withHeader('X-Request-ID', $requestId);
+```
+
+## Logging Debug Information
+
+You can use the `debug()` method to get detailed information about a request for logging purposes:
+
+```php
+$client = ClientHandler::create();
+$response = $client->get('https://api.example.com/users');
+
+// Get debug information after the request
+$debugInfo = $client->debug();
+
+// Log it manually if needed
+$logger->debug('Request debug information', $debugInfo);
+
+// Debug info includes:
+// - uri: The full URI
+// - method: The HTTP method used
+// - headers: Request headers (sensitive data redacted)
+// - options: Other request options
+// - is_async: Whether the request was asynchronous
+// - timeout: The timeout setting
+// - retries: The number of retries configured
+// - retry_delay: The retry delay setting
 ```
 
 ## Best Practices
@@ -414,8 +500,13 @@ $client->withHeader('X-Request-ID', $requestId);
 
 10. **Performance Consideration**: Be mindful of logging performance impact, especially in high-traffic applications.
 
+11. **Use Type-Safe Enums**: When logging status codes or content types, consider using the enums for better readability.
+
+12. **Log Asynchronous Operations**: Make sure to apply the same logging principles to asynchronous requests.
+
 ## Next Steps
 
 - Learn about [Error Handling](/guide/error-handling) for comprehensive error management
 - Explore [Retry Handling](/guide/retry-handling) for handling transient errors
 - See [Testing](/guide/testing) for how to test code with logging
+- Check out [Asynchronous Requests](/guide/async-requests) for logging in async operations

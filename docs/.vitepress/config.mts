@@ -11,7 +11,8 @@ export default defineConfig({
             { text: 'Home', link: '/' },
             { text: 'Guide', link: '/guide/' },
             { text: 'API Reference', link: '/api/' },
-            { text: 'Examples', link: '/examples/' }
+            { text: 'Examples', link: '/examples/' },
+            { text: 'Changelog', link: 'https://github.com/Thavarshan/fetch-php/blob/main/CHANGELOG.md' }
         ],
         sidebar: {
             '/guide/': [
@@ -29,7 +30,6 @@ export default defineConfig({
                         { text: 'Making Requests', link: '/guide/making-requests' },
                         { text: 'Helper Functions', link: '/guide/helper-functions' },
                         { text: 'Working with Responses', link: '/guide/working-with-responses' },
-                        { text: 'Request Configuration', link: '/guide/request-configuration' },
                         { text: 'Authentication', link: '/guide/authentication' },
                         { text: 'Error Handling', link: '/guide/error-handling' },
                         { text: 'Logging', link: '/guide/logging' }
@@ -98,8 +98,8 @@ export default defineConfig({
             { icon: 'github', link: 'https://github.com/Thavarshan/fetch-php' }
         ],
         footer: {
-            message: 'Created by Jerome Thayananthajothy and released under the MIT License.',
-            copyright: 'Copyright © ' + new Date().getFullYear() + ' Fetch PHP'
+            message: 'Released under the MIT License.',
+            copyright: 'Copyright © 2024-present Jerome Thayananthajothy'
         },
         search: {
             provider: 'local'

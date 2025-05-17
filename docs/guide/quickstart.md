@@ -20,9 +20,7 @@ The Fetch HTTP package provides a simple, intuitive API for making HTTP requests
 ### Making a Simple Request
 
 ```php
-use function Fetch\Http\fetch;
-
-// Make a GET request
+// Make a GET request using the global fetch() function
 $response = fetch('https://api.example.com/users');
 
 // Parse the JSON response
@@ -97,14 +95,19 @@ The `Response` object provides methods for different content types:
 
 ```php
 // JSON response
-$data = $response->json();  // As array
+$data = $response->json();      // As array
 $object = $response->object();  // As object
+$array = $response->array();    // Explicitly as array
 
 // Plain text response
 $text = $response->text();
 
 // Raw response body
 $content = $response->body();
+
+// Binary data
+$binary = $response->arrayBuffer();
+$stream = $response->blob();
 
 // XML response
 $xml = $response->xml();
@@ -115,28 +118,50 @@ You can also access JSON data using array syntax:
 ```php
 $name = $response['name'];
 $email = $response['email'];
+$address = $response['address']['street'];
 ```
 
 ### Checking Response Status
 
 ```php
 // Status code checks
-if ($response->isOk()) {  // 200
+if ($response->isOk()) {                  // 200
     // Success
-} elseif ($response->isNotFound()) {  // 404
+} elseif ($response->isNotFound()) {      // 404
     // Not found
 } elseif ($response->isUnauthorized()) {  // 401
     // Unauthorized
 }
 
 // Status categories
-if ($response->successful()) {  // 2xx
+if ($response->successful()) {            // 2xx
     // Success
-} elseif ($response->clientError()) {  // 4xx
+} elseif ($response->isClientError()) {   // 4xx
     // Client error
-} elseif ($response->serverError()) {  // 5xx
+} elseif ($response->isServerError()) {   // 5xx
     // Server error
 }
+```
+
+### Using Enums
+
+```php
+use Fetch\Enum\Status;
+use Fetch\Enum\Method;
+use Fetch\Enum\ContentType;
+
+// Check status using enum
+if ($response->statusEnum() === Status::OK) {
+    // Status is 200 OK
+}
+
+// Use method enum for requests
+$response = fetch_client()->request(Method::POST, '/users', $userData);
+
+// Use content type enum
+$response = fetch_client()
+    ->withBody($data, ContentType::JSON)
+    ->post('/users');
 ```
 
 ## Authentication
@@ -150,7 +175,7 @@ $response = fetch('https://api.example.com/users', [
 ]);
 
 // Using helper methods
-$response = fetch()
+$response = fetch_client()
     ->withToken('your-token')
     ->get('https://api.example.com/users');
 ```
@@ -164,7 +189,7 @@ $response = fetch('https://api.example.com/users', [
 ]);
 
 // Using helper methods
-$response = fetch()
+$response = fetch_client()
     ->withAuth('username', 'password')
     ->get('https://api.example.com/users');
 ```
@@ -207,25 +232,62 @@ $response = fetch('https://api.example.com/upload', [
         ]
     ]
 ]);
+
+// Or using the fluent interface
+$response = fetch_client()
+    ->withMultipart([
+        [
+            'name' => 'file',
+            'contents' => fopen('/path/to/file.jpg', 'r'),
+            'filename' => 'upload.jpg',
+        ],
+        [
+            'name' => 'description',
+            'contents' => 'File description'
+        ]
+    ])
+    ->post('https://api.example.com/upload');
 ```
 
 ### Asynchronous Requests
 
 ```php
-// Get the client for async operations
-$client = fetch_client();
+use function async;
+use function await;
+use function all;
 
-// Create promises for parallel requests
-$users = $client->async()->get('https://api.example.com/users');
-$posts = $client->async()->get('https://api.example.com/posts');
+// Modern async/await pattern
+await(async(function() {
+    // Process multiple requests in parallel
+    $results = await(all([
+        'users' => async(fn() => fetch('https://api.example.com/users')),
+        'posts' => async(fn() => fetch('https://api.example.com/posts')),
+        'comments' => async(fn() => fetch('https://api.example.com/comments'))
+    ]));
 
-// Wait for both to complete
-$client->all(['users' => $users, 'posts' => $posts])
-    ->then(function ($results) {
-        $userData = $results['users']->json();
-        $postsData = $results['posts']->json();
+    // Process the results
+    $users = $results['users']->json();
+    $posts = $results['posts']->json();
+    $comments = $results['comments']->json();
 
-        // Process results
+    echo "Fetched " . count($users) . " users, " .
+         count($posts) . " posts, and " .
+         count($comments) . " comments";
+}));
+
+// Traditional promise pattern
+$handler = fetch_client()->getHandler();
+$handler->async();
+
+$promise = $handler->get('https://api.example.com/users')
+    ->then(function ($response) {
+        if ($response->successful()) {
+            return $response->json();
+        }
+        throw new \Exception("Request failed with status: " . $response->getStatusCode());
+    })
+    ->catch(function (\Throwable $e) {
+        echo "Error: " . $e->getMessage();
     });
 ```
 
@@ -239,9 +301,44 @@ $response = fetch('https://api.example.com/unstable', [
 ]);
 
 // Or using the fluent interface
-$response = fetch()
+$response = fetch_client()
     ->retry(3, 100)
+    ->retryStatusCodes([408, 429, 500, 502, 503, 504]) // Customize retryable status codes
+    ->retryExceptions(['GuzzleHttp\Exception\ConnectException']) // Customize retryable exceptions
     ->get('https://api.example.com/unstable');
+```
+
+### Content Type Detection
+
+```php
+$response = fetch('https://api.example.com/data');
+
+// Detect content type
+$contentType = $response->contentType();
+$contentTypeEnum = $response->contentTypeEnum();
+
+// Check specific content types
+if ($response->hasJsonContent()) {
+    $data = $response->json();
+} elseif ($response->hasHtmlContent()) {
+    $html = $response->text();
+} elseif ($response->hasTextContent()) {
+    $text = $response->text();
+}
+```
+
+### Working with URIs
+
+```php
+$response = fetch_client()
+    ->baseUri('https://api.example.com')
+    ->withQueryParameter('page', 1)
+    ->withQueryParameters([
+        'limit' => 10,
+        'sort' => 'name',
+        'include' => 'posts,comments'
+    ])
+    ->get('/users');
 ```
 
 ### Logging
@@ -254,11 +351,35 @@ use Monolog\Handler\StreamHandler;
 $logger = new Logger('http');
 $logger->pushHandler(new StreamHandler('logs/http.log', Logger::DEBUG));
 
-// Set it globally
-fetch_client(logger: $logger);
+// Set it on the client
+$client = fetch_client();
+$client->setLogger($logger);
+
+// Or set it on the handler
+$handler = fetch_client()->getHandler();
+$handler->setLogger($logger);
 
 // Now all requests will be logged
 $response = get('https://api.example.com/users');
+```
+
+### Creating Mock Responses (For Testing)
+
+```php
+use Fetch\Http\ClientHandler;
+
+// Create a simple mock response
+$mockResponse = ClientHandler::createMockResponse(
+    statusCode: 200,
+    headers: ['Content-Type' => 'application/json'],
+    body: '{"name": "John", "email": "john@example.com"}'
+);
+
+// Create a JSON mock response
+$mockJsonResponse = ClientHandler::createJsonResponse(
+    data: ['name' => 'John', 'email' => 'john@example.com'],
+    statusCode: 200
+);
 ```
 
 ## Error Handling
@@ -272,8 +393,12 @@ try {
     }
 
     $users = $response->json();
-} catch (ClientExceptionInterface $e) {
-    echo "HTTP client error: " . $e->getMessage();
+} catch (\Fetch\Exceptions\NetworkException $e) {
+    echo "Network error: " . $e->getMessage();
+} catch (\Fetch\Exceptions\RequestException $e) {
+    echo "Request error: " . $e->getMessage();
+} catch (\Fetch\Exceptions\ClientException $e) {
+    echo "Client error: " . $e->getMessage();
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();
 }
@@ -286,3 +411,4 @@ Now that you've gotten started with the basic functionality, check out these gui
 - [Making Requests](/guide/making-requests) - More details on making HTTP requests
 - [Helper Functions](/guide/helper-functions) - Learn about all available helper functions
 - [Working with Responses](/guide/working-with-responses) - Advanced response handling
+- [Working with Enums](/guide/working-with-enums) - Using type-safe enums for HTTP concepts

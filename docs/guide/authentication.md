@@ -35,18 +35,6 @@ $response = ClientHandler::create()
     ->get('https://api.example.com/users');
 ```
 
-### Using Request Objects
-
-```php
-use Fetch\Http\Request;
-
-$request = Request::get('https://api.example.com/users')
-    ->withBearerToken('your-oauth-token');
-
-// Send the request
-$response = fetch($request);
-```
-
 ## Basic Authentication
 
 Basic authentication sends credentials encoded in the Authorization header.
@@ -73,18 +61,6 @@ use Fetch\Http\ClientHandler;
 $response = ClientHandler::create()
     ->withAuth('username', 'password')
     ->get('https://api.example.com/protected');
-```
-
-### Using Request Objects
-
-```php
-use Fetch\Http\Request;
-
-$request = Request::get('https://api.example.com/protected')
-    ->withBasicAuth('username', 'password');
-
-// Send the request
-$response = fetch($request);
 ```
 
 ## API Key Authentication
@@ -179,9 +155,11 @@ Configure authentication globally to apply it to all requests:
 // Configure client with authentication
 fetch_client([
     'base_uri' => 'https://api.example.com',
-    'token' => 'your-oauth-token'  // For Bearer token auth
-    // OR
-    // 'auth' => ['username', 'password']  // For Basic auth
+    'headers' => [
+        'Authorization' => 'Bearer your-oauth-token' // For Bearer token auth
+    ]
+    // OR for basic auth
+    // 'auth' => ['username', 'password']
 ]);
 
 // Now all requests will include the authentication
@@ -241,33 +219,91 @@ $client = getAuthenticatedClient();
 $response = $client->get('/protected-resource');
 ```
 
+## Asynchronous Authentication
+
+For scenarios where you need to perform authentication in an asynchronous context:
+
+```php
+use function async;
+use function await;
+
+await(async(function() {
+    // First, get an auth token
+    $tokenResponse = await(async(fn() =>
+        post('https://oauth.example.com/token', [
+            'grant_type' => 'client_credentials',
+            'client_id' => 'your-client-id',
+            'client_secret' => 'your-client-secret'
+        ])
+    ));
+
+    $token = $tokenResponse->json()['access_token'];
+
+    // Then use the token for subsequent requests
+    $apiResponse = await(async(fn() =>
+        fetch('https://api.example.com/protected', [
+            'token' => $token
+        ])
+    ));
+
+    return $apiResponse->json();
+}));
+```
+
 ## Testing with Authentication
 
 For testing, you can use mock responses:
 
 ```php
-// Mock an authenticated request
-$mockResponse = \Fetch\Http\Response::withJson(
+use Fetch\Http\ClientHandler;
+
+// Create a mock response
+$mockResponse = ClientHandler::createJsonResponse(
     ['username' => 'testuser', 'role' => 'admin'],
-    200,
-    ['Content-Type' => 'application/json']
+    200
 );
 
 // Test code that uses authentication
 function testAuthenticatedRequest() {
     global $mockResponse;
 
-    // Normally, this would make a real API call
+    // In your test framework, you would mock the actual HTTP client
+    // and return the mock response
+
+    // Then in your application code:
     $response = get('https://api.example.com/me', null, [
         'token' => 'test-token'
     ]);
 
-    // But in tests, we can replace with our mock
-    $response = $mockResponse;
+    // Assert against the response
+    assert($response->successful());
+    assert($response->json()['username'] === 'testuser');
+}
+```
 
-    // Now test the response
-    assertTrue($response->successful());
-    assertEquals('testuser', $response->json()['username']);
+## Working with Authentication Response Status
+
+Fetch PHP provides convenient methods to check authentication-related status codes:
+
+```php
+$response = get('https://api.example.com/protected');
+
+// Check specific authentication-related status codes
+if ($response->isUnauthorized()) {
+    echo "Authentication required (401)";
+} elseif ($response->isForbidden()) {
+    echo "Permission denied (403)";
+} elseif ($response->isStatus(429)) {
+    echo "Rate limited (429)";
+}
+
+// Using Status enums
+use Fetch\Enum\Status;
+
+if ($response->statusEnum() === Status::UNAUTHORIZED) {
+    echo "Authentication required (401)";
+} elseif ($response->statusEnum() === Status::FORBIDDEN) {
+    echo "Permission denied (403)";
 }
 ```
 
@@ -301,6 +337,31 @@ if ($response->isForbidden()) {
 }
 ```
 
+## Error Handling for Authentication
+
+Use try/catch to handle authentication errors:
+
+```php
+try {
+    $response = fetch('https://api.example.com/protected', [
+        'token' => 'possibly-expired-token'
+    ]);
+
+    if ($response->isUnauthorized()) {
+        // Handle invalid or expired token
+        throw new \Exception("Authentication failed: Token is invalid or expired");
+    }
+
+    $data = $response->json();
+} catch (\Fetch\Exceptions\NetworkException $e) {
+    echo "Network error during authentication: " . $e->getMessage();
+} catch (\Fetch\Exceptions\RequestException $e) {
+    echo "Request error during authentication: " . $e->getMessage();
+} catch (\Exception $e) {
+    echo "Authentication error: " . $e->getMessage();
+}
+```
+
 ## Security Best Practices
 
 1. **Never Hard-Code Credentials**: Use environment variables or a secure configuration system
@@ -328,8 +389,41 @@ if ($response->isForbidden()) {
 
 5. **Implement Rate Limiting**: To protect against brute force attacks
 
+6. **Add Retry Logic for Authentication Failures**: Some authentication failures are transient
+
+   ```php
+   $client = fetch_client()
+       ->retry(3, 1000)  // 3 retries with 1s initial delay
+       ->retryStatusCodes([401, 429])  // Retry on 401 (Unauthorized) and 429 (Too Many Requests)
+       ->withToken($token)
+       ->get('https://api.example.com/protected');
+   ```
+
+7. **Log Authentication Failures**: But be careful not to log sensitive information
+
+   ```php
+   use Monolog\Logger;
+   use Monolog\Handler\StreamHandler;
+
+   $logger = new Logger('auth');
+   $logger->pushHandler(new StreamHandler('logs/auth.log', Logger::WARNING));
+
+   $client = fetch_client();
+   $client->setLogger($logger);
+
+   $response = $client
+       ->withToken($token)
+       ->get('https://api.example.com/protected');
+
+   if ($response->isUnauthorized()) {
+       // Log will include request details but credentials will be redacted
+       // thanks to the sanitization in the ClientHandler
+   }
+   ```
+
 ## Next Steps
 
 - Learn about [Error Handling](/guide/error-handling) for authentication errors
 - Explore [Retry Handling](/guide/retry-handling) for handling token expiration
-- See [Logging](/guide/logging) for logging authenticated requests securely
+- See [Asynchronous Requests](/guide/async-requests) for asynchronous authentication flows
+- Check out [Logging](/guide/logging) for logging authenticated requests securely

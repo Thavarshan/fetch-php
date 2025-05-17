@@ -62,6 +62,32 @@ $longTimeoutClient = $baseClient->withClonedOptions([
 ]);
 ```
 
+## Using Type-Safe Enums
+
+You can use the library's enums for type-safe client configuration:
+
+```php
+use Fetch\Enum\Method;
+use Fetch\Enum\ContentType;
+
+// Create a client with type-safe configuration
+$client = ClientHandler::create()
+    ->withBody($data, ContentType::JSON)
+    ->request(Method::POST, 'https://api.example.com/users');
+
+// Configure retries with enums
+use Fetch\Enum\Status;
+
+$client = ClientHandler::create()
+    ->retry(3, 100)
+    ->retryStatusCodes([
+        Status::TOO_MANY_REQUESTS->value,
+        Status::SERVICE_UNAVAILABLE->value,
+        Status::GATEWAY_TIMEOUT->value
+    ])
+    ->get('https://api.example.com/flaky-endpoint');
+```
+
 ## Creating API Service Classes
 
 For more organized code, you can create service classes that encapsulate API functionality:
@@ -224,6 +250,49 @@ $oauth2Client = new OAuth2Client(
 $resources = $oauth2Client->get('/resources', ['type' => 'active']);
 ```
 
+## Asynchronous API Clients
+
+You can create asynchronous API clients using the async features:
+
+```php
+use function async;
+use function await;
+use function all;
+
+class AsyncApiClient
+{
+    private \Fetch\Http\ClientHandler $client;
+
+    public function __construct(string $baseUri, string $token)
+    {
+        $this->client = \Fetch\Http\ClientHandler::createWithBaseUri($baseUri)
+            ->withToken($token);
+    }
+
+    public function fetchUserAndPosts(int $userId)
+    {
+        return await(async(function() use ($userId) {
+            // Execute requests in parallel
+            $results = await(all([
+                'user' => async(fn() => $this->client->get("/users/{$userId}")),
+                'posts' => async(fn() => $this->client->get("/users/{$userId}/posts"))
+            ]));
+
+            // Process the results
+            return [
+                'user' => $results['user']->json(),
+                'posts' => $results['posts']->json()
+            ];
+        }));
+    }
+}
+
+// Usage
+$client = new AsyncApiClient('https://api.example.com', 'your-token');
+$data = $client->fetchUserAndPosts(123);
+echo "User: {$data['user']['name']}, Posts: " . count($data['posts']);
+```
+
 ## Customizing Handlers with Middleware
 
 For advanced use cases, you can create a fully custom client with Guzzle middleware:
@@ -276,8 +345,6 @@ $response = $client->get('/resources');
 You can configure a global default client for all requests:
 
 ```php
-use function Fetch\Http\fetch_client;
-
 // Configure the global client
 fetch_client([
     'base_uri' => 'https://api.example.com',
@@ -298,7 +365,7 @@ For testing, you can configure a client that returns mock responses:
 
 ```php
 use Fetch\Http\ClientHandler;
-use Fetch\Http\Response;
+use Fetch\Enum\Status;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
@@ -344,11 +411,43 @@ $mockResponse = ClientHandler::createMockResponse(
     '{"id": 1, "name": "Test User"}'
 );
 
+// Using Status enum
+$mockResponse = ClientHandler::createMockResponse(
+    Status::OK,
+    ['Content-Type' => 'application/json'],
+    '{"id": 1, "name": "Test User"}'
+);
+
 // Mock a JSON response directly
 $mockJsonResponse = ClientHandler::createJsonResponse(
     ['id' => 2, 'name' => 'Another User'],
-    200
+    Status::OK
 );
+```
+
+## Clients with Logging
+
+You can create clients with logging enabled:
+
+```php
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Fetch\Http\ClientHandler;
+
+// Create a logger
+$logger = new Logger('api');
+$logger->pushHandler(new StreamHandler('logs/api.log', Logger::INFO));
+
+// Create a client with the logger
+$client = ClientHandler::create();
+$client->setLogger($logger);
+
+// Now all requests and responses will be logged
+$response = $client->get('https://api.example.com/users');
+
+// You can also set a logger on the global client
+$globalClient = fetch_client();
+$globalClient->setLogger($logger);
 ```
 
 ## Working with Multiple APIs
@@ -488,9 +587,15 @@ $stripeClient = createClientFromEnv('STRIPE_API');
 You can create a client with custom retry logic:
 
 ```php
+use Fetch\Enum\Status;
+
 $client = ClientHandler::create()
-    ->retry(3, 100)  // Basic retry configuration
-    ->retryStatusCodes([429, 503, 504])  // Only retry these status codes
+    ->retry(3, 100)  // Basic retry configuration: 3 attempts, 100ms initial delay
+    ->retryStatusCodes([
+        Status::TOO_MANY_REQUESTS->value,
+        Status::SERVICE_UNAVAILABLE->value,
+        Status::GATEWAY_TIMEOUT->value
+    ])  // Only retry these status codes
     ->retryExceptions([\GuzzleHttp\Exception\ConnectException::class]);
 
 // Use the client
@@ -550,28 +655,33 @@ $userData = $graphqlClient->query('
 
 ## Best Practices
 
-1. **Organize by API**: Create separate client instances for different APIs.
+1. **Use Type-Safe Enums**: Leverage the library's enums for type safety and better code readability.
 
-2. **Configure Once**: Set up clients with all necessary options once, then reuse them.
+2. **Organize by API**: Create separate client instances for different APIs.
 
-3. **Use Dependency Injection**: Inject client instances rather than creating them in methods.
+3. **Configure Once**: Set up clients with all necessary options once, then reuse them.
 
-4. **Abstract APIs Behind Services**: Create service classes that use clients internally, exposing a domain-specific interface.
+4. **Use Dependency Injection**: Inject client instances rather than creating them in methods.
 
-5. **Handle Authentication Properly**: Implement token refresh logic for OAuth flows.
+5. **Abstract APIs Behind Services**: Create service classes that use clients internally, exposing a domain-specific interface.
 
-6. **Use Timeouts Appropriately**: Configure timeouts based on the expected response time of each API.
+6. **Handle Authentication Properly**: Implement token refresh logic for OAuth flows.
 
-7. **Log Requests and Responses**: Add logging for debugging and monitoring API interactions.
+7. **Use Timeouts Appropriately**: Configure timeouts based on the expected response time of each API.
 
-8. **Use Base URIs**: Always use base URIs to avoid repeating URL prefixes.
+8. **Log Requests and Responses**: Add logging for debugging and monitoring API interactions.
 
-9. **Set Common Headers**: Configure common headers (User-Agent, Accept, etc.) once.
+9. **Use Base URIs**: Always use base URIs to avoid repeating URL prefixes.
 
-10. **Error Handling**: Implement consistent error handling for each client.
+10. **Set Common Headers**: Configure common headers (User-Agent, Accept, etc.) once.
+
+11. **Error Handling**: Implement consistent error handling for each client.
+
+12. **Create Async Clients When Needed**: Use async/await for operations that benefit from parallelism.
 
 ## Next Steps
 
 - Learn about [Testing](/guide/testing) for testing with custom clients
 - Explore [Asynchronous Requests](/guide/async-requests) for working with async clients
 - See [Authentication](/guide/authentication) for handling different authentication schemes
+- Check out [Working with Responses](/guide/working-with-responses) for handling API responses

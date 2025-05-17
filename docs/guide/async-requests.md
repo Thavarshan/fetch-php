@@ -18,13 +18,16 @@ The key functions for async operations are:
 - `all()` - Runs multiple Promises concurrently and waits for all to complete
 - `race()` - Runs multiple Promises concurrently and returns the first to complete
 - `any()` - Returns the first Promise to successfully resolve
+- `map()` - Processes an array of items with controlled concurrency
+- `batch()` - Processes items in batches with controlled concurrency
+- `retry()` - Retries an async operation with exponential backoff
 
 ## Making Asynchronous Requests
 
 To make asynchronous requests, wrap your `fetch()` calls with the `async()` function:
 
 ```php
-// From `jerome/matrix` included in Fetch PHP
+// Import the async functions
 use function async;
 use function await;
 use function all;
@@ -44,34 +47,52 @@ $users = $response->json();
 One of the main benefits of async requests is the ability to execute multiple HTTP requests in parallel:
 
 ```php
-// Create promises for multiple requests
-$usersPromise = async(function() {
-    return fetch('https://api.example.com/users');
-});
+// Execute an async function
+await(async(function() {
+    // Create multiple requests
+    $results = await(all([
+        'users' => async(fn() => fetch('https://api.example.com/users')),
+        'posts' => async(fn() => fetch('https://api.example.com/posts')),
+        'comments' => async(fn() => fetch('https://api.example.com/comments'))
+    ]));
 
-$postsPromise = async(function() {
-    return fetch('https://api.example.com/posts');
-});
+    // Process the results
+    $users = $results['users']->json();
+    $posts = $results['posts']->json();
+    $comments = $results['comments']->json();
 
-$commentsPromise = async(function() {
-    return fetch('https://api.example.com/comments');
-});
+    echo "Fetched " . count($users) . " users, " .
+         count($posts) . " posts, and " .
+         count($comments) . " comments";
+}));
+```
 
-// Wait for all to complete
-$results = await(all([
-    'users' => $usersPromise,
-    'posts' => $postsPromise,
-    'comments' => $commentsPromise
-]));
+## Traditional Promise-based Pattern
 
-// Process the results
-$users = $results['users']->json();
-$posts = $results['posts']->json();
-$comments = $results['comments']->json();
+In addition to the async/await pattern, you can use the more traditional promise-based approach:
 
-echo "Fetched " . count($users) . " users, " .
-     count($posts) . " posts, and " .
-     count($comments) . " comments";
+```php
+// Get the handler for async operations
+$handler = fetch_client()->getHandler();
+$handler->async();
+
+// Make the async request
+$promise = $handler->get('https://api.example.com/users');
+
+// Handle the result with callbacks
+$promise->then(
+    function ($response) {
+        // Process successful response
+        $users = $response->json();
+        foreach ($users as $user) {
+            echo $user['name'] . PHP_EOL;
+        }
+    },
+    function ($exception) {
+        // Handle errors
+        echo "Error: " . $exception->getMessage();
+    }
+);
 ```
 
 ## Promise Chaining
@@ -105,7 +126,7 @@ Handle errors in asynchronous code with try/catch in an async function or the `c
 
 ```php
 // Using try/catch with await
-async(function() {
+await(async(function() {
     try {
         $response = await(async(function() {
             return fetch('https://api.example.com/users/999');
@@ -120,22 +141,22 @@ async(function() {
         echo "Error: " . $e->getMessage();
         return [];
     }
-});
+}));
 
 // Using catch() with promises
-async(function() {
-    return fetch('https://api.example.com/users/999');
-})
-->then(function($response) {
-    if ($response->failed()) {
-        throw new \Exception("API returned error: " . $response->status());
-    }
-    return $response->json();
-})
-->catch(function($error) {
-    echo "Error: " . $error->getMessage();
-    return [];
-});
+$handler = fetch_client()->getHandler();
+$handler->async()
+    ->get('https://api.example.com/users/999')
+    ->then(function($response) {
+        if ($response->failed()) {
+            throw new \Exception("API returned error: " . $response->status());
+        }
+        return $response->json();
+    })
+    ->catch(function($error) {
+        echo "Error: " . $error->getMessage();
+        return [];
+    });
 ```
 
 ## Using `race()` to Get the First Result
@@ -143,6 +164,8 @@ async(function() {
 Sometimes you may want whichever request finishes first:
 
 ```php
+use function race;
+
 // Create promises for redundant endpoints
 $promises = [
     async(fn() => fetch('https://api1.example.com/data')),
@@ -161,6 +184,8 @@ echo "Got data from the fastest source";
 To get the first successful result (ignoring failures):
 
 ```php
+use function any;
+
 // Create promises for redundant endpoints
 $promises = [
     async(fn() => fetch('https://api1.example.com/data')),
@@ -183,7 +208,7 @@ try {
 For processing many items with controlled parallelism:
 
 ```php
-use function Matrix\map;
+use function map;
 
 // List of user IDs to fetch
 $userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -196,10 +221,41 @@ $responses = await(map($userIds, function($id) {
 }, 3));
 
 // Process the responses
-foreach ($responses as $id => $response) {
+foreach ($responses as $index => $response) {
     $user = $response->json();
     echo "Processed user {$user['name']}\n";
 }
+```
+
+## Batch Processing
+
+For processing items in batches with controlled concurrency:
+
+```php
+use function batch;
+
+// Array of items to process
+$items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Process in batches of 3 with max 2 concurrent batches
+$results = await(batch(
+    $items,
+    function($batch) {
+        // Process a batch
+        return async(function() use ($batch) {
+            $batchResults = [];
+            foreach ($batch as $id) {
+                $response = await(async(fn() =>
+                    fetch("https://api.example.com/users/{$id}")
+                ));
+                $batchResults[] = $response->json();
+            }
+            return $batchResults;
+        });
+    },
+    3, // batch size
+    2  // concurrency
+));
 ```
 
 ## Sequential Async Requests
@@ -209,36 +265,58 @@ Sometimes you need to execute requests in sequence, where each depends on the pr
 ```php
 await(async(function() {
     // First request: get auth token
-    $authResponse = await(async(function() {
-        return fetch('https://api.example.com/auth/login', [
+    $authResponse = await(async(fn() =>
+        fetch('https://api.example.com/auth/login', [
             'method' => 'POST',
             'json' => [
                 'username' => 'user',
                 'password' => 'pass'
             ]
-        ]);
-    }));
+        ])
+    ));
 
     $token = $authResponse->json()['token'];
 
     // Second request: use token to get user profile
-    $profileResponse = await(async(function() use ($token) {
-        return fetch('https://api.example.com/me', [
+    $profileResponse = await(async(fn() =>
+        fetch('https://api.example.com/me', [
             'token' => $token
-        ]);
-    }));
+        ])
+    ));
 
     $user = $profileResponse->json();
 
     // Third request: get user's posts
-    $postsResponse = await(async(function() use ($token, $user) {
-        return fetch("https://api.example.com/users/{$user['id']}/posts", [
+    $postsResponse = await(async(fn() =>
+        fetch("https://api.example.com/users/{$user['id']}/posts", [
             'token' => $token
-        ]);
-    }));
+        ])
+    ));
 
     return $postsResponse->json();
 }));
+```
+
+## Retries with Async
+
+You can combine async operations with retry logic for more resilient requests:
+
+```php
+use function retry;
+
+// Retry a flaky request up to 3 times with exponential backoff
+$data = await(retry(
+    function() {
+        return async(function() {
+            return fetch('https://api.example.com/unstable-endpoint');
+        });
+    },
+    3, // max attempts
+    function($attempt) {
+        // Exponential backoff strategy
+        return min(pow(2, $attempt) * 100, 1000);
+    }
+));
 ```
 
 ## Timeouts with async/await
@@ -246,20 +324,40 @@ await(async(function() {
 You can set a timeout when waiting for a promise:
 
 ```php
-use function Matrix\timeout;
+use function timeout;
 
 try {
     // Add a 5-second timeout to a request
     $response = await(timeout(
         async(fn() => fetch('https://api.example.com/slow-endpoint')),
-        5.0,
-        "Request timed out after 5 seconds"
+        5.0
     ));
 
     $data = $response->json();
-} catch (\Exception $e) {
+} catch (\Matrix\Exceptions\TimeoutException $e) {
     echo "Timeout error: " . $e->getMessage();
 }
+```
+
+## Using the Handler's Promise Utilities
+
+The `ClientHandler` class provides methods for working with promises:
+
+```php
+$handler = fetch_client()->getHandler();
+
+// Execute multiple promises concurrently
+$promises = [
+    async(fn() => fetch('https://api.example.com/users')),
+    async(fn() => fetch('https://api.example.com/posts'))
+];
+
+// Using the handler's promise utilities
+$results = $handler->awaitPromise($handler->all($promises));
+
+// The handler can also create resolved or rejected promises
+$resolved = $handler->resolve(['name' => 'John']);
+$rejected = $handler->reject(new \Exception('Something went wrong'));
 ```
 
 ## Real-World Examples
@@ -315,7 +413,9 @@ await(async(function() {
     $items = $firstPageData['items'] ?? $firstPageData;
     $allItems = array_merge($allItems, $items);
 
-    $totalCount = (int)$firstPageResponse->header('X-Total-Count') ?? count($items);
+    $totalCount = $firstPageResponse->header('X-Total-Count')
+        ? (int)$firstPageResponse->header('X-Total-Count')
+        : count($items);
     $totalPages = ceil($totalCount / $perPage);
 
     // If we have multiple pages, fetch them all in parallel
@@ -347,15 +447,19 @@ await(async(function() {
 
 1. **Use Async for Multiple Requests**: Asynchronous requests are most beneficial when making multiple independent HTTP requests.
 
-2. **Control Concurrency**: Don't create too many concurrent requests. Use `map()` with a reasonable concurrency limit.
+2. **Control Concurrency**: Don't create too many concurrent requests. Use `map()` or `batch()` with a reasonable concurrency limit.
 
 3. **Handle All Errors**: Always include error handling with try/catch or `.catch()` for async operations.
 
 4. **Keep Functions Pure**: Avoid side effects in async functions for better predictability.
 
-5. **Avoid Mixing Sync and Async**: When using async, make all your HTTP operations async for consistent code patterns.
+5. **Combine with Retries**: Use the `retry()` function for more resilient async operations.
 
-6. **Be Mindful of Server Load**: While async lets you make many requests in parallel, be mindful of rate limits and server capacity.
+6. **Set Appropriate Timeouts**: Use `timeout()` to prevent operations from hanging indefinitely.
+
+7. **Avoid Mixing Sync and Async**: When using async, make all your HTTP operations async for consistent code patterns.
+
+8. **Be Mindful of Server Load**: While async lets you make many requests in parallel, be mindful of rate limits and server capacity.
 
 ## Next Steps
 

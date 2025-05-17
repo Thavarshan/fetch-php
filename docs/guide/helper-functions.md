@@ -17,7 +17,7 @@ The primary helper function that mimics JavaScript's `fetch()` API. It provides 
 function fetch(
     string|RequestInterface|null $resource = null,
     ?array $options = []
-): ResponseInterface|ClientHandler|Client
+): ResponseInterface|ClientHandlerInterface|Client
 ```
 
 #### Parameters
@@ -97,7 +97,6 @@ Gets or configures the global fetch client instance.
 ```php
 function fetch_client(
     ?array $options = null,
-    ?LoggerInterface $logger = null,
     bool $reset = false
 ): Client
 ```
@@ -105,7 +104,6 @@ function fetch_client(
 #### Parameters
 
 - `$options`: Global client options
-- `$logger`: PSR-3 compatible logger
 - `$reset`: Whether to reset the client instance
 
 #### Return Value
@@ -150,7 +148,9 @@ use Monolog\Handler\StreamHandler;
 $logger = new Logger('http');
 $logger->pushHandler(new StreamHandler('logs/http.log', Logger::DEBUG));
 
-fetch_client(logger: $logger);
+// Set the logger on the client
+$client = fetch_client();
+$client->setLogger($logger);
 ```
 
 ## HTTP Method Helpers
@@ -296,278 +296,178 @@ $response = delete('https://api.example.com/users/batch', [
 ]);
 ```
 
-## Using Helper Functions in Real-World Examples
+## Async/Promise Functions
 
-### Basic API Interaction
+The Fetch PHP package includes a set of functions for working with asynchronous requests and promises.
+
+### `async()`
+
+Wraps a function to run asynchronously and returns a promise.
 
 ```php
-// Fetch a list of users
-$users = get('https://api.example.com/users')->json();
-
-// Create a new user
-$user = post('https://api.example.com/users', [
-    'name' => 'John Doe',
-    'email' => 'john@example.com'
-])->json();
-
-// Update a user
-$updatedUser = put("https://api.example.com/users/{$user['id']}", [
-    'name' => 'John Smith'
-])->json();
-
-// Delete a user
-delete("https://api.example.com/users/{$user['id']}");
+function async(callable $fn): PromiseInterface
 ```
 
-### Authentication
+#### Example
 
 ```php
-// Configure client with authentication
-fetch_client([
-    'base_uri' => 'https://api.example.com',
-    'token' => 'your-oauth-token' // Sets Bearer token
-]);
-
-// All requests now include authentication
-$response = get('/protected-resource');
-
-// Or for a specific request only
-$response = get('https://api.example.com/users', null, [
-    'headers' => ['Authorization' => 'Bearer different-token']
-]);
-
-// Basic authentication
-$response = get('https://api.example.com/protected', null, [
-    'auth' => ['username', 'password']
-]);
-```
-
-### File Upload
-
-```php
-$response = fetch('https://api.example.com/upload', [
-    'method' => 'POST',
-    'multipart' => [
-        [
-            'name' => 'file',
-            'contents' => file_get_contents('/path/to/image.jpg'),
-            'filename' => 'upload.jpg',
-            'headers' => ['Content-Type' => 'image/jpeg']
-        ],
-        [
-            'name' => 'description',
-            'contents' => 'Profile picture'
-        ]
-    ]
-]);
-
-// Check if upload was successful
-if ($response->successful()) {
-    $fileUrl = $response->json()['url'];
-    echo "File uploaded successfully: {$fileUrl}";
-}
-```
-
-### Error Handling
-
-```php
-try {
-    $response = get('https://api.example.com/users/999');
-
-    if ($response->isNotFound()) {
-        echo "User not found!";
-    } elseif ($response->isUnauthorized()) {
-        echo "Authentication required!";
-    } elseif ($response->failed()) {
-        echo "Request failed with status: " . $response->status();
-    } else {
-        $user = $response->json();
-        echo "Found user: " . $user['name'];
-    }
-} catch (\Exception $e) {
-    echo "Error: " . $e->getMessage();
-}
-```
-
-### Parallel Requests
-
-```php
-// Get the client for advanced operations
-$client = fetch_client();
-
-// Create promises for multiple requests
-$usersPromise = $client->async()->get('https://api.example.com/users');
-$postsPromise = $client->async()->get('https://api.example.com/posts');
-$commentsPromise = $client->async()->get('https://api.example.com/comments');
-
-// Wait for all to complete
-$client->all([
-    'users' => $usersPromise,
-    'posts' => $postsPromise,
-    'comments' => $commentsPromise
-])->then(function ($results) {
-    $users = $results['users']->json();
-    $posts = $results['posts']->json();
-    $comments = $results['comments']->json();
-
-    echo "Fetched " . count($users) . " users, " .
-         count($posts) . " posts, and " .
-         count($comments) . " comments";
+$promise = async(function() {
+    return fetch('https://api.example.com/users');
 });
 ```
 
-## Tips and Best Practices
+### `await()`
 
-1. **Configure Once, Use Everywhere**: Use `fetch_client()` to set global options and defaults that will apply to all requests.
-
-   ```php
-   // Set up once at the beginning of your application
-   fetch_client([
-       'base_uri' => 'https://api.example.com',
-       'timeout' => 10,
-       'headers' => [
-           'User-Agent' => 'MyApp/1.0',
-           'Accept' => 'application/json'
-       ]
-   ]);
-
-   // Now use simplified calls throughout your code
-   $users = get('/users')->json();
-   $user = get("/users/{$id}")->json();
-   ```
-
-2. **Use the Right Helper for the Job**: Choose the appropriate helper function based on the HTTP method you need.
-
-3. **Handling JSON**: Arrays passed to `post()`, `put()`, `patch()`, and `delete()` are automatically treated as JSON data.
-
-4. **Leverage Method Chaining**: When you need more control, use the fluent interface:
-
-   ```php
-   fetch()
-       ->baseUri('https://api.example.com')
-       ->withToken('your-token')
-       ->timeout(5)
-       ->retry(3, 100)
-       ->get('/users');
-   ```
-
-5. **Use the Response Methods**: Take advantage of the response helper methods for cleaner code:
-
-   ```php
-   // Instead of:
-   if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-       // ...
-   }
-
-   // Use:
-   if ($response->successful()) {
-       // ...
-   }
-   ```
-
-6. **Resource Conservation**: When working with many requests, consider using async mode to improve performance.
-
-## Next Steps
-
-- Learn more about [Working with Responses](/guide/working-with-responses)
-- Explore [Asynchronous Requests](/guide/async-requests) for parallel HTTP operations
-- Discover [Retry Handling](/guide/retry-handling) for dealing with unreliable APIs $url,
-    mixed $data = null,
-    ?array $options = []
-): ResponseInterface
-
-```
-
-#### Examples
-
-POST with JSON data (arrays are automatically converted to JSON):
-```php
-$response = post('https://api.example.com/users', [
-    'name' => 'John Doe',
-    'email' => 'john@example.com'
-]);
-```
-
-POST with raw data:
+Waits for a promise to resolve and returns its value.
 
 ```php
-$response = post('https://api.example.com/webhook', 'Raw content', [
-    'headers' => ['Content-Type' => 'text/plain']
-]);
+function await(PromiseInterface $promise): mixed
 ```
 
-POST with form data:
+#### Example
 
 ```php
-$response = post('https://api.example.com/login', null, [
-    'form' => [
-        'username' => 'johndoe',
-        'password' => 'secret'
-    ]
-]);
+$response = await(async(function() {
+    return fetch('https://api.example.com/users');
+}));
+
+$users = $response->json();
 ```
 
-### `put()`
+### `all()`
+
+Executes multiple promises concurrently and waits for all to complete.
 
 ```php
-function put(
-    string $url,
-    mixed $data = null,
-    ?array $options = []
-): ResponseInterface
+function all(array $promises): PromiseInterface
 ```
 
-#### Examples
+#### Example
 
 ```php
-$response = put('https://api.example.com/users/123', [
-    'name' => 'John Smith',
-    'email' => 'john.smith@example.com'
-]);
+$results = await(all([
+    'users' => async(fn() => fetch('https://api.example.com/users')),
+    'posts' => async(fn() => fetch('https://api.example.com/posts'))
+]));
+
+$users = $results['users']->json();
+$posts = $results['posts']->json();
 ```
 
-### `patch()`
+### `race()`
+
+Executes multiple promises concurrently and returns the first to complete.
 
 ```php
-function patch(
-    string $url,
-    mixed $data = null,
-    ?array $options = []
-): ResponseInterface
+function race(array $promises): PromiseInterface
 ```
 
-#### Examples
+#### Example
 
 ```php
-$response = patch('https://api.example.com/users/123', [
-    'status' => 'active'
-]);
+$response = await(race([
+    async(fn() => fetch('https://api1.example.com/data')),
+    async(fn() => fetch('https://api2.example.com/data'))
+]));
 ```
 
-### `delete()`
+### `any()`
+
+Executes multiple promises concurrently and returns the first to succeed.
 
 ```php
-function delete(
-    string $url,
-    mixed $data = null,
-    ?array $options = []
-): ResponseInterface
+function any(array $promises): PromiseInterface
 ```
 
-#### Examples
-
-Simple DELETE:
+#### Example
 
 ```php
-$response = delete('https://api.example.com/users/123');
+$response = await(any([
+    async(fn() => fetch('https://api1.example.com/data')),
+    async(fn() => fetch('https://api2.example.com/data'))
+]));
 ```
 
-DELETE with body:
+### `map()`
+
+Maps an array of items through an async function with controlled concurrency.
 
 ```php
-$response = delete('https://api.example.com/users/batch', [
-    'ids' => [123, 456, 789]
-]);
+function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
+```
+
+#### Example
+
+```php
+$responses = await(map([1, 2, 3, 4, 5], function($id) {
+    return async(function() use ($id) {
+        return fetch("https://api.example.com/users/{$id}");
+    });
+}, 3)); // Process at most 3 items concurrently
+```
+
+### `batch()`
+
+Processes items in batches with controlled concurrency.
+
+```php
+function batch(
+    array $items,
+    callable $callback,
+    int $batchSize = 10,
+    int $concurrency = 5
+): PromiseInterface
+```
+
+#### Example
+
+```php
+$results = await(batch(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    function($batch) {
+        return async(function() use ($batch) {
+            $results = [];
+            foreach ($batch as $id) {
+                $response = await(async(fn() =>
+                    fetch("https://api.example.com/users/{$id}")
+                ));
+                $results[] = $response->json();
+            }
+            return $results;
+        });
+    },
+    3, // batch size
+    2  // concurrency
+));
+```
+
+### `retry()`
+
+Retries an async operation with exponential backoff.
+
+```php
+function retry(
+    callable $fn,
+    int $attempts = 3,
+    callable|int $delay = 100
+): PromiseInterface
+```
+
+#### Example
+
+```php
+$response = await(retry(
+    function() {
+        return async(function() {
+            return fetch('https://api.example.com/unstable-endpoint');
+        });
+    },
+    3, // max attempts
+    function($attempt) {
+        // Exponential backoff strategy
+        return min(pow(2, $attempt) * 100, 1000);
+    }
+));
 ```
 
 ## Using Helper Functions in Real-World Examples
@@ -599,21 +499,23 @@ delete("https://api.example.com/users/{$user['id']}");
 // Configure client with authentication
 fetch_client([
     'base_uri' => 'https://api.example.com',
-    'token' => 'your-oauth-token' // Sets Bearer token
+    'headers' => [
+        'Authorization' => 'Bearer your-oauth-token'
+    ]
 ]);
 
 // All requests now include authentication
 $response = get('/protected-resource');
 
-// Or for a specific request only
-$response = get('https://api.example.com/users', null, [
-    'headers' => ['Authorization' => 'Bearer different-token']
-]);
+// Or using the withToken method
+$response = fetch_client()
+    ->withToken('your-oauth-token')
+    ->get('/protected-resource');
 
 // Basic authentication
-$response = get('https://api.example.com/protected', null, [
-    'auth' => ['username', 'password']
-]);
+$response = fetch_client()
+    ->withAuth('username', 'password')
+    ->get('/protected-resource');
 ```
 
 ### File Upload
@@ -634,6 +536,21 @@ $response = fetch('https://api.example.com/upload', [
         ]
     ]
 ]);
+
+// Using the fluent interface
+$response = fetch_client()
+    ->withMultipart([
+        [
+            'name' => 'file',
+            'contents' => fopen('/path/to/image.jpg', 'r'),
+            'filename' => 'upload.jpg',
+        ],
+        [
+            'name' => 'description',
+            'contents' => 'Profile picture'
+        ]
+    ])
+    ->post('https://api.example.com/upload');
 
 // Check if upload was successful
 if ($response->successful()) {
@@ -658,28 +575,31 @@ try {
         $user = $response->json();
         echo "Found user: " . $user['name'];
     }
+} catch (\Fetch\Exceptions\NetworkException $e) {
+    echo "Network error: " . $e->getMessage();
+} catch (\Fetch\Exceptions\RequestException $e) {
+    echo "Request error: " . $e->getMessage();
 } catch (\Exception $e) {
     echo "Error: " . $e->getMessage();
 }
 ```
 
-### Parallel Requests
+### Parallel Requests with Modern Async/Await
 
 ```php
-// Get the client for advanced operations
-$client = fetch_client();
+use function async;
+use function await;
+use function all;
 
-// Create promises for multiple requests
-$usersPromise = $client->async()->get('https://api.example.com/users');
-$postsPromise = $client->async()->get('https://api.example.com/posts');
-$commentsPromise = $client->async()->get('https://api.example.com/comments');
+await(async(function() {
+    // Create multiple requests
+    $results = await(all([
+        'users' => async(fn() => fetch('https://api.example.com/users')),
+        'posts' => async(fn() => fetch('https://api.example.com/posts')),
+        'comments' => async(fn() => fetch('https://api.example.com/comments'))
+    ]));
 
-// Wait for all to complete
-$client->all([
-    'users' => $usersPromise,
-    'posts' => $postsPromise,
-    'comments' => $commentsPromise
-])->then(function ($results) {
+    // Process the results
     $users = $results['users']->json();
     $posts = $results['posts']->json();
     $comments = $results['comments']->json();
@@ -687,7 +607,51 @@ $client->all([
     echo "Fetched " . count($users) . " users, " .
          count($posts) . " posts, and " .
          count($comments) . " comments";
-});
+}));
+```
+
+### Working with Content Types
+
+```php
+use Fetch\Enum\ContentType;
+
+// Using string content types
+$response = fetch_client()
+    ->withBody($data, 'application/json')
+    ->post('https://api.example.com/users');
+
+// Using enum content types
+$response = fetch_client()
+    ->withBody($data, ContentType::JSON)
+    ->post('https://api.example.com/users');
+
+// Checking content type
+if ($response->hasJsonContent()) {
+    $data = $response->json();
+} elseif ($response->hasHtmlContent()) {
+    $html = $response->text();
+}
+```
+
+### Working with Enums
+
+```php
+use Fetch\Enum\Method;
+use Fetch\Enum\ContentType;
+use Fetch\Enum\Status;
+
+// Use method enum
+$response = fetch_client()->request(Method::POST, '/users', $userData);
+
+// Check status with enum
+if ($response->statusEnum() === Status::OK) {
+    // Process successful response
+}
+
+// Content type handling
+$response = fetch_client()
+    ->withBody($data, ContentType::JSON)
+    ->post('/users');
 ```
 
 ## Tips and Best Practices
@@ -710,11 +674,25 @@ $client->all([
    $user = get("/users/{$id}")->json();
    ```
 
-2. **Use the Right Helper for the Job**: Choose the appropriate helper function based on the HTTP method you need.
+2. **Use Type-Safe Enums**: Take advantage of PHP 8.1 enums for better type safety and code readability.
 
-3. **Handling JSON**: Arrays passed to `post()`, `put()`, `patch()`, and `delete()` are automatically treated as JSON data.
+   ```php
+   use Fetch\Enum\Method;
+   use Fetch\Enum\ContentType;
+   use Fetch\Enum\Status;
 
-4. **Leverage Method Chaining**: When you need more control, use the fluent interface:
+   $response = fetch_client()->request(Method::POST, '/users', $userData);
+
+   if ($response->statusEnum() === Status::CREATED) {
+       // User was created successfully
+   }
+   ```
+
+3. **Use the Right Helper for the Job**: Choose the appropriate helper function based on the HTTP method you need.
+
+4. **Handling JSON**: Arrays passed to `post()`, `put()`, `patch()`, and `delete()` are automatically treated as JSON data.
+
+5. **Leverage Method Chaining**: When you need more control, use the fluent interface:
 
    ```php
    fetch()
@@ -725,7 +703,7 @@ $client->all([
        ->get('/users');
    ```
 
-5. **Use the Response Methods**: Take advantage of the response helper methods for cleaner code:
+6. **Use the Response Methods**: Take advantage of the response helper methods for cleaner code:
 
    ```php
    // Instead of:
@@ -739,10 +717,26 @@ $client->all([
    }
    ```
 
-6. **Resource Conservation**: When working with many requests, consider using async mode to improve performance.
+7. **Modern Async/Await**: Use `async()` and `await()` for cleaner asynchronous code:
+
+   ```php
+   await(async(function() {
+       $response = await(async(fn() => fetch('https://api.example.com/users')));
+       return $response->json();
+   }));
+   ```
+
+8. **Resource Conservation**: When working with many requests, use controlled concurrency with `map()` or `batch()`:
+
+   ```php
+   $results = await(map($items, function($item) {
+       return async(fn() => fetch("https://api.example.com/{$item}"));
+   }, 5)); // No more than 5 concurrent requests
+   ```
 
 ## Next Steps
 
 - Learn more about [Working with Responses](/guide/working-with-responses)
 - Explore [Asynchronous Requests](/guide/async-requests) for parallel HTTP operations
 - Discover [Retry Handling](/guide/retry-handling) for dealing with unreliable APIs
+- Learn about [Working with Enums](/guide/working-with-enums) for type-safe HTTP operations
