@@ -410,8 +410,10 @@ if ($response->hasJsonContent()) {
 }
 ```
 
-## Conclusion
+## Next Steps
 
-Using enums in your Fetch PHP code leads to more readable, maintainable, and type-safe HTTP requests. The `Method`, `ContentType`, and `Status` enums provide a rich set of utilities that make working with HTTP concepts easier and more expressive.
-
-Leverage these enums throughout your application to take full advantage of PHP 8.1's powerful enum feature and the enhancements provided by Fetch PHP.
+- Learn about [Working with Responses](/guide/working-with-responses) to see how Status enums are used in response handling
+- Discover [Error Handling](/guide/error-handling) techniques using Status enums for different error scenarios
+- See [Making Requests](/guide/making-requests) for more examples of using Method and ContentType enums
+- Check out [Helper Functions](/guide/helper-functions) to see how enums integrate with the library's helper functions
+- Explore [Authentication](/guide/authentication) to learn how Method enums are used in authentication flows
