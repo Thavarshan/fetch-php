@@ -1,4 +1,6 @@
 import { defineConfig } from 'vitepress';
+import fs from 'fs';
+import path from 'path';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -206,13 +208,7 @@ export default defineConfig({
         //   placement: 'your-carbon-placement'
         // }
     },
-
-    // Build hooks for additional optimization
     buildEnd: async ({ outDir }) => {
-        // Generate robots.txt
-        const fs = require('fs');
-        const path = require('path');
-
         const robotsTxt = `User-agent: *
 Allow: /
 Sitemap: https://fetch-php.thavarshan.com/sitemap.xml`;
@@ -224,21 +220,9 @@ Sitemap: https://fetch-php.thavarshan.com/sitemap.xml`;
     // Performance optimizations
     vite: {
         build: {
-            minify: 'terser',
-            cssMinify: true,
-            // Add rollup options for better tree shaking
-            rollupOptions: {
-                output: {
-                    manualChunks: {
-                        vue: ['vue'],
-                    }
-                }
-            }
+            minify: true,  // Use the default minifier
+            cssMinify: true
         },
-        optimizeDeps: {
-            include: ['vue']
-        },
-        // Improve dev server performance
         server: {
             fs: {
                 strict: true
