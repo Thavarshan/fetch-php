@@ -25,25 +25,26 @@ export default defineConfig({
                     ]
                 },
                 {
-                    text: 'Core Concepts',
-                    items: [
-                        { text: 'Making Requests', link: '/guide/making-requests' },
-                        { text: 'Helper Functions', link: '/guide/helper-functions' },
-                        { text: 'Working with Responses', link: '/guide/working-with-responses' },
-                        { text: 'Authentication', link: '/guide/authentication' },
-                        { text: 'Error Handling', link: '/guide/error-handling' },
-                        { text: 'Logging', link: '/guide/logging' }
+                    "text": "Core Concepts",
+                    "items": [
+                        { "text": "Making Requests", "link": "/guide/making-requests" },
+                        { "text": "Working with Enums", "link": "/guide/working-with-enums" },
+                        { "text": "Helper Functions", "link": "/guide/helper-functions" },
+                        { "text": "Working with Responses", "link": "/guide/working-with-responses" },
+                        { "text": "Authentication", "link": "/guide/authentication" },
+                        { "text": "Error Handling", "link": "/guide/error-handling" },
+                        { "text": "Logging", "link": "/guide/logging" }
                     ]
                 },
                 {
-                    text: 'Advanced Usage',
-                    items: [
-                        { text: 'Asynchronous Requests', link: '/guide/async-requests' },
-                        { text: 'Promise Operations', link: '/guide/promise-operations' },
-                        { text: 'Retry Handling', link: '/guide/retry-handling' },
-                        { text: 'File Uploads', link: '/guide/file-uploads' },
-                        { text: 'Custom Clients', link: '/guide/custom-clients' },
-                        { text: 'Testing with Mocks', link: '/guide/testing' }
+                    "text": "Advanced Usage",
+                    "items": [
+                        { "text": "Asynchronous Requests", "link": "/guide/async-requests" },
+                        { "text": "Promise Operations", "link": "/guide/promise-operations" },
+                        { "text": "Retry Handling", "link": "/guide/retry-handling" },
+                        { "text": "File Uploads", "link": "/guide/file-uploads" },
+                        { "text": "Custom Clients", "link": "/guide/custom-clients" },
+                        { "text": "Testing with Mocks", "link": "/guide/testing" }
                     ]
                 }
             ],
