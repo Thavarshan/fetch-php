@@ -19,14 +19,27 @@
 /.travis.yml export-ignore
 /phpunit.xml.dist export-ignore
 /.scrutinizer.yml export-ignore
-/tests export-ignore
+/tests/ export-ignore
 /.editorconfig export-ignore
+/pint.json export-ignore
+/assets/ export-ignore
+/.github/ export-ignore
+/.vscode/ export-ignore
+/docs/ export-ignore
+/phpstan.neon export-ignore
+/phpstan.src.neon.dist export-ignore
+/LICENSE export-ignore
+/CHANGELOG.md export-ignore
+/README.md export-ignore
+/netlify.toml export-ignore
 
 # Composer files
-/composer.json export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
 /composer.lock export-ignore
 
 # Other common configuration files
 /.env export-ignore
 /.php_cs export-ignore
 /.php_cs.dist export-ignore
+
