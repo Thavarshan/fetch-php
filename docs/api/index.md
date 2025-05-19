@@ -15,17 +15,17 @@ The Fetch package is built around several key components:
 
 - [`fetch()`](./fetch.md) - The primary function for making HTTP requests
 - [`fetch_client()`](./fetch-client.md) - Function to create a configured HTTP client
+- [HTTP Method Helpers](./http-method-helpers.md) - Helper functions like `get()`, `post()`, etc.
 
 ### Classes
 
 - [`Client`](./client.md) - Main HTTP client class
 - [`ClientHandler`](./client-handler.md) - Low-level HTTP client implementation
-- [`Request`](./request.md) - HTTP request representation
 - [`Response`](./response.md) - HTTP response representation
 
 ### Enums
 
-- [`Method`](./method-enum.md) - HTTP request methods
+- [`Method`](./method-enum.md) - HTTP request methods (GET, POST, PUT, etc.)
 - [`ContentType`](./content-type-enum.md) - Content type (MIME type) constants
 - [`Status`](./status-enum.md) - HTTP status codes
 
@@ -33,15 +33,15 @@ The Fetch package is built around several key components:
 
 The Fetch package is designed with a layered architecture:
 
-1. **User-facing API**: The `fetch()` and `fetch_client()` functions provide a simple, expressive API for common HTTP operations.
+1. **User-facing API**: The `fetch()`, `fetch_client()`, and HTTP method helpers (`get()`, `post()`, etc.) provide a simple, expressive API for common HTTP operations.
 
 2. **Client Layer**: The `Client` class provides a higher-level, feature-rich API with method chaining and fluent interface.
 
 3. **Handler Layer**: The `ClientHandler` class provides the core HTTP functionality, handling the low-level details of making HTTP requests.
 
-4. **HTTP Message Layer**: The `Request` and `Response` classes represent HTTP messages and provide methods for working with them.
+4. **HTTP Message Layer**: The `Response` class represents HTTP responses and provides methods for working with them.
 
-5. **Utilities and Constants**: Enums and other utilities provide standardized constants and helper functions.
+5. **Utilities and Constants**: Enums (`Method`, `ContentType`, `Status`) and other utilities provide standardized constants and helper functions.
 
 ## Usage Patterns
 
@@ -55,19 +55,32 @@ $response = fetch('https://api.example.com/users');
 
 // Quick POST request with JSON data
 $response = fetch('https://api.example.com/users', [
+    'method' => 'POST',
+    'json' => [
+        'name' => 'John Doe',
+        'email' => 'john@example.com'
+    ]
+]);
+
+// Using HTTP method helpers
+$response = get('https://api.example.com/users');
+$response = post('https://api.example.com/users', [
     'name' => 'John Doe',
     'email' => 'john@example.com'
-], 'POST');
+]);
 ```
 
 ### Fluent Interface with Client
 
 ```php
 // Create a client with a base URI
-$client = fetch_client('https://api.example.com');
+$client = fetch_client([
+    'base_uri' => 'https://api.example.com'
+]);
 
 // Chain method calls for a more complex request
 $response = $client
+    ->getHandler()
     ->withHeader('X-API-Key', 'your-api-key')
     ->withQueryParameter('page', 1)
     ->timeout(5)
@@ -79,6 +92,7 @@ $response = $client
 ```php
 // Make an asynchronous request
 $promise = fetch_client()
+    ->getHandler()
     ->async()
     ->get('https://api.example.com/users');
 
@@ -86,23 +100,61 @@ $promise = fetch_client()
 $promise->then(
     function ($response) {
         // Handle successful response
+        $users = $response->json();
+        foreach ($users as $user) {
+            echo $user['name'] . "\n";
+        }
     },
     function ($exception) {
         // Handle error
+        echo "Error: " . $exception->getMessage();
     }
 );
 ```
 
-### Request Batching
+### Request Batching and Concurrency
 
 ```php
-// Create a client for reuse
-$client = fetch_client('https://api.example.com');
+use function Fetch\async;
+use function Fetch\await;
+use function Fetch\all;
+use function Fetch\map;
 
-// Make multiple requests in parallel
-$responses = $client->map([1, 2, 3], function ($id) use ($client) {
-    return $client->get("/users/{$id}");
-});
+// Execute multiple requests in parallel
+$results = await(all([
+    'users' => async(fn() => fetch('https://api.example.com/users')),
+    'posts' => async(fn() => fetch('https://api.example.com/posts')),
+    'comments' => async(fn() => fetch('https://api.example.com/comments'))
+]));
+
+// Process multiple items with controlled concurrency
+$userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+$results = await(map($userIds, function($id) {
+    return async(function() use ($id) {
+        return fetch("https://api.example.com/users/{$id}");
+    });
+}, 3)); // Process 3 at a time
+```
+
+### Working with Enums
+
+```php
+use Fetch\Enum\Method;
+use Fetch\Enum\ContentType;
+use Fetch\Enum\Status;
+
+// Make a request with enum values
+$response = fetch_client()
+    ->getHandler()
+    ->withBody($data, ContentType::JSON)
+    ->sendRequest(Method::POST, 'https://api.example.com/users');
+
+// Check response status using enums
+if ($response->getStatus() === Status::CREATED) {
+    echo "User created successfully";
+} elseif ($response->getStatus()->isClientError()) {
+    echo "Client error: " . $response->getStatus()->phrase();
+}
 ```
 
 ## Extending the Package
@@ -115,3 +167,17 @@ The package is designed to be extensible. You can:
 - Create specialized clients for specific APIs
 
 See the [Custom Clients](../guide/custom-clients.md) guide for more information on extending the package.
+
+## Performance Considerations
+
+- Use the global client instance via `fetch_client()` for best performance, as it reuses connections
+- Consider using asynchronous requests for I/O-bound operations
+- Use the `map()` function with controlled concurrency for processing multiple items
+- For large responses, consider streaming the response with the `stream` option
+
+## Compatibility Notes
+
+- Requires PHP 8.1 or higher
+- Built on top of Guzzle HTTP, a widely-used PHP HTTP client
+- Follows PSR-7 (HTTP Message Interface) and PSR-18 (HTTP Client) standards
+- Supports both synchronous and asynchronous operations
