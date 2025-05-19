@@ -42,4 +42,6 @@
 /.env export-ignore
 /.php_cs export-ignore
 /.php_cs.dist export-ignore
-
+/.husky/ export-ignore
+/bin/ export-ignore
+/.phpvmrc export-ignore
