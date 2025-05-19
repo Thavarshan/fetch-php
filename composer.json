@@ -1,9 +1,10 @@
 {
-    "name": "jerome/fetch-php",
+    "name": "fetchphp/fetch",
     "description": "The JavaScript fetch API for PHP.",
-    "version": "3.2.2",
+    "version": "1.0.0",
     "type": "library",
     "license": "MIT",
+    "keywords":["fetch","fetchphp","fetch-php"],
     "authors": [
         {
             "name": "Jerome Thayananthajothy",
