@@ -3,7 +3,7 @@
     "description": "The JavaScript fetch API for PHP.",
     "version": "3.2.2",
     "type": "library",
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "authors": [
         {
             "name": "Jerome Thayananthajothy",
