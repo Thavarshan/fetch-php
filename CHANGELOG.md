@@ -1,6 +1,6 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.2.1...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.2.2...HEAD)
 
 ## [v3.2.0](https://github.com/Thavarshan/fetch-php/compare/v3.1.1...v3.2.0) - 2025-05-16
 
@@ -315,6 +315,14 @@
 ## v1.0.0 - 2024-09-14
 
 Initial release.
+
+## [v3.2.2](https://github.com/Thavarshan/fetch-php/compare/v3.2.1...v3.2.2) - 2025-05-19
+
+### Fixed
+
+- "Fatal error: Uncaught Error: Interface `Psr\Log\LoggerAwareInterface` not found" closes #21
+
+**Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/3.2.1...3.2.2
 
 ## [v3.2.1](https://github.com/Thavarshan/fetch-php/compare/v3.2.1...v3.2.1) - 2025-05-17
 
