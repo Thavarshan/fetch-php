@@ -193,6 +193,8 @@ trait ConfiguresRequests
                 $this->withFormParams($body);
                 // Ensure no conflicting body option
                 unset($this->options['body']);
+                unset($this->options['json']);
+                unset($this->options['multipart']);
             } elseif ($contentTypeEnum === ContentType::MULTIPART) {
                 $this->withMultipart($body);
                 // Ensure no conflicting body option
