@@ -114,4 +114,82 @@ class ConfiguresRequestsTest extends TestCase
         $this->assertEquals($body, $this->handler->getOptions()['body']);
         $this->assertEquals(ContentType::TEXT->value, $this->handler->getHeaders()['Content-Type']);
     }
+
+    public function test_with_body_array_sets_json_option_and_removes_body_option(): void
+    {
+        $data = [
+            'key1' => 'value1',
+            'key2' => 'value2',
+            'nested' => ['nested_key' => 'nested_value'],
+        ];
+
+        $this->handler->withBody($data, ContentType::JSON);
+        $options = $this->handler->getOptions();
+
+        // Assert that json option is set
+        $this->assertArrayHasKey('json', $options);
+        $this->assertEquals($data, $options['json']);
+
+        // Assert that body option is NOT set (critical for Guzzle compatibility)
+        $this->assertArrayNotHasKey('body', $options);
+    }
+
+    public function test_with_body_string_sets_body_option_and_removes_json_option(): void
+    {
+        $jsonString = json_encode(['test' => 'data']);
+
+        $this->handler->withBody($jsonString, ContentType::JSON);
+        $options = $this->handler->getOptions();
+
+        // Assert that body option is set
+        $this->assertArrayHasKey('body', $options);
+        $this->assertEquals($jsonString, $options['body']);
+
+        // Assert that json option is NOT set
+        $this->assertArrayNotHasKey('json', $options);
+    }
+
+    public function test_with_body_form_params_removes_conflicting_options(): void
+    {
+        $data = ['param1' => 'value1', 'param2' => 'value2'];
+
+        $this->handler->withBody($data, ContentType::FORM_URLENCODED);
+        $options = $this->handler->getOptions();
+
+        // Assert that form_params is set
+        $this->assertArrayHasKey('form_params', $options);
+        $this->assertEquals($data, $options['form_params']);
+
+        // Assert that conflicting options are not set
+        $this->assertArrayNotHasKey('body', $options);
+        $this->assertArrayNotHasKey('json', $options);
+    }
+
+    public function test_post_request_with_array_body_works(): void
+    {
+        $data = [
+            'inputParameters' => [
+                'Application' => [
+                    'Instance' => 'TEST_INSTANCE',
+                    'Name' => 'TEST_NAME',
+                    'User' => 'test@example.com',
+                ],
+                'Part' => [
+                    'Namespace' => 'Default',
+                    'Name' => 'TEST_PART',
+                ],
+                'Mode' => 0,
+                'Profile' => 'default',
+            ],
+        ];
+
+        // This should not throw any exceptions
+        $this->handler->withBody($data, ContentType::JSON);
+
+        // Verify the configuration
+        $options = $this->handler->getOptions();
+        $this->assertArrayHasKey('json', $options);
+        $this->assertArrayNotHasKey('body', $options);
+        $this->assertEquals($data, $options['json']);
+    }
 }
