@@ -190,22 +190,16 @@ trait ConfiguresRequests
             } elseif ($contentTypeEnum === ContentType::FORM_URLENCODED) {
                 $this->withFormParams($body);
                 // Ensure no conflicting body option
-                unset($this->options['body']);
-                unset($this->options['json']);
-                unset($this->options['multipart']);
+                $this->unsetConflictingOptions(['body', 'json', 'multipart']);
             } elseif ($contentTypeEnum === ContentType::MULTIPART) {
                 $this->withMultipart($body);
                 // Ensure no conflicting body option
-                unset($this->options['body']);
-                unset($this->options['json']);
-                unset($this->options['form_params']);
+                $this->unsetConflictingOptions(['body', 'json', 'form_params']);
             } else {
                 // For any other content type, serialize the array to JSON in body
                 $this->options['body'] = json_encode($body);
                 // Remove conflicting options to prevent conflicts
-                unset($this->options['json']);
-                unset($this->options['form_params']);
-                unset($this->options['multipart']);
+                $this->unsetConflictingOptions(['json', 'form_params', 'multipart']);
                 if (! $this->hasHeader('Content-Type')) {
                     $this->withHeader('Content-Type', $contentTypeValue);
                 }
