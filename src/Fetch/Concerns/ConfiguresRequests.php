@@ -181,9 +181,7 @@ trait ConfiguresRequests
                 $this->options['json'] = $body;
 
                 // IMPORTANT: Remove any existing conflicting options to prevent conflicts
-                unset($this->options['body']);
-                unset($this->options['form_params']);
-                unset($this->options['multipart']);
+                $this->unsetConflictingOptions(['body', 'form_params', 'multipart']);
 
                 // Set JSON content type header if not already set
                 if (! $this->hasHeader('Content-Type')) {
