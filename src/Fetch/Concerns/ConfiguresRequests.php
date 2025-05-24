@@ -421,4 +421,16 @@ trait ConfiguresRequests
 
         $this->withBody($body, $contentType);
     }
+
+    /**
+     * Remove conflicting options from the request options array.
+     *
+     * @param  array<string>  $keys  The keys to unset from options
+     */
+    protected function unsetConflictingOptions(array $keys): void
+    {
+        foreach ($keys as $key) {
+            unset($this->options[$key]);
+        }
+    }
 }
