@@ -197,6 +197,8 @@ trait ConfiguresRequests
                 $this->withMultipart($body);
                 // Ensure no conflicting body option
                 unset($this->options['body']);
+                unset($this->options['json']);
+                unset($this->options['form_params']);
             } else {
                 // For any other content type, serialize the array to JSON in body
                 $this->options['body'] = json_encode($body);
