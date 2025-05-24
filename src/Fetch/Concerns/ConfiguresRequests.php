@@ -215,9 +215,10 @@ trait ConfiguresRequests
         } else {
             // For string bodies, use body option
             $this->options['body'] = $body;
-            // Remove json option to prevent conflicts
+            // Remove body-related options to prevent conflicts
             unset($this->options['json']);
-
+            unset($this->options['form_params']);
+            unset($this->options['multipart']);
             if (! $this->hasHeader('Content-Type')) {
                 $this->withHeader('Content-Type', $contentTypeValue);
             }
