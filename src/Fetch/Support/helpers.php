@@ -135,8 +135,9 @@ if (! function_exists('extract_body_and_content_type')) {
             $contentType = ContentType::MULTIPART;
         } elseif (isset($options['body'])) {
             $body = $options['body'];
-            // Use specified content type or default to JSON for arrays
-            $rawContentType = $options['content_type'] ?? (is_array($options['body']) ? ContentType::JSON : null);
+            // IMPORTANT: Don't auto-convert arrays to JSON here
+            // The content type should be explicitly set
+            $rawContentType = $options['content_type'] ?? null;
             $contentType = $rawContentType !== null ? ContentType::normalizeContentType($rawContentType) : null;
         }
 

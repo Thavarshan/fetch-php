@@ -180,17 +180,26 @@ trait ConfiguresRequests
                 // Use Guzzle's json option for proper JSON handling
                 $this->options['json'] = $body;
 
+                // IMPORTANT: Remove any existing body option to prevent conflicts
+                unset($this->options['body']);
+
                 // Set JSON content type header if not already set
                 if (! $this->hasHeader('Content-Type')) {
                     $this->withHeader('Content-Type', ContentType::JSON->value);
                 }
             } elseif ($contentTypeEnum === ContentType::FORM_URLENCODED) {
                 $this->withFormParams($body);
+                // Ensure no conflicting body option
+                unset($this->options['body']);
             } elseif ($contentTypeEnum === ContentType::MULTIPART) {
                 $this->withMultipart($body);
+                // Ensure no conflicting body option
+                unset($this->options['body']);
             } else {
                 // For any other content type, serialize the array to JSON in body
                 $this->options['body'] = json_encode($body);
+                // Remove json option to prevent conflicts
+                unset($this->options['json']);
                 if (! $this->hasHeader('Content-Type')) {
                     $this->withHeader('Content-Type', $contentTypeValue);
                 }
@@ -198,6 +207,8 @@ trait ConfiguresRequests
         } else {
             // For string bodies, use body option
             $this->options['body'] = $body;
+            // Remove json option to prevent conflicts
+            unset($this->options['json']);
 
             if (! $this->hasHeader('Content-Type')) {
                 $this->withHeader('Content-Type', $contentTypeValue);
