@@ -204,8 +204,10 @@ trait ConfiguresRequests
             } else {
                 // For any other content type, serialize the array to JSON in body
                 $this->options['body'] = json_encode($body);
-                // Remove json option to prevent conflicts
+                // Remove conflicting options to prevent conflicts
                 unset($this->options['json']);
+                unset($this->options['form_params']);
+                unset($this->options['multipart']);
                 if (! $this->hasHeader('Content-Type')) {
                     $this->withHeader('Content-Type', $contentTypeValue);
                 }
