@@ -116,7 +116,7 @@ jobs:
           echo "changelog_file=$CHANGELOG_FILE" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ needs.validate-tag.outputs.version }}
           body_path: ${{ steps.changelog.outputs.changelog_file }}
