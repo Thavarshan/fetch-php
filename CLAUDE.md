@@ -6,20 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Testing
 
-- **Run all tests**: `composer test` (runs `./bin/test.sh`)
+- **Run all tests**: `composer test`
 - **Run unit tests only**: `composer test:unit`
 - **Run integration tests only**: `composer test:integration`
 - **Run tests with coverage**: `composer test:coverage`
-- **Run specific test**: `./bin/test.sh --test=tests/Unit/SomeTest.php`
-- **Run tests with filter**: `./bin/test.sh --filter=testMethodName`
+- **Run specific test**: `./vendor/bin/phpunit tests/Unit/SomeTest.php`
+- **Run tests with filter**: `./vendor/bin/phpunit --filter=testMethodName`
 
 ### Code Quality
 
-- **Lint code**: `composer lint` (runs `./bin/lint.sh`)
-- **Fix code style**: `composer fix` (runs `./bin/fix.sh`)
+- **Lint code**: `composer lint` (runs Duster)
+- **Fix code style**: `composer fix` (runs Duster fix)
 - **Static analysis**: `composer analyse` (runs PHPStan)
 - **Run all checks**: `composer check` (lint + analyse + test)
-- **Fix with Duster**: `./bin/lint.sh --fix`
 
 ### Installation & Setup
 

@@ -5,18 +5,14 @@
     processIsolation="false"
     stopOnError="false"
     stopOnFailure="false"
+    stopOnSkipped="false"
+    failOnSkipped="false"
     cacheDirectory=".phpunit.cache"
     backupStaticProperties="false">
     <testsuites>
-        <testsuite name="Fetch PHP Test Suite">
+        <testsuite name="default">
             <directory suffix="Test.php">./tests</directory>
             <exclude>./tests/Mocks</exclude>
-        </testsuite>
-        <testsuite name="Unit">
-            <directory suffix="Test.php">./tests/Unit</directory>
-        </testsuite>
-        <testsuite name="Integration">
-            <directory suffix="Test.php">./tests/Integration</directory>
         </testsuite>
     </testsuites>
     <php>

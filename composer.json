@@ -49,12 +49,12 @@
         }
     },
     "scripts": {
-        "lint": "chmod +x bin/lint.sh && ./bin/lint.sh",
-        "fix": "chmod +x bin/fix.sh && ./bin/fix.sh",
-        "test": "chmod +x bin/test.sh && ./bin/test.sh",
-        "test:unit": "phpunit tests/Unit",
-        "test:integration": "phpunit tests/Integration",
-        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text",
+        "lint": "duster lint src",
+        "fix": "duster fix src",
+        "test": "phpunit --do-not-fail-on-skipped",
+        "test:unit": "phpunit --do-not-fail-on-skipped tests/Unit",
+        "test:integration": "phpunit --do-not-fail-on-skipped tests/Integration",
+        "test:coverage": "XDEBUG_MODE=coverage phpunit --do-not-fail-on-skipped --coverage-html=coverage --coverage-text",
         "analyse": "phpstan analyse",
         "check": [
             "@analyse",
