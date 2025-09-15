@@ -101,7 +101,7 @@ branches:
           - context: "PHP 8.4 on ubuntu-latest - prefer-stable"
           - context: "Coverage Analysis"
           - context: "Security Audit"
-          - context: "CodeQL Analysis"
+          - context: "Static Analysis"
       enforce_admins: false
       required_pull_request_reviews:
         required_approving_review_count: 1
