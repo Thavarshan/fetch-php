@@ -44,7 +44,7 @@ The `Response` class extends PSR-7 ResponseInterface and provides:
 
 ### Enums
 
-Type-safe PHP 8.1 enums for HTTP concepts:
+Type-safe PHP 8.2 enums for HTTP concepts:
 
 - `Method`: HTTP methods (GET, POST, PUT, etc.)
 - `ContentType`: Content types with helpers like `isJson()`, `isText()`
@@ -55,7 +55,7 @@ Type-safe PHP 8.1 enums for HTTP concepts:
 - **JavaScript-like API**: Familiar syntax for developers coming from JavaScript
 - **PSR Compatibility**: Implements PSR-18 (HTTP Client), PSR-7 (HTTP Messages), and PSR-3 (Logger)
 - **Fluent Interface**: Chain method calls for clean, readable code
-- **Type-Safe Enums**: Modern PHP 8.1 enums for HTTP methods, content types, and status codes
+- **Type-Safe Enums**: Modern PHP 8.2 enums for HTTP methods, content types, and status codes
 - **Flexible Authentication**: Support for Bearer tokens, Basic auth, and more
 - **Logging**: Comprehensive request/response logging with sanitization of sensitive data
 - **Retries**: Configurable retry logic with exponential backoff and jitter

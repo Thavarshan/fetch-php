@@ -5,7 +5,7 @@ description: Guide on using enums in the Fetch PHP client package
 
 # Working with Enums
 
-Fetch PHP makes extensive use of PHP 8.1's enum feature to provide type safety and better developer experience. This guide explains how to effectively work with the three main enums in the package: `Method`, `ContentType`, and `Status`.
+Fetch PHP makes extensive use of PHP 8.2's enum feature to provide type safety and better developer experience. This guide explains how to effectively work with the three main enums in the package: `Method`, `ContentType`, and `Status`.
 
 ## Overview of Enums in Fetch PHP
 
@@ -198,14 +198,14 @@ use Fetch\Enum\Status;
 $response = fetch('https://api.example.com/users');
 
 // Check status using enum comparison
-if ($response->getStatus() === Status::OK) {
+if ($response->statusEnum() === Status::OK) {
     // Process successful response
 }
 
 // Or using helper methods
-if ($response->getStatus()->isSuccess()) {
+if (($status = $response->statusEnum()) && $status->isSuccess()) {
     // Process successful response
-} elseif ($response->getStatus()->isClientError()) {
+} elseif ($status && $status->isClientError()) {
     // Handle client error
 }
 ```
@@ -376,7 +376,7 @@ $request = fetch_client()
     ->sendRequest(Method::POST, 'https://api.example.com/users');
 
 // Check response using enums
-if ($response->getStatus() === Status::CREATED) {
+if ($response->statusEnum() === Status::CREATED) {
     // Resource was created
 }
 ```

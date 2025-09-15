@@ -1,0 +1,123 @@
+# Repository settings
+# https://github.com/repository-settings/app
+
+repository:
+  name: fetch-php
+  description: "The JavaScript fetch API for PHP"
+  homepage: https://fetch-php.thavarshan.com
+  topics:
+    - php
+    - http-client
+    - fetch-api
+    - guzzle
+    - promises
+    - async
+    - http-requests
+    - javascript-fetch
+    - psr-7
+    - psr-18
+
+  private: false
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  has_downloads: true
+  default_branch: main
+
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true
+  allow_auto_merge: true
+  delete_branch_on_merge: true
+  allow_update_branch: true
+
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
+# Labels for issues and PRs
+labels:
+  - name: "bug"
+    color: "d73a49"
+    description: "Something isn't working"
+
+  - name: "enhancement"
+    color: "a2eeef"
+    description: "New feature or request"
+
+  - name: "documentation"
+    color: "0075ca"
+    description: "Improvements or additions to documentation"
+
+  - name: "good first issue"
+    color: "7057ff"
+    description: "Good for newcomers"
+
+  - name: "help wanted"
+    color: "008672"
+    description: "Extra attention is needed"
+
+  - name: "invalid"
+    color: "e4e669"
+    description: "This doesn't seem right"
+
+  - name: "question"
+    color: "d876e3"
+    description: "Further information is requested"
+
+  - name: "wontfix"
+    color: "ffffff"
+    description: "This will not be worked on"
+
+  - name: "needs-triage"
+    color: "fbca04"
+    description: "Needs initial review and categorization"
+
+  - name: "security"
+    color: "b60205"
+    description: "Security related issue"
+
+  - name: "performance"
+    color: "1d76db"
+    description: "Performance improvement"
+
+  - name: "breaking-change"
+    color: "b60205"
+    description: "Introduces a breaking change"
+
+  - name: "dependencies"
+    color: "0366d6"
+    description: "Pull requests that update a dependency file"
+
+# Branch protection rules
+branches:
+  - name: main
+    protection:
+      required_status_checks:
+        strict: true
+        checks:
+          - context: "Code Style & Static Analysis"
+          - context: "PHP 8.2 on ubuntu-latest - prefer-stable"
+          - context: "PHP 8.3 on ubuntu-latest - prefer-stable"
+          - context: "PHP 8.4 on ubuntu-latest - prefer-stable"
+          - context: "Coverage Analysis"
+          - context: "Security Audit"
+          - context: "CodeQL Analysis"
+      enforce_admins: false
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+        require_last_push_approval: true
+      restrictions: null
+      allow_force_pushes: false
+      allow_deletions: false
+
+# Milestones
+milestones:
+  - title: "v4.0.0"
+    description: "Major version release with breaking changes"
+    state: open
+
+  - title: "v3.3.0"
+    description: "Minor improvements and new features"
+    state: open

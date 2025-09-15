@@ -40,6 +40,15 @@ trait ConfiguresRequests
     {
         $this->options = array_merge($this->options, $options);
 
+        // Map retry-related options to handler properties
+        if (isset($options['retries'])) {
+            $this->maxRetries = max(0, (int) $options['retries']);
+        }
+
+        if (isset($options['retry_delay'])) {
+            $this->retryDelay = max(0, (int) $options['retry_delay']);
+        }
+
         return $this;
     }
 

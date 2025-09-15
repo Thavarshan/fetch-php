@@ -1,19 +1,43 @@
 ---
-name: "Feature request"
-about: "Request a new and or additional feature."
+name: "✨ Feature Request"
+about: "Suggest a new feature or enhancement"
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: ["Thavarshan"]
 ---
 
-<!-- DO NOT THROW THIS AWAY -->
-<!-- Fill out the FULL versions with patch versions -->
+## Feature Description
 
-### Description
+**Is your feature request related to a problem? Please describe.**
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-<!-- Description of the requested configuration -->
+**Describe the solution you'd like**
+A clear and concise description of what you want to happen.
 
-### Feature Details
+## Proposed Implementation
 
-<!-- Please describe the now requesting feature to the best of your abilities. -->
+**Describe how you envision this feature working:**
+- What API changes would be needed?
+- How would users interact with this feature?
+- Are there any configuration options needed?
 
-#### Additional Information
+**Example usage:**
+```php
+// Show how you'd like to use this feature
+$response = fetch('https://api.example.com')
+    ->newFeature()
+    ->get();
+```
 
-<!-- Please describe the now requesting feature to the best of your abilities. -->
+## Alternatives Considered
+
+**Describe alternatives you've considered**
+A clear and concise description of any alternative solutions or features you've considered.
+
+## Additional Context
+
+- **Use Case**: Describe the specific use case this feature would solve
+- **Priority**: How important is this feature to you? (Low/Medium/High)
+- **Breaking Changes**: Would this require breaking changes to the current API?
+
+Add any other context, mockups, or examples about the feature request here.

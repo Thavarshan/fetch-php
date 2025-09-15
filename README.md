@@ -1,8 +1,8 @@
 # Fetch PHP
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
-[![Tests](https://github.com/Thavarshan/fetch-php/actions/workflows/tests.yml/badge.svg?label=tests&branch=main)](https://github.com/Thavarshan/fetch-php/actions/workflows/tests.yml)
-[![Lint](https://github.com/Thavarshan/fetch-php/actions/workflows/lint.yml/badge.svg)](https://github.com/Thavarshan/fetch-php/actions/workflows/lint.yml)
+[![CI](https://github.com/Thavarshan/fetch-php/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Thavarshan/fetch-php/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/Thavarshan/fetch-php/branch/main/graph/badge.svg)](https://codecov.io/gh/Thavarshan/fetch-php)
 [![CodeQL](https://github.com/Thavarshan/fetch-php/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/Thavarshan/fetch-php/actions/workflows/github-code-scanning/codeql)
 [![PHPStan](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](https://phpstan.org/)
 [![PHP Version](https://img.shields.io/packagist/php-v/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
@@ -39,13 +39,13 @@ While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by pro
 - **Enhanced error handling**: Reliable retry mechanics and clear error information
 - **Type-safe enums**: Use enums for HTTP methods, content types, and status codes
 
-| Feature | Fetch PHP | Guzzle |
-|---------|-----------|--------|
-| API Style | JavaScript-like fetch + async/await + PHP-style helpers | PHP-style only |
-| Client Management | Global client + instance options | Instance-based only |
-| Request Syntax | Clean, minimal | More verbose |
-| Types | Modern PHP 8.1+ enums | String constants |
-| Helper Functions | Multiple styles available | Limited |
+| Feature           | Fetch PHP                                               | Guzzle              |
+| ----------------- | ------------------------------------------------------- | ------------------- |
+| API Style         | JavaScript-like fetch + async/await + PHP-style helpers | PHP-style only      |
+| Client Management | Global client + instance options                        | Instance-based only |
+| Request Syntax    | Clean, minimal                                          | More verbose        |
+| Types             | Modern PHP 8.1+ enums                                   | String constants    |
+| Helper Functions  | Multiple styles available                               | Limited             |
 
 ## Installation
 
@@ -449,7 +449,15 @@ $promise = $handler->get('https://api.example.com/nonexistent')
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the **GNU GPL v3 or later** (GPL-3.0-or-later) – see the [LICENSE](LICENSE) file for full terms.
+
+Why GPL?
+
+- Ensures modifications and improvements remain open for the community.
+- Encourages collaborative ecosystem improvements around modern HTTP client abstractions.
+- You may use this in commercial projects provided you respect copyleft obligations.
+
+If you believe a more permissive dual-license (e.g. MIT + GPL) would help adoption, open a discussion so we can evaluate community needs.
 
 ## Contributing
 

@@ -1,0 +1,32 @@
+name: Auto Assign
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  auto-assign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+
+    name: Auto Assign
+
+    steps:
+      - name: Auto-assign issue
+        if: github.event_name == 'issues'
+        uses: pozil/auto-assign-issue@v2
+        with:
+          assignees: Thavarshan
+          numOfAssignee: 1
+
+      - name: Auto-assign PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'Thavarshan'
+        uses: pozil/auto-assign-issue@v2
+        with:
+          assignees: Thavarshan
+          numOfAssignee: 1

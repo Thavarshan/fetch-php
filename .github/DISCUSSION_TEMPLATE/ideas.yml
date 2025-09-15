@@ -1,0 +1,81 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to share your idea! 💡
+
+        This is the place to discuss new features, improvements, or general ideas about Fetch PHP.
+
+  - type: input
+    id: idea-title
+    attributes:
+      label: "💡 Idea Title"
+      description: "A brief title for your idea"
+      placeholder: "e.g., Add support for WebSocket connections"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "🔍 Problem or Need"
+      description: "What problem would this solve? What need would it address?"
+      placeholder: "Describe the problem or need this idea addresses..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "💭 Proposed Solution"
+      description: "How would you like to see this implemented?"
+      placeholder: "Describe your proposed solution..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "🤔 Alternatives Considered"
+      description: "What alternative solutions have you considered?"
+      placeholder: "Describe alternative approaches..."
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: "🎯 Use Cases"
+      description: "What are some specific use cases where this would be helpful?"
+      placeholder: "Provide some concrete examples..."
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: "📦 Scope"
+      description: "What parts of the library would this affect?"
+      options:
+        - label: "Core HTTP client functionality"
+        - label: "Helper functions"
+        - label: "Promise/async handling"
+        - label: "Response handling"
+        - label: "Request configuration"
+        - label: "Error handling"
+        - label: "Documentation"
+        - label: "Other (please specify in description)"
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: "⚡ Impact Level"
+      description: "How significant would this change be?"
+      options:
+        - label: "Minor addition (new helper function, small feature)"
+        - label: "Major addition (new core functionality)"
+        - label: "Breaking change (would require version bump)"
+        - label: "Documentation/Developer Experience improvement"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "📝 Additional Context"
+      description: "Any other context, screenshots, code examples, or links that would be helpful?"
+      placeholder: "Add any additional information..."

@@ -51,7 +51,16 @@
     "scripts": {
         "lint": "chmod +x bin/lint.sh && ./bin/lint.sh",
         "fix": "chmod +x bin/fix.sh && ./bin/fix.sh",
-        "test": "chmod +x bin/test.sh && ./bin/test.sh"
+        "test": "chmod +x bin/test.sh && ./bin/test.sh",
+        "test:unit": "phpunit tests/Unit",
+        "test:integration": "phpunit tests/Integration",
+        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text",
+        "analyse": "phpstan analyse",
+        "check": [
+            "@analyse",
+            "@lint",
+            "@test"
+        ]
     },
     "config": {
         "sort-packages": true,

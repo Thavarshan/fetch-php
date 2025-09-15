@@ -10,6 +10,13 @@
     <testsuites>
         <testsuite name="Fetch PHP Test Suite">
             <directory suffix="Test.php">./tests</directory>
+            <exclude>./tests/Mocks</exclude>
+        </testsuite>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory suffix="Test.php">./tests/Integration</directory>
         </testsuite>
     </testsuites>
     <php>

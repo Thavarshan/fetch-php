@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: 'Fetch PHP'
+message: 'If you use this library, please cite it as below.'
+authors:
+  - family-names: Thayananthajothy
+    given-names: Jerome
+    orcid: https://orcid.org/0000-0000-0000-0000
+repository-code: https://github.com/Thavarshan/fetch-php
+license: GPL-3.0-or-later
+version: 3.2.3
+doi: 10.0000/example.doi
+abstract: >-
+  Fetch PHP is a modern HTTP client abstraction that replicates the JavaScript fetch API semantics in PHP, providing promise-based and async utilities, fluent interface, retry mechanisms, and type-safe enums for HTTP operations.
+keywords:
+  - php
+  - http
+  - fetch
+  - async
+  - promises
+  - guzzle
+  - http-client
+  - psr-7
+  - psr-18

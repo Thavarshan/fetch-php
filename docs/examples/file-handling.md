@@ -12,7 +12,7 @@ This page provides examples of how to upload files, download files, and work wit
 Uploading a single file:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Simple file upload
 $response = fetch('https://api.example.com/upload', [
@@ -32,7 +32,7 @@ $response = fetch('https://api.example.com/upload', [
 ]);
 
 // Check if upload was successful
-if ($response->isSuccess()) {
+if ($response->successful()) {
     $result = $response->json();
     echo "File uploaded successfully. URL: " . $result['url'];
 } else {
@@ -45,7 +45,7 @@ if ($response->isSuccess()) {
 Uploading multiple files in a single request:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Prepare the multipart data for multiple files
 $multipart = [];
@@ -87,7 +87,7 @@ $response = fetch('https://api.example.com/upload-multiple', [
 ]);
 
 // Process the response
-if ($response->isSuccess()) {
+if ($response->successful()) {
     $result = $response->json();
     echo "Uploaded " . count($result['files']) . " files";
 
@@ -104,7 +104,7 @@ if ($response->isSuccess()) {
 For large files, you can upload directly from a stream:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Open file as a stream
 $stream = fopen('/path/to/large-file.zip', 'r');
@@ -130,7 +130,7 @@ $response = fetch('https://api.example.com/upload', [
 // Always close the stream
 fclose($stream);
 
-if ($response->isSuccess()) {
+if ($response->successful()) {
     $result = $response->json();
     echo "Large file uploaded successfully: " . $result['url'];
 } else {
@@ -143,13 +143,13 @@ if ($response->isSuccess()) {
 For large file uploads, you might want to track progress:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use function Fetch\Http\fetch_client;
+use function fetch_client;
 
 // Create a progress callback
 $onProgress = function (
@@ -173,7 +173,8 @@ $stack->push(Middleware::tap(null, $onProgress));
 $client = new Client(['handler' => $stack]);
 
 // Set the custom client for this request
-fetch_client(['client' => $client]);
+$handler = fetch_client()->getHandler();
+$handler->setHttpClient($client);
 
 // Open file stream
 $stream = fopen('/path/to/large-video.mp4', 'r');
@@ -200,9 +201,9 @@ $response = fetch('https://api.example.com/upload', [
 fclose($stream);
 
 // Reset the global client
-fetch_client(null, null, true);
+fetch_client(null, true);
 
-if ($response->isSuccess()) {
+if ($response->successful()) {
     echo "Video uploaded successfully!";
 } else {
     echo "Upload failed: " . $response->getStatusCode();
@@ -214,13 +215,13 @@ if ($response->isSuccess()) {
 Downloading a file to disk:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Download a file
 $response = fetch('https://example.com/files/document.pdf');
 
 // Check if the download was successful
-if ($response->isSuccess()) {
+if ($response->successful()) {
     // Save to disk
     file_put_contents('downloaded-document.pdf', $response->getBody()->getContents());
 
@@ -235,14 +236,14 @@ if ($response->isSuccess()) {
 For large file downloads, you can stream the response to disk:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Enable streaming for the request
 $response = fetch('https://example.com/files/large-video.mp4', [
     'stream' => true
 ]);
 
-if ($response->isSuccess()) {
+if ($response->successful()) {
     // Open file for writing
     $outFile = fopen('downloaded-video.mp4', 'w');
 
@@ -263,7 +264,7 @@ if ($response->isSuccess()) {
 }
 
 // Reset the global client
-fetch_client(null, null, true);
+fetch_client(null, true);
 ```
 
 ## Download with Progress Tracking
@@ -271,11 +272,11 @@ fetch_client(null, null, true);
 Similar to uploads, you can track download progress:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
-use function Fetch\Http\fetch_client;
+use function fetch_client;
 
 // Create a progress callback
 $onProgress = function (
@@ -299,14 +300,15 @@ $stack->push(Middleware::tap(null, $onProgress));
 $client = new Client(['handler' => $stack]);
 
 // Set the custom client for this request
-fetch_client(['client' => $client]);
+$handler = fetch_client()->getHandler();
+$handler->setHttpClient($client);
 
 // Download with progress tracking
 $response = fetch('https://example.com/files/large-file.zip', [
     'stream' => true
 ]);
 
-if ($response->isSuccess()) {
+if ($response->successful()) {
     // Open file for writing
     $outFile = fopen('downloaded-file.zip', 'w');
 
@@ -327,7 +329,7 @@ if ($response->isSuccess()) {
 }
 
 // Reset the global client
-fetch_client(null, null, true);
+fetch_client(null, true);
 ```
 
 ## Resumable Downloads
@@ -335,7 +337,7 @@ fetch_client(null, null, true);
 Implementing a resumable download:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 function downloadFileWithResume(string $url, string $localPath) {
     $fileSize = 0;
@@ -365,7 +367,7 @@ function downloadFileWithResume(string $url, string $localPath) {
         // Partial content as expected for resume
         echo "Server supports resume. Continuing download...\n";
         $mode = 'a'; // Append mode
-    } elseif ($response->isSuccess()) {
+} elseif ($response->successful()) {
         // Full content - start from beginning
         echo "Starting new download...\n";
         $mode = 'w'; // Write mode
@@ -416,7 +418,7 @@ downloadFileWithResume($url, $localPath);
 Uploading and downloading images:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Upload an image with resizing instructions
 $response = fetch('https://api.example.com/images', [
@@ -443,7 +445,7 @@ $response = fetch('https://api.example.com/images', [
     ]
 ]);
 
-if ($response->isSuccess()) {
+if ($response->successful()) {
     $result = $response->json();
     echo "Image uploaded and processed. URLs:\n";
     echo "- Original: " . $result['original_url'] . "\n";
@@ -452,7 +454,7 @@ if ($response->isSuccess()) {
     // Download the processed image
     $processedImage = fetch($result['resized_url']);
 
-    if ($processedImage->isSuccess()) {
+    if ($processedImage->successful()) {
         // Save to disk
         file_put_contents('processed-image.jpg', $processedImage->getBody()->getContents());
         echo "Processed image downloaded successfully";
@@ -467,7 +469,7 @@ if ($response->isSuccess()) {
 Uploading a file with Base64 encoding:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Read the file and encode it as base64
 $filePath = '/path/to/document.pdf';
@@ -484,7 +486,7 @@ $response = fetch('https://api.example.com/documents', [
     ]
 ]);
 
-if ($response->isSuccess()) {
+if ($response->successful()) {
     $result = $response->json();
     echo "Document uploaded successfully. ID: " . $result['document_id'];
 } else {
@@ -497,7 +499,7 @@ if ($response->isSuccess()) {
 Processing validation errors for file uploads:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 use Fetch\Enum\Status;
 
 // Upload a file that might have validation issues
@@ -513,10 +515,10 @@ $response = fetch('https://api.example.com/upload', [
     ]
 ]);
 
-if ($response->isSuccess()) {
+if ($response->successful()) {
     $result = $response->json();
     echo "File uploaded successfully: " . $result['url'];
-} elseif ($response->getStatus() === Status::UNPROCESSABLE_ENTITY) {
+} elseif ($response->statusEnum() === Status::UNPROCESSABLE_ENTITY) {
     // Handle validation errors (422)
     $errors = $response->json()['errors'] ?? [];
 
@@ -549,11 +551,11 @@ if ($response->isSuccess()) {
 Uploading and downloading files asynchronously:
 
 ```php
-use function Fetch\Http\fetch_client;
+use function fetch_client;
 
 // Function to upload a file asynchronously
 function uploadFileAsync($filePath, $description) {
-    $client = fetch_client()->async();
+    $client = fetch_client()->getHandler()->async();
 
     return $client
         ->withMultipart([
@@ -577,7 +579,7 @@ function downloadFileAsync($url, $localPath) {
         ->async()
         ->get($url)
         ->then(function ($response) use ($localPath) {
-            if ($response->isSuccess()) {
+            if ($response->successful()) {
                 file_put_contents($localPath, $response->getBody()->getContents());
                 return [
                     'success' => true,
@@ -614,7 +616,7 @@ $client->all($uploadPromises)
         $downloadPromises = [];
 
         foreach ($results as $filename => $response) {
-            if ($response->isSuccess()) {
+            if ($response->successful()) {
                 $data = $response->json();
                 echo "- {$filename}: Success, URL: {$data['url']}\n";
 
@@ -630,7 +632,7 @@ $client->all($uploadPromises)
 
         // If we started any downloads, wait for them to complete
         if (!empty($downloadPromises)) {
-            return fetch_client()->all($downloadPromises);
+            return fetch_client()->getHandler()->all($downloadPromises);
         }
     })
     ->then(function ($downloadResults) {
@@ -652,7 +654,7 @@ $client->all($uploadPromises)
 A complete file API client example:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 class FileApiClient
 {
@@ -708,7 +710,7 @@ class FileApiClient
         $response = fetch("{$this->baseUrl}/files", $options);
 
         // Handle errors
-        if (!$response->isSuccess()) {
+        if (!$response->successful()) {
             $this->handleErrorResponse($response);
         }
 
@@ -731,7 +733,7 @@ class FileApiClient
         $response = fetch("{$this->baseUrl}/files", $options);
 
         // Handle errors
-        if (!$response->isSuccess()) {
+        if (!$response->successful()) {
             $this->handleErrorResponse($response);
         }
 
@@ -752,7 +754,7 @@ class FileApiClient
         $response = fetch("{$this->baseUrl}/files/{$fileId}", $options);
 
         // Handle errors
-        if (!$response->isSuccess()) {
+        if (!$response->successful()) {
             $this->handleErrorResponse($response);
         }
 
@@ -775,7 +777,7 @@ class FileApiClient
         $response = fetch("{$this->baseUrl}/files/{$fileId}/download", $options);
 
         // Handle errors
-        if (!$response->isSuccess()) {
+        if (!$response->successful()) {
             $this->handleErrorResponse($response);
         }
 
@@ -815,7 +817,7 @@ class FileApiClient
         $response = fetch("{$this->baseUrl}/files/{$fileId}", $options);
 
         // Handle errors
-        if (!$response->isSuccess()) {
+        if (!$response->successful()) {
             $this->handleErrorResponse($response);
         }
 

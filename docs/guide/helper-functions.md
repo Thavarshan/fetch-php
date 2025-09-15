@@ -674,7 +674,7 @@ $response = fetch_client()
    $user = get("/users/{$id}")->json();
    ```
 
-2. **Use Type-Safe Enums**: Take advantage of PHP 8.1 enums for better type safety and code readability.
+2. **Use Type-Safe Enums**: Take advantage of PHP 8.2 enums for better type safety and code readability.
 
    ```php
    use Fetch\Enum\Method;

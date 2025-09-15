@@ -271,10 +271,11 @@ $user = post('/users', ['name' => 'John'])->json();
 Using the fluent interface:
 
 ```php
-$response = fetch()
+$response = fetch_client()
+    ->getHandler()
     ->withHeader('X-API-Key', 'your-api-key')
-    ->withQueryParam('include', 'comments,likes')
-    ->withQueryParam('sort', 'created_at')
+    ->withQueryParameter('include', 'comments,likes')
+    ->withQueryParameter('sort', 'created_at')
     ->timeout(5)
     ->get('https://api.example.com/posts');
 

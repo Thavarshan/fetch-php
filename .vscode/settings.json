@@ -1,3 +1,15 @@
 {
-    "php.version": "8.4"
+    "php.version": "8.4",
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/*.js": {
+            "when": "$(basename).ts"
+        },
+        "**/*.js.map": true,
+        ".mule": true
+    }
 }

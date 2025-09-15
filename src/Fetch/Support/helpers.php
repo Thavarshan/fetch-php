@@ -97,7 +97,7 @@ if (! function_exists('process_request_options')) {
 
         // Copy other direct pass options
         $directPassOptions = [
-            'timeout', 'retries', 'auth', 'token',
+            'timeout', 'retries', 'retry_delay', 'auth', 'token',
             'proxy', 'cookies', 'allow_redirects', 'cert', 'ssl_key', 'stream',
         ];
 

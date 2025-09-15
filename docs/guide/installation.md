@@ -9,7 +9,7 @@ The Fetch HTTP package can be installed using Composer, the PHP dependency manag
 
 **## Requirements**
 
-- PHP 8.1 or higher
+- PHP 8.2 or higher
 - Composer
 
 **## Install via Composer**

@@ -9,10 +9,7 @@
     "blank_line_after_namespace": true,
     "blank_line_after_opening_tag": true,
     "blank_line_before_statement": {
-        "statements": [
-            "continue",
-            "return"
-        ]
+        "statements": ["continue", "return"]
     },
     "blank_line_between_import_groups": true,
     "blank_lines_before_namespace": true,
@@ -95,11 +92,7 @@
     "no_empty_phpdoc": true,
     "no_empty_statement": true,
     "no_extra_blank_lines": {
-        "tokens": [
-            "extra",
-            "throw",
-            "use"
-        ]
+        "tokens": ["extra", "throw", "use"]
     },
     "no_leading_import_slash": true,
     "no_leading_namespace_whitespace": true,
@@ -113,10 +106,7 @@
     "no_space_around_double_colon": true,
     "no_spaces_after_function_name": true,
     "no_spaces_around_offset": {
-        "positions": [
-            "inside",
-            "outside"
-        ]
+        "positions": ["inside", "outside"]
     },
     "no_superfluous_phpdoc_tags": {
         "allow_mixed": true,
@@ -150,11 +140,7 @@
     "object_operator_without_whitespace": true,
     "ordered_imports": {
         "sort_algorithm": "alpha",
-        "imports_order": [
-            "const",
-            "class",
-            "function"
-        ]
+        "imports_order": ["const", "class", "function"]
     },
     "ordered_interfaces": true,
     "ordered_traits": true,
@@ -173,40 +159,16 @@
     "phpdoc_no_package": true,
     "phpdoc_no_useless_inheritdoc": true,
     "phpdoc_order": {
-        "order": [
-            "param",
-            "return",
-            "throws"
-        ]
+        "order": ["param", "return", "throws"]
     },
     "phpdoc_scalar": true,
     "phpdoc_separation": {
         "groups": [
-            [
-                "deprecated",
-                "link",
-                "see",
-                "since"
-            ],
-            [
-                "author",
-                "copyright",
-                "license"
-            ],
-            [
-                "category",
-                "package",
-                "subpackage"
-            ],
-            [
-                "property",
-                "property-read",
-                "property-write"
-            ],
-            [
-                "param",
-                "return"
-            ]
+            ["deprecated", "link", "see", "since"],
+            ["author", "copyright", "license"],
+            ["category", "package", "subpackage"],
+            ["property", "property-read", "property-write"],
+            ["param", "return"]
         ]
     },
     "phpdoc_single_line_var_spacing": true,
@@ -230,19 +192,14 @@
     "simplified_null_return": false,
     "single_blank_line_at_eof": true,
     "single_class_element_per_statement": {
-        "elements": [
-            "const",
-            "property"
-        ]
+        "elements": ["const", "property"]
     },
     "single_import_per_statement": {
         "group_to_single_imports": false
     },
     "single_line_after_imports": true,
     "single_line_comment_style": {
-        "comment_types": [
-            "hash"
-        ]
+        "comment_types": ["hash"]
     },
     "single_line_empty_body": true,
     "single_quote": true,
@@ -255,19 +212,14 @@
     "switch_case_space": true,
     "ternary_operator_spaces": true,
     "trailing_comma_in_multiline": {
-        "elements": [
-            "arrays"
-        ]
+        "elements": ["arrays"]
     },
     "trim_array_spaces": true,
     "type_declaration_spaces": true,
     "types_spaces": true,
     "unary_operator_spaces": true,
     "visibility_required": {
-        "elements": [
-            "method",
-            "property"
-        ]
+        "elements": ["method", "property"]
     },
     "single_trait_insert_per_statement": false,
     "whitespace_after_comma_in_array": true,

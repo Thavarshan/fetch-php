@@ -12,7 +12,7 @@ This page demonstrates robust error handling techniques when working with HTTP r
 Checking for success and handling errors:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 $response = fetch('https://api.example.com/users');
 
@@ -37,7 +37,7 @@ if ($response->successful()) {
 The Response class provides dedicated methods for checking specific status codes:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 $response = fetch('https://api.example.com/users/123');
 
@@ -68,7 +68,7 @@ if ($response->isOk()) {
 Handling network and other exceptions:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 use Fetch\Exceptions\NetworkException;
 use Fetch\Exceptions\RequestException;
 use Fetch\Exceptions\TimeoutException;
@@ -115,7 +115,7 @@ try {
 Working with validation errors from APIs:
 
 ```php
-use function Fetch\Http\post;
+use function post;
 
 function createUser(array $userData)
 {
@@ -186,7 +186,7 @@ class ValidationException extends \Exception
 Detecting and handling rate limiting:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 function fetchWithRateLimitHandling(string $url, int $maxRetries = 3)
 {
@@ -253,10 +253,10 @@ try {
 Handling errors in asynchronous code:
 
 ```php
-use function Fetch\Http\fetch;
-use function Matrix\async;
-use function Matrix\await;
-use function Matrix\all;
+use function fetch;
+use function async;
+use function await;
+use function all;
 
 await(async(function() {
     try {
@@ -305,7 +305,7 @@ try {
 Creating a dedicated error handler:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 class ApiErrorHandler
 {
@@ -467,7 +467,7 @@ try {
 Comprehensive error reporting:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 

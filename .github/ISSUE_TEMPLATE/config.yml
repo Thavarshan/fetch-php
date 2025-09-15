@@ -1,5 +1,17 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Help & Support
+  - name: 📖 Documentation
+    url: https://fetch-php.thavarshan.com
+    about: Check the official documentation for usage examples and API reference
+
+  - name: 💬 Discussions
     url: https://github.com/Thavarshan/fetch-php/discussions
-    about: 'This repository is only for reporting bugs. If you have a question or need help using the library, click:'
+    about: Ask questions, share ideas, and discuss with the community
+
+  - name: 🐛 Security Issue
+    url: https://github.com/Thavarshan/fetch-php/security
+    about: Please report security vulnerabilities privately through GitHub Security
+
+  - name: 📧 Private Contact
+    url: mailto:tjthavarshan@gmail.com
+    about: For private inquiries or sensitive issues (not for general support)

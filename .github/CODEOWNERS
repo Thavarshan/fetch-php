@@ -1,0 +1,26 @@
+# CODEOWNERS - Define code ownership for the repository
+# Global ownership - Jerome Thayananthajothy is the main maintainer
+* @Thavarshan
+
+# Core library files require extra scrutiny
+/src/Fetch/ @Thavarshan
+/tests/ @Thavarshan
+
+# Configuration and build files
+composer.json @Thavarshan
+composer.lock @Thavarshan
+phpunit.xml.dist @Thavarshan
+phpstan*.neon @Thavarshan
+pint.json @Thavarshan
+
+# GitHub configuration
+/.github/ @Thavarshan
+
+# Documentation
+/docs/ @Thavarshan
+README.md @Thavarshan
+CHANGELOG.md @Thavarshan
+
+# Build and development scripts
+/bin/ @Thavarshan
+package.json @Thavarshan

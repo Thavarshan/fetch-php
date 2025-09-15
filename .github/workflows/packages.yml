@@ -1,0 +1,139 @@
+name: Package & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  validate-tag:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate version tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if it's a pre-release (contains alpha, beta, rc)
+          if [[ $VERSION =~ (alpha|beta|rc) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Validate semantic versioning
+          if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?$ ]]; then
+            echo "Invalid version format: $VERSION"
+            exit 1
+          fi
+
+      - name: Check version matches composer.json
+        run: |
+          COMPOSER_VERSION=$(php -r "echo json_decode(file_get_contents('composer.json'))->version;")
+          if [ "${{ steps.version.outputs.version }}" != "$COMPOSER_VERSION" ]; then
+            echo "Version mismatch: tag ${{ steps.version.outputs.version }} != composer.json $COMPOSER_VERSION"
+            exit 1
+          fi
+
+  test-before-release:
+    runs-on: ubuntu-latest
+    needs: validate-tag
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, json, openssl, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Run full test suite
+        run: composer check
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [validate-tag, test-before-release]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, json, openssl, gd
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+      - name: Generate changelog for release
+        id: changelog
+        run: |
+          # Extract changelog for this version
+          VERSION=${{ needs.validate-tag.outputs.version }}
+          CHANGELOG_FILE="release-changelog.md"
+
+          # Find the section for this version in CHANGELOG.md
+          awk "/^## \[?v?$VERSION\]?/ {flag=1; next} /^## \[?v?[0-9]/ {flag=0} flag" CHANGELOG.md > $CHANGELOG_FILE
+
+          # If changelog is empty, create a simple one
+          if [ ! -s $CHANGELOG_FILE ]; then
+            echo "Release $VERSION" > $CHANGELOG_FILE
+            echo "" >> $CHANGELOG_FILE
+            echo "Changes in this release:" >> $CHANGELOG_FILE
+            git log --oneline $(git describe --tags --abbrev=0 HEAD~1)..HEAD >> $CHANGELOG_FILE
+          fi
+
+          echo "changelog_file=$CHANGELOG_FILE" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ needs.validate-tag.outputs.version }}
+          body_path: ${{ steps.changelog.outputs.changelog_file }}
+          draft: false
+          prerelease: ${{ needs.validate-tag.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  packagist-webhook:
+    runs-on: ubuntu-latest
+    needs: [validate-tag, create-release]
+    if: startsWith(github.ref, 'refs/tags/v') && needs.validate-tag.outputs.is_prerelease == 'false'
+
+    steps:
+      - name: Update Packagist
+        run: |
+          curl -XPOST -H'content-type:application/json' \
+            "https://packagist.org/api/update-package?username=${{ secrets.PACKAGIST_USERNAME }}&apiToken=${{ secrets.PACKAGIST_TOKEN }}" \
+            -d'{"repository":{"url":"https://github.com/${{ github.repository }}"}}'

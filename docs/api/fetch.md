@@ -75,7 +75,7 @@ The return value depends on the `$resource` parameter:
 ### Basic GET Request
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Make a simple GET request
 $response = fetch('https://api.example.com/users');

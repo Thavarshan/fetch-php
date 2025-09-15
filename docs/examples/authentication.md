@@ -14,7 +14,7 @@ Many APIs use API keys for authentication, typically sent as a header or query p
 ### API Key in Header
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // API key in a custom header
 $response = fetch('https://api.example.com/data', [
@@ -32,7 +32,7 @@ $response = fetch()
 ### API Key in Query Parameter
 
 ```php
-use function Fetch\Http\get;
+use function get;
 
 // API key as a query parameter
 $response = get('https://api.example.com/data', [
@@ -50,7 +50,7 @@ $response = fetch('https://api.example.com/data', [
 Bearer tokens are commonly used with OAuth 2.0 and JWT:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Using the token option
 $response = fetch('https://api.example.com/me', [
@@ -75,7 +75,7 @@ $response = fetch()
 Basic authentication sends credentials in the `Authorization` header:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Using the auth option
 $response = fetch('https://api.example.com/protected', [
@@ -101,12 +101,13 @@ $response = fetch('https://api.example.com/protected', [
 Some APIs use digest authentication, which requires a more complex challenge-response flow:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 use GuzzleHttp\Client;
 
 // The easiest way is to use Guzzle's built-in support
 $client = new Client();
-fetch_client(['client' => $client]);
+$handler = fetch_client()->getHandler();
+$handler->setHttpClient($client);
 
 $response = fetch('https://api.example.com/protected', [
     'auth' => ['username', 'password', 'digest']
@@ -118,7 +119,7 @@ $response = fetch('https://api.example.com/protected', [
 OAuth 1.0a requires signing requests with a complex algorithm:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 use GuzzleHttp\Subscriber\Oauth\Oauth1;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Client;
@@ -137,7 +138,8 @@ $stack->push($middleware);
 
 // Create a client with the handler
 $client = new Client(['handler' => $stack]);
-fetch_client(['client' => $client]);
+$handler = fetch_client()->getHandler();
+$handler->setHttpClient($client);
 
 // Make a request - OAuth 1.0 signature is added automatically
 $response = fetch('https://api.example.com/resources');
@@ -151,8 +153,8 @@ fetch_client(reset: true);
 For server-to-server API authentication:
 
 ```php
-use function Fetch\Http\fetch;
-use function Fetch\Http\post;
+use function fetch;
+use function post;
 
 function getAccessToken(string $clientId, string $clientSecret, string $tokenUrl): string
 {
@@ -207,8 +209,8 @@ if ($response->successful()) {
 For web apps that need user authentication:
 
 ```php
-use function Fetch\Http\fetch;
-use function Fetch\Http\post;
+use function fetch;
+use function post;
 
 class OAuth2Client
 {
@@ -392,8 +394,8 @@ function startOAuth()
 Handling token expiration and refresh:
 
 ```php
-use function Fetch\Http\fetch;
-use function Fetch\Http\post;
+use function fetch;
+use function post;
 
 class TokenManager
 {
@@ -591,7 +593,7 @@ try {
 Using JSON Web Tokens for authentication:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 // Function to create a JWT
 function createJwt(array $payload, string $secret): string
@@ -653,7 +655,7 @@ if ($response->successful()) {
 Handling API key rotation for reliability:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 class ApiKeyManager
 {
@@ -807,9 +809,9 @@ try {
 An API client for applications that need to support multiple users or organizations:
 
 ```php
-use function Fetch\Http\fetch;
-use function Matrix\async;
-use function Matrix\await;
+use function fetch;
+use function async;
+use function await;
 
 class MultiTenantApiClient
 {
@@ -922,7 +924,7 @@ await(async(function() use ($multiTenantApi) {
 Dealing with complex authentication flows:
 
 ```php
-use function Fetch\Http\fetch;
+use function fetch;
 
 function fetchWithAuthChallenge(string $url, array $options = [])
 {
@@ -944,7 +946,7 @@ function fetchWithAuthChallenge(string $url, array $options = [])
 
             if (isset($challenge['nonce'], $challenge['realm'])) {
                 // Compute the digest response
-                $username = 'your-username';
+                $username = 'Thavarshan';
                 $password = 'your-password';
                 $method = $options['method'] ?? 'GET';
 

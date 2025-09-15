@@ -1,0 +1,46 @@
+name-template: "v$RESOLVED_VERSION"
+ tag-template: "v$RESOLVED_VERSION"
+ categories:
+   - title: "🚀 Features"
+     labels: ["feat", "feature", "enhancement"]
+   - title: "🐛 Fixes"
+     labels: ["fix", "bug"]
+   - title: "🧰 Maintenance"
+     labels: ["chore", "maintenance", "refactor"]
+   - title: "🧪 Tests"
+     labels: ["test", "tests"]
+   - title: "📚 Documentation"
+     labels: ["docs", "documentation"]
+ change-template: "- $TITLE (#$NUMBER) (@$AUTHOR)"
+ exclude-labels: ["skip-changelog"]
+ autolabeler:
+   - label: "feat"
+     title:
+       - "/^feat/i"
+   - label: "fix"
+     title:
+       - "/^fix/i"
+   - label: "chore"
+     title:
+       - "/^chore/i"
+   - label: "docs"
+     title:
+       - "/^docs/i"
+   - label: "test"
+     title:
+       - "/^test/i"
+   - label: "refactor"
+     title:
+       - "/^refactor/i"
+ version-resolver:
+   major:
+     labels: ["breaking-change"]
+   minor:
+     labels: ["feat", "feature", "enhancement"]
+   patch:
+     labels: ["fix", "bug", "chore", "documentation", "docs", "test", "tests"]
+   default: patch
+ template: |
+   ## Changes
+
+   $CHANGES

@@ -143,7 +143,7 @@ $response = post('https://api.example.com/users',
 );
 
 // Check if the request was successful
-if ($response->isSuccess()) {
+if ($response->successful()) {
     $user = $response->json();
     echo "Created user with ID: " . $user['id'];
 }
@@ -159,7 +159,7 @@ $response = put('https://api.example.com/users/1', [
 ]);
 
 // Check the response
-if ($response->isSuccess()) {
+if ($response->successful()) {
     echo "User updated successfully";
 }
 ```
@@ -173,7 +173,7 @@ $response = patch('https://api.example.com/users/1', [
 ]);
 
 // Check the response
-if ($response->isSuccess()) {
+if ($response->successful()) {
     echo "User email updated successfully";
 }
 ```
@@ -190,7 +190,7 @@ $response = delete('https://api.example.com/users', [
 ]);
 
 // Check if the resource was deleted
-if ($response->isSuccess()) {
+if ($response->successful()) {
     echo "Resource deleted successfully";
 }
 ```

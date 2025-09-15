@@ -115,10 +115,10 @@ $promise->then(
 ### Request Batching and Concurrency
 
 ```php
-use function Fetch\async;
-use function Fetch\await;
-use function Fetch\all;
-use function Fetch\map;
+use function async;
+use function await;
+use function all;
+use function map;
 
 // Execute multiple requests in parallel
 $results = await(all([
@@ -150,10 +150,10 @@ $response = fetch_client()
     ->sendRequest(Method::POST, 'https://api.example.com/users');
 
 // Check response status using enums
-if ($response->getStatus() === Status::CREATED) {
+if ($response->statusEnum() === Status::CREATED) {
     echo "User created successfully";
-} elseif ($response->getStatus()->isClientError()) {
-    echo "Client error: " . $response->getStatus()->phrase();
+} elseif (($status = $response->statusEnum()) && $status->isClientError()) {
+    echo "Client error: " . $status->phrase();
 }
 ```
 
@@ -177,7 +177,7 @@ See the [Custom Clients](../guide/custom-clients.md) guide for more information 
 
 ## Compatibility Notes
 
-- Requires PHP 8.1 or higher
+- Requires PHP 8.2 or higher
 - Built on top of Guzzle HTTP, a widely-used PHP HTTP client
 - Follows PSR-7 (HTTP Message Interface) and PSR-18 (HTTP Client) standards
 - Supports both synchronous and asynchronous operations

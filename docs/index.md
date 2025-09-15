@@ -154,11 +154,11 @@ Read the [quick start guide](/guide/quickstart) to begin working with Fetch PHP.
 
 ### How does Fetch PHP compare to Guzzle?
 
-While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by providing a JavaScript-like API, global client management, simplified requests, enhanced error handling, and modern PHP 8.1+ enums.
+While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by providing a JavaScript-like API, global client management, simplified requests, enhanced error handling, and modern PHP 8.2+ enums.
 
 ### Can I use Fetch PHP with Laravel or Symfony?
 
-Yes! Fetch PHP works seamlessly with all PHP frameworks including Laravel, Symfony, CodeIgniter, and others. It requires PHP 8.1 or higher.
+Yes! Fetch PHP works seamlessly with all PHP frameworks including Laravel, Symfony, CodeIgniter, and others. It requires PHP 8.2 or higher.
 
 ### Does Fetch PHP support file uploads?
 
