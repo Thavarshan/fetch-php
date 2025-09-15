@@ -412,9 +412,21 @@ class ClientHandler implements ClientHandlerInterface
     {
         $sanitizedOptions = $options;
 
-        // Mask authorization headers
-        if (isset($sanitizedOptions['headers']['Authorization'])) {
-            $sanitizedOptions['headers']['Authorization'] = '[REDACTED]';
+        // Mask sensitive headers (case-insensitive)
+        if (isset($sanitizedOptions['headers']) && is_array($sanitizedOptions['headers'])) {
+            $sensitiveHeaders = [
+                'authorization', 'x-api-key', 'api-key', 'x-auth-token', 'cookie', 'set-cookie',
+            ];
+
+            foreach ($sanitizedOptions['headers'] as $key => $value) {
+                if (in_array(strtolower((string) $key), $sensitiveHeaders, true)) {
+                    if (is_array($value)) {
+                        $sanitizedOptions['headers'][$key] = array_fill(0, count($value), '[REDACTED]');
+                    } else {
+                        $sanitizedOptions['headers'][$key] = '[REDACTED]';
+                    }
+                }
+            }
         }
 
         // Mask auth credentials

@@ -7,7 +7,9 @@ use Fetch\Enum\Method;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
 use GuzzleHttp\Client;
+use Fetch\Exceptions\RequestException as FetchRequestException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use PHPUnit\Framework\TestCase;
@@ -40,8 +42,8 @@ class PerformsHttpRequestsTest extends TestCase
         $mockClient->method('request')
             ->willReturn(new GuzzleResponse(200));
 
-        // Create an instance of our testable handler
-        $handler = new TestableClientHandler($mockClient);
+        // Inject mock client via factory hook
+        TestableClientHandler::setMockClient($mockClient);
 
         // Call the static method
         $response = TestableClientHandler::handle('GET', 'https://example.com');
@@ -362,12 +364,57 @@ class PerformsHttpRequestsTest extends TestCase
         // Configure the handler for minimal retries - use options instead of reflection
         $this->handler->withOptions(['retries' => 0]); // Set retries to 0
 
-        // Expect exception with the EXACT message format as in the code
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Unexpected error during request: Request GET https://example.com/ failed: Connection error');
+        // Expect our normalized Fetch RequestException
+        $this->expectException(FetchRequestException::class);
+        $this->expectExceptionMessage('Request GET https://example.com/ failed: Connection error');
 
         // Call method that should throw
         $this->handler->get('');
+    }
+
+    public function test_status_based_retry_then_success(): void
+    {
+        // First response is 503, then 200
+        $this->mockClient->expects($this->exactly(2))
+            ->method('request')
+            ->with('GET', 'https://example.com/unstable', $this->anything())
+            ->willReturnOnConsecutiveCalls(
+                new GuzzleResponse(503),
+                new GuzzleResponse(200)
+            );
+
+        $this->handler->baseUri('https://example.com');
+
+        // Default retries is 1, which should be enough: 1 failure + 1 retry
+        $response = $this->handler->get('/unstable');
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function test_connect_exception_retried_then_success(): void
+    {
+        $request = new GuzzleRequest('GET', 'https://example.com/flaky');
+        $connectException = new ConnectException('Connection failed', $request);
+
+        $call = 0;
+        $this->mockClient->expects($this->exactly(2))
+            ->method('request')
+            ->with('GET', 'https://example.com/flaky', $this->anything())
+            ->willReturnCallback(function () use (&$call, $connectException) {
+                if ($call++ === 0) {
+                    throw $connectException;
+                }
+
+                return new GuzzleResponse(200);
+            });
+
+        $this->handler->baseUri('https://example.com');
+
+        $response = $this->handler->get('/flaky');
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
     }
 
     public function test_effective_timeout_calculation(): void

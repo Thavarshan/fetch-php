@@ -301,7 +301,8 @@ $response = ClientHandler::create()
 ```php
 // Using fetch()
 $response = fetch('https://api.example.com/slow-resource', [
-    'timeout' => 30 // 30 seconds
+    'timeout' => 30,          // total request timeout (seconds)
+    'connect_timeout' => 5    // connection timeout (seconds, optional)
 ]);
 
 // Using ClientHandler
@@ -309,6 +310,8 @@ $response = ClientHandler::create()
     ->timeout(30)
     ->get('https://api.example.com/slow-resource');
 ```
+
+If `connect_timeout` is not provided, it defaults to the same value as `timeout`.
 
 ### Retries
 
@@ -326,6 +329,10 @@ $response = ClientHandler::create()
     ->retryExceptions(['GuzzleHttp\Exception\ConnectException']) // Customize retryable exceptions
     ->get('https://api.example.com/flaky-resource');
 ```
+
+Notes:
+- Retries are applied to transient network failures and specific HTTP statuses.
+- HTTP error responses are still returned to you; retry checks happen internally when configured.
 
 ### Base URI
 

@@ -6,12 +6,14 @@ namespace Fetch\Concerns;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
+use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Matrix\Exceptions\AsyncException;
 use React\Promise\PromiseInterface;
-use RuntimeException;
 
 use function async;
 
@@ -30,7 +32,7 @@ trait PerformsHttpRequests
         string $uri,
         array $options = []
     ): Response|PromiseInterface {
-        $handler = new static;
+        $handler = static::create();
         $handler->withOptions($options);
 
         return $handler->sendRequest($method, $uri);
@@ -309,13 +311,19 @@ trait PerformsHttpRequests
             }
         }
 
-        // Set timeout
+        // Set timeout consistently
         if (isset($this->timeout)) {
             $guzzleOptions['timeout'] = $this->timeout;
         } elseif (isset($this->options['timeout'])) {
             $guzzleOptions['timeout'] = $this->options['timeout'];
         } else {
             $guzzleOptions['timeout'] = $this->getEffectiveTimeout();
+        }
+
+        // Ensure connect_timeout defaults sensibly if not provided
+        if (! isset($guzzleOptions['connect_timeout'])) {
+            $guzzleOptions['connect_timeout'] = $guzzleOptions['connect_timeout']
+                ?? ($this->options['connect_timeout'] ?? $guzzleOptions['timeout']);
         }
 
         return $guzzleOptions;
@@ -347,6 +355,17 @@ trait PerformsHttpRequests
                 // Create our response object
                 $response = Response::createFromBase($psrResponse);
 
+                // Trigger retry on configured retryable status codes
+                if (in_array($response->getStatusCode(), $this->getRetryableStatusCodes(), true)) {
+                    $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
+
+                    throw new FetchRequestException(
+                        'Retryable status: '.$response->getStatusCode(),
+                        $psrRequest,
+                        $psrResponse
+                    );
+                }
+
                 // Log response if method exists
                 if (method_exists($this, 'logResponse')) {
                     $this->logResponse($response, $duration);
@@ -354,14 +373,26 @@ trait PerformsHttpRequests
 
                 return $response;
             } catch (GuzzleException $e) {
-                throw new RuntimeException(
-                    sprintf(
-                        'Request %s %s failed: %s',
-                        $method,
-                        $uri,
-                        $e->getMessage()
-                    ),
-                    $e->getCode(),
+                // Normalize to Fetch RequestException to participate in retry logic
+                if ($e instanceof GuzzleRequestException) {
+                    $req = $e->getRequest();
+                    $res = $e->getResponse();
+
+                    throw new FetchRequestException(
+                        sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()),
+                        $req,
+                        $res,
+                        $e
+                    );
+                }
+
+                // Fallback when we don't get a Guzzle RequestException (no request available)
+                $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
+
+                throw new FetchRequestException(
+                    sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()),
+                    $psrRequest,
+                    null,
                     $e
                 );
             }
@@ -392,7 +423,7 @@ trait PerformsHttpRequests
                 return $response;
             } catch (\Throwable $e) {
                 // Log the error without interfering with promise rejection
-                if (method_exists($this, 'logger') && isset($this->logger)) {
+                if (isset($this->logger)) {
                     $this->logger->error('Async request failed', [
                         'method' => $method,
                         'uri' => $uri,

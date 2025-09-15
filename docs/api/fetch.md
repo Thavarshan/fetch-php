@@ -47,6 +47,7 @@ An associative array of request options:
 | `query` | `array` | Query parameters |
 | `base_uri` | `string` | Base URI for the request |
 | `timeout` | `int` | Request timeout in seconds |
+| `connect_timeout` | `int` | Connection timeout in seconds (defaults to `timeout` when not set) |
 | `retries` | `int` | Number of retries |
 | `retry_delay` | `int` | Initial delay between retries in milliseconds |
 | `auth` | `array` | Basic auth credentials [username, password] |
@@ -192,9 +193,10 @@ $response = fetch('https://api.example.com/protected', [
 ```php
 // Set timeout and retry options
 $response = fetch('https://api.example.com/slow-resource', [
-    'timeout' => 30,           // 30 second timeout
-    'retries' => 3,            // Retry up to 3 times
-    'retry_delay' => 100       // Start with 100ms delay (uses exponential backoff)
+    'timeout' => 30,            // 30 second total timeout
+    'connect_timeout' => 5,     // 5 second connection timeout (optional)
+    'retries' => 3,             // Retry up to 3 times
+    'retry_delay' => 100        // Start with 100ms delay (exponential backoff + jitter)
 ]);
 ```
 
@@ -239,6 +241,7 @@ The `fetch()` function works by:
 - For more complex request scenarios, use method chaining with `fetch()` or the `ClientHandler` class
 - The function automatically handles conversion between different data formats based on content type
 - When used without arguments, `fetch()` returns the global client instance for method chaining
+- Retry behavior: transient network errors (e.g., connection timeouts) and certain HTTP statuses (e.g., 408, 429, 5xx) are retried when configured. HTTP error responses are returned (not thrown) and may be retried internally.
 
 ## See Also
 

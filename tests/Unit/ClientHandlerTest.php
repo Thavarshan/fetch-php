@@ -426,4 +426,25 @@ class ClientHandlerTest extends TestCase
         $this->assertEquals('value', $sanitized['headers']['X-Test']);
         $this->assertEquals(30, $sanitized['timeout']);
     }
+
+    public function test_sanitize_options_additional_headers(): void
+    {
+        $options = [
+            'headers' => [
+                'X-API-Key' => 'abc123',
+                'Cookie' => 'sessionid=secret',
+                'Set-Cookie' => ['sid=secret', 'other=secret'],
+            ],
+            'timeout' => 15,
+        ];
+
+        $reflection = new ReflectionMethod($this->handler, 'sanitizeOptions');
+        $reflection->setAccessible(true);
+        $sanitized = $reflection->invoke($this->handler, $options);
+
+        $this->assertEquals('[REDACTED]', $sanitized['headers']['X-API-Key']);
+        $this->assertEquals('[REDACTED]', $sanitized['headers']['Cookie']);
+        $this->assertEquals(['[REDACTED]', '[REDACTED]'], $sanitized['headers']['Set-Cookie']);
+        $this->assertEquals(15, $sanitized['timeout']);
+    }
 }

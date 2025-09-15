@@ -53,7 +53,7 @@ While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by pro
 composer require jerome/fetch-php
 ```
 
-> **Requirements**: PHP 8.1 or higher
+> **Requirements**: PHP 8.2 or higher
 
 ## Basic Usage
 
@@ -321,6 +321,29 @@ $data = await(retry(
 
 ## Advanced Configuration
 
+### Automatic Retries
+
+Fetch PHP automatically retries transient failures with exponential backoff and jitter.
+
+- Default attempts: initial try + 1 retry (configurable)
+- Default delay: 100ms base with exponential backoff and jitter
+- Retry triggers:
+  - Network/connect errors (e.g., timeouts, DNS, connection refused)
+  - HTTP status codes such as 408, 429, 500, 502, 503, 504 (customizable)
+
+Configure per-request:
+
+```php
+$response = fetch_client()
+    ->retry(3, 200)                // 3 retries, 200ms base delay
+    ->retryStatusCodes([429, 503]) // optional: customize which statuses retry
+    ->get('https://api.example.com/unstable');
+```
+
+Notes:
+- HTTP error statuses do not throw; you receive the response. Retries happen internally when configured.
+- Network failures are retried and, if all attempts fail, throw a `Fetch\\Exceptions\\RequestException`.
+
 ### Authentication
 
 ```php
@@ -397,6 +420,11 @@ if ($response->isSuccess()) {
 }
 ```
 
+// Inspect retry-related statuses explicitly if needed
+if ($response->getStatusCode() === 429) {
+    // Handle rate limit response
+}
+
 ## Working with Type-Safe Enums
 
 ```php
@@ -446,6 +474,28 @@ $promise = $handler->get('https://api.example.com/nonexistent')
         echo "Error: " . $e->getMessage();
     });
 ```
+
+### Timeouts
+
+Control both total request timeout and connection timeout:
+
+```php
+$response = fetch('https://api.example.com/data', [
+    'timeout' => 15,          // total request timeout (seconds)
+    'connect_timeout' => 5,   // connection timeout (seconds)
+]);
+```
+
+If `connect_timeout` is not provided, it defaults to the `timeout` value.
+
+### Logging and Redaction
+
+When request/response logging is enabled via a logger, sensitive values are redacted:
+
+- Headers: Authorization, X-API-Key, API-Key, X-Auth-Token, Cookie, Set-Cookie
+- Options: `auth` credentials
+
+Logged context includes method, URI, selected options (sanitized), status code, duration, and content length.
 
 ## License
 

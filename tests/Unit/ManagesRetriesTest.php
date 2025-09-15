@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
+use Fetch\Exceptions\RequestException;
 use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -18,7 +18,7 @@ class ManagesRetriesTest extends TestCase
     {
         $this->handler = new class extends ClientHandler
         {
-            public function exposeIsRetryableError(RequestException $e): bool
+            public function exposeIsRetryableError(\Throwable $e): bool
             {
                 return $this->isRetryableError($e);
             }
@@ -97,22 +97,18 @@ class ManagesRetriesTest extends TestCase
 
     public function test_retry_request_with_retryable_error_then_success(): void
     {
-        // Mock a request exception with a retryable status code
+        // Mock a request exception with a retryable status code (using Fetch RequestException)
         $mockRequest = $this->createMock(RequestInterface::class);
         $mockErrorResponse = new Response(503); // Service Unavailable
         $mockSuccessResponse = new Response(200);
 
-        $exception = new RequestException(
-            'Service unavailable',
-            $mockRequest,
-            $mockErrorResponse
-        );
+        $exception = new RequestException('Service unavailable', $mockRequest, $mockErrorResponse);
 
         // Create a test handler and manually configure it
         $handler = new class extends ClientHandler
         {
             // Override isRetryableError to always return true for the test
-            protected function isRetryableError(RequestException $e): bool
+            protected function isRetryableError(\Throwable $e): bool
             {
                 return true;
             }

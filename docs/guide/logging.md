@@ -78,9 +78,8 @@ The package logs the following events:
 
 The package automatically redacts sensitive information in logs:
 
-- Authentication headers are replaced with `[REDACTED]`
-- Basic auth credentials are replaced with `[REDACTED]`
-- Bearer tokens are replaced with `[REDACTED]`
+- Headers: Authorization, X-API-Key, API-Key, X-Auth-Token, Cookie, Set-Cookie (case-insensitive)
+- Options: Basic auth credentials (`auth`)
 
 For example, this request:
 
@@ -93,7 +92,7 @@ $client->withToken('secret-token')
 Would be logged as:
 
 ```
-[2023-01-15 14:30:10] http.DEBUG: Sending HTTP request {"method":"GET","uri":"https://api.example.com/users","options":{"timeout":30,"headers":{"Authorization":"[REDACTED]","X-API-Key":"private-key"}}}
+[2023-01-15 14:30:10] http.DEBUG: Sending HTTP request {"method":"GET","uri":"https://api.example.com/users","options":{"timeout":30,"headers":{"Authorization":"[REDACTED]","X-API-Key":"[REDACTED]"}}}
 ```
 
 ## Custom Logging Configuration

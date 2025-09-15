@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Fetch\Concerns;
 
+use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Interfaces\ClientHandler;
 use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
@@ -154,7 +154,7 @@ trait ManagesRetries
             try {
                 // Execute the request
                 return $request();
-            } catch (RequestException $e) {
+            } catch (Throwable $e) {
                 // Collect exception for later
                 $exceptions[] = $e;
 
@@ -178,13 +178,6 @@ trait ManagesRetries
 
                 // Sleep before the next retry
                 usleep($currentDelay * 1000); // Convert milliseconds to microseconds
-            } catch (Throwable $e) {
-                // Handle unexpected exceptions (not RequestException)
-                throw new RuntimeException(
-                    sprintf('Unexpected error during request: %s', $e->getMessage()),
-                    (int) $e->getCode(),
-                    $e
-                );
             }
         }
 
@@ -192,8 +185,8 @@ trait ManagesRetries
         $lastException = end($exceptions) ?: new RuntimeException('Request failed after all retries');
 
         // Enhanced failure reporting
-        if ($lastException instanceof RequestException) {
-            $statusCode = $lastException->getCode();
+        if ($lastException instanceof FetchRequestException && $lastException->getResponse()) {
+            $statusCode = $lastException->getResponse()->getStatusCode();
             throw new RuntimeException(
                 sprintf(
                     'Request failed after %d attempts with status code %d: %s',
@@ -232,15 +225,27 @@ trait ManagesRetries
     /**
      * Determine if an error is retryable.
      *
-     * @param  RequestException  $e  The exception to check
+     * @param  Throwable  $e  The exception to check
      * @return bool Whether the error is retryable
      */
-    protected function isRetryableError(RequestException $e): bool
+    protected function isRetryableError(Throwable $e): bool
     {
-        $statusCode = $e->getCode();
+        $statusCode = null;
+
+        // Try to extract status code from a Fetch RequestException
+        if ($e instanceof FetchRequestException && $e->getResponse()) {
+            $statusCode = $e->getResponse()->getStatusCode();
+        } elseif (method_exists($e, 'getResponse')) {
+            // Guzzle RequestException also has getResponse()
+            $response = $e->getResponse();
+            if ($response && method_exists($response, 'getStatusCode')) {
+                /** @var \Psr\Http\Message\ResponseInterface $response */
+                $statusCode = $response->getStatusCode();
+            }
+        }
 
         // Check if the status code is in our list of retryable codes
-        $isRetryableStatusCode = in_array($statusCode, $this->retryableStatusCodes, true);
+        $isRetryableStatusCode = $statusCode !== null && in_array($statusCode, $this->retryableStatusCodes, true);
 
         // Check if the exception or its previous is one of our retryable exception types
         $isRetryableException = false;
