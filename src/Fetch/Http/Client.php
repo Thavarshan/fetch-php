@@ -11,6 +11,7 @@ use Fetch\Exceptions\NetworkException;
 use Fetch\Exceptions\RequestException;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseInterface;
+use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use InvalidArgumentException;
@@ -68,7 +69,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     {
         $handler = ClientHandler::createWithBaseUri($baseUri);
 
-        if (! empty($options)) {
+        if ($options !== []) {
             $handler->withOptions($options);
         }
 
@@ -375,9 +376,9 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
-     * Get the PSR-7 HTTP client.
+     * Get the underlying Guzzle HTTP client.
      */
-    public function getHttpClient(): ClientInterface
+    public function getHttpClient(): GuzzleClientInterface
     {
         return $this->handler->getHttpClient();
     }
@@ -434,13 +435,13 @@ class Client implements ClientInterface, LoggerAwareInterface
             $headers[$name] = implode(', ', $values);
         }
 
-        if (! empty($headers)) {
+        if ($headers !== []) {
             $options['headers'] = $headers;
         }
 
         // Add body if present
         $body = (string) $request->getBody();
-        if (! empty($body)) {
+        if ($body !== '') {
             $options['body'] = $body;
         }
 

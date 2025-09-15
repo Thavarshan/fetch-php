@@ -341,6 +341,7 @@ $response = fetch_client()
 ```
 
 Notes:
+
 - HTTP error statuses do not throw; you receive the response. Retries happen internally when configured.
 - Network failures are retried and, if all attempts fail, throw a `Fetch\\Exceptions\\RequestException`.
 
@@ -499,15 +500,16 @@ Logged context includes method, URI, selected options (sanitized), status code, 
 
 ## License
 
-This project is licensed under the **GNU GPL v3 or later** (GPL-3.0-or-later) – see the [LICENSE](LICENSE) file for full terms.
+This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for full terms.
 
-Why GPL?
+The MIT License allows you to:
 
-- Ensures modifications and improvements remain open for the community.
-- Encourages collaborative ecosystem improvements around modern HTTP client abstractions.
-- You may use this in commercial projects provided you respect copyleft obligations.
+- Use the software for any purpose, including commercial applications
+- Modify and distribute the software
+- Include it in proprietary software
+- Use it without warranty or liability concerns
 
-If you believe a more permissive dual-license (e.g. MIT + GPL) would help adoption, open a discussion so we can evaluate community needs.
+This permissive license encourages adoption while maintaining attribution requirements.
 
 ## Contributing
 

@@ -15,6 +15,9 @@ use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use RuntimeException;
 use SimpleXMLElement;
 
+/**
+ * @implements ArrayAccess<string, mixed>
+ */
 class Response extends BaseResponse implements ArrayAccess, ResponseInterface
 {
     use ResponseImmutabilityTrait;
@@ -386,6 +389,8 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function xml(int $options = 0, bool $throwOnError = true): ?SimpleXMLElement
     {
+        $previous = false;
+
         try {
             // Use libxml_use_internal_errors to capture errors instead of emitting warnings
             $previous = libxml_use_internal_errors(true);

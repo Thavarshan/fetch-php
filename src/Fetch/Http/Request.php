@@ -51,6 +51,9 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new Request instance with a JSON body.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function json(
         string|Method $method,
@@ -81,6 +84,9 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new Request instance with form parameters.
+     *
+     * @param  array<string, mixed>  $formParams
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function form(
         string|Method $method,
@@ -107,6 +113,9 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new Request instance with multipart form data.
+     *
+     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>, filename?: string}>  $multipart
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function multipart(
         string|Method $method,
@@ -162,6 +171,8 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new GET request.
+     *
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function get(string|UriInterface $uri, array $headers = []): static
     {
@@ -170,10 +181,12 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new POST request.
+     *
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function post(
         string|UriInterface $uri,
-        $body = null,
+        mixed $body = null,
         array $headers = [],
         ContentType|string|null $contentType = null
     ): static {
@@ -187,10 +200,12 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new PUT request.
+     *
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function put(
         string|UriInterface $uri,
-        $body = null,
+        mixed $body = null,
         array $headers = [],
         ContentType|string|null $contentType = null
     ): static {
@@ -204,10 +219,12 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new PATCH request.
+     *
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function patch(
         string|UriInterface $uri,
-        $body = null,
+        mixed $body = null,
         array $headers = [],
         ContentType|string|null $contentType = null
     ): static {
@@ -221,10 +238,12 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new DELETE request.
+     *
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function delete(
         string|UriInterface $uri,
-        $body = null,
+        mixed $body = null,
         array $headers = [],
         ContentType|string|null $contentType = null
     ): static {
@@ -238,6 +257,8 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new HEAD request.
+     *
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function head(string|UriInterface $uri, array $headers = []): static
     {
@@ -246,6 +267,8 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Create a new OPTIONS request.
+     *
+     * @param  array<string, string|array<int, string>>  $headers
      */
     public static function options(string|UriInterface $uri, array $headers = []): static
     {
@@ -459,6 +482,8 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Set multiple query parameters on the request URI.
+     *
+     * @param  array<string, string|int|float|bool|null>  $params
      */
     public function withQueryParams(array $params): static
     {
@@ -504,6 +529,8 @@ class Request extends BaseRequest implements RequestInterface
     /**
      * Set a JSON body on the request.
      *
+     * @param  array<string, mixed>  $data
+     *
      * @throws InvalidArgumentException If the data cannot be encoded as JSON
      */
     public function withJsonBody(array $data, int $options = 0): static
@@ -522,6 +549,8 @@ class Request extends BaseRequest implements RequestInterface
 
     /**
      * Set a form body on the request.
+     *
+     * @param  array<string, string|int|float|bool|null>  $data
      */
     public function withFormBody(array $data): static
     {

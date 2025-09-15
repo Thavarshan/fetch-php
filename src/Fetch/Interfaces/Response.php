@@ -10,6 +10,9 @@ use Fetch\Enum\Status;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use SimpleXMLElement;
 
+/**
+ * @extends ArrayAccess<string, mixed>
+ */
 interface Response extends ArrayAccess, PsrResponseInterface
 {
     /**
@@ -19,6 +22,8 @@ interface Response extends ArrayAccess, PsrResponseInterface
 
     /**
      * Create a response with JSON content.
+     *
+     * @param  array<string, array<int, string>|string>  $headers
      */
     public static function withJson(
         mixed $data,
@@ -29,6 +34,8 @@ interface Response extends ArrayAccess, PsrResponseInterface
 
     /**
      * Create a redirect response.
+     *
+     * @param  array<string, array<int, string>|string>  $headers
      */
     public static function withRedirect(
         string $location,
@@ -39,10 +46,15 @@ interface Response extends ArrayAccess, PsrResponseInterface
     /**
      * Create a response with no content.
      */
+    /**
+     * @param  array<string, array<int, string>|string>  $headers
+     */
     public static function noContent(array $headers = []): self;
 
     /**
      * Create a response for a created resource.
+     *
+     * @param  array<string, array<int, string>|string>  $headers
      */
     public static function created(
         string $location,
@@ -67,6 +79,9 @@ interface Response extends ArrayAccess, PsrResponseInterface
 
     /**
      * Get the body as a JSON-decoded array.
+     */
+    /**
+     * @return array<mixed>
      */
     public function array(bool $throwOnError = true): array;
 
@@ -179,6 +194,9 @@ interface Response extends ArrayAccess, PsrResponseInterface
 
     /**
      * Get the headers from the response as an array.
+     */
+    /**
+     * @return array<string, array<int, string>>
      */
     public function headers(): array;
 

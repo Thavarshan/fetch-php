@@ -24,7 +24,7 @@ interface ClientHandler
      * @param  string  $method  The HTTP method to use
      * @param  string  $uri  The URI to request
      * @param  array<string, mixed>  $options  Additional options for the request
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public static function handle(string $method, string $uri, array $options = []): Response|PromiseInterface;
 
@@ -73,7 +73,7 @@ interface ClientHandler
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
      * @param  array<string, mixed>  $options  Additional request options
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function request(
         string|Method $method,
@@ -89,7 +89,7 @@ interface ClientHandler
      * @param  Method|string  $method  The HTTP method
      * @param  string  $uri  The URI to request
      * @param  array<string, mixed>  $options  Additional options
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function sendRequest(
         Method|string $method,
@@ -134,7 +134,7 @@ interface ClientHandler
     /**
      * Sets the request body and content type.
      *
-     * @param  array|string  $body  Request body
+     * @param  array<string, mixed>|string  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
      * @return $this
      */
@@ -233,7 +233,7 @@ interface ClientHandler
     /**
      * Sets the proxy configuration for the client.
      *
-     * @param  string|array  $proxy  Proxy configuration
+     * @param  string|array<string, mixed>  $proxy  Proxy configuration
      * @return $this
      */
     public function withProxy(string|array $proxy): self;
@@ -249,7 +249,7 @@ interface ClientHandler
     /**
      * Configures the client to follow redirects.
      *
-     * @param  bool|array  $redirects  Redirect configuration
+     * @param  bool|array<string, mixed>  $redirects  Redirect configuration
      * @return $this
      */
     public function withRedirects(bool|array $redirects = true): self;
@@ -257,7 +257,7 @@ interface ClientHandler
     /**
      * Sets the SSL certificate for the client.
      *
-     * @param  string|array  $cert  SSL certificate configuration
+     * @param  string|array<string, mixed>  $cert  SSL certificate configuration
      * @return $this
      */
     public function withCert(string|array $cert): self;
@@ -265,7 +265,7 @@ interface ClientHandler
     /**
      * Sets the SSL key for the client.
      *
-     * @param  string|array  $sslKey  SSL key configuration
+     * @param  string|array<string, mixed>  $sslKey  SSL key configuration
      * @return $this
      */
     public function withSslKey(string|array $sslKey): self;
@@ -314,7 +314,7 @@ interface ClientHandler
      * Sends a HEAD request to the specified URI.
      *
      * @param  string  $uri  URI to send the request to
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function head(string $uri): Response|PromiseInterface;
 
@@ -323,7 +323,7 @@ interface ClientHandler
      *
      * @param  string  $uri  URI to send the request to
      * @param  array<string, mixed>  $queryParams  Query parameters to include in the request
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function get(string $uri, array $queryParams = []): Response|PromiseInterface;
 
@@ -333,7 +333,7 @@ interface ClientHandler
      * @param  string  $uri  URI to send the request to
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function post(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
 
@@ -343,7 +343,7 @@ interface ClientHandler
      * @param  string  $uri  URI to send the request to
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function put(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
 
@@ -353,7 +353,7 @@ interface ClientHandler
      * @param  string  $uri  URI to send the request to
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function patch(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
 
@@ -363,7 +363,7 @@ interface ClientHandler
      * @param  string  $uri  URI to send the request to
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function delete(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
 
@@ -371,7 +371,7 @@ interface ClientHandler
      * Sends an OPTIONS request to the specified URI.
      *
      * @param  string  $uri  URI to send the request to
-     * @return Response|PromiseInterface Response or promise
+     * @return Response|PromiseInterface<Response> Response or promise
      */
     public function options(string $uri): Response|PromiseInterface;
 
@@ -379,14 +379,14 @@ interface ClientHandler
      * Wraps a callable in an asynchronous context.
      *
      * @param  callable  $callable  Callable to wrap
-     * @return PromiseInterface Promise
+     * @return PromiseInterface<mixed> Promise
      */
     public function wrapAsync(callable $callable): PromiseInterface;
 
     /**
      * Awaits the resolution of a promise with an optional timeout.
      *
-     * @param  PromiseInterface  $promise  Promise to await
+     * @param  PromiseInterface<mixed>  $promise  Promise to await
      * @param  float|null  $timeout  Timeout in seconds
      * @return mixed The resolved value
      */
@@ -395,32 +395,32 @@ interface ClientHandler
     /**
      * Resolves when all promises in the array are resolved.
      *
-     * @param  array<PromiseInterface>  $promises  Array of promises
-     * @return PromiseInterface Promise that resolves with array of results
+     * @param  array<PromiseInterface<mixed>>  $promises  Array of promises
+     * @return PromiseInterface<array<mixed>> Promise that resolves with array of results
      */
     public function all(array $promises): PromiseInterface;
 
     /**
      * Resolves when the first promise in the array is resolved.
      *
-     * @param  array<PromiseInterface>  $promises  Array of promises
-     * @return PromiseInterface Promise that resolves with the first result
+     * @param  array<PromiseInterface<mixed>>  $promises  Array of promises
+     * @return PromiseInterface<mixed> Promise that resolves with the first result
      */
     public function race(array $promises): PromiseInterface;
 
     /**
      * Resolves when any promise in the array is resolved.
      *
-     * @param  array<PromiseInterface>  $promises  Array of promises
-     * @return PromiseInterface Promise that resolves with the first successful result
+     * @param  array<PromiseInterface<mixed>>  $promises  Array of promises
+     * @return PromiseInterface<mixed> Promise that resolves with the first successful result
      */
     public function any(array $promises): PromiseInterface;
 
     /**
      * Executes an array of callables in sequence.
      *
-     * @param  array<callable(): PromiseInterface>  $callables  Array of callables
-     * @return PromiseInterface Promise that resolves with array of results
+     * @param  array<callable(): PromiseInterface<mixed>>  $callables  Array of callables
+     * @return PromiseInterface<array<mixed>> Promise that resolves with array of results
      */
     public function sequence(array $callables): PromiseInterface;
 

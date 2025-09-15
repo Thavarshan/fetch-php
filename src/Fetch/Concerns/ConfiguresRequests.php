@@ -41,11 +41,11 @@ trait ConfiguresRequests
         $this->options = array_merge($this->options, $options);
 
         // Map retry-related options to handler properties
-        if (isset($options['retries'])) {
+        if (isset($options['retries']) && is_numeric($options['retries'])) {
             $this->maxRetries = max(0, (int) $options['retries']);
         }
 
-        if (isset($options['retry_delay'])) {
+        if (isset($options['retry_delay']) && is_numeric($options['retry_delay'])) {
             $this->retryDelay = max(0, (int) $options['retry_delay']);
         }
 
@@ -95,7 +95,7 @@ trait ConfiguresRequests
         $this->options['multipart'] = $multipart;
 
         // Remove any content type headers as they're automatically set by the multipart boundary
-        if ($this->hasHeader('Content-Type')) {
+        if ($this->hasHeader('Content-Type') && isset($this->options['headers']) && is_array($this->options['headers'])) {
             unset($this->options['headers']['Content-Type']);
         }
 
@@ -172,7 +172,7 @@ trait ConfiguresRequests
     /**
      * Set the request body.
      *
-     * @param  array|string  $body  Request body
+     * @param  array<string, mixed>|string  $body  Request body
      * @param  string|ContentType  $contentType  Content type
      * @return $this
      */
@@ -201,7 +201,7 @@ trait ConfiguresRequests
                 // Ensure no conflicting body option
                 $this->unsetConflictingOptions(['body', 'json', 'multipart']);
             } elseif ($contentTypeEnum === ContentType::MULTIPART) {
-                $this->withMultipart($body);
+                $this->withMultipart($this->normalizeMultipart($body));
                 // Ensure no conflicting body option
                 $this->unsetConflictingOptions(['body', 'json', 'form_params']);
             } else {
@@ -303,7 +303,7 @@ trait ConfiguresRequests
     /**
      * Set the proxy for the request.
      *
-     * @param  string|array  $proxy  Proxy configuration
+     * @param  string|array<string, mixed>  $proxy  Proxy configuration
      * @return $this
      */
     public function withProxy(string|array $proxy): ClientHandler
@@ -329,7 +329,7 @@ trait ConfiguresRequests
     /**
      * Set whether to follow redirects.
      *
-     * @param  bool|array  $redirects  Redirect configuration
+     * @param  bool|array<string, mixed>  $redirects  Redirect configuration
      * @return $this
      */
     public function withRedirects(bool|array $redirects = true): ClientHandler
@@ -342,7 +342,7 @@ trait ConfiguresRequests
     /**
      * Set the certificate for the request.
      *
-     * @param  string|array  $cert  Certificate path or array
+     * @param  string|array<string, mixed>  $cert  Certificate path or array
      * @return $this
      */
     public function withCert(string|array $cert): ClientHandler
@@ -355,7 +355,7 @@ trait ConfiguresRequests
     /**
      * Set the SSL key for the request.
      *
-     * @param  string|array  $sslKey  SSL key configuration
+     * @param  string|array<string, mixed>  $sslKey  SSL key configuration
      * @return $this
      */
     public function withSslKey(string|array $sslKey): ClientHandler
@@ -413,7 +413,7 @@ trait ConfiguresRequests
             match ($contentTypeEnum) {
                 ContentType::JSON => $this->withJson($body),
                 ContentType::FORM_URLENCODED => $this->withFormParams($body),
-                ContentType::MULTIPART => $this->withMultipart($body),
+                ContentType::MULTIPART => $this->withMultipart($this->normalizeMultipart($body)),
                 default => $this->withBody($body, $contentType)
             };
 
@@ -433,5 +433,32 @@ trait ConfiguresRequests
         foreach ($keys as $key) {
             unset($this->options[$key]);
         }
+    }
+
+    /**
+     * Normalize multipart array to the expected shape for analysis and runtime.
+     *
+     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>|array<string, mixed>  $multipart
+     * @return array<int, array{name: string, contents: mixed, headers?: array<string, string>}>
+     */
+    protected function normalizeMultipart(array $multipart): array
+    {
+        if ($multipart === [] || array_is_list($multipart)) {
+            /** @var array<int, array{name: string, contents: mixed, headers?: array<string, string>}> $multipart */
+            return $multipart;
+        }
+
+        $part = [
+            'name' => (string) ($multipart['name'] ?? 'file'),
+            'contents' => $multipart['contents'] ?? ($multipart['body'] ?? ''),
+        ];
+
+        if (isset($multipart['headers']) && is_array($multipart['headers'])) {
+            $part['headers'] = array_map(static function ($v): string {
+                return (string) $v;
+            }, $multipart['headers']);
+        }
+
+        return [$part];
     }
 }

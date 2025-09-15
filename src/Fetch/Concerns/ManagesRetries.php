@@ -141,7 +141,7 @@ trait ManagesRetries
      * @param  callable  $request  The request to execute
      * @return ResponseInterface The response after successful execution
      *
-     * @throws RequestException If the request fails after all retries
+     * @throws FetchRequestException If the request fails after all retries
      * @throws RuntimeException If something unexpected happens
      */
     protected function retryRequest(callable $request): ResponseInterface

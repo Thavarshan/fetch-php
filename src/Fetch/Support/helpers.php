@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Http\Client;
+use Fetch\Http\Response as HttpResponse;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -38,7 +39,9 @@ if (! function_exists('fetch')) {
 
         // If a Request object is provided, we can't use options with it
         if ($resource instanceof RequestInterface) {
-            return fetch_client()->sendRequest($resource);
+            $psr = fetch_client()->sendRequest($resource);
+
+            return HttpResponse::createFromBase($psr);
         }
 
         // If no resource is provided, return the client handler for chaining
@@ -116,7 +119,7 @@ if (! function_exists('extract_body_and_content_type')) {
      * Extract body and content type from options.
      *
      * @param  array<string, mixed>  $options  Request options
-     * @return array{0: mixed, 1: ?ContentType|string} Tuple of [body, contentType]
+     * @return array{0: mixed, 1: ContentType|string|null}
      */
     function extract_body_and_content_type(array $options): array
     {
@@ -152,13 +155,15 @@ if (! function_exists('handle_request_with_base_uri')) {
      * @param  string  $resource  URL to fetch
      * @param  array<string, mixed>  $options  Original options
      * @param  array<string, mixed>  $processedOptions  Processed options
-     * @return ResponseInterface The response
+     * @return ResponseInterface|\React\Promise\PromiseInterface<ResponseInterface> The response or promise
      */
-    function handle_request_with_base_uri(string $resource, array $options, array $processedOptions): ResponseInterface
+    function handle_request_with_base_uri(string $resource, array $options, array $processedOptions): ResponseInterface|\React\Promise\PromiseInterface
     {
         $client = fetch_client();
         $handler = $client->getHandler();
-        $handler->baseUri($options['base_uri']);
+        if (isset($options['base_uri']) && is_string($options['base_uri'])) {
+            $handler->baseUri($options['base_uri']);
+        }
         $handler->withOptions($processedOptions);
 
         // Extract body and content type if not already processed
@@ -244,11 +249,11 @@ if (! function_exists('request_method')) {
      * @param  mixed  $data  Request data (for body or query parameters)
      * @param  array<string, mixed>|null  $options  Additional request options
      * @param  bool  $dataIsQuery  Whether data is used as query parameters (true) or request body (false)
-     * @return ResponseInterface The response
+     * @return ResponseInterface|ClientHandlerInterface|Client The response or handler
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function request_method(string $method, string $url, mixed $data = null, ?array $options = [], bool $dataIsQuery = false): ResponseInterface
+    function request_method(string $method, string $url, mixed $data = null, ?array $options = [], bool $dataIsQuery = false): ResponseInterface|ClientHandlerInterface|Client
     {
         $options = $options ?? [];
         $options['method'] = $method;

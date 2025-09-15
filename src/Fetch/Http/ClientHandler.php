@@ -12,12 +12,15 @@ use Fetch\Concerns\PerformsHttpRequests;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
+use Fetch\Interfaces\Response as ResponseContract;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\RequestOptions;
 use InvalidArgumentException;
+use LogicException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use React\Promise\PromiseInterface;
 
 class ClientHandler implements ClientHandlerInterface
 {
@@ -317,6 +320,28 @@ class ClientHandler implements ClientHandlerInterface
         $clone->withOptions($options);
 
         return $clone;
+    }
+
+    /**
+     * Send the configured request asynchronously based on current options.
+     *
+     * Requires that 'method' and 'uri' are set in options.
+     *
+     * @return PromiseInterface<ResponseContract>
+     */
+    protected function sendAsync(): PromiseInterface
+    {
+        $method = $this->options['method'] ?? null;
+        $uri = $this->options['uri'] ?? null;
+
+        if (! is_string($method) || ! is_string($uri)) {
+            throw new LogicException('sendAsync() requires method and uri to be set.');
+        }
+
+        $fullUri = $this->buildFullUri($uri);
+        $guzzleOptions = $this->prepareGuzzleOptions();
+
+        return $this->executeAsyncRequest($method, $fullUri, $guzzleOptions);
     }
 
     /**
