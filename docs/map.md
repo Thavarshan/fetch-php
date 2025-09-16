@@ -13,7 +13,6 @@ docs/
 │   ├── making-requests.md   # Basic request usage from fetch-http-client-usage-guide.md
 │   ├── helper-functions.md  # Helper functions guide from helper-functions-guide.md
 │   ├── working-with-responses.md  # From working-with-response-objects.md
-│   ├── request-configuration.md   # From working-with-request-objects.md
 │   ├── authentication.md    # Authentication section from usage guides
 │   ├── error-handling.md    # Error handling patterns
 │   ├── logging.md           # Logging configuration

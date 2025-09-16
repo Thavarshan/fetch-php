@@ -19,16 +19,6 @@ use React\Promise\PromiseInterface;
 interface ClientHandler
 {
     /**
-     * Handles an HTTP request with the given method, URI, and options.
-     *
-     * @param  string  $method  The HTTP method to use
-     * @param  string  $uri  The URI to request
-     * @param  array<string, mixed>  $options  Additional options for the request
-     * @return Response|PromiseInterface<Response> Response or promise
-     */
-    public static function handle(string $method, string $uri, array $options = []): Response|PromiseInterface;
-
-    /**
      * Retrieves the default options for the client.
      *
      * @return array<string, mixed> Default options

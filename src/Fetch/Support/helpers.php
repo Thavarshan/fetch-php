@@ -357,3 +357,116 @@ if (! function_exists('delete')) {
         return request_method('DELETE', $url, $data, $options);
     }
 }
+
+// Re-export Matrix async utilities for convenience
+if (! function_exists('async') && function_exists('\\Matrix\\async')) {
+    /**
+     * Wraps a callable to run asynchronously and return a promise.
+     *
+     * @param  callable  $callable  The callable to execute asynchronously
+     * @return \React\Promise\PromiseInterface The promise
+     *
+     * @see \Matrix\async()
+     */
+    function async(callable $callable): \React\Promise\PromiseInterface
+    {
+        return \Matrix\async($callable);
+    }
+}
+
+if (! function_exists('await') && function_exists('\\Matrix\\await')) {
+    /**
+     * Waits for a promise to resolve and returns its value.
+     *
+     * @param  \React\Promise\PromiseInterface  $promise  The promise to wait for
+     * @return mixed The resolved value
+     *
+     * @see \Matrix\await()
+     */
+    function await(\React\Promise\PromiseInterface $promise): mixed
+    {
+        return \Matrix\await($promise);
+    }
+}
+
+if (! function_exists('all') && function_exists('\\Matrix\\all')) {
+    /**
+     * Executes multiple promises concurrently and waits for all to complete.
+     *
+     * @param  array<\React\Promise\PromiseInterface>  $promises  Array of promises
+     * @return \React\Promise\PromiseInterface Promise that resolves with array of results
+     *
+     * @see \Matrix\all()
+     */
+    function all(array $promises): \React\Promise\PromiseInterface
+    {
+        return \Matrix\all($promises);
+    }
+}
+
+if (! function_exists('race') && function_exists('\\Matrix\\race')) {
+    /**
+     * Executes multiple promises concurrently and returns the first to complete.
+     *
+     * @param  array<\React\Promise\PromiseInterface>  $promises  Array of promises
+     * @return \React\Promise\PromiseInterface Promise that resolves with the first result
+     *
+     * @see \Matrix\race()
+     */
+    function race(array $promises): \React\Promise\PromiseInterface
+    {
+        return \Matrix\race($promises);
+    }
+}
+
+if (! function_exists('map') && function_exists('\\Matrix\\map')) {
+    /**
+     * Maps an array of items through an async callback.
+     *
+     * @param  array<mixed>  $items  Items to process
+     * @param  callable  $callback  Callback that returns a promise
+     * @param  int  $concurrency  Maximum number of concurrent promises
+     * @return \React\Promise\PromiseInterface Promise that resolves with array of results
+     *
+     * @see \Matrix\map()
+     */
+    function map(array $items, callable $callback, int $concurrency = 5): \React\Promise\PromiseInterface
+    {
+        return \Matrix\map($items, $callback, $concurrency);
+    }
+}
+
+if (! function_exists('batch') && function_exists('\\Matrix\\batch')) {
+    /**
+     * Processes items in batches with controlled batch size and concurrency.
+     *
+     * @param  array<mixed>  $items  Items to process
+     * @param  callable  $callback  Callback that returns a promise
+     * @param  int  $batchSize  Number of items per batch
+     * @param  int  $concurrency  Maximum number of concurrent batches
+     * @return \React\Promise\PromiseInterface Promise that resolves with array of results
+     *
+     * @see \Matrix\batch()
+     */
+    function batch(array $items, callable $callback, int $batchSize = 10, int $concurrency = 5): \React\Promise\PromiseInterface
+    {
+        return \Matrix\batch($items, $callback, $batchSize, $concurrency);
+    }
+}
+
+if (! function_exists('retry') && function_exists('\\Matrix\\retry')) {
+    /**
+     * Retries an async operation with exponential backoff.
+     *
+     * @param  callable  $callable  The operation to retry
+     * @param  int  $attempts  Maximum number of attempts
+     * @param  callable|int  $delay  Delay between retries (ms) or delay function
+     * @return \React\Promise\PromiseInterface Promise that resolves with the result
+     *
+     * @see \Matrix\retry()
+     */
+    function retry(callable $callable, int $attempts = 3, callable|int $delay = 100): \React\Promise\PromiseInterface
+    {
+        return \Matrix\retry($callable, $attempts, $delay);
+    }
+}

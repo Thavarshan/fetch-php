@@ -17,3 +17,11 @@ parameters:
         - '#has parameter .* with generic interface React\\Promise\\PromiseInterface#'
         # Factories intentionally use late static binding
         - '#Unsafe usage of new static\(\)#'
+        # Matrix library functions checked dynamically in helpers
+        - '#Function Matrix\\async not found#'
+        - '#Function Matrix\\await not found#'
+        - '#Function Matrix\\all not found#'
+        - '#Function Matrix\\race not found#'
+        - '#Function Matrix\\map not found#'
+        - '#Function Matrix\\batch not found#'
+        - '#Function Matrix\\retry not found#'

@@ -44,7 +44,7 @@ While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by pro
 | API Style         | JavaScript-like fetch + async/await + PHP-style helpers | PHP-style only      |
 | Client Management | Global client + instance options                        | Instance-based only |
 | Request Syntax    | Clean, minimal                                          | More verbose        |
-| Types             | Modern PHP 8.1+ enums                                   | String constants    |
+| Types             | Modern PHP 8.3+ enums                                   | String constants    |
 | Helper Functions  | Multiple styles available                               | Limited             |
 
 ## Installation
@@ -98,10 +98,12 @@ $response = fetch_client()
 
 ## Async/Await Pattern
 
+> **Note**: The async functions (`async`, `await`, `all`, `race`, `map`, `batch`, `retry`) are provided by the [jerome/matrix](https://packagist.org/packages/jerome/matrix) library, which is included as a dependency.
+
 ### Using Async/Await
 
 ```php
-// Import async/await functions
+// Import async/await functions from Matrix library
 use function async;
 use function await;
 
@@ -120,6 +122,7 @@ echo "Fetched " . count($users) . " users";
 ### Multiple Concurrent Requests with Async/Await
 
 ```php
+// These async functions are provided by the Matrix library dependency
 use function async;
 use function await;
 use function all;
@@ -401,7 +404,7 @@ function createUser($userData) {
 $response = fetch('https://api.example.com/users/1');
 
 // Check if request was successful
-if ($response->isSuccess()) {
+if ($response->successful()) {
     // HTTP status code
     echo $response->getStatusCode(); // 200
 
@@ -415,7 +418,7 @@ if ($response->isSuccess()) {
     $contentType = $response->getHeaderLine('Content-Type');
 
     // Check status code categories
-    if ($response->getStatus()->isSuccess()) {
+    if ($response->statusEnum()->isSuccess()) {
         echo "Request succeeded";
     }
 }
@@ -453,7 +456,7 @@ $response = $client->withBody($data, ContentType::JSON)->post('/users');
 try {
     $response = fetch('https://api.example.com/nonexistent');
 
-    if (!$response->isSuccess()) {
+    if (!$response->successful()) {
         echo "Request failed with status: " . $response->getStatusCode();
     }
 } catch (\Throwable $e) {
@@ -466,7 +469,7 @@ $handler->async();
 
 $promise = $handler->get('https://api.example.com/nonexistent')
     ->then(function ($response) {
-        if ($response->isSuccess()) {
+        if ($response->successful()) {
             return $response->json();
         }
         throw new \Exception("Request failed with status: " . $response->getStatusCode());

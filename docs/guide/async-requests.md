@@ -9,7 +9,9 @@ This guide explains how to work with asynchronous HTTP requests in the Fetch HTT
 
 ## Understanding Async/Await in PHP
 
-Fetch PHP brings JavaScript-like async/await patterns to PHP through the Matrix library, which is integrated into the package. While PHP doesn't have native language support for async/await, the package provides functions that enable similar functionality.
+Fetch PHP brings JavaScript-like async/await patterns to PHP through the **[jerome/matrix](https://packagist.org/packages/jerome/matrix)** library, which is integrated as a dependency. While PHP doesn't have native language support for async/await, the Matrix library provides functions that enable similar functionality.
+
+> **Important**: All async functions (`async`, `await`, `all`, `race`, `map`, `batch`, `retry`) are provided by the Matrix library, not by fetch-php itself.
 
 The key functions for async operations are:
 

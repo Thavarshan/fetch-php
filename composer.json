@@ -3,7 +3,7 @@
     "description": "The JavaScript fetch API for PHP.",
     "version": "3.2.3",
     "type": "library",
-    "license": "GPL-3.0-or-later",
+    "license": "MIT",
     "authors": [
         {
             "name": "Jerome Thayananthajothy",
@@ -68,8 +68,7 @@
         "allow-plugins": {
             "composer/package-versions-deprecated": true,
             "php-http/discovery": true,
-            "dealerdirect/phpcodesniffer-composer-installer": true,
-            "pestphp/pest-plugin": true
+            "dealerdirect/phpcodesniffer-composer-installer": true
         },
         "optimize-autoloader": true,
         "preferred-install": "dist"

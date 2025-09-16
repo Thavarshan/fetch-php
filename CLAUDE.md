@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Installation & Setup
 
 - **Install dependencies**: `composer install`
-- **Run with NO_NETWORK=1**: For tests that shouldn't make network calls
+- **Run with NO_NETWORK=1**: `NO_NETWORK=1 composer test` - For tests that shouldn't make network calls
 
 ## Architecture Overview
 
@@ -83,10 +83,11 @@ src/Fetch/
 
 ### Testing Framework
 
-- **PHPUnit** for unit testing
+- **PHPUnit 11.5+** for unit testing (not Pest)
 - Test structure: `tests/Unit/`, `tests/Integration/`
 - Coverage reports generated with Xdebug
 - CI runs tests on PHP 8.3, 8.4 across Ubuntu, Windows, macOS
+- Helper functions (`src/Fetch/Support/`) excluded from coverage
 
 ### Key Dependencies
 
