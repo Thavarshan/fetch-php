@@ -1,3 +1,10 @@
+---
+title: Documentation Structure
+description: Overview of the documentation structure and file organization for the Fetch PHP project
+---
+
+# Documentation Structure
+
 docs/
 ├── .vitepress/
 │   ├── config.js            # VitePress configuration

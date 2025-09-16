@@ -51,7 +51,7 @@ export default defineConfig({
             "@type": "SoftwareApplication",
             "name": "Fetch PHP",
             "applicationCategory": "DeveloperApplication",
-            "operatingSystem": "PHP 8.1+",
+            "operatingSystem": "PHP 8.3+",
             "offers": {
                 "@type": "Offer",
                 "price": "0.00",
@@ -81,7 +81,7 @@ export default defineConfig({
             { text: 'Guide', link: '/guide/' },
             { text: 'API Reference', link: '/api/' },
             { text: 'Examples', link: '/examples/' },
-            { text: 'Changelog', link: 'https://github.com/Thavarshan/fetch-php/blob/main/CHANGELOG.md' }
+            { text: 'Changelog', link: 'https://github.com/jerome/fetch-php/blob/main/CHANGELOG.md' }
         ],
 
         // Keep your existing sidebar structure
@@ -169,7 +169,7 @@ export default defineConfig({
 
         // Social links (keeping your GitHub link)
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/Thavarshan/fetch-php' }
+            { icon: 'github', link: 'https://github.com/jerome/fetch-php' }
         ],
 
         // Footer content with additional keywords naturally included
@@ -198,7 +198,7 @@ export default defineConfig({
 
         // Add edit link to encourage contributions (helps with engagement metrics)
         editLink: {
-            pattern: 'https://github.com/Thavarshan/fetch-php/edit/main/docs/:path',
+            pattern: 'https://github.com/jerome/fetch-php/edit/main/docs/:path',
             text: 'Edit this page on GitHub'
         },
 

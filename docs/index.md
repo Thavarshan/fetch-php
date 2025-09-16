@@ -34,7 +34,7 @@ hero:
       link: /guide/quickstart
     - theme: alt
       text: View on GitHub
-      link: https://github.com/Thavarshan/fetch-php
+      link: https://github.com/jerome/fetch-php
 
 # Your existing features section (unchanged)
 features:
@@ -169,5 +169,5 @@ Absolutely. Fetch PHP provides an elegant API for file uploads, supporting both 
 Yes. Fetch PHP is built on top of Guzzle, one of the most battle-tested HTTP clients in the PHP ecosystem, while providing a more modern developer experience.
 
 <div class="custom-block warning">
-  <p>Having trouble? <a href="https://github.com/Thavarshan/fetch-php/issues">Open an issue</a> on our GitHub repository.</p>
+  <p>Having trouble? <a href="https://github.com/jerome/fetch-php/issues">Open an issue</a> on our GitHub repository.</p>
 </div>
