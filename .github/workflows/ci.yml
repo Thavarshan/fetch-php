@@ -83,11 +83,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        php: ['8.2', '8.3', '8.4']
+        php: ['8.3', '8.4']
         stability: [prefer-stable]
         include:
           - os: ubuntu-latest
-            php: '8.2'
+            php: '8.3'
             stability: prefer-lowest
 
     name: PHP ${{ matrix.php }} on ${{ matrix.os }} - ${{ matrix.stability }}
