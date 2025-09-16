@@ -24,7 +24,7 @@
         ]
     },
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "ext-pcntl": "*",
         "guzzlehttp/guzzle": "^7.9",
         "guzzlehttp/psr7": "^2.7",
@@ -52,10 +52,10 @@
     "scripts": {
         "lint": "duster lint src",
         "fix": "duster fix src",
-        "test": "phpunit --do-not-fail-on-skipped",
-        "test:unit": "phpunit --do-not-fail-on-skipped tests/Unit",
-        "test:integration": "phpunit --do-not-fail-on-skipped tests/Integration",
-        "test:coverage": "XDEBUG_MODE=coverage phpunit --do-not-fail-on-skipped --coverage-html=coverage --coverage-text",
+        "test": "phpunit --do-not-fail-on-skipped --no-coverage",
+        "test:unit": "phpunit --do-not-fail-on-skipped --no-coverage tests/Unit",
+        "test:integration": "phpunit --do-not-fail-on-skipped --no-coverage tests/Integration",
+        "test:coverage": "XDEBUG_MODE=coverage phpunit --do-not-fail-on-skipped --coverage-html=coverage --coverage-text --coverage-xml=coverage",
         "analyse": "phpstan analyse",
         "check": [
             "@analyse",

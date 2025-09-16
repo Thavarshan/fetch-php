@@ -7,6 +7,8 @@
     stopOnFailure="false"
     stopOnSkipped="false"
     failOnSkipped="false"
+    failOnWarning="false"
+    failOnRisky="false"
     cacheDirectory=".phpunit.cache"
     backupStaticProperties="false">
     <testsuites>
