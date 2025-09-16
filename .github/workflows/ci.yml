@@ -55,7 +55,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: curl, mbstring, json, openssl, gd
+          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
           coverage: none
           tools: composer:v2
 
@@ -103,7 +103,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, mbstring, json, openssl, gd
+          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
           coverage: none
           tools: composer:v2
 
@@ -140,7 +140,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: curl, mbstring, json, openssl, gd
+          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
           coverage: xdebug
           tools: composer:v2
 
