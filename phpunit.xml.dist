@@ -24,4 +24,19 @@
         <env name="REDIS_PORT" value="6379" />
         -->
     </php>
+    <source>
+        <include>
+            <directory suffix=".php">src</directory>
+        </include>
+        <exclude>
+            <directory>src/Fetch/Support</directory>
+        </exclude>
+    </source>
+    <coverage includeUncoveredFiles="true">
+        <report>
+            <xml outputDirectory="coverage"/>
+            <html outputDirectory="coverage" lowUpperBound="50" highLowerBound="80"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false" showOnlySummary="false"/>
+        </report>
+    </coverage>
 </phpunit>

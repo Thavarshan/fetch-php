@@ -54,10 +54,15 @@ enum Method: string
 
 ## Available Constants
 
- a GET request, but without the response body. |
-| `Method::OPTIONS` | `"OPTIONS"` | The OPTIONS method describes the communication options for the target resource. |
-| `Method::TRACE` | `"TRACE"` | The TRACE method performs a message loop-back test along the path to the target resource. |
-| `Method::CONNECT` | `"CONNECT"` | The CONNECT method establishes a tunnel to the server identified by the target resource. |
+| Constant          | Value       | Description                                                                                    |
+| ----------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `Method::GET`     | `"GET"`     | The GET method requests a representation of the specified resource.                            |
+| `Method::POST`    | `"POST"`    | The POST method submits data to be processed to a specified resource.                          |
+| `Method::PUT`     | `"PUT"`     | The PUT method uploads a representation of the specified resource.                             |
+| `Method::PATCH`   | `"PATCH"`   | The PATCH method applies partial modifications to a resource.                                  |
+| `Method::DELETE`  | `"DELETE"`  | The DELETE method deletes the specified resource.                                              |
+| `Method::HEAD`    | `"HEAD"`    | The HEAD method asks for a response identical to a GET request, but without the response body. |
+| `Method::OPTIONS` | `"OPTIONS"` | The OPTIONS method describes the communication options for the target resource.                |
 
 ## Methods
 
