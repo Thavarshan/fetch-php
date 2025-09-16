@@ -86,7 +86,7 @@ src/Fetch/
 - **PHPUnit** for unit testing
 - Test structure: `tests/Unit/`, `tests/Integration/`
 - Coverage reports generated with Xdebug
-- CI runs tests on PHP 8.2, 8.3, 8.4 across Ubuntu, Windows, macOS
+- CI runs tests on PHP 8.3, 8.4 across Ubuntu, Windows, macOS
 
 ### Key Dependencies
 

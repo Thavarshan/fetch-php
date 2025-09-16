@@ -96,7 +96,6 @@ branches:
         strict: true
         checks:
           - context: "Code Style & Static Analysis"
-          - context: "PHP 8.2 on ubuntu-latest - prefer-stable"
           - context: "PHP 8.3 on ubuntu-latest - prefer-stable"
           - context: "PHP 8.4 on ubuntu-latest - prefer-stable"
           - context: "Coverage Analysis"

@@ -18,7 +18,7 @@
 
 ## Coding Style & Naming Conventions
 
-- PHP ≥ 8.2. Declare `strict_types=1` in new files.
+- PHP ≥ 8.3. Declare `strict_types=1` in new files.
 - PSR-12 aligned; 4-space indentation; single quotes for strings; ordered imports.
 - Namespaces follow PSR-4 under `Fetch\...`; file name matches class.
 - PHPUnit method casing: snake_case (see `pint.json`).

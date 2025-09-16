@@ -177,7 +177,7 @@ See the [Custom Clients](../guide/custom-clients.md) guide for more information 
 
 ## Compatibility Notes
 
-- Requires PHP 8.2 or higher
+- Requires PHP 8.3 or higher
 - Built on top of Guzzle HTTP, a widely-used PHP HTTP client
 - Follows PSR-7 (HTTP Message Interface) and PSR-18 (HTTP Client) standards
 - Supports both synchronous and asynchronous operations

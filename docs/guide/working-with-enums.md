@@ -5,7 +5,7 @@ description: Guide on using enums in the Fetch PHP client package
 
 # Working with Enums
 
-Fetch PHP makes extensive use of PHP 8.2's enum feature to provide type safety and better developer experience. This guide explains how to effectively work with the three main enums in the package: `Method`, `ContentType`, and `Status`.
+Fetch PHP makes extensive use of PHP 8.3's enum feature to provide type safety and better developer experience. This guide explains how to effectively work with the three main enums in the package: `Method`, `ContentType`, and `Status`.
 
 ## Overview of Enums in Fetch PHP
 
