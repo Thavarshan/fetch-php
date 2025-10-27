@@ -8,7 +8,7 @@
         "prepare": "husky"
     },
     "devDependencies": {
-        "@types/node": "^22.15.18",
+        "@types/node": "^22.18.12",
         "husky": "^9.1.7",
         "terser": "^5.39.2",
         "vitepress": "latest"
