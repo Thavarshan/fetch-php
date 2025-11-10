@@ -10,7 +10,7 @@
     "devDependencies": {
         "@types/node": "^22.15.18",
         "husky": "^9.1.7",
-        "terser": "^5.39.2",
+        "terser": "^5.44.1",
         "vitepress": "latest"
     }
 }
