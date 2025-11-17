@@ -4,17 +4,16 @@ namespace Tests\Unit;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
 use GuzzleHttp\Client;
-use Fetch\Exceptions\RequestException as FetchRequestException;
-use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
-use RuntimeException;
 use Tests\Mocks\TestableClientHandler;
 
 class PerformsHttpRequestsTest extends TestCase

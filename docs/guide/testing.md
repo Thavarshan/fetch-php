@@ -1,127 +1,357 @@
 ---
-title: Testing
-description: Learn how to test code that uses the Fetch HTTP package
+title: Testing with Mocks
+description: Learn how to test HTTP-dependent code using Fetch PHP's powerful testing utilities
 ---
 
-# Testing
+# Testing with Mocks
 
-This guide explains how to test code that uses the Fetch HTTP package. Properly testing HTTP-dependent code is crucial for creating reliable applications.
+Fetch PHP provides comprehensive testing utilities including a powerful mock server, request recording/playback, and advanced assertion helpers for HTTP testing.
 
-## Mock Responses
+## Quick Start
 
-The Fetch HTTP package provides built-in utilities for creating mock responses:
-
-```php
-use Fetch\Http\ClientHandler;
-use Fetch\Enum\Status;
-
-// Create a basic mock response
-$mockResponse = ClientHandler::createMockResponse(
-    200,  // Status code
-    ['Content-Type' => 'application/json'],  // Headers
-    '{"name": "John Doe", "email": "john@example.com"}'  // Body
-);
-
-// Using Status enum
-$mockResponse = ClientHandler::createMockResponse(
-    Status::OK,  // Status code as enum
-    ['Content-Type' => 'application/json'],
-    '{"name": "John Doe", "email": "john@example.com"}'
-);
-
-// Create a JSON response directly from PHP data
-$mockJsonResponse = ClientHandler::createJsonResponse(
-    ['name' => 'Jane Doe', 'email' => 'jane@example.com'],  // Data (will be JSON-encoded)
-    201,  // Status code
-    ['X-Custom-Header' => 'Value']  // Additional headers
-);
-
-// Using Status enum
-$mockJsonResponse = ClientHandler::createJsonResponse(
-    ['name' => 'Jane Doe', 'email' => 'jane@example.com'],
-    Status::CREATED
-);
-```
-
-## Mock Client with Guzzle MockHandler
-
-For testing code that uses the Fetch HTTP package, you can set up a mock handler to return predefined responses:
+The simplest way to get started with mocking:
 
 ```php
-use Fetch\Http\ClientHandler;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Client;
+use Fetch\Testing\MockServer;
+use Fetch\Testing\MockResponse;
 
-// Create a mock handler with an array of responses
-$mock = new MockHandler([
-    new Response(200, ['Content-Type' => 'application/json'], '{"id": 1, "name": "Test User"}'),
-    new Response(404, [], '{"error": "Not found"}'),
-    new Response(500, [], '{"error": "Server error"}')
+// Set up fake responses
+MockServer::fake([
+    'https://api.example.com/users' => MockResponse::json(['users' => []]),
 ]);
 
-// Create a handler stack with the mock handler
-$stack = HandlerStack::create($mock);
+// Make requests (they will be mocked)
+$response = get('https://api.example.com/users');
 
-// Create a Guzzle client with the stack
-$guzzleClient = new Client(['handler' => $stack]);
+// Assert requests were sent
+MockServer::assertSent('https://api.example.com/users');
+```
 
-// Create a ClientHandler with the mock client
-$client = ClientHandler::createWithClient($guzzleClient);
+## MockServer
 
-// First request will return 200 response
-$response1 = $client->get('https://api.example.com/users/1');
-echo $response1->status();  // 200
-echo $response1->json()['name'];  // "Test User"
+### Basic Mocking
 
-// Second request will return 404 response
-$response2 = $client->get('https://api.example.com/users/999');
-echo $response2->status();  // 404
+Mock all requests with empty 200 responses:
 
-// Third request will return 500 response
-$response3 = $client->get('https://api.example.com/error');
-echo $response3->status();  // 500
+```php
+MockServer::fake();
+
+$response = get('https://any-url.com'); // Returns 200 OK
+```
+
+### URL Pattern Matching
+
+Mock specific URLs:
+
+```php
+MockServer::fake([
+    'https://api.example.com/users' => MockResponse::json([
+        'users' => ['John', 'Jane']
+    ]),
+    'https://api.example.com/posts' => MockResponse::json([
+        'posts' => []
+    ]),
+]);
+```
+
+### HTTP Method Matching
+
+Match specific HTTP methods:
+
+```php
+MockServer::fake([
+    'GET https://api.example.com/users' => MockResponse::json(['users' => []]),
+    'POST https://api.example.com/users' => MockResponse::created(['id' => 123]),
+    'PUT https://api.example.com/users/123' => MockResponse::ok(['updated' => true]),
+    'DELETE https://api.example.com/users/123' => MockResponse::noContent(),
+]);
+```
+
+### Wildcard Patterns
+
+Use wildcards for flexible matching:
+
+```php
+MockServer::fake([
+    'https://api.example.com/users/*' => MockResponse::json(['user' => 'found']),
+    'https://api.example.com/posts/*' => MockResponse::json(['post' => 'found']),
+    '*' => MockResponse::notFound(), // Catch-all fallback
+]);
+
+$response1 = get('https://api.example.com/users/123'); // Matches
+$response2 = get('https://api.example.com/users/456'); // Matches
+```
+
+### Dynamic Responses with Callbacks
+
+Use callbacks for dynamic response generation:
+
+```php
+MockServer::fake(function ($request) {
+    // Check authentication
+    if ($request->hasHeader('Authorization')) {
+        return MockResponse::json(['authenticated' => true]);
+    }
+
+    // Check URL
+    if (str_contains((string) $request->getUri(), 'users')) {
+        return MockResponse::json(['users' => []]);
+    }
+
+    // Check method
+    if ($request->getMethod() === 'POST') {
+        return MockResponse::created();
+    }
+
+    return MockResponse::unauthorized();
+});
+```
+
+## MockResponse
+
+### Creating Responses
+
+```php
+use Fetch\Testing\MockResponse;
+
+// Basic response
+$response = MockResponse::create(200, 'Hello World', ['X-Custom' => 'value']);
+
+// JSON response
+$response = MockResponse::json(['name' => 'John', 'age' => 30], 200);
+```
+
+### Convenience Methods
+
+```php
+// Success responses
+MockResponse::ok('Success');
+MockResponse::created(['id' => 123]);
+MockResponse::noContent();
+
+// Client error responses
+MockResponse::badRequest('Invalid input');
+MockResponse::unauthorized();
+MockResponse::forbidden();
+MockResponse::notFound();
+MockResponse::unprocessableEntity(['errors' => ['field' => 'required']]);
+
+// Server error responses
+MockResponse::serverError('Internal error');
+MockResponse::serviceUnavailable();
+```
+
+### Response Delays
+
+Simulate slow responses:
+
+```php
+MockServer::fake([
+    'https://api.example.com/slow' => MockResponse::ok('Done')->delay(100), // 100ms delay
+]);
+
+$start = microtime(true);
+$response = get('https://api.example.com/slow');
+$duration = (microtime(true) - $start) * 1000;
+// Duration will be >= 100ms
+```
+
+### Throwing Exceptions
+
+Simulate network errors:
+
+```php
+MockServer::fake([
+    'https://api.example.com/error' => MockResponse::ok()->throw(
+        new \RuntimeException('Network timeout')
+    ),
+]);
+
+try {
+    get('https://api.example.com/error');
+} catch (\RuntimeException $e) {
+    // Handle the error
+}
+```
+
+## Response Sequences
+
+Test retry logic and flaky endpoints:
+
+```php
+MockServer::fake([
+    'https://api.example.com/flaky' => MockResponse::sequence()
+        ->pushStatus(500) // First request fails
+        ->pushStatus(500) // Second request fails
+        ->pushStatus(200), // Third request succeeds
+]);
+
+$response1 = get('https://api.example.com/flaky'); // 500
+$response2 = get('https://api.example.com/flaky'); // 500
+$response3 = get('https://api.example.com/flaky'); // 200
+```
+
+Advanced sequence features:
+
+```php
+$sequence = MockResponse::sequence()
+    ->push(200, 'First response')
+    ->pushJson(['data' => 'second'], 201)
+    ->pushStatus(404)
+    ->whenEmpty(MockResponse::ok('default')) // Return this when exhausted
+    ->loop(); // Or loop back to the beginning
+
+MockServer::fake([
+    'https://api.example.com/endpoint' => $sequence,
+]);
+```
+
+## Assertions
+
+### Assert Request Was Sent
+
+```php
+MockServer::fake(['*' => MockResponse::ok()]);
+
+post('https://api.example.com/users', ['name' => 'John']);
+
+// Assert by URL pattern
+MockServer::assertSent('https://api.example.com/users');
+MockServer::assertSent('POST https://api.example.com/users');
+
+// Assert with callback
+MockServer::assertSent(function ($request, $response) {
+    return $request->hasHeader('Authorization') &&
+           str_contains((string) $request->getBody(), 'John');
+});
+
+// Assert specific number of times
+MockServer::assertSent('https://api.example.com/users', 1);
+```
+
+### Assert Request Was Not Sent
+
+```php
+MockServer::assertNotSent('https://api.example.com/posts');
+
+MockServer::assertNotSent(function ($request) {
+    return $request->getMethod() === 'DELETE';
+});
+```
+
+### Assert Request Count
+
+```php
+MockServer::assertSentCount(3); // Exactly 3 requests
+MockServer::assertNothingSent(); // No requests at all
+```
+
+## Request Recording
+
+Record real or mocked requests and replay them later:
+
+```php
+use Fetch\Testing\Recorder;
+
+// Start recording
+Recorder::start();
+
+// Make some requests
+$response1 = get('https://api.example.com/users');
+$response2 = post('https://api.example.com/users', ['name' => 'Jane']);
+
+// Stop recording
+$recordings = Recorder::stop();
+
+// Later, replay the recordings
+Recorder::replay($recordings);
+
+// Now the same requests will return the recorded responses
+$response = get('https://api.example.com/users'); // Returns recorded response
+```
+
+### Export and Import Recordings
+
+```php
+// Export to JSON for storage
+Recorder::start();
+get('https://api.example.com/users');
+$json = Recorder::exportToJson();
+
+// Save to file
+file_put_contents('tests/fixtures/recordings.json', $json);
+
+// Later, load and replay
+$json = file_get_contents('tests/fixtures/recordings.json');
+Recorder::importFromJson($json);
+```
+
+## Preventing Stray Requests
+
+Ensure all requests are mocked in tests:
+
+```php
+MockServer::fake([
+    'https://api.example.com/*' => MockResponse::ok(),
+]);
+
+MockServer::preventStrayRequests();
+
+get('https://api.example.com/users'); // OK - matches pattern
+
+get('https://other-api.com/data'); // Throws InvalidArgumentException
+```
+
+Allow specific URLs:
+
+```php
+MockServer::fake([
+    'https://api.example.com/*' => MockResponse::ok(),
+]);
+
+MockServer::allowStrayRequests([
+    'https://localhost/*',
+    'http://127.0.0.1:*',
+]);
+
+get('https://api.example.com/users'); // Mocked
+get('https://localhost/test'); // Allowed (real request)
 ```
 
 ## Testing a Service Class
 
-Here's how to test a service class that uses the Fetch HTTP package:
+Here's a complete example of testing a service class:
 
 ```php
 use PHPUnit\Framework\TestCase;
-use Fetch\Http\ClientHandler;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Client;
+use Fetch\Testing\MockServer;
+use Fetch\Testing\MockResponse;
 
 class UserService
 {
-    private ClientHandler $client;
-
-    public function __construct(ClientHandler $client)
+    public function getAllUsers(): array
     {
-        $this->client = $client;
+        $response = get('https://api.example.com/users');
+        return $response->json()['users'];
     }
 
-    public function getUser(int $id): array
+    public function createUser(array $userData): array
     {
-        $response = $this->client->get("/users/{$id}");
+        $response = post('https://api.example.com/users', $userData);
 
-        if ($response->isNotFound()) {
-            throw new \RuntimeException("User {$id} not found");
+        if (!$response->successful()) {
+            throw new \RuntimeException("Failed to create user: " . $response->status());
         }
 
         return $response->json();
     }
 
-    public function createUser(array $userData): array
+    public function getUser(int $id): array
     {
-        $response = $this->client->post('/users', $userData);
+        $response = get("https://api.example.com/users/{$id}");
 
-        if (!$response->successful()) {
-            throw new \RuntimeException("Failed to create user: " . $response->status());
+        if ($response->isNotFound()) {
+            throw new \RuntimeException("User {$id} not found");
         }
 
         return $response->json();
@@ -130,553 +360,258 @@ class UserService
 
 class UserServiceTest extends TestCase
 {
-    private function createMockClient(array $responses): ClientHandler
+    protected function setUp(): void
     {
-        $mock = new MockHandler($responses);
-        $stack = HandlerStack::create($mock);
-        $guzzleClient = new Client(['handler' => $stack]);
+        parent::setUp();
 
-        return ClientHandler::createWithClient($guzzleClient);
+        MockServer::fake([
+            'GET https://api.example.com/users' => MockResponse::json([
+                'users' => [
+                    ['id' => 1, 'name' => 'John'],
+                    ['id' => 2, 'name' => 'Jane'],
+                ]
+            ]),
+            'POST https://api.example.com/users' => MockResponse::created([
+                'id' => 3,
+                'name' => 'Bob',
+            ]),
+            'GET https://api.example.com/users/*' => MockResponse::json([
+                'id' => 1,
+                'name' => 'John',
+            ]),
+        ]);
     }
 
-    public function testGetUserReturnsUserData(): void
+    protected function tearDown(): void
     {
-        // Arrange
-        $expectedUser = ['id' => 1, 'name' => 'Test User'];
-        $mockResponses = [
-            new Response(200, ['Content-Type' => 'application/json'], json_encode($expectedUser))
-        ];
-        $client = $this->createMockClient($mockResponses);
-        $userService = new UserService($client);
-
-        // Act
-        $user = $userService->getUser(1);
-
-        // Assert
-        $this->assertEquals($expectedUser, $user);
+        MockServer::resetInstance();
+        parent::tearDown();
     }
 
-    public function testGetUserThrowsExceptionForNotFound(): void
+    public function test_gets_all_users(): void
     {
-        // Arrange
-        $mockResponses = [
-            new Response(404, ['Content-Type' => 'application/json'], '{"error": "Not found"}')
-        ];
-        $client = $this->createMockClient($mockResponses);
-        $userService = new UserService($client);
+        $service = new UserService();
+        $users = $service->getAllUsers();
 
-        // Assert & Act
+        $this->assertCount(2, $users);
+        MockServer::assertSent('GET https://api.example.com/users');
+    }
+
+    public function test_creates_user(): void
+    {
+        $service = new UserService();
+        $user = $service->createUser(['name' => 'Bob']);
+
+        $this->assertEquals(3, $user['id']);
+
+        MockServer::assertSent(function ($request) {
+            $body = json_decode((string) $request->getBody(), true);
+            return $body['name'] === 'Bob';
+        });
+    }
+
+    public function test_handles_not_found(): void
+    {
+        MockServer::fake([
+            'GET https://api.example.com/users/999' => MockResponse::notFound(),
+        ]);
+
+        $service = new UserService();
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('User 999 not found');
 
-        $userService->getUser(999);
-    }
-
-    public function testCreateUserReturnsCreatedUser(): void
-    {
-        // Arrange
-        $userData = ['name' => 'New User', 'email' => 'new@example.com'];
-        $expectedUser = array_merge(['id' => 123], $userData);
-        $mockResponses = [
-            new Response(201, ['Content-Type' => 'application/json'], json_encode($expectedUser))
-        ];
-        $client = $this->createMockClient($mockResponses);
-        $userService = new UserService($client);
-
-        // Act
-        $user = $userService->createUser($userData);
-
-        // Assert
-        $this->assertEquals($expectedUser, $user);
+        $service->getUser(999);
     }
 }
 ```
 
-## Testing History
+## Testing Retry Logic
 
-You can also use `GuzzleHttp\Middleware::history()` to capture request/response history for testing:
+Test how your code handles retry scenarios:
 
 ```php
-use GuzzleHttp\Middleware;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Client;
-use Fetch\Http\ClientHandler;
-use Psr\Http\Message\RequestInterface;
-
-class ClientHistoryTest extends \PHPUnit\Framework\TestCase
+public function test_retries_on_failure(): void
 {
-    public function testRequestContainsExpectedHeaders(): void
-    {
-        // Set up a history container
-        $container = [];
-        $history = Middleware::history($container);
+    MockServer::fake([
+        'https://api.example.com/unstable' => MockResponse::sequence()
+            ->pushStatus(503) // Service unavailable
+            ->pushStatus(503) // Service unavailable
+            ->pushJson(['success' => true], 200), // Success
+    ]);
 
-        // Create a stack with the history middleware
-        $stack = HandlerStack::create();
-        $stack->push($history);
+    $response = retry(function () {
+        return get('https://api.example.com/unstable');
+    }, 3, 100);
 
-        // Add a mock response
-        $mock = new \GuzzleHttp\Handler\MockHandler([
-            new \GuzzleHttp\Psr7\Response(200, [], '{}')
-        ]);
-        $stack->setHandler($mock);
+    $this->assertTrue($response->successful());
+    $this->assertEquals(['success' => true], $response->json());
 
-        // Create a Guzzle client with the stack
-        $guzzleClient = new Client(['handler' => $stack]);
-
-        // Create a ClientHandler with the client
-        $client = ClientHandler::createWithClient($guzzleClient);
-
-        // Make a request
-        $client->withToken('test-token')
-            ->withHeader('X-Custom-Header', 'CustomValue')
-            ->get('https://api.example.com/resource');
-
-        // Assert request contained expected headers
-        $this->assertCount(1, $container);
-        $transaction = $container[0];
-        $request = $transaction['request'];
-
-        $this->assertEquals('GET', $request->getMethod());
-        $this->assertEquals('https://api.example.com/resource', (string) $request->getUri());
-        $this->assertEquals('Bearer test-token', $request->getHeaderLine('Authorization'));
-        $this->assertEquals('CustomValue', $request->getHeaderLine('X-Custom-Header'));
-    }
+    // Verify it was called 3 times
+    MockServer::assertSent('https://api.example.com/unstable', 3);
 }
 ```
 
-## Testing Asynchronous Requests
+## Testing Authentication
 
-For testing asynchronous code:
-
-```php
-use function async;
-use function await;
-use function all;
-
-class AsyncTest extends \PHPUnit\Framework\TestCase
-{
-    public function testAsyncRequests(): void
-    {
-        // Create mock responses
-        $mock = new \GuzzleHttp\Handler\MockHandler([
-            new \GuzzleHttp\Psr7\Response(200, [], '{"id":1,"name":"User 1"}'),
-            new \GuzzleHttp\Psr7\Response(200, [], '{"id":2,"name":"User 2"}')
-        ]);
-
-        $stack = HandlerStack::create($mock);
-        $guzzleClient = new Client(['handler' => $stack]);
-        $client = ClientHandler::createWithClient($guzzleClient);
-
-        // Using modern async/await pattern
-        $result = await(async(function() use ($client) {
-            $results = await(all([
-                'user1' => async(fn() => $client->get('https://api.example.com/users/1')),
-                'user2' => async(fn() => $client->get('https://api.example.com/users/2'))
-            ]));
-
-            return $results;
-        }));
-
-        // Assert responses
-        $this->assertEquals(200, $result['user1']->status());
-        $this->assertEquals('User 1', $result['user1']->json()['name']);
-
-        $this->assertEquals(200, $result['user2']->status());
-        $this->assertEquals('User 2', $result['user2']->json()['name']);
-
-        // Or using traditional promise pattern
-        $handler = $client->getHandler();
-        $handler->async();
-
-        $promise1 = $handler->get('https://api.example.com/users/1');
-        $promise2 = $handler->get('https://api.example.com/users/2');
-
-        $promises = $handler->all(['user1' => $promise1, 'user2' => $promise2]);
-        $responses = $handler->awaitPromise($promises);
-
-        // Assert responses
-        $this->assertEquals(200, $responses['user1']->status());
-        $this->assertEquals('User 1', $responses['user1']->json()['name']);
-
-        $this->assertEquals(200, $responses['user2']->status());
-        $this->assertEquals('User 2', $responses['user2']->json()['name']);
-    }
-}
-```
-
-## Testing with Custom Response Factory
-
-You can create a helper for generating test responses:
+Test authentication requirements:
 
 ```php
-use Fetch\Http\ClientHandler;
-use Fetch\Enum\Status;
-
-class ResponseFactory
+public function test_requires_authentication(): void
 {
-    public static function userResponse(int $id, string $name, string $email): \Fetch\Http\Response
-    {
-        return ClientHandler::createJsonResponse([
-            'id' => $id,
-            'name' => $name,
-            'email' => $email,
-            'created_at' => '2023-01-01T00:00:00Z'
-        ]);
-    }
-
-    public static function usersListResponse(array $users): \Fetch\Http\Response
-    {
-        return ClientHandler::createJsonResponse([
-            'data' => $users,
-            'meta' => [
-                'total' => count($users),
-                'page' => 1,
-                'per_page' => count($users)
-            ]
-        ]);
-    }
-
-    public static function errorResponse(int|Status $status, string $message): \Fetch\Http\Response
-    {
-        return ClientHandler::createJsonResponse(
-            ['error' => $message],
-            $status
-        );
-    }
-
-    public static function validationErrorResponse(array $errors): \Fetch\Http\Response
-    {
-        return ClientHandler::createJsonResponse(
-            [
-                'message' => 'Validation failed',
-                'errors' => $errors
-            ],
-            Status::UNPROCESSABLE_ENTITY
-        );
-    }
-}
-
-// Usage in tests
-class UserServiceTest extends \PHPUnit\Framework\TestCase
-{
-    public function testGetUser(): void
-    {
-        $mockResponses = [
-            ResponseFactory::userResponse(1, 'John Doe', 'john@example.com')
-        ];
-
-        // Create client and test...
-    }
-
-    public function testValidationError(): void
-    {
-        $mockResponses = [
-            ResponseFactory::validationErrorResponse([
-                'email' => ['The email must be a valid email address.']
-            ])
-        ];
-
-        // Create client and test...
-    }
-}
-```
-
-## Testing HTTP Error Handling
-
-Test how your code handles various HTTP errors:
-
-```php
-use Fetch\Exceptions\NetworkException;
-
-class ErrorHandlingTest extends \PHPUnit\Framework\TestCase
-{
-    public function testHandles404Gracefully(): void
-    {
-        $mock = new \GuzzleHttp\Handler\MockHandler([
-            new \GuzzleHttp\Psr7\Response(404, [], '{"error": "Not found"}')
-        ]);
-
-        $stack = HandlerStack::create($mock);
-        $guzzleClient = new Client(['handler' => $stack]);
-        $client = ClientHandler::createWithClient($guzzleClient);
-
-        $userService = new UserService($client);
-
-        try {
-            $userService->getUser(999);
-            $this->fail('Expected exception was not thrown');
-        } catch (\RuntimeException $e) {
-            $this->assertEquals('User 999 not found', $e->getMessage());
+    MockServer::fake(function ($request) {
+        if ($request->hasHeader('Authorization')) {
+            return MockResponse::json(['data' => 'protected']);
         }
-    }
+        return MockResponse::unauthorized(['error' => 'Missing token']);
+    });
 
-    public function testHandlesNetworkError(): void
-    {
-        $mock = new \GuzzleHttp\Handler\MockHandler([
-            new \GuzzleHttp\Exception\ConnectException(
-                'Connection refused',
-                new \GuzzleHttp\Psr7\Request('GET', 'https://api.example.com/users/1')
-            )
-        ]);
+    // Without auth
+    $response = get('https://api.example.com/protected');
+    $this->assertFalse($response->successful());
+    $this->assertEquals(401, $response->status());
 
-        $stack = HandlerStack::create($mock);
-        $guzzleClient = new Client(['handler' => $stack]);
-        $client = ClientHandler::createWithClient($guzzleClient);
-
-        $userService = new UserService($client);
-
-        $this->expectException(\RuntimeException::class);
-        $userService->getUser(1);
-    }
+    // With auth
+    $response = fetch('https://api.example.com/protected', [
+        'headers' => ['Authorization' => 'Bearer token'],
+    ]);
+    $this->assertTrue($response->successful());
+    $this->assertEquals(['data' => 'protected'], $response->json());
 }
 ```
 
-## Testing with Retry Logic
+## Testing Error Handling
 
-Testing how your code handles retry logic:
+Test various error scenarios:
 
 ```php
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Client;
-use Fetch\Http\ClientHandler;
-use Fetch\Enum\Status;
-
-class RetryTest extends \PHPUnit\Framework\TestCase
+public function test_handles_network_errors(): void
 {
-    public function testRetriesOnServerError(): void
-    {
-        // Mock responses: first two are 503, last one is 200
-        $mock = new MockHandler([
-            new Response(503, [], '{"error": "Service Unavailable"}'),
-            new Response(503, [], '{"error": "Service Unavailable"}'),
-            new Response(200, [], '{"id": 1, "name": "Success after retry"}')
-        ]);
+    MockServer::fake([
+        'https://api.example.com/error' => MockResponse::ok()->throw(
+            new \RuntimeException('Connection timeout')
+        ),
+    ]);
 
-        $container = [];
-        $history = \GuzzleHttp\Middleware::history($container);
+    $this->expectException(\RuntimeException::class);
+    $this->expectExceptionMessage('Connection timeout');
 
-        $stack = HandlerStack::create($mock);
-        $stack->push($history);
+    get('https://api.example.com/error');
+}
 
-        $guzzleClient = new Client(['handler' => $stack]);
-        $client = ClientHandler::createWithClient($guzzleClient);
+public function test_handles_server_errors(): void
+{
+    MockServer::fake([
+        'https://api.example.com/server-error' => MockResponse::serverError(
+            json_encode(['error' => 'Database connection failed'])
+        ),
+    ]);
 
-        // Configure retry
-        $client->retry(2, 10)  // 2 retries, 10ms delay
-               ->retryStatusCodes([Status::SERVICE_UNAVAILABLE->value]);
+    $response = get('https://api.example.com/server-error');
 
-        // Make the request that should auto-retry
-        $response = $client->get('https://api.example.com/flaky');
-
-        // Should have 3 requests in history (initial + 2 retries)
-        $this->assertCount(3, $container);
-
-        // Final response should be success
-        $this->assertEquals(200, $response->status());
-        $this->assertEquals('Success after retry', $response->json()['name']);
-    }
+    $this->assertEquals(500, $response->status());
+    $this->assertFalse($response->successful());
 }
 ```
 
-## Testing with Logging
+## Best Practices
 
-Testing that appropriate logging occurs:
+1. **Reset MockServer in tearDown**: Always reset the MockServer instance in your test's `tearDown()` method:
 
 ```php
-use Monolog\Logger;
-use Monolog\Handler\TestHandler;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Client;
-use Fetch\Http\ClientHandler;
-
-class LoggingTest extends \PHPUnit\Framework\TestCase
+protected function tearDown(): void
 {
-    public function testRequestsAreLogged(): void
-    {
-        // Create a test logger
-        $testHandler = new TestHandler();
-        $logger = new Logger('test');
-        $logger->pushHandler($testHandler);
-
-        // Set up mock responses
-        $mock = new MockHandler([
-            new Response(200, [], '{"status": "success"}')
-        ]);
-
-        $stack = HandlerStack::create($mock);
-        $guzzleClient = new Client(['handler' => $stack]);
-        $client = ClientHandler::createWithClient($guzzleClient);
-
-        // Set the logger
-        $client->setLogger($logger);
-
-        // Make a request
-        $client->get('https://api.example.com/test');
-
-        // Verify logs were created
-        $this->assertTrue($testHandler->hasInfoThatContains('Sending HTTP request'));
-        $this->assertTrue($testHandler->hasDebugThatContains('Received HTTP response'));
-    }
+    MockServer::resetInstance();
+    parent::tearDown();
 }
 ```
 
-## Integration Tests with Real APIs
+2. **Use specific patterns**: Prefer specific URL patterns over wildcards for better test clarity:
 
-Sometimes you'll want to run integration tests against real APIs. This should typically be done in a separate test suite that can be opted into:
+```php
+// Good
+MockServer::fake([
+    'POST https://api.example.com/users' => MockResponse::created(),
+]);
+
+// Less specific
+MockServer::fake([
+    '*' => MockResponse::ok(),
+]);
+```
+
+3. **Test edge cases**: Use sequences to test retry logic, rate limiting, and error recovery:
+
+```php
+MockResponse::sequence()
+    ->pushStatus(429) // Rate limited
+    ->pushStatus(429) // Still rate limited
+    ->pushStatus(200); // Success after retry
+```
+
+4. **Verify request details**: Use assertion callbacks to verify request payloads, headers, and other details:
+
+```php
+MockServer::assertSent(function ($request) {
+    $body = json_decode((string) $request->getBody(), true);
+    return isset($body['required_field']) &&
+           $request->hasHeader('Content-Type');
+});
+```
+
+5. **Prevent stray requests in CI**: Use `preventStrayRequests()` in CI environments:
+
+```php
+if (getenv('CI')) {
+    MockServer::preventStrayRequests();
+}
+```
+
+6. **Keep test data in fixtures**: Store recorded requests/responses in JSON fixtures for reuse:
+
+```php
+$json = file_get_contents(__DIR__ . '/fixtures/user-api-responses.json');
+Recorder::importFromJson($json);
+```
+
+## Integration Tests
+
+For integration tests that need to hit real APIs:
 
 ```php
 /**
  * @group integration
  */
-class GithubApiIntegrationTest extends \PHPUnit\Framework\TestCase
+class GithubApiIntegrationTest extends TestCase
 {
-    private \Fetch\Http\ClientHandler $client;
-
     protected function setUp(): void
     {
         // Skip if no API token is configured
         if (empty(getenv('GITHUB_API_TOKEN'))) {
             $this->markTestSkipped('No GitHub API token available');
         }
-
-        $this->client = \Fetch\Http\ClientHandler::createWithBaseUri('https://api.github.com')
-            ->withToken(getenv('GITHUB_API_TOKEN'))
-            ->withHeaders([
-                'Accept' => 'application/vnd.github.v3+json',
-                'User-Agent' => 'ApiTests'
-            ]);
     }
 
-    public function testCanFetchUserProfile(): void
+    public function test_can_fetch_user_profile(): void
     {
-        $response = $this->client->get('/user');
+        $response = fetch('https://api.github.com/user', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . getenv('GITHUB_API_TOKEN'),
+                'Accept' => 'application/vnd.github.v3+json',
+            ],
+        ]);
 
         $this->assertTrue($response->successful());
         $this->assertEquals(200, $response->status());
 
         $user = $response->json();
         $this->assertArrayHasKey('login', $user);
-        $this->assertArrayHasKey('id', $user);
     }
 }
 ```
-
-## Using Test Doubles
-
-You can create test doubles (stubs, mocks) for your service classes:
-
-```php
-interface UserRepositoryInterface
-{
-    public function find(int $id): ?array;
-    public function create(array $data): array;
-}
-
-class ApiUserRepository implements UserRepositoryInterface
-{
-    private \Fetch\Http\ClientHandler $client;
-
-    public function __construct(\Fetch\Http\ClientHandler $client)
-    {
-        $this->client = $client;
-    }
-
-    public function find(int $id): ?array
-    {
-        $response = $this->client->get("/users/{$id}");
-
-        if ($response->isNotFound()) {
-            return null;
-        }
-
-        return $response->json();
-    }
-
-    public function create(array $data): array
-    {
-        $response = $this->client->post('/users', $data);
-
-        if (!$response->successful()) {
-            throw new \RuntimeException("Failed to create user: " . $response->status());
-        }
-
-        return $response->json();
-    }
-}
-
-class UserServiceTest extends \PHPUnit\Framework\TestCase
-{
-    public function testCreateUserCallsRepository(): void
-    {
-        // Create a mock repository
-        $repository = $this->createMock(UserRepositoryInterface::class);
-
-        // Set up expectations
-        $userData = ['name' => 'Test User', 'email' => 'test@example.com'];
-        $createdUser = array_merge(['id' => 123], $userData);
-
-        $repository->expects($this->once())
-            ->method('create')
-            ->with($userData)
-            ->willReturn($createdUser);
-
-        // Use the mock in our service
-        $userService = new UserService($repository);
-        $result = $userService->createUser($userData);
-
-        $this->assertEquals($createdUser, $result);
-    }
-}
-
-class UserService
-{
-    private UserRepositoryInterface $repository;
-
-    public function __construct(UserRepositoryInterface $repository)
-    {
-        $this->repository = $repository;
-    }
-
-    public function createUser(array $userData): array
-    {
-        // Validate data, process business logic, etc.
-
-        return $this->repository->create($userData);
-    }
-}
-```
-
-## Best Practices
-
-1. **Mock External Services**: Always mock external API calls in unit tests.
-
-2. **Test Various Response Types**: Test how your code handles success, client errors, server errors, and network issues.
-
-3. **Use Status Enums**: Use the type-safe Status enums for clear and maintainable tests.
-
-4. **Use Test Data Factories**: Create factories for generating test data consistently.
-
-5. **Separate Integration Tests**: Keep integration tests that hit real APIs separate from unit tests.
-
-6. **Test Asynchronous Code**: If you're using async features, test both the modern async/await and traditional promise patterns.
-
-7. **Verify Request Parameters**: Use history middleware to verify that requests are made with the expected parameters.
-
-8. **Abstract HTTP Logic**: Use the repository pattern to abstract HTTP logic, making it easier to mock for tests.
-
-9. **Test Response Parsing**: Test that your code correctly handles and parses various response formats.
-
-10. **Test Retry Logic**: Test that your retry configuration works correctly for retryable errors.
-
-11. **Test Logging**: Verify that appropriate logging occurs for requests and responses.
 
 ## Next Steps
 
-- Explore [Dependency Injection](/guide/custom-clients#dependency-injection-with-clients) for more testable code
 - Learn about [Error Handling](/guide/error-handling) for robust applications
-- See [Asynchronous Requests](/guide/async-requests) for more on async testing patterns
+- Explore [Retry Handling](/guide/retry-handling) for resilient HTTP requests
+- See [Asynchronous Requests](/guide/async-requests) for async testing patterns

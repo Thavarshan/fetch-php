@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fetch\Http;
 
 use Fetch\Concerns\ConfiguresRequests;
+use Fetch\Concerns\HandlesMocking;
 use Fetch\Concerns\HandlesUris;
 use Fetch\Concerns\ManagesPromises;
 use Fetch\Concerns\ManagesRetries;
@@ -25,6 +26,7 @@ use React\Promise\PromiseInterface;
 class ClientHandler implements ClientHandlerInterface
 {
     use ConfiguresRequests,
+        HandlesMocking,
         HandlesUris,
         ManagesPromises,
         ManagesRetries,

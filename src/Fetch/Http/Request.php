@@ -276,6 +276,20 @@ class Request extends BaseRequest implements RequestInterface
     }
 
     /**
+     * Create a new Request instance from a PSR-7 request.
+     */
+    public static function createFromBase(RequestInterface $request): static
+    {
+        return new static(
+            $request->getMethod(),
+            $request->getUri(),
+            $request->getHeaders(),
+            $request->getBody(),
+            $request->getProtocolVersion()
+        );
+    }
+
+    /**
      * Override getRequestTarget to use our custom target if set.
      */
     public function getRequestTarget(): string

@@ -241,6 +241,12 @@ export default defineConfig({
                         { text: "Status", link: "/api/status-enum" },
                     ],
                 },
+                {
+                    text: "Testing",
+                    items: [
+                        { text: "Testing Utilities", link: "/api/testing" },
+                    ],
+                },
             ],
             "/examples/": [
                 {

@@ -30,7 +30,7 @@ trait PerformsHttpRequests
     public static function handle(
         string $method,
         string $uri,
-        array $options = []
+        array $options = [],
     ): Response|PromiseInterface {
         $handler = static::create();
         $handler->withOptions($options);
@@ -77,7 +77,7 @@ trait PerformsHttpRequests
     public function post(
         string $uri,
         mixed $body = null,
-        ContentType|string $contentType = ContentType::JSON
+        ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
         return $this->sendRequestWithBody(Method::POST, $uri, $body, $contentType);
     }
@@ -93,7 +93,7 @@ trait PerformsHttpRequests
     public function put(
         string $uri,
         mixed $body = null,
-        ContentType|string $contentType = ContentType::JSON
+        ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
         return $this->sendRequestWithBody(Method::PUT, $uri, $body, $contentType);
     }
@@ -109,7 +109,7 @@ trait PerformsHttpRequests
     public function patch(
         string $uri,
         mixed $body = null,
-        ContentType|string $contentType = ContentType::JSON
+        ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
         return $this->sendRequestWithBody(Method::PATCH, $uri, $body, $contentType);
     }
@@ -125,7 +125,7 @@ trait PerformsHttpRequests
     public function delete(
         string $uri,
         mixed $body = null,
-        ContentType|string $contentType = ContentType::JSON
+        ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
         return $this->sendRequestWithBody(Method::DELETE, $uri, $body, $contentType);
     }
@@ -149,18 +149,10 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $options  Additional options
      * @return ResponseInterface|PromiseInterface The response or promise
      */
-    /**
-     * Send an HTTP request.
-     *
-     * @param  Method|string  $method  The HTTP method
-     * @param  string  $uri  The URI to request
-     * @param  array<string, mixed>  $options  Additional options
-     * @return ResponseInterface|PromiseInterface The response or promise
-     */
     public function sendRequest(
         Method|string $method,
         string $uri,
-        array $options = []
+        array $options = [],
     ): ResponseInterface|PromiseInterface {
         // Create a new handler with the combined options
         $handler = clone $this;
@@ -178,6 +170,14 @@ trait PerformsHttpRequests
 
         // Prepare Guzzle options
         $guzzleOptions = $handler->prepareGuzzleOptions();
+
+        // Check for mock response first (if HandlesMocking trait is available)
+        if (method_exists($handler, 'handleMockRequest')) {
+            $mockResponse = $handler->handleMockRequest($methodStr, $fullUri, $guzzleOptions);
+            if ($mockResponse !== null) {
+                return $mockResponse;
+            }
+        }
 
         // Start timing for logging
         $startTime = microtime(true);
@@ -210,7 +210,7 @@ trait PerformsHttpRequests
         string $uri,
         mixed $body = null,
         string|ContentType $contentType = ContentType::JSON,
-        array $options = []
+        array $options = [],
     ): Response|PromiseInterface {
         // Normalize method to string
         $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
@@ -265,7 +265,7 @@ trait PerformsHttpRequests
         string $uri,
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
-        array $options = []
+        array $options = [],
     ): ResponseInterface|PromiseInterface {
         // Skip if no body
         if ($body === null) {
@@ -342,7 +342,7 @@ trait PerformsHttpRequests
         string $method,
         string $uri,
         array $options,
-        float $startTime
+        float $startTime,
     ): ResponseInterface {
         return $this->retryRequest(function () use ($method, $uri, $options, $startTime): ResponseInterface {
             try {
@@ -359,11 +359,7 @@ trait PerformsHttpRequests
                 if (in_array($response->getStatusCode(), $this->getRetryableStatusCodes(), true)) {
                     $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
 
-                    throw new FetchRequestException(
-                        'Retryable status: '.$response->getStatusCode(),
-                        $psrRequest,
-                        $psrResponse
-                    );
+                    throw new FetchRequestException('Retryable status: '.$response->getStatusCode(), $psrRequest, $psrResponse);
                 }
 
                 // Log response if method exists
@@ -378,23 +374,13 @@ trait PerformsHttpRequests
                     $req = $e->getRequest();
                     $res = $e->getResponse();
 
-                    throw new FetchRequestException(
-                        sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()),
-                        $req,
-                        $res,
-                        $e
-                    );
+                    throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $req, $res, $e);
                 }
 
                 // Fallback when we don't get a Guzzle RequestException (no request available)
                 $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
 
-                throw new FetchRequestException(
-                    sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()),
-                    $psrRequest,
-                    null,
-                    $e
-                );
+                throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $psrRequest, null, $e);
             }
         });
     }
@@ -410,9 +396,9 @@ trait PerformsHttpRequests
     protected function executeAsyncRequest(
         string $method,
         string $uri,
-        array $options
+        array $options,
     ): PromiseInterface {
-        return async(function () use ($method, $uri, $options): ResponseInterface {
+        return \async(function () use ($method, $uri, $options): ResponseInterface {
             $startTime = microtime(true);
 
             // Since this is in an async context, we can use try-catch for proper promise rejection
@@ -436,11 +422,7 @@ trait PerformsHttpRequests
                 $contextMessage = "Request $method $uri failed";
 
                 // Throw the exception - in the async context, this will properly reject the promise
-                throw new AsyncException(
-                    $contextMessage.': '.$e->getMessage(),
-                    $e->getCode(),
-                    $e // Preserve the original exception as previous
-                );
+                throw new AsyncException($contextMessage.': '.$e->getMessage(), $e->getCode(), $e /* Preserve the original exception as previous */);
             }
         });
     }
