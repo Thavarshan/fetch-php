@@ -11,6 +11,15 @@ use React\Promise\PromiseInterface;
 use RuntimeException;
 use Throwable;
 
+use function Matrix\Support\all;
+use function Matrix\Support\any;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\race;
+use function Matrix\Support\reject;
+use function Matrix\Support\resolve;
+use function Matrix\Support\timeout;
+
 trait ManagesPromises
 {
     /**

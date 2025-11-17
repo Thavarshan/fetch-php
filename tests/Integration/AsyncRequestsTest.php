@@ -10,6 +10,10 @@ use Fetch\Interfaces\Response as ResponseInterface;
 use PHPUnit\Framework\TestCase;
 use React\Promise\PromiseInterface;
 
+use function Matrix\Support\all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+
 class AsyncRequestsTest extends TestCase
 {
     private $client;
