@@ -1,6 +1,45 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.2.3...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.3.0...HEAD)
+
+## [v3.3.0](https://github.com/Thavarshan/fetch-php/compare/v3.2.3...v3.3.0) - 2025-01-17
+
+### Added
+
+- **Comprehensive Testing Utilities** inspired by Laravel's HTTP client testing:
+  - `MockServer` with URL pattern matching (wildcards, method-specific, callbacks)
+  - `MockResponse` fluent builder with convenience methods for all HTTP status codes
+  - `MockResponseSequence` for testing retry logic and flaky endpoints
+  - `Recorder` for capturing and replaying request/response pairs
+  - Comprehensive assertion helpers (`assertSent()`, `assertNotSent()`, `assertSentCount()`, `assertNothingSent()`)
+  - Request recording with JSON export/import for test fixtures
+  - Stray request prevention with allowlist support
+- `HandlesMocking` trait integrated into `ClientHandler` for request interception
+- `Request::createFromBase()` method for PSR-7 request conversion
+- 117 new tests with 288 assertions for testing utilities
+- Comprehensive testing documentation in `docs/guide/testing.md` (617 lines)
+- Complete API reference in `docs/api/testing.md` (539 lines)
+- Testing utilities section in VitePress sidebar navigation
+
+### Changed
+
+- Updated `PerformsHttpRequests` to support mock request interception
+- Enhanced `ClientHandler` with `HandlesMocking` trait for testing support
+
+### Fixed
+
+- Fixed async helper function imports to use correct `Matrix\Support\*` namespace:
+  - Updated imports in `ManagesPromises` trait (`async`, `await`, `all`, `any`, `race`, `reject`, `resolve`, `timeout`)
+  - Updated imports in `PerformsHttpRequests` trait (`async`)
+  - Updated imports in `ManagesPromisesTest` and `AsyncRequestsTest`
+- All 282 tests now passing with 841 assertions
+
+### Removed
+
+- Removed Dependabot configuration (`dependabot.yml`)
+- Removed Dependabot auto-merge workflow
+
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/v3.2.3...v3.3.0>
 
 ## [v3.2.3](https://github.com/Thavarshan/fetch-php/compare/v3.2.2...v3.2.3) - 2025-05-24
 
@@ -338,20 +377,3 @@
 ## v1.0.0 - 2024-09-14
 
 Initial release.
-
-## [v3.2.2](https://github.com/Thavarshan/fetch-php/compare/v3.2.1...v3.2.2) - 2025-05-19
-
-### Fixed
-
-- "Fatal error: Uncaught Error: Interface `Psr\Log\LoggerAwareInterface` not found" closes #21
-
-**Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/3.2.1...3.2.2](https://github.com/Thavarshan/fetch-php/compare/3.2.1...3.2.2)
-
-## [v3.2.1](https://github.com/Thavarshan/fetch-php/compare/v3.2.1...v3.2.1) - 2025-05-17
-
-### Changed
-
-- Updated documentation
-- Updated dependencies
-
-**Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/3.2.0...3.2.1](https://github.com/Thavarshan/fetch-php/compare/3.2.0...3.2.1)
