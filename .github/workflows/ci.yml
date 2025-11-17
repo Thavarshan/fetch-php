@@ -114,7 +114,7 @@ jobs:
             ${{ runner.os }}-php${{ matrix.php }}-composer-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader ${{ matrix.stability == 'prefer-lowest' && '--prefer-lowest' || '' }}
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader ${{ matrix.stability == 'prefer-lowest' && '--prefer-lowest' || '' }} ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl' || '' }}
 
       - name: Execute tests
         run: composer test
