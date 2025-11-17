@@ -115,11 +115,11 @@ jobs:
 
       - name: Install dependencies
         if: matrix.stability != 'prefer-lowest'
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl' || '' }}
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix' || '' }}
 
       - name: Install dependencies (prefer-lowest)
         if: matrix.stability == 'prefer-lowest'
-        run: composer update --no-interaction --prefer-dist --optimize-autoloader --prefer-lowest ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl' || '' }}
+        run: composer update --no-interaction --prefer-dist --optimize-autoloader --prefer-lowest ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix' || '' }}
 
       - name: Execute tests
         run: composer test

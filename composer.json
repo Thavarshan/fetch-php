@@ -52,10 +52,10 @@
     "scripts": {
         "lint": "duster lint src",
         "fix": "duster fix src",
-        "test": "phpunit --do-not-fail-on-skipped --no-coverage",
-        "test:unit": "phpunit --do-not-fail-on-skipped --no-coverage tests/Unit",
-        "test:integration": "phpunit --do-not-fail-on-skipped --no-coverage tests/Integration",
-        "test:coverage": "XDEBUG_MODE=coverage phpunit --do-not-fail-on-skipped --coverage-html=coverage --coverage-text --coverage-xml=coverage",
+        "test": "phpunit --no-coverage",
+        "test:unit": "phpunit --no-coverage tests/Unit",
+        "test:integration": "phpunit --no-coverage tests/Integration",
+        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage",
         "analyse": "phpstan analyse",
         "check": [
             "@analyse",
