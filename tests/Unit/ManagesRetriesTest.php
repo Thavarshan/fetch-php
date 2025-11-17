@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
+use Fetch\Exceptions\RequestException;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
-use Fetch\Exceptions\RequestException;
 use GuzzleHttp\Exception\ConnectException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
