@@ -10,6 +10,11 @@ use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use ReflectionClass;
 
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\reject;
+use function Matrix\Support\resolve;
+
 class ManagesPromisesTest extends TestCase
 {
     private $handler;

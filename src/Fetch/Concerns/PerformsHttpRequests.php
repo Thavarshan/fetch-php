@@ -15,7 +15,7 @@ use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Matrix\Exceptions\AsyncException;
 use React\Promise\PromiseInterface;
 
-use function async;
+use function Matrix\Support\async;
 
 trait PerformsHttpRequests
 {
@@ -398,7 +398,7 @@ trait PerformsHttpRequests
         string $uri,
         array $options,
     ): PromiseInterface {
-        return \async(function () use ($method, $uri, $options): ResponseInterface {
+        return async(function () use ($method, $uri, $options): ResponseInterface {
             $startTime = microtime(true);
 
             // Since this is in an async context, we can use try-catch for proper promise rejection
