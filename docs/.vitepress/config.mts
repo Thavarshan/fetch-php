@@ -280,7 +280,7 @@ export default defineConfig({
 
         // Social links (keeping your GitHub link)
         socialLinks: [
-            { icon: "github", link: "https://github.com/jerome/fetch-php" },
+            { icon: "github", link: "https://github.com/Thavarshan/fetch-php" },
         ],
 
         // Footer content with additional keywords naturally included
@@ -310,7 +310,7 @@ export default defineConfig({
 
         // Add edit link to encourage contributions (helps with engagement metrics)
         editLink: {
-            pattern: "https://github.com/jerome/fetch-php/edit/main/docs/:path",
+            pattern: "https://github.com/Thavarshan/fetch-php/edit/main/docs/:path",
             text: "Edit this page on GitHub",
         },
 
