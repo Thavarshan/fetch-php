@@ -99,9 +99,10 @@ class CacheControl
             return false;
         }
 
-        // Check response status code
+        // Check response status code - using RFC 7234 recommended cacheable status codes
+        // This list matches the default cache_status_codes in ManagesCache trait
         $status = $response->getStatusCode();
-        $cacheableStatuses = [200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501];
+        $cacheableStatuses = [200, 203, 204, 206, 300, 301, 404, 410];
 
         if (! in_array($status, $cacheableStatuses, true)) {
             return false;
