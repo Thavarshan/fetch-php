@@ -81,7 +81,8 @@ trait ManagesConnectionPool
             $curlOptions = $this->http2Config->getCurlOptions();
             if (! empty($curlOptions)) {
                 $existingCurl = $this->options['curl'] ?? [];
-                // Use + operator to preserve integer keys
+                // Use + operator to preserve integer keys (CURL constants)
+                // and give priority to existing options over defaults
                 $this->options['curl'] = $existingCurl + $curlOptions;
             }
 
