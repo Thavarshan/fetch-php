@@ -71,8 +71,7 @@
             "dealerdirect/phpcodesniffer-composer-installer": true
         },
         "optimize-autoloader": true,
-        "preferred-install": "dist",
-        "github-protocols": ["https"]
+        "preferred-install": "dist"
     },
     "minimum-stability": "dev",
     "prefer-stable": true
