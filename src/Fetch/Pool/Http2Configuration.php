@@ -119,13 +119,26 @@ class Http2Configuration
         $options = [];
 
         if ($this->enabled) {
-            // Use HTTP/2
+            // Use HTTP/2 with automatic fallback
             $options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
+        }
 
-            // Enable multiplexing
-            if (defined('CURLPIPE_MULTIPLEX')) {
-                $options[CURLMOPT_PIPELINING] = CURLPIPE_MULTIPLEX;
-            }
+        return $options;
+    }
+
+    /**
+     * Get cURL multi options for HTTP/2 multiplexing.
+     *
+     * These options should be used with curl_multi_setopt().
+     *
+     * @return array<int, mixed>
+     */
+    public function getCurlMultiOptions(): array
+    {
+        $options = [];
+
+        if ($this->enabled && defined('CURLPIPE_MULTIPLEX')) {
+            $options[CURLMOPT_PIPELINING] = CURLPIPE_MULTIPLEX;
         }
 
         return $options;

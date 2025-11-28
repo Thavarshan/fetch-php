@@ -179,7 +179,7 @@ class DnsCache
         if (empty($addresses)) {
             throw new NetworkException(
                 "Failed to resolve hostname: {$hostname}",
-                new \GuzzleHttp\Psr7\Request('GET', $hostname)
+                new \GuzzleHttp\Psr7\Request('GET', "https://{$hostname}/")
             );
         }
 

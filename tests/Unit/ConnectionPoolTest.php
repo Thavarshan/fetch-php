@@ -295,6 +295,18 @@ class ConnectionPoolTest extends TestCase
         $this->assertEquals(CURL_HTTP_VERSION_2_0, $curlOptions[CURLOPT_HTTP_VERSION]);
     }
 
+    public function test_http2_curl_multi_options(): void
+    {
+        $config = new Http2Configuration(enabled: true);
+        $curlMultiOptions = $config->getCurlMultiOptions();
+
+        // CURLMOPT_PIPELINING should be in multi options, not regular curl options
+        if (defined('CURLPIPE_MULTIPLEX')) {
+            $this->assertArrayHasKey(CURLMOPT_PIPELINING, $curlMultiOptions);
+            $this->assertEquals(CURLPIPE_MULTIPLEX, $curlMultiOptions[CURLMOPT_PIPELINING]);
+        }
+    }
+
     public function test_http2_disabled_curl_options(): void
     {
         $config = new Http2Configuration(enabled: false);
