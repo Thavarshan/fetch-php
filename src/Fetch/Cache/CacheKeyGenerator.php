@@ -141,10 +141,30 @@ class CacheKeyGenerator
      */
     private function normalizeQuery(string $query): string
     {
-        parse_str($query, $params);
-        ksort($params);
-
-        return http_build_query($params);
+        // Parse query string into array of [key, value] pairs, preserving duplicates and order
+        $pairs = [];
+        foreach (explode('&', $query) as $part) {
+            if ($part === '') {
+                continue;
+            }
+            $kv = explode('=', $part, 2);
+            $key = urldecode($kv[0]);
+            $value = isset($kv[1]) ? urldecode($kv[1]) : '';
+            $pairs[] = [$key, $value];
+        }
+        // Sort pairs by key, then by value, to normalize
+        usort($pairs, function ($a, $b) {
+            if ($a[0] === $b[0]) {
+                return strcmp($a[1], $b[1]);
+            }
+            return strcmp($a[0], $b[0]);
+        });
+        // Rebuild query string
+        $normalized = [];
+        foreach ($pairs as [$key, $value]) {
+            $normalized[] = rawurlencode($key) . '=' . rawurlencode($value);
+        }
+        return implode('&', $normalized);
     }
 
     /**
