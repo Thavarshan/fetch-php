@@ -259,4 +259,25 @@ trait ManagesConnectionPool
             return null;
         }
     }
+
+    /**
+     * Example method: Get a connection using DNS cache to resolve the hostname.
+     *
+     * @param string $hostname
+     * @return mixed|null
+     */
+    protected function getConnectionWithDnsCache(string $hostname)
+    {
+        $resolvedIp = $this->resolveHostname($hostname);
+        $target = $resolvedIp ?? $hostname;
+
+        if (self::$connectionPool === null) {
+            // Optionally, initialize the pool if not already done
+            self::initializePool();
+        }
+
+        // Example: get a connection from the pool using the resolved IP or hostname
+        // This assumes ConnectionPool has a getConnection($target) method
+        return self::$connectionPool ? self::$connectionPool->getConnection($target) : null;
+    }
 }
