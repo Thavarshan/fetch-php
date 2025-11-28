@@ -206,28 +206,28 @@ trait PerformsHttpRequests
         if ($handler->isAsync) {
             return $handler->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions);
         } else {
-            return $handler->executeSyncRequestWithCache($handler, $methodStr, $fullUri, $guzzleOptions, $startTime, $cachedResult);
+            return $this->executeSyncRequestWithCache($methodStr, $fullUri, $guzzleOptions, $startTime, $cachedResult, $handler);
         }
     }
 
     /**
      * Execute a synchronous request with caching support.
      *
-     * @param  mixed  $handler  The handler instance
      * @param  string  $method  The HTTP method
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The Guzzle options
      * @param  float  $startTime  The request start time
      * @param  array<string, mixed>|null  $cachedResult  The cached result data
+     * @param  mixed  $handler  The cloned handler instance with request-specific state
      * @return ResponseInterface The response
      */
     protected function executeSyncRequestWithCache(
-        mixed $handler,
         string $method,
         string $uri,
         array $options,
         float $startTime,
-        ?array $cachedResult
+        ?array $cachedResult,
+        mixed $handler
     ): ResponseInterface {
         try {
             $response = $handler->executeSyncRequest($method, $uri, $options, $startTime);

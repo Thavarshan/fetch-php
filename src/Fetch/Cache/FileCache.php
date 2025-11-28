@@ -121,6 +121,8 @@ class FileCache implements CacheInterface
             );
         }
 
+        // PHPStan cannot infer that $response is non-null here after the conditionals above
+        // but we know $response is always a valid CachedResponse at this point
         // @phpstan-ignore-next-line
         $serialized = serialize($response->toArray());
         $result = @file_put_contents($path, $serialized, LOCK_EX);
