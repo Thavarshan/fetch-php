@@ -66,13 +66,15 @@ class MemoryCache implements CacheInterface
             $this->evictOldest();
         }
 
-        $ttl = $ttl ?? $this->defaultTtl;
+        // Determine the effective TTL
+        // ttl=null means use default, ttl=0 means no expiration, negative means already expired
+        $effectiveTtl = $ttl ?? $this->defaultTtl;
 
         // Handle negative TTL (already expired)
-        if ($ttl < 0) {
-            $expiresAt = time() + $ttl; // Will be in the past
-        } elseif ($ttl > 0) {
-            $expiresAt = time() + $ttl;
+        if ($effectiveTtl < 0) {
+            $expiresAt = time() + $effectiveTtl; // Will be in the past
+        } elseif ($effectiveTtl > 0) {
+            $expiresAt = time() + $effectiveTtl;
         } else {
             $expiresAt = null; // TTL of 0 means no expiration
         }
