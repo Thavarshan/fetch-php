@@ -11,6 +11,7 @@ use Fetch\Cache\CacheKeyGenerator;
 use Fetch\Cache\MemoryCache;
 use Fetch\Http\Response;
 use Fetch\Interfaces\ClientHandler;
+use Fetch\Interfaces\Response as ResponseInterface;
 
 /**
  * Trait for managing HTTP caching.
@@ -188,7 +189,7 @@ trait ManagesCache
      *
      * @param  array<string, mixed>  $options  Request options
      */
-    protected function cacheResponse(string $method, string $uri, Response $response, array $options = []): void
+    protected function cacheResponse(string $method, string $uri, ResponseInterface $response, array $options = []): void
     {
         if ($this->cache === null || ! $this->isCacheableMethod($method)) {
             return;
@@ -225,7 +226,7 @@ trait ManagesCache
      *
      * @param  array<string, mixed>  $options  Request options
      */
-    protected function calculateTtl(Response $response, CacheControl $cacheControl, array $options = []): ?int
+    protected function calculateTtl(ResponseInterface $response, CacheControl $cacheControl, array $options = []): ?int
     {
         // Check for per-request TTL
         $cacheConfig = $options['cache'] ?? [];
@@ -280,7 +281,7 @@ trait ManagesCache
     /**
      * Handle a 304 Not Modified response.
      */
-    protected function handleNotModified(CachedResponse $cached, Response $response): Response
+    protected function handleNotModified(CachedResponse $cached, ResponseInterface $response): Response
     {
         // Create a new response with the cached body but potentially updated headers
         $headers = $cached->getHeaders();
