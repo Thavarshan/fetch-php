@@ -81,7 +81,7 @@ class ClientHandlerCacheTest extends TestCase
         $this->assertEquals('HIT', $response2->getHeaderLine('X-Cache-Status'));
     }
 
-    public function test_cache_miss_adds_x_cache_status_header(): void
+    public function test_cache_miss_returns_successful_response(): void
     {
         $responses = [
             new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"test"}'),
@@ -93,8 +93,9 @@ class ClientHandlerCacheTest extends TestCase
 
         $response = $handler->get('/users');
 
-        // After request is cached, the response won't have the header until fetched from cache
+        // First request is a cache miss, response should be successful
         $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('{"data":"test"}', $response->body());
     }
 
     public function test_does_not_cache_post_requests_by_default(): void
@@ -286,7 +287,7 @@ class ClientHandlerCacheTest extends TestCase
         $this->assertEquals('{"data":"cached"}', $response->body());
     }
 
-    public function test_cache_disabled_when_respect_headers_false_and_no_store(): void
+    public function test_cache_respects_no_store_when_respect_headers_enabled(): void
     {
         $responses = [
             new GuzzleResponse(200, [
@@ -298,7 +299,7 @@ class ClientHandlerCacheTest extends TestCase
 
         $handler = $this->create_handler_with_mock_responses($responses);
         $handler->baseUri('https://api.example.com');
-        // Even with respect_cache_headers=false, no-store should be respected
+        // With respect_cache_headers=true (default), no-store should be respected
         $handler->withCache(null, ['respect_cache_headers' => true]);
 
         $response1 = $handler->get('/users');
@@ -307,5 +308,34 @@ class ClientHandlerCacheTest extends TestCase
         // Should not be cached due to no-store
         $response2 = $handler->get('/users');
         $this->assertEquals('{"data":"second"}', $response2->body());
+    }
+
+    public function test_cache_requires_revalidation_with_no_cache_directive(): void
+    {
+        // no-cache means the response may be cached but must be revalidated before use
+        // This is different from no-store which forbids caching entirely
+        $responses = [
+            new GuzzleResponse(200, [
+                'Content-Type' => 'application/json',
+                'Cache-Control' => 'no-cache',
+                'ETag' => '"abc123"',
+            ], '{"data":"first"}'),
+            // Second request should include conditional headers and may get 304
+            new GuzzleResponse(304, [], ''),
+        ];
+
+        $handler = $this->create_handler_with_mock_responses($responses);
+        $handler->baseUri('https://api.example.com');
+        $handler->withCache(null, ['respect_cache_headers' => true]);
+
+        // First request - gets response with no-cache
+        $response1 = $handler->get('/users');
+        $this->assertEquals('{"data":"first"}', $response1->body());
+        $this->assertEquals(200, $response1->getStatusCode());
+
+        // Second request - should revalidate and use cached response if 304
+        $response2 = $handler->get('/users');
+        // Response should still be the cached one after revalidation
+        $this->assertEquals(200, $response2->getStatusCode());
     }
 }

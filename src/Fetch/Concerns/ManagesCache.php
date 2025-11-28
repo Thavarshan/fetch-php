@@ -14,6 +14,9 @@ use Fetch\Interfaces\ClientHandler;
 
 /**
  * Trait for managing HTTP caching.
+ *
+ * Note: Caching is only supported for synchronous requests. Asynchronous requests
+ * bypass the cache entirely and do not check or store cached responses.
  */
 trait ManagesCache
 {

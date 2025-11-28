@@ -53,11 +53,9 @@ class FileCache implements CacheInterface
     {
         $path = $this->getPath($key);
 
-        if (! file_exists($path)) {
-            return null;
-        }
-
-        $contents = file_get_contents($path);
+        // Directly attempt to read the file - file_get_contents returns false if file doesn't exist
+        // This avoids a race condition where file could be deleted between exists check and read
+        $contents = @file_get_contents($path);
         if ($contents === false) {
             return null;
         }
@@ -108,29 +106,35 @@ class FileCache implements CacheInterface
         if ($ttl !== null) {
             if ($ttl === 0) {
                 // No expiration
-                $response = CachedResponse::fromArray(
+                $updatedResponse = CachedResponse::fromArray(
                     array_merge($response->toArray(), [
                         'expires_at' => null,
                     ])
                 );
+                if ($updatedResponse !== null) {
+                    $response = $updatedResponse;
+                }
             } else {
-                $response = CachedResponse::fromArray(
+                $updatedResponse = CachedResponse::fromArray(
                     array_merge($response->toArray(), [
                         'expires_at' => time() + $ttl,
                     ])
                 );
+                if ($updatedResponse !== null) {
+                    $response = $updatedResponse;
+                }
             }
         } elseif ($response->getExpiresAt() === null && $this->defaultTtl > 0) {
-            $response = CachedResponse::fromArray(
+            $updatedResponse = CachedResponse::fromArray(
                 array_merge($response->toArray(), [
                     'expires_at' => time() + $this->defaultTtl,
                 ])
             );
+            if ($updatedResponse !== null) {
+                $response = $updatedResponse;
+            }
         }
 
-        // PHPStan cannot infer that $response is non-null here after the conditionals above
-        // but we know $response is always a valid CachedResponse at this point
-        // @phpstan-ignore-next-line
         $encoded = json_encode($response->toArray());
         if ($encoded === false) {
             throw new RuntimeException('Failed to encode cache data as JSON');
