@@ -45,12 +45,7 @@ trait ManagesDebugAndProfiling
     public function withDebug(array|bool $options = true): static
     {
         $this->debugEnabled = $options !== false;
-
-        if (is_array($options)) {
-            $this->debugOptions = array_merge(DebugInfo::getDefaultOptions(), $options);
-        } else {
-            $this->debugOptions = DebugInfo::getDefaultOptions();
-        }
+        $this->debugOptions = array_merge(DebugInfo::getDefaultOptions(), is_array($options) ? $options : []);
 
         return $this;
     }

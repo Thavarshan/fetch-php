@@ -266,7 +266,7 @@ class FetchProfiler
         }
 
         if (isset($events['request_sent'])) {
-            $metrics['time_to_first_byte'] = round(($events['response_start'] ?? $endTime - $events['request_sent']) * 1000, 3);
+            $metrics['time_to_first_byte'] = round((($events['response_start'] ?? $endTime) - $events['request_sent']) * 1000, 3);
         }
 
         // Include raw events for detailed analysis
