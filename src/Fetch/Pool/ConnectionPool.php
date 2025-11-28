@@ -82,7 +82,7 @@ class ConnectionPool
         $this->activeConnections[spl_object_id($connection)] = $connection;
 
         // Update metrics
-        $this->metrics['total_requests'] = (int) $this->metrics['total_requests'] + 1;
+        $this->metrics['total_requests']++;
 
         return $connection;
     }
@@ -122,7 +122,7 @@ class ConnectionPool
 
             if (isset($this->pools[$poolKey])) {
                 $this->pools[$poolKey]->returnConnection($connection);
-                $this->metrics['connections_reused'] = (int) $this->metrics['connections_reused'] + 1;
+                $this->metrics['connections_reused']++;
             } else {
                 $connection->close();
             }
@@ -169,7 +169,7 @@ class ConnectionPool
      */
     public function recordLatency(string $host, int $port, float $latency): void
     {
-        $this->metrics['total_latency'] = (float) $this->metrics['total_latency'] + $latency;
+        $this->metrics['total_latency'] += $latency;
     }
 
     /**
