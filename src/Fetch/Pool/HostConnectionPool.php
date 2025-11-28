@@ -169,9 +169,8 @@ class HostConnectionPool
                 $connection = $this->createConnection();
                 $connection->decrementActiveRequests(); // Was incremented in createConnection
                 $this->availableConnections->enqueue($connection);
-            } catch (\Throwable $e) {
-                // Log warmup failure but continue
-                error_log('Connection warmup failed: '.$e->getMessage());
+            } catch (\Throwable) {
+                // Warmup failure is not critical - stop warming up but continue
                 break;
             }
         }
