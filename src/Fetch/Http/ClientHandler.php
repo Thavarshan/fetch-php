@@ -7,6 +7,7 @@ namespace Fetch\Http;
 use Fetch\Concerns\ConfiguresRequests;
 use Fetch\Concerns\HandlesMocking;
 use Fetch\Concerns\HandlesUris;
+use Fetch\Concerns\ManagesDebugAndProfiling;
 use Fetch\Concerns\ManagesPromises;
 use Fetch\Concerns\ManagesRetries;
 use Fetch\Concerns\PerformsHttpRequests;
@@ -28,6 +29,7 @@ class ClientHandler implements ClientHandlerInterface
     use ConfiguresRequests,
         HandlesMocking,
         HandlesUris,
+        ManagesDebugAndProfiling,
         ManagesPromises,
         ManagesRetries,
         PerformsHttpRequests;

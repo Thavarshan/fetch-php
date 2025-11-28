@@ -535,4 +535,42 @@ interface ClientHandler
      * @return static New client handler instance
      */
     public function withClonedOptions(array $options): self;
+
+    /**
+     * Enable debug mode with specified options.
+     *
+     * @param  array<string, mixed>|bool  $options  Debug options or true to enable all
+     * @return $this
+     */
+    public function withDebug(array|bool $options = true): self;
+
+    /**
+     * Set a profiler for performance tracking.
+     *
+     * @param  \Fetch\Support\FetchProfiler  $profiler  The profiler instance
+     * @return $this
+     */
+    public function withProfiler(\Fetch\Support\FetchProfiler $profiler): self;
+
+    /**
+     * Get the profiler instance if set.
+     */
+    public function getProfiler(): ?\Fetch\Support\FetchProfiler;
+
+    /**
+     * Check if debug mode is enabled.
+     */
+    public function isDebugEnabled(): bool;
+
+    /**
+     * Get the debug options.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDebugOptions(): array;
+
+    /**
+     * Get the last debug info from the most recent request.
+     */
+    public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
 }
