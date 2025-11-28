@@ -246,6 +246,29 @@ trait ManagesConnectionPool
             return null;
         }
     }
+    /**
+     * Execute an HTTP request using a pooled connection/client.
+     *
+     * @template T
+     * @param string $url The request URL.
+     * @param callable $requestCallback A callback that receives the client/connection and performs the request.
+     * @return mixed The result of the request callback.
+     */
+    protected function withPooledConnection(string $url, callable $requestCallback)
+    {
+        // Ensure the pool is initialized
+        self::initializePool();
+
+        // Get a client/connection from the pool
+        $client = $this->getClientForUrl($url);
+        try {
+            // Perform the request using the provided callback
+            return $requestCallback($client);
+        } finally {
+            // Release the client/connection back to the pool
+            $this->releaseConnection($url, $client);
+        }
+    }
 
     /**
      * Example method: Get a connection using DNS cache to resolve the hostname.
