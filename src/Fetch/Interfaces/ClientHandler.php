@@ -6,6 +6,7 @@ namespace Fetch\Interfaces;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Events\EventDispatcherInterface;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use Psr\Log\LoggerInterface;
@@ -573,4 +574,104 @@ interface ClientHandler
      * Get the last debug info from the most recent request.
      */
     public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
+
+    /**
+     * Register a callback for when a request is about to be sent.
+     *
+     * @param  callable  $callback  The callback to invoke
+     * @param  int  $priority  Higher priority callbacks are called first
+     * @return $this
+     */
+    public function onRequest(callable $callback, int $priority = 0): self;
+
+    /**
+     * Register a callback for when a response is received.
+     *
+     * @param  callable  $callback  The callback to invoke
+     * @param  int  $priority  Higher priority callbacks are called first
+     * @return $this
+     */
+    public function onResponse(callable $callback, int $priority = 0): self;
+
+    /**
+     * Register a callback for when an error occurs.
+     *
+     * @param  callable  $callback  The callback to invoke
+     * @param  int  $priority  Higher priority callbacks are called first
+     * @return $this
+     */
+    public function onError(callable $callback, int $priority = 0): self;
+
+    /**
+     * Register a callback for when a request is being retried.
+     *
+     * @param  callable  $callback  The callback to invoke
+     * @param  int  $priority  Higher priority callbacks are called first
+     * @return $this
+     */
+    public function onRetry(callable $callback, int $priority = 0): self;
+
+    /**
+     * Register a callback for when a request times out.
+     *
+     * @param  callable  $callback  The callback to invoke
+     * @param  int  $priority  Higher priority callbacks are called first
+     * @return $this
+     */
+    public function onTimeout(callable $callback, int $priority = 0): self;
+
+    /**
+     * Register a callback for when a request is being redirected.
+     *
+     * @param  callable  $callback  The callback to invoke
+     * @param  int  $priority  Higher priority callbacks are called first
+     * @return $this
+     */
+    public function onRedirect(callable $callback, int $priority = 0): self;
+
+    /**
+     * Register a callback for a specific event.
+     *
+     * @param  string  $eventName  The event name to listen for
+     * @param  callable  $callback  The callback to invoke
+     * @param  int  $priority  Higher priority callbacks are called first
+     * @return $this
+     */
+    public function when(string $eventName, callable $callback, int $priority = 0): self;
+
+    /**
+     * Register multiple hooks at once.
+     *
+     * @param  array<string, callable>  $hooks  Array of hook name => callback pairs
+     * @return $this
+     */
+    public function hooks(array $hooks): self;
+
+    /**
+     * Get the event dispatcher instance.
+     */
+    public function getEventDispatcher(): EventDispatcherInterface;
+
+    /**
+     * Set a custom event dispatcher.
+     *
+     * @param  EventDispatcherInterface  $dispatcher  The event dispatcher to use
+     * @return $this
+     */
+    public function setEventDispatcher(EventDispatcherInterface $dispatcher): self;
+
+    /**
+     * Check if event hooks are registered.
+     *
+     * @param  string|null  $eventName  The event name, or null to check any
+     */
+    public function hasHooks(?string $eventName = null): bool;
+
+    /**
+     * Clear all event hooks.
+     *
+     * @param  string|null  $eventName  The event name, or null to clear all
+     * @return $this
+     */
+    public function clearHooks(?string $eventName = null): self;
 }

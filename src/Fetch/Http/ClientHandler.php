@@ -11,6 +11,7 @@ use Fetch\Concerns\ManagesDebugAndProfiling;
 use Fetch\Concerns\ManagesPromises;
 use Fetch\Concerns\ManagesRetries;
 use Fetch\Concerns\PerformsHttpRequests;
+use Fetch\Concerns\SupportsHooks;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
@@ -32,7 +33,8 @@ class ClientHandler implements ClientHandlerInterface
         ManagesDebugAndProfiling,
         ManagesPromises,
         ManagesRetries,
-        PerformsHttpRequests;
+        PerformsHttpRequests,
+        SupportsHooks;
 
     /**
      * Default options for the request.

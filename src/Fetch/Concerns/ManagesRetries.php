@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Fetch\Concerns;
 
+use Fetch\Events\ErrorEvent;
+use Fetch\Events\RetryEvent;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Interfaces\ClientHandler;
 use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Exception\ConnectException;
 use InvalidArgumentException;
+use Psr\Http\Message\RequestInterface;
 use RuntimeException;
 use Throwable;
 
@@ -260,5 +263,120 @@ trait ManagesRetries
         }
 
         return $isRetryableStatusCode || $isRetryableException;
+    }
+
+    /**
+     * Implement retry logic for the request with event dispatching.
+     *
+     * @param  callable  $request  The request to execute
+     * @param  RequestInterface  $psrRequest  The PSR-7 request for events
+     * @param  string  $correlationId  The correlation ID for event tracking
+     * @return ResponseInterface The response after successful execution
+     *
+     * @throws FetchRequestException If the request fails after all retries
+     * @throws RuntimeException If something unexpected happens
+     */
+    protected function retryRequestWithEvents(
+        callable $request,
+        RequestInterface $psrRequest,
+        string $correlationId
+    ): ResponseInterface {
+        $attempts = $this->maxRetries ?? self::DEFAULT_RETRIES;
+        $delay = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
+        $exceptions = [];
+
+        for ($attempt = 0; $attempt <= $attempts; $attempt++) {
+            try {
+                // Execute the request
+                return $request();
+            } catch (Throwable $e) {
+                // Collect exception for later
+                $exceptions[] = $e;
+
+                // Get response from exception if available
+                $response = null;
+                if ($e instanceof FetchRequestException && $e->getResponse()) {
+                    $response = $e->getResponse();
+                } elseif (method_exists($e, 'getResponse')) {
+                    $response = $e->getResponse();
+                }
+
+                // If this was the last attempt, dispatch error event and break
+                if ($attempt === $attempts) {
+                    // Dispatch error event
+                    if (method_exists($this, 'dispatchEvent')) {
+                        $this->dispatchEvent(new ErrorEvent(
+                            $psrRequest,
+                            $e,
+                            $correlationId,
+                            microtime(true),
+                            $attempt + 1,
+                            $response
+                        ));
+                    }
+                    break;
+                }
+
+                // Only retry on retryable errors
+                if (! $this->isRetryableError($e)) {
+                    // Dispatch error event for non-retryable errors
+                    if (method_exists($this, 'dispatchEvent')) {
+                        $this->dispatchEvent(new ErrorEvent(
+                            $psrRequest,
+                            $e,
+                            $correlationId,
+                            microtime(true),
+                            $attempt + 1,
+                            $response
+                        ));
+                    }
+                    throw $e;
+                }
+
+                // Log the retry for debugging purposes
+                if (method_exists($this, 'logRetry')) {
+                    $this->logRetry($attempt + 1, $attempts, $e);
+                }
+
+                // Calculate delay with exponential backoff and jitter
+                $currentDelay = $this->calculateBackoffDelay($delay, $attempt);
+
+                // Dispatch retry event
+                if (method_exists($this, 'dispatchEvent')) {
+                    $this->dispatchEvent(new RetryEvent(
+                        $psrRequest,
+                        $e,
+                        $attempt + 1,
+                        $attempts,
+                        $currentDelay,
+                        $correlationId,
+                        microtime(true)
+                    ));
+                }
+
+                // Sleep before the next retry
+                usleep($currentDelay * 1000); // Convert milliseconds to microseconds
+            }
+        }
+
+        // If we got here, all retries failed
+        $lastException = end($exceptions) ?: new RuntimeException('Request failed after all retries');
+
+        // Enhanced failure reporting
+        if ($lastException instanceof FetchRequestException && $lastException->getResponse()) {
+            $statusCode = $lastException->getResponse()->getStatusCode();
+            throw new RuntimeException(
+                sprintf(
+                    'Request failed after %d attempts with status code %d: %s',
+                    $attempts + 1,
+                    $statusCode,
+                    $lastException->getMessage()
+                ),
+                $statusCode,
+                $lastException
+            );
+        }
+
+        throw $lastException;
     }
 }

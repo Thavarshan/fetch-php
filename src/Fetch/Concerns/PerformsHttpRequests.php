@@ -6,6 +6,10 @@ namespace Fetch\Concerns;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Events\ErrorEvent;
+use Fetch\Events\RequestEvent;
+use Fetch\Events\ResponseEvent;
+use Fetch\Events\RetryEvent;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
@@ -182,16 +186,33 @@ trait PerformsHttpRequests
         // Start timing for logging
         $startTime = microtime(true);
 
+        // Generate a correlation ID for event tracking
+        $correlationId = method_exists($handler, 'generateCorrelationId')
+            ? $handler->generateCorrelationId()
+            : bin2hex(random_bytes(16));
+
         // Log the request if method exists
         if (method_exists($handler, 'logRequest')) {
             $handler->logRequest($methodStr, $fullUri, $guzzleOptions);
         }
 
+        // Dispatch request event
+        if (method_exists($handler, 'dispatchEvent')) {
+            $psrRequest = new GuzzleRequest($methodStr, $fullUri, $guzzleOptions['headers'] ?? []);
+            $handler->dispatchEvent(new RequestEvent(
+                $psrRequest,
+                $correlationId,
+                $startTime,
+                [],
+                $guzzleOptions
+            ));
+        }
+
         // Send the request (async or sync)
         if ($handler->isAsync) {
-            return $handler->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions);
+            return $handler->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions, $correlationId);
         } else {
-            return $handler->executeSyncRequest($methodStr, $fullUri, $guzzleOptions, $startTime);
+            return $handler->executeSyncRequest($methodStr, $fullUri, $guzzleOptions, $startTime, $correlationId);
         }
     }
 
@@ -336,6 +357,7 @@ trait PerformsHttpRequests
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The Guzzle options
      * @param  float  $startTime  The request start time
+     * @param  string|null  $correlationId  The correlation ID for event tracking
      * @return ResponseInterface The response
      */
     protected function executeSyncRequest(
@@ -343,7 +365,11 @@ trait PerformsHttpRequests
         string $uri,
         array $options,
         float $startTime,
+        ?string $correlationId = null,
     ): ResponseInterface {
+        // Generate correlation ID if not provided
+        $correlationId = $correlationId ?? bin2hex(random_bytes(16));
+
         // Start profiling if profiler is available
         $requestId = null;
         if (method_exists($this, 'startProfiling')) {
@@ -353,79 +379,92 @@ trait PerformsHttpRequests
         // Track memory for debugging
         $startMemory = memory_get_usage(true);
 
-        return $this->retryRequest(function () use ($method, $uri, $options, $startTime, $requestId, $startMemory): ResponseInterface {
-            try {
-                // Record request sent event for profiling
-                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
-                    $this->recordProfilingEvent($requestId, 'request_sent');
-                }
+        // Create the PSR request for events
+        $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
 
-                // Send the request to Guzzle
-                $psrResponse = $this->getHttpClient()->request($method, $uri, $options);
-
-                // Record response received event for profiling
-                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
-                    $this->recordProfilingEvent($requestId, 'response_start');
-                }
-
-                // Calculate duration
-                $duration = microtime(true) - $startTime;
-
-                // Create our response object
-                $response = Response::createFromBase($psrResponse);
-
-                // End profiling
-                if ($requestId !== null && method_exists($this, 'endProfiling')) {
-                    $this->endProfiling($requestId, $response->getStatusCode());
-                }
-
-                // Create debug info if debug mode is enabled
-                if (method_exists($this, 'isDebugEnabled') && $this->isDebugEnabled()) {
-                    $memoryUsage = memory_get_usage(true) - $startMemory;
-                    $timings = [
-                        'total_time' => round($duration * 1000, 3),
-                        'start_time' => $startTime,
-                        'end_time' => microtime(true),
-                    ];
-
-                    if (method_exists($this, 'createDebugInfo')) {
-                        $this->createDebugInfo($method, $uri, $options, $response, $timings, $memoryUsage);
+        return $this->retryRequestWithEvents(
+            function () use ($method, $uri, $options, $startTime, $requestId, $startMemory, $psrRequest, $correlationId): ResponseInterface {
+                try {
+                    // Record request sent event for profiling
+                    if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
+                        $this->recordProfilingEvent($requestId, 'request_sent');
                     }
+
+                    // Send the request to Guzzle
+                    $psrResponse = $this->getHttpClient()->request($method, $uri, $options);
+
+                    // Record response received event for profiling
+                    if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
+                        $this->recordProfilingEvent($requestId, 'response_start');
+                    }
+
+                    // Calculate duration
+                    $duration = microtime(true) - $startTime;
+
+                    // Create our response object
+                    $response = Response::createFromBase($psrResponse);
+
+                    // End profiling
+                    if ($requestId !== null && method_exists($this, 'endProfiling')) {
+                        $this->endProfiling($requestId, $response->getStatusCode());
+                    }
+
+                    // Create debug info if debug mode is enabled
+                    if (method_exists($this, 'isDebugEnabled') && $this->isDebugEnabled()) {
+                        $memoryUsage = memory_get_usage(true) - $startMemory;
+                        $timings = [
+                            'total_time' => round($duration * 1000, 3),
+                            'start_time' => $startTime,
+                            'end_time' => microtime(true),
+                        ];
+
+                        if (method_exists($this, 'createDebugInfo')) {
+                            $this->createDebugInfo($method, $uri, $options, $response, $timings, $memoryUsage);
+                        }
+                    }
+
+                    // Trigger retry on configured retryable status codes
+                    if (in_array($response->getStatusCode(), $this->getRetryableStatusCodes(), true)) {
+                        throw new FetchRequestException('Retryable status: '.$response->getStatusCode(), $psrRequest, $psrResponse);
+                    }
+
+                    // Log response if method exists
+                    if (method_exists($this, 'logResponse')) {
+                        $this->logResponse($response, $duration);
+                    }
+
+                    // Dispatch response event
+                    if (method_exists($this, 'dispatchEvent')) {
+                        $this->dispatchEvent(new ResponseEvent(
+                            $psrRequest,
+                            $response,
+                            $correlationId,
+                            microtime(true),
+                            $duration
+                        ));
+                    }
+
+                    return $response;
+                } catch (GuzzleException $e) {
+                    // End profiling with error
+                    if ($requestId !== null && method_exists($this, 'endProfiling')) {
+                        $this->endProfiling($requestId, null);
+                    }
+
+                    // Normalize to Fetch RequestException to participate in retry logic
+                    if ($e instanceof GuzzleRequestException) {
+                        $req = $e->getRequest();
+                        $res = $e->getResponse();
+
+                        throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $req, $res, $e);
+                    }
+
+                    throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $psrRequest, null, $e);
                 }
-
-                // Trigger retry on configured retryable status codes
-                if (in_array($response->getStatusCode(), $this->getRetryableStatusCodes(), true)) {
-                    $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
-
-                    throw new FetchRequestException('Retryable status: '.$response->getStatusCode(), $psrRequest, $psrResponse);
-                }
-
-                // Log response if method exists
-                if (method_exists($this, 'logResponse')) {
-                    $this->logResponse($response, $duration);
-                }
-
-                return $response;
-            } catch (GuzzleException $e) {
-                // End profiling with error
-                if ($requestId !== null && method_exists($this, 'endProfiling')) {
-                    $this->endProfiling($requestId, null);
-                }
-
-                // Normalize to Fetch RequestException to participate in retry logic
-                if ($e instanceof GuzzleRequestException) {
-                    $req = $e->getRequest();
-                    $res = $e->getResponse();
-
-                    throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $req, $res, $e);
-                }
-
-                // Fallback when we don't get a Guzzle RequestException (no request available)
-                $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
-
-                throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $psrRequest, null, $e);
-            }
-        });
+            },
+            $psrRequest,
+            $correlationId
+        );
     }
 
     /**
@@ -434,20 +473,23 @@ trait PerformsHttpRequests
      * @param  string  $method  The HTTP method
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  string|null  $correlationId  The correlation ID for event tracking
      * @return PromiseInterface A promise that resolves with the response
      */
     protected function executeAsyncRequest(
         string $method,
         string $uri,
         array $options,
+        ?string $correlationId = null,
     ): PromiseInterface {
-        return async(function () use ($method, $uri, $options): ResponseInterface {
+        return async(function () use ($method, $uri, $options, $correlationId): ResponseInterface {
             $startTime = microtime(true);
+            $correlationId = $correlationId ?? bin2hex(random_bytes(16));
 
             // Since this is in an async context, we can use try-catch for proper promise rejection
             try {
                 // Execute the synchronous request inside the async function
-                $response = $this->executeSyncRequest($method, $uri, $options, $startTime);
+                $response = $this->executeSyncRequest($method, $uri, $options, $startTime, $correlationId);
 
                 return $response;
             } catch (\Throwable $e) {
