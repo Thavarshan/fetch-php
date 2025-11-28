@@ -573,4 +573,87 @@ interface ClientHandler
      * Get the last debug info from the most recent request.
      */
     public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
+
+    /**
+     * Configure connection pooling for this handler.
+     *
+     * @param  array<string, mixed>|bool  $config  Pool configuration or boolean to enable/disable
+     * @return $this
+     */
+    public function withConnectionPool(array|bool $config = true): self;
+
+    /**
+     * Configure HTTP/2 for this handler.
+     *
+     * @param  array<string, mixed>|bool  $config  HTTP/2 configuration or boolean to enable/disable
+     * @return $this
+     */
+    public function withHttp2(array|bool $config = true): self;
+
+    /**
+     * Get the connection pool instance.
+     *
+     * @return \Fetch\Pool\ConnectionPool|null The pool instance or null if not configured
+     */
+    public function getConnectionPool(): ?\Fetch\Pool\ConnectionPool;
+
+    /**
+     * Get the DNS cache instance.
+     *
+     * @return \Fetch\Pool\DnsCache|null The DNS cache or null if not configured
+     */
+    public function getDnsCache(): ?\Fetch\Pool\DnsCache;
+
+    /**
+     * Get the HTTP/2 configuration.
+     *
+     * @return \Fetch\Pool\Http2Configuration|null The HTTP/2 config or null if not configured
+     */
+    public function getHttp2Config(): ?\Fetch\Pool\Http2Configuration;
+
+    /**
+     * Check if connection pooling is enabled.
+     */
+    public function isPoolingEnabled(): bool;
+
+    /**
+     * Check if HTTP/2 is enabled.
+     */
+    public function isHttp2Enabled(): bool;
+
+    /**
+     * Get connection pool statistics.
+     *
+     * @return array<string, mixed>
+     */
+    public function getPoolStats(): array;
+
+    /**
+     * Get DNS cache statistics.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDnsCacheStats(): array;
+
+    /**
+     * Clear the DNS cache.
+     *
+     * @param  string|null  $hostname  Specific hostname to clear, or null for all
+     * @return $this
+     */
+    public function clearDnsCache(?string $hostname = null): self;
+
+    /**
+     * Close all pooled connections.
+     *
+     * @return $this
+     */
+    public function closeAllConnections(): self;
+
+    /**
+     * Reset the global connection pool and DNS cache.
+     *
+     * @return $this
+     */
+    public function resetPool(): self;
 }
