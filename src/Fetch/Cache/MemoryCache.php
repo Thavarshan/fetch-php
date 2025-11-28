@@ -59,7 +59,7 @@ class MemoryCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    public function set(string $key, CachedResponse $response, ?int $ttl = null): void
+    public function set(string $key, CachedResponse $response, ?int $ttl = null): bool
     {
         // Ensure we don't exceed max items
         if (count($this->cache) >= $this->maxItems && ! isset($this->cache[$key])) {
@@ -83,6 +83,8 @@ class MemoryCache implements CacheInterface
             'response' => $response,
             'expires_at' => $expiresAt,
         ];
+
+        return true;
     }
 
     /**

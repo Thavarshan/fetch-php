@@ -21,8 +21,15 @@ interface CacheInterface
      * Store a response in the cache.
      *
      * @param  string  $key  The cache key
-     * @param  CachedResponse  $response  The response to cache
-     * @param  int|null  $ttl  Time to live in seconds:
+     * @param  CachedResponse  $cachedResponse  The response to cache
+     * @param  int|null  $ttl  Time to live in seconds
+     * @return bool True if the item was stored, false otherwise
+     */
+    public function set(string $key, CachedResponse $cachedResponse, ?int $ttl = null): bool;
+
+    /**
+     * Delete a cached response by key.
+     *
      * @param  string  $key  The cache key
      * @return bool True if the item was deleted, false otherwise
      */

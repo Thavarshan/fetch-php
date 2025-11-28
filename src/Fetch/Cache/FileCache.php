@@ -89,7 +89,7 @@ class FileCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    public function set(string $key, CachedResponse $response, ?int $ttl = null): void
+    public function set(string $key, CachedResponse $response, ?int $ttl = null): bool
     {
         $this->ensureDirectoryExists();
 
@@ -144,6 +144,8 @@ class FileCache implements CacheInterface
         if ($result === false) {
             throw new RuntimeException("Failed to write cache file: {$path}");
         }
+
+        return true;
     }
 
     /**
