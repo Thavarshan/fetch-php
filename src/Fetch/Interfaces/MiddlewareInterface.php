@@ -20,7 +20,7 @@ interface MiddlewareInterface
      *
      * @param  RequestInterface  $request  The HTTP request to process
      * @param  callable  $next  The next middleware or final handler
-     * @return Response|PromiseInterface<Response> The response or promise
+     * @return \Fetch\Interfaces\Response|PromiseInterface<\Fetch\Interfaces\Response> The response or promise
      */
     public function handle(RequestInterface $request, callable $next): Response|PromiseInterface;
 }

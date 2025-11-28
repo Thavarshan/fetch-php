@@ -255,7 +255,7 @@ trait PerformsHttpRequests
                 $contentType = $request->getHeaderLine('Content-Type');
                 if (str_contains($contentType, 'application/json')) {
                     $decoded = json_decode($bodyContents, true);
-                    if ($decoded !== null) {
+                    if (json_last_error() === JSON_ERROR_NONE) {
                         $options['json'] = $decoded;
                         unset($options['body']);
                     } else {
