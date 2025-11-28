@@ -157,13 +157,15 @@ class CacheKeyGenerator
             if ($a[0] === $b[0]) {
                 return strcmp($a[1], $b[1]);
             }
+
             return strcmp($a[0], $b[0]);
         });
         // Rebuild query string
         $normalized = [];
         foreach ($pairs as [$key, $value]) {
-            $normalized[] = rawurlencode($key) . '=' . rawurlencode($value);
+            $normalized[] = rawurlencode($key).'='.rawurlencode($value);
         }
+
         return implode('&', $normalized);
     }
 
