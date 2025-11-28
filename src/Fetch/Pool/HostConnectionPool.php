@@ -15,6 +15,11 @@ use SplQueue;
 class HostConnectionPool
 {
     /**
+     * Default TCP keep-alive interval in seconds.
+     */
+    public const DEFAULT_TCP_KEEPALIVE_INTERVAL = 10;
+
+    /**
      * Queue of available connections.
      *
      * @var SplQueue<Connection>
@@ -142,7 +147,8 @@ class HostConnectionPool
     {
         while (! $this->availableConnections->isEmpty()) {
             $connection = $this->availableConnections->dequeue();
-            // Let Guzzle negotiate HTTP version automatically
+            $connection->close();
+        }
     }
 
     /**
@@ -181,14 +187,11 @@ class HostConnectionPool
             'base_uri' => $baseUri,
             RequestOptions::CONNECT_TIMEOUT => $this->config->getConnectionTimeout(),
             RequestOptions::HTTP_ERRORS => false,
-            // Enable HTTP/2 if available
-            'version' => 2.0,
-            // Connection reuse settings
+            // Configure TCP keep-alive for connection health monitoring
             'curl' => [
-                // Enable connection reuse
                 CURLOPT_TCP_KEEPALIVE => 1,
                 CURLOPT_TCP_KEEPIDLE => $this->config->getKeepAliveTimeout(),
-                CURLOPT_TCP_KEEPINTVL => 10,
+                CURLOPT_TCP_KEEPINTVL => self::DEFAULT_TCP_KEEPALIVE_INTERVAL,
             ],
         ]);
     }

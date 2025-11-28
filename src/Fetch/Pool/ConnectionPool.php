@@ -146,22 +146,18 @@ class ConnectionPool
     }
 
     /**
-     * Get a pooled connection for the specified URL.
+     * Get an HTTP client for the specified URL.
      *
-     * This returns the underlying Connection object from the pool.
-     * The caller MUST call releaseConnection() when done with the connection.
+     * This returns the underlying Guzzle client from the pooled connection.
      *
      * @param  string  $url  The URL to connect to
-     * @return Connection|null The pooled connection or null if not available
+     * @return ClientInterface|null The HTTP client or null if not available
      */
-    public function getClientForUrl(string $url): ?Connection
+    public function getClientForUrl(string $url): ?ClientInterface
     {
         $connection = $this->getConnectionFromUrl($url);
-        if ($connection !== null) {
-            $id = spl_object_id($connection);
-            $this->activeConnections[$id] = $connection;
-        }
-        return $connection;
+
+        return $connection->getClient();
     }
 
     /**
