@@ -46,9 +46,7 @@ trait ManagesCache
     /**
      * Enable caching with optional configuration.
      *
-     * @param  CacheInterface|null  $cache  Cache backend (defaults to MemoryCache)
      * @param  array<string, mixed>  $options  Cache options
-     * @return ClientHandler
      */
     public function withCache(?CacheInterface $cache = null, array $options = []): ClientHandler
     {
@@ -64,8 +62,6 @@ trait ManagesCache
 
     /**
      * Disable caching.
-     *
-     * @return ClientHandler
      */
     public function withoutCache(): ClientHandler
     {
@@ -114,8 +110,6 @@ trait ManagesCache
     /**
      * Generate a cache key for the request.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
      * @param  array<string, mixed>  $options  Request options
      */
     protected function generateCacheKey(string $method, string $uri, array $options = []): string
@@ -144,8 +138,6 @@ trait ManagesCache
     /**
      * Try to get a cached response.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
      * @param  array<string, mixed>  $options  Request options
      * @return array{response: Response|null, cached: CachedResponse|null, status: string}
      */
@@ -191,9 +183,6 @@ trait ManagesCache
     /**
      * Store a response in the cache.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
-     * @param  Response  $response  The response to cache
      * @param  array<string, mixed>  $options  Request options
      */
     protected function cacheResponse(string $method, string $uri, Response $response, array $options = []): void
@@ -231,8 +220,6 @@ trait ManagesCache
     /**
      * Calculate the TTL for a response.
      *
-     * @param  Response  $response  The response
-     * @param  CacheControl  $cacheControl  The parsed cache control
      * @param  array<string, mixed>  $options  Request options
      */
     protected function calculateTtl(Response $response, CacheControl $cacheControl, array $options = []): ?int
@@ -260,7 +247,6 @@ trait ManagesCache
      * Add conditional headers to a request based on cached response.
      *
      * @param  array<string, mixed>  $options  Request options
-     * @param  CachedResponse|null  $cached  The cached response
      * @return array<string, mixed> Modified options
      */
     protected function addConditionalHeaders(array $options, ?CachedResponse $cached): array
@@ -290,9 +276,6 @@ trait ManagesCache
 
     /**
      * Handle a 304 Not Modified response.
-     *
-     * @param  CachedResponse  $cached  The cached response
-     * @param  Response  $response  The 304 response
      */
     protected function handleNotModified(CachedResponse $cached, Response $response): Response
     {
@@ -331,9 +314,6 @@ trait ManagesCache
 
     /**
      * Handle stale-if-error: serve stale response on error.
-     *
-     * @param  CachedResponse|null  $cached  The cached response
-     * @return Response|null The stale response or null
      */
     protected function handleStaleIfError(?CachedResponse $cached): ?Response
     {
