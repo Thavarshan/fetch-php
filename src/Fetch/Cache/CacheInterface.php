@@ -22,8 +22,7 @@ interface CacheInterface
      *
      * @param  string  $key  The cache key
      * @param  CachedResponse  $response  The response to cache
-     * @param  int|null  $ttl  Time to live in seconds (null uses default)
-     */
+     * @param  int|null  $ttl  Time to live in seconds:
     public function set(string $key, CachedResponse $response, ?int $ttl = null): void;
 
     /**
