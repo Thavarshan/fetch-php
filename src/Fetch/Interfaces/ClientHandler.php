@@ -573,4 +573,32 @@ interface ClientHandler
      * Get the last debug info from the most recent request.
      */
     public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
+
+    /**
+     * Enable caching with optional configuration.
+     *
+     * @param  \Fetch\Cache\CacheInterface|null  $cache  Cache backend (defaults to MemoryCache)
+     * @param  array<string, mixed>  $options  Cache options
+     * @return $this
+     */
+    public function withCache(?\Fetch\Cache\CacheInterface $cache = null, array $options = []): self;
+
+    /**
+     * Disable caching.
+     *
+     * @return $this
+     */
+    public function withoutCache(): self;
+
+    /**
+     * Get the cache instance.
+     *
+     * @return \Fetch\Cache\CacheInterface|null
+     */
+    public function getCache(): ?\Fetch\Cache\CacheInterface;
+
+    /**
+     * Check if caching is enabled.
+     */
+    public function isCacheEnabled(): bool;
 }
