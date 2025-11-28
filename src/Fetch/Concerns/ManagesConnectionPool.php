@@ -213,20 +213,6 @@ trait ManagesConnectionPool
     /**
      * Reset the global connection pool and DNS cache.
      *
-     * @return $this
-     */
-    public function resetPool(): ClientHandler
-    {
-        if (self::$connectionPool !== null) {
-            self::$connectionPool->closeAll();
-        }
-        self::$connectionPool = null;
-        self::$dnsCache = null;
-        $this->poolingEnabled = false;
-
-        return $this;
-    }
-
 
     /**
      * Resolve a hostname using the DNS cache.
