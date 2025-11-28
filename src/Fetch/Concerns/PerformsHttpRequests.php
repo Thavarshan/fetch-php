@@ -405,7 +405,7 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $options  The Guzzle options
      * @param  float  $startTime  The request start time
      * @param  array<string, mixed>|null  $cachedResult  The cached result data
-     * @param  mixed  $handler  The cloned handler instance with request-specific state
+     * @param  self  $handler  The cloned handler instance with request-specific state
      * @return ResponseInterface The response
      */
     protected function executeSyncRequestWithCache(
@@ -414,7 +414,7 @@ trait PerformsHttpRequests
         array $options,
         float $startTime,
         ?array $cachedResult,
-        mixed $handler
+        self $handler
     ): ResponseInterface {
         try {
             $response = $handler->executeSyncRequest($method, $uri, $options, $startTime);
