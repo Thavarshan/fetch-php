@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Fetch\Cache;
 
-use Psr\Http\Message\RequestInterface;
-
 /**
  * Generates cache keys for HTTP requests.
  */
@@ -33,7 +31,6 @@ class CacheKeyGenerator
     /**
      * Create a new cache key generator.
      *
-     * @param  string  $prefix  The prefix for all cache keys
      * @param  array<int, string>  $varyHeaders  Headers to use for cache key variation
      */
     public function __construct(string $prefix = 'fetch:', array $varyHeaders = [])
@@ -45,10 +42,7 @@ class CacheKeyGenerator
     /**
      * Generate a cache key for a request.
      *
-     * @param  string  $method  The HTTP method
-     * @param  string  $uri  The request URI
      * @param  array<string, mixed>  $options  Request options
-     * @return string The cache key
      */
     public function generate(string $method, string $uri, array $options = []): string
     {
@@ -76,13 +70,30 @@ class CacheKeyGenerator
 
     /**
      * Generate a cache key with a custom key provided by the user.
-     *
-     * @param  string  $customKey  The custom key
-     * @return string The cache key
      */
     public function generateCustom(string $customKey): string
     {
         return $this->prefix.$customKey;
+    }
+
+    /**
+     * Get the vary headers.
+     *
+     * @return array<int, string>
+     */
+    public function getVaryHeaders(): array
+    {
+        return $this->varyHeaders;
+    }
+
+    /**
+     * Set the vary headers.
+     *
+     * @param  array<int, string>  $varyHeaders
+     */
+    public function setVaryHeaders(array $varyHeaders): void
+    {
+        $this->varyHeaders = $varyHeaders;
     }
 
     /**
@@ -184,25 +195,5 @@ class CacheKeyGenerator
         }
 
         return null;
-    }
-
-    /**
-     * Get the vary headers.
-     *
-     * @return array<int, string>
-     */
-    public function getVaryHeaders(): array
-    {
-        return $this->varyHeaders;
-    }
-
-    /**
-     * Set the vary headers.
-     *
-     * @param  array<int, string>  $varyHeaders
-     */
-    public function setVaryHeaders(array $varyHeaders): void
-    {
-        $this->varyHeaders = $varyHeaders;
     }
 }

@@ -36,10 +36,6 @@ class CachedResponse
 
     /**
      * Create a cached response from a PSR-7 response.
-     *
-     * @param  ResponseInterface  $response  The PSR-7 response
-     * @param  int|null  $ttl  Time to live in seconds
-     * @return self
      */
     public static function fromResponse(ResponseInterface $response, ?int $ttl = null): self
     {
@@ -64,6 +60,29 @@ class CachedResponse
             expiresAt: $expiresAt,
             etag: $etag,
             lastModified: $lastModified
+        );
+    }
+
+    /**
+     * Create a cached response from a serialized array.
+     *
+     * @param  array<string, mixed>  $data  The serialized data
+     */
+    public static function fromArray(array $data): ?self
+    {
+        if (! isset($data['status_code'], $data['headers'], $data['body'], $data['created_at'])) {
+            return null;
+        }
+
+        return new self(
+            statusCode: (int) $data['status_code'],
+            headers: (array) $data['headers'],
+            body: (string) $data['body'],
+            createdAt: (int) $data['created_at'],
+            expiresAt: isset($data['expires_at']) ? (int) $data['expires_at'] : null,
+            etag: $data['etag'] ?? null,
+            lastModified: $data['last_modified'] ?? null,
+            metadata: $data['metadata'] ?? []
         );
     }
 
@@ -218,8 +237,6 @@ class CachedResponse
 
     /**
      * Check if the response can be used for stale-while-revalidate.
-     *
-     * @param  int  $maxStale  Maximum staleness allowed in seconds
      */
     public function isUsableAsStale(int $maxStale): bool
     {
@@ -247,29 +264,5 @@ class CachedResponse
             'last_modified' => $this->lastModified,
             'metadata' => $this->metadata,
         ];
-    }
-
-    /**
-     * Create a cached response from a serialized array.
-     *
-     * @param  array<string, mixed>  $data  The serialized data
-     * @return self|null Returns null if the data is invalid
-     */
-    public static function fromArray(array $data): ?self
-    {
-        if (! isset($data['status_code'], $data['headers'], $data['body'], $data['created_at'])) {
-            return null;
-        }
-
-        return new self(
-            statusCode: (int) $data['status_code'],
-            headers: (array) $data['headers'],
-            body: (string) $data['body'],
-            createdAt: (int) $data['created_at'],
-            expiresAt: isset($data['expires_at']) ? (int) $data['expires_at'] : null,
-            etag: $data['etag'] ?? null,
-            lastModified: $data['last_modified'] ?? null,
-            metadata: $data['metadata'] ?? []
-        );
     }
 }
