@@ -62,8 +62,8 @@ class FileCache implements CacheInterface
             return null;
         }
 
-        $data = @unserialize($contents);
-        if ($data === false) {
+        $data = json_decode($contents, true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             // Invalid cache file, delete it
             @unlink($path);
 
