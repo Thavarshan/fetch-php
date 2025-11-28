@@ -465,7 +465,7 @@ class CacheTest extends TestCase
         );
         // Directly write to bypass expiration check in set
         $key = hash('sha256', 'expired').'.cache';
-        file_put_contents($this->testCacheDir.'/'.$key, serialize($expired->toArray()));
+        file_put_contents($this->testCacheDir.'/'.$key, json_encode($expired->toArray()));
 
         // Add a fresh item
         $fresh = CachedResponse::fromResponse(new Response(200, [], 'fresh'), 3600);
