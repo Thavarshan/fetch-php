@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Fetch\Http\ClientHandler;
-use Fetch\Support\DebugInfo;
 use Fetch\Support\FetchProfiler;
 use PHPUnit\Framework\TestCase;
 
