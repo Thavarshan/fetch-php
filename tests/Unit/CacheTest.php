@@ -134,7 +134,7 @@ class CacheTest extends TestCase
 
     public function test_generate_cache_key(): void
     {
-        $gen = new CacheKeyGenerator();
+        $gen = new CacheKeyGenerator;
 
         $key1 = $gen->generate('GET', 'https://api.example.com/users');
         $key2 = $gen->generate('GET', 'https://api.example.com/users');
@@ -146,7 +146,7 @@ class CacheTest extends TestCase
 
     public function test_generate_cache_key_different_methods(): void
     {
-        $gen = new CacheKeyGenerator();
+        $gen = new CacheKeyGenerator;
 
         $key1 = $gen->generate('GET', 'https://api.example.com/users');
         $key2 = $gen->generate('POST', 'https://api.example.com/users');
@@ -156,7 +156,7 @@ class CacheTest extends TestCase
 
     public function test_generate_cache_key_with_query_params(): void
     {
-        $gen = new CacheKeyGenerator();
+        $gen = new CacheKeyGenerator;
 
         $key1 = $gen->generate('GET', 'https://api.example.com/users', ['query' => ['page' => 1]]);
         $key2 = $gen->generate('GET', 'https://api.example.com/users', ['query' => ['page' => 2]]);
@@ -166,7 +166,7 @@ class CacheTest extends TestCase
 
     public function test_generate_custom_cache_key(): void
     {
-        $gen = new CacheKeyGenerator();
+        $gen = new CacheKeyGenerator;
 
         $key = $gen->generateCustom('my-custom-key');
 
@@ -270,7 +270,7 @@ class CacheTest extends TestCase
 
     public function test_memory_cache_set_and_get(): void
     {
-        $cache = new MemoryCache();
+        $cache = new MemoryCache;
         $response = new Response(200, [], 'test');
         $cached = CachedResponse::fromResponse($response, 3600);
 
@@ -283,7 +283,7 @@ class CacheTest extends TestCase
 
     public function test_memory_cache_has(): void
     {
-        $cache = new MemoryCache();
+        $cache = new MemoryCache;
         $response = new Response(200, [], 'test');
         $cached = CachedResponse::fromResponse($response, 3600);
 
@@ -295,7 +295,7 @@ class CacheTest extends TestCase
 
     public function test_memory_cache_delete(): void
     {
-        $cache = new MemoryCache();
+        $cache = new MemoryCache;
         $response = new Response(200, [], 'test');
         $cached = CachedResponse::fromResponse($response, 3600);
 
@@ -309,7 +309,7 @@ class CacheTest extends TestCase
 
     public function test_memory_cache_clear(): void
     {
-        $cache = new MemoryCache();
+        $cache = new MemoryCache;
         $response = new Response(200, [], 'test');
 
         $cache->set('key1', CachedResponse::fromResponse($response, 3600));
@@ -336,7 +336,7 @@ class CacheTest extends TestCase
 
     public function test_memory_cache_expired_items_not_returned(): void
     {
-        $cache = new MemoryCache();
+        $cache = new MemoryCache;
 
         // Create an already expired cached response with TTL of 0 (immediate expiration)
         $cached = new CachedResponse(
@@ -356,7 +356,7 @@ class CacheTest extends TestCase
 
     public function test_memory_cache_prune(): void
     {
-        $cache = new MemoryCache();
+        $cache = new MemoryCache;
 
         // Add an expired item using TTL of -1
         $expired = new CachedResponse(

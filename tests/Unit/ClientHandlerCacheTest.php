@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Fetch\Cache\CachedResponse;
 use Fetch\Cache\MemoryCache;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
@@ -140,7 +139,7 @@ class ClientHandlerCacheTest extends TestCase
 
     public function test_respects_custom_ttl_in_options(): void
     {
-        $cache = new MemoryCache();
+        $cache = new MemoryCache;
         $responses = [
             new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"test"}'),
         ];
