@@ -103,12 +103,23 @@ class FileCache implements CacheInterface
         $path = $this->getPath($key);
 
         // If TTL is provided, update the cached response with the correct expiration
+        // TTL=0 means no expiration (expires_at=null), TTL>0 sets specific expiration
+        // TTL<0 means already expired, TTL=null means use default
         if ($ttl !== null) {
-            $response = CachedResponse::fromArray(
-                array_merge($response->toArray(), [
-                    'expires_at' => time() + $ttl,
-                ])
-            );
+            if ($ttl === 0) {
+                // No expiration
+                $response = CachedResponse::fromArray(
+                    array_merge($response->toArray(), [
+                        'expires_at' => null,
+                    ])
+                );
+            } else {
+                $response = CachedResponse::fromArray(
+                    array_merge($response->toArray(), [
+                        'expires_at' => time() + $ttl,
+                    ])
+                );
+            }
         } elseif ($response->getExpiresAt() === null && $this->defaultTtl > 0) {
             $response = CachedResponse::fromArray(
                 array_merge($response->toArray(), [
@@ -120,8 +131,11 @@ class FileCache implements CacheInterface
         // PHPStan cannot infer that $response is non-null here after the conditionals above
         // but we know $response is always a valid CachedResponse at this point
         // @phpstan-ignore-next-line
-        $serialized = serialize($response->toArray());
-        $result = @file_put_contents($path, $serialized, LOCK_EX);
+        $encoded = json_encode($response->toArray());
+        if ($encoded === false) {
+            throw new RuntimeException('Failed to encode cache data as JSON');
+        }
+        $result = @file_put_contents($path, $encoded, LOCK_EX);
 
         if ($result === false) {
             throw new RuntimeException("Failed to write cache file: {$path}");
@@ -187,8 +201,8 @@ class FileCache implements CacheInterface
                 continue;
             }
 
-            $data = @unserialize($contents);
-            if ($data === false) {
+            $data = @json_decode($contents, true);
+            if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
                 @unlink($file);
                 $count++;
 
