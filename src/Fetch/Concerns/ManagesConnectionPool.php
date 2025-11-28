@@ -54,10 +54,9 @@ trait ManagesConnectionPool
      *
      * @param  array<string, mixed>|bool  $config  Pool configuration or boolean to enable/disable
      * @return $this
-     */
-    public function withConnectionPool(array|bool $config = true): ClientHandler
-    {
-        if (is_bool($config)) {
+        // Initialize DNS cache with configuration TTL (uses default if not specified)
+        $poolConfig = self::$connectionPool->getConfig();
+        self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
             $this->poolingEnabled = $config;
 
             return $this;
