@@ -212,7 +212,7 @@ trait ManagesCache
         }
 
         $key = $this->generateCacheKey($method, $uri, $options);
-        $cachedResponse = CachedResponse::fromResponse($response, $ttl);
+        $cachedResponse = CachedResponse::fromResponse($response, null);
 
         $this->cache->set($key, $cachedResponse, $ttl);
     }
