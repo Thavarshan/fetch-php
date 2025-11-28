@@ -6,10 +6,8 @@ namespace Fetch\Concerns;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
-use Fetch\Events\ErrorEvent;
 use Fetch\Events\RequestEvent;
 use Fetch\Events\ResponseEvent;
-use Fetch\Events\RetryEvent;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;

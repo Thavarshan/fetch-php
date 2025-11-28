@@ -7,7 +7,6 @@ namespace Tests\Unit;
 use Fetch\Concerns\SupportsHooks;
 use Fetch\Events\EventDispatcher;
 use Fetch\Events\EventDispatcherInterface;
-use Fetch\Events\FetchEvent;
 use Fetch\Events\RequestEvent;
 use GuzzleHttp\Psr7\Request;
 use PHPUnit\Framework\TestCase;
