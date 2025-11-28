@@ -67,10 +67,7 @@ class DnsCache
      */
     public function resolveFirst(string $hostname): string
     {
-
-        if (empty($addresses)) {
-            throw new NetworkException("No IP addresses found for hostname: {$hostname}");
-        }
+        $addresses = $this->resolve($hostname);
 
         return $addresses[0];
     }
@@ -200,9 +197,11 @@ class DnsCache
         }
 
         if (empty($addresses)) {
+            // Encode hostname for use in URL (handle IDN and special characters)
+            $safeHost = rawurlencode($hostname);
             throw new NetworkException(
                 "Failed to resolve hostname: {$hostname}",
-                new Request('GET', "https://{$hostname}/")
+                new Request('GET', "https://{$safeHost}/")
             );
         }
 

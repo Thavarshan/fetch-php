@@ -12,16 +12,27 @@ use Fetch\Pool\PoolConfiguration;
 
 /**
  * Trait for managing connection pooling and HTTP/2 support.
+ *
+ * Note: The connection pool and DNS cache are stored as static properties
+ * to enable connection sharing across all ClientHandler instances. This is
+ * intentional to maximize connection reuse. However, be aware that:
+ * - Configuration changes affect all handlers globally
+ * - In multi-threaded environments, proper synchronization may be needed
+ * - Use resetPool() to isolate test environments
  */
 trait ManagesConnectionPool
 {
     /**
-     * The connection pool instance.
+     * The connection pool instance (shared across all handlers).
+     *
+     * @var ConnectionPool|null
      */
     protected static ?ConnectionPool $connectionPool = null;
 
     /**
-     * The DNS cache instance.
+     * The DNS cache instance (shared across all handlers).
+     *
+     * @var DnsCache|null
      */
     protected static ?DnsCache $dnsCache = null;
 
@@ -54,9 +65,10 @@ trait ManagesConnectionPool
      *
      * @param  array<string, mixed>|bool  $config  Pool configuration or boolean to enable/disable
      * @return $this
-        // Initialize DNS cache with configuration TTL (uses default if not specified)
-        $poolConfig = self::$connectionPool->getConfig();
-        self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
+     */
+    public function withConnectionPool(array|bool $config = true): ClientHandler
+    {
+        if (is_bool($config)) {
             $this->poolingEnabled = $config;
 
             return $this;
@@ -67,10 +79,9 @@ trait ManagesConnectionPool
         // Initialize or update the global pool
         self::$connectionPool = ConnectionPool::fromArray($config);
 
-        // Initialize DNS cache if TTL is specified
-        if (isset($config['dns_cache_ttl'])) {
-            self::$dnsCache = new DnsCache((int) $config['dns_cache_ttl']);
-        }
+        // Always initialize DNS cache with configuration TTL (uses default if not specified)
+        $poolConfig = self::$connectionPool->getConfig();
+        self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
 
         return $this;
     }
@@ -212,12 +223,42 @@ trait ManagesConnectionPool
     /**
      * Reset the global connection pool and DNS cache.
      *
+     * @return $this
+     */
+    public function resetPool(): ClientHandler
+    {
+        if (self::$connectionPool !== null) {
+            self::$connectionPool->closeAll();
+        }
+        self::$connectionPool = null;
+        self::$dnsCache = null;
+        $this->poolingEnabled = false;
+
+        return $this;
+    }
+
+    /**
+     * Get cURL options for HTTP/2 support.
+     *
+     * @return array<int, mixed>
+     */
+    protected function getHttp2CurlOptions(): array
+    {
+        if ($this->http2Config === null) {
+            return [];
+        }
+
+        return $this->http2Config->getCurlOptions();
+    }
 
     /**
      * Resolve a hostname using the DNS cache.
      *
+     * Returns null if DNS cache is not configured or if DNS resolution fails.
+     * This method silently catches exceptions to allow fallback behavior.
+     *
      * @param  string  $hostname  The hostname to resolve
-     * @return string|null The resolved IP address or null
+     * @return string|null The resolved IP address, or null if not available
      */
     protected function resolveHostname(string $hostname): ?string
     {
@@ -230,49 +271,5 @@ trait ManagesConnectionPool
         } catch (\Throwable) {
             return null;
         }
-    }
-    /**
-     * Execute an HTTP request using a pooled connection/client.
-     *
-     * @template T
-     * @param string $url The request URL.
-     * @param callable $requestCallback A callback that receives the client/connection and performs the request.
-     * @return mixed The result of the request callback.
-     */
-    protected function withPooledConnection(string $url, callable $requestCallback)
-    {
-        // Ensure the pool is initialized
-        self::initializePool();
-
-        // Get a client/connection from the pool
-        $client = $this->getClientForUrl($url);
-        try {
-            // Perform the request using the provided callback
-            return $requestCallback($client);
-        } finally {
-            // Release the client/connection back to the pool
-            $this->releaseConnection($url, $client);
-        }
-    }
-
-    /**
-     * Example method: Get a connection using DNS cache to resolve the hostname.
-     *
-     * @param string $hostname
-     * @return mixed|null
-     */
-    protected function getConnectionWithDnsCache(string $hostname)
-    {
-        $resolvedIp = $this->resolveHostname($hostname);
-        $target = $resolvedIp ?? $hostname;
-
-        if (self::$connectionPool === null) {
-            // Optionally, initialize the pool if not already done
-            self::initializePool();
-        }
-
-        // Example: get a connection from the pool using the resolved IP or hostname
-        // This assumes ConnectionPool has a getConnection($target) method
-        return self::$connectionPool ? self::$connectionPool->getConnection($target) : null;
     }
 }
