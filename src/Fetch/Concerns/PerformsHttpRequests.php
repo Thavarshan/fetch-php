@@ -398,6 +398,53 @@ trait PerformsHttpRequests
     }
 
     /**
+     * Execute a synchronous request with caching support.
+     *
+     * @param  string  $method  The HTTP method
+     * @param  string  $uri  The full URI
+     * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  float  $startTime  The request start time
+     * @param  array<string, mixed>|null  $cachedResult  The cached result data
+     * @param  mixed  $handler  The cloned handler instance with request-specific state
+     * @return ResponseInterface The response
+     */
+    protected function executeSyncRequestWithCache(
+        string $method,
+        string $uri,
+        array $options,
+        float $startTime,
+        ?array $cachedResult,
+        mixed $handler
+    ): ResponseInterface {
+        try {
+            $response = $handler->executeSyncRequest($method, $uri, $options, $startTime);
+
+            // Handle 304 Not Modified response
+            if ($response->getStatusCode() === 304 && $cachedResult !== null && isset($cachedResult['cached']) && method_exists($handler, 'handleNotModified')) {
+                $response = $handler->handleNotModified($cachedResult['cached'], $response);
+            }
+
+            // Cache the response if caching is enabled
+            // Use handler options which includes cache config
+            if (method_exists($handler, 'cacheResponse') && method_exists($handler, 'isCacheEnabled') && $handler->isCacheEnabled()) {
+                $handler->cacheResponse($method, $uri, $response, $handler->options);
+            }
+
+            return $response;
+        } catch (\Throwable $e) {
+            // Handle stale-if-error: serve stale response on error
+            if ($cachedResult !== null && isset($cachedResult['cached']) && method_exists($handler, 'handleStaleIfError')) {
+                $staleResponse = $handler->handleStaleIfError($cachedResult['cached']);
+                if ($staleResponse !== null) {
+                    return $staleResponse;
+                }
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
      * Send an HTTP request with a body.
      *
      * @param  Method|string  $method  The HTTP method
