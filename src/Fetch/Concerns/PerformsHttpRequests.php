@@ -344,16 +344,54 @@ trait PerformsHttpRequests
         array $options,
         float $startTime,
     ): ResponseInterface {
-        return $this->retryRequest(function () use ($method, $uri, $options, $startTime): ResponseInterface {
+        // Start profiling if profiler is available
+        $requestId = null;
+        if (method_exists($this, 'startProfiling')) {
+            $requestId = $this->startProfiling($method, $uri);
+        }
+
+        // Track memory for debugging
+        $startMemory = memory_get_usage(true);
+
+        return $this->retryRequest(function () use ($method, $uri, $options, $startTime, $requestId, $startMemory): ResponseInterface {
             try {
+                // Record request sent event for profiling
+                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
+                    $this->recordProfilingEvent($requestId, 'request_sent');
+                }
+
                 // Send the request to Guzzle
                 $psrResponse = $this->getHttpClient()->request($method, $uri, $options);
+
+                // Record response received event for profiling
+                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
+                    $this->recordProfilingEvent($requestId, 'response_start');
+                }
 
                 // Calculate duration
                 $duration = microtime(true) - $startTime;
 
                 // Create our response object
                 $response = Response::createFromBase($psrResponse);
+
+                // End profiling
+                if ($requestId !== null && method_exists($this, 'endProfiling')) {
+                    $this->endProfiling($requestId, $response->getStatusCode());
+                }
+
+                // Create debug info if debug mode is enabled
+                if (method_exists($this, 'isDebugEnabled') && $this->isDebugEnabled()) {
+                    $memoryUsage = memory_get_usage(true) - $startMemory;
+                    $timings = [
+                        'total_time' => round($duration * 1000, 3),
+                        'start_time' => $startTime,
+                        'end_time' => microtime(true),
+                    ];
+
+                    if (method_exists($this, 'createDebugInfo')) {
+                        $this->createDebugInfo($method, $uri, $options, $response, $timings, $memoryUsage);
+                    }
+                }
 
                 // Trigger retry on configured retryable status codes
                 if (in_array($response->getStatusCode(), $this->getRetryableStatusCodes(), true)) {
@@ -369,6 +407,11 @@ trait PerformsHttpRequests
 
                 return $response;
             } catch (GuzzleException $e) {
+                // End profiling with error
+                if ($requestId !== null && method_exists($this, 'endProfiling')) {
+                    $this->endProfiling($requestId, null);
+                }
+
                 // Normalize to Fetch RequestException to participate in retry logic
                 if ($e instanceof GuzzleRequestException) {
                     $req = $e->getRequest();
