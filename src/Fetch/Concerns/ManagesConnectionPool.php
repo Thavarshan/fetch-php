@@ -227,19 +227,6 @@ trait ManagesConnectionPool
         return $this;
     }
 
-    /**
-     * Get cURL options for HTTP/2 support.
-     *
-     * @return array<int, mixed>
-     */
-    protected function getHttp2CurlOptions(): array
-    {
-        if ($this->http2Config === null) {
-            return [];
-        }
-
-        return $this->http2Config->getCurlOptions();
-    }
 
     /**
      * Resolve a hostname using the DNS cache.
