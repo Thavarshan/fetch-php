@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fetch\Pool;
 
 use Fetch\Exceptions\NetworkException;
+use GuzzleHttp\Psr7\Request;
 
 /**
  * DNS caching for improved performance.
@@ -125,6 +126,25 @@ class DnsCache
     }
 
     /**
+     * Prune expired entries from the cache.
+     *
+     * @return int Number of entries removed
+     */
+    public function prune(): int
+    {
+        $removed = 0;
+
+        foreach ($this->cache as $key => $entry) {
+            if ($this->isExpired($entry)) {
+                unset($this->cache[$key]);
+                $removed++;
+            }
+        }
+
+        return $removed;
+    }
+
+    /**
      * Check if a cache entry is expired.
      *
      * @param  array{addresses: array<string>, expires_at: int}  $entry  Cache entry
@@ -179,29 +199,10 @@ class DnsCache
         if (empty($addresses)) {
             throw new NetworkException(
                 "Failed to resolve hostname: {$hostname}",
-                new \GuzzleHttp\Psr7\Request('GET', "https://{$hostname}/")
+                new Request('GET', "https://{$hostname}/")
             );
         }
 
         return $addresses;
-    }
-
-    /**
-     * Prune expired entries from the cache.
-     *
-     * @return int Number of entries removed
-     */
-    public function prune(): int
-    {
-        $removed = 0;
-
-        foreach ($this->cache as $key => $entry) {
-            if ($this->isExpired($entry)) {
-                unset($this->cache[$key]);
-                $removed++;
-            }
-        }
-
-        return $removed;
     }
 }
