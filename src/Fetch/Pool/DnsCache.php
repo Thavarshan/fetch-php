@@ -67,7 +67,10 @@ class DnsCache
      */
     public function resolveFirst(string $hostname): string
     {
-        $addresses = $this->resolve($hostname);
+
+        if (empty($addresses)) {
+            throw new NetworkException("No IP addresses found for hostname: {$hostname}");
+        }
 
         return $addresses[0];
     }
