@@ -107,6 +107,46 @@ class HostConnectionPool
     }
 
     /**
+     * Get the number of available connections.
+     */
+    public function getAvailableCount(): int
+    {
+        return $this->availableConnections->count();
+    }
+
+    /**
+     * Get pool statistics.
+     *
+     * @return array<string, mixed>
+     */
+    public function getStats(): array
+    {
+        return [
+            'host' => $this->host,
+            'port' => $this->port,
+            'ssl' => $this->ssl,
+            'available' => $this->availableConnections->count(),
+            'total_created' => $this->totalCreated,
+            'total_borrowed' => $this->totalBorrowed,
+            'total_returned' => $this->totalReturned,
+            'success_rate' => $this->totalBorrowed > 0
+                ? $this->totalReturned / $this->totalBorrowed
+                : 1.0,
+        ];
+    }
+
+    /**
+     * Close all connections in the pool.
+     */
+    public function closeAll(): void
+    {
+        while (! $this->availableConnections->isEmpty()) {
+            $connection = $this->availableConnections->dequeue();
+            $connection->close();
+        }
+    }
+
+    /**
      * Create a new connection.
      *
      * @return Connection The new connection
@@ -173,46 +213,6 @@ class HostConnectionPool
                 // Warmup failure is not critical - stop warming up but continue
                 break;
             }
-        }
-    }
-
-    /**
-     * Get the number of available connections.
-     */
-    public function getAvailableCount(): int
-    {
-        return $this->availableConnections->count();
-    }
-
-    /**
-     * Get pool statistics.
-     *
-     * @return array<string, mixed>
-     */
-    public function getStats(): array
-    {
-        return [
-            'host' => $this->host,
-            'port' => $this->port,
-            'ssl' => $this->ssl,
-            'available' => $this->availableConnections->count(),
-            'total_created' => $this->totalCreated,
-            'total_borrowed' => $this->totalBorrowed,
-            'total_returned' => $this->totalReturned,
-            'success_rate' => $this->totalBorrowed > 0
-                ? $this->totalReturned / $this->totalBorrowed
-                : 1.0,
-        ];
-    }
-
-    /**
-     * Close all connections in the pool.
-     */
-    public function closeAll(): void
-    {
-        while (! $this->availableConnections->isEmpty()) {
-            $connection = $this->availableConnections->dequeue();
-            $connection->close();
         }
     }
 }

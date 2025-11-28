@@ -36,6 +36,20 @@ trait ManagesConnectionPool
     protected bool $poolingEnabled = false;
 
     /**
+     * Initialize connection pooling with default configuration.
+     *
+     * @param  PoolConfiguration|null  $config  Optional pool configuration
+     */
+    protected static function initializePool(?PoolConfiguration $config = null): void
+    {
+        if (self::$connectionPool === null) {
+            $poolConfig = $config ?? new PoolConfiguration;
+            self::$connectionPool = new ConnectionPool($poolConfig);
+            self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
+        }
+    }
+
+    /**
      * Configure connection pooling for this handler.
      *
      * @param  array<string, mixed>|bool  $config  Pool configuration or boolean to enable/disable
@@ -211,20 +225,6 @@ trait ManagesConnectionPool
         $this->poolingEnabled = false;
 
         return $this;
-    }
-
-    /**
-     * Initialize connection pooling with default configuration.
-     *
-     * @param  PoolConfiguration|null  $config  Optional pool configuration
-     */
-    protected static function initializePool(?PoolConfiguration $config = null): void
-    {
-        if (self::$connectionPool === null) {
-            $poolConfig = $config ?? new PoolConfiguration;
-            self::$connectionPool = new ConnectionPool($poolConfig);
-            self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
-        }
     }
 
     /**
