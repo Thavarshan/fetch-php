@@ -79,12 +79,22 @@ class ErrorEvent extends FetchEvent
         // Check if response has a retryable status code
         if ($this->response !== null) {
             $statusCode = $this->response->getStatusCode();
-            $retryableCodes = [408, 429, 500, 502, 503, 504, 507, 509, 520, 521, 522, 523, 525, 527, 530];
 
-            return in_array($statusCode, $retryableCodes, true);
+            return in_array($statusCode, self::RETRYABLE_STATUS_CODES, true);
         }
 
         // Network errors are typically retryable
         return true;
     }
+
+    /**
+     * Default list of HTTP status codes that are considered retryable.
+     *
+     * @var array<int>
+     */
+    public const RETRYABLE_STATUS_CODES = [
+        408, 429, 500, 502, 503,
+        504, 507, 509, 520, 521,
+        522, 523, 525, 527, 530,
+    ];
 }
