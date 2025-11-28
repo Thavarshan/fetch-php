@@ -573,4 +573,64 @@ interface ClientHandler
      * Get the last debug info from the most recent request.
      */
     public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
+
+    /**
+     * Set multiple middleware at once.
+     *
+     * @param  array<MiddlewareInterface|array{middleware: MiddlewareInterface, priority: int}>  $middleware
+     * @return $this
+     */
+    public function middleware(array $middleware): self;
+
+    /**
+     * Add a single middleware to the pipeline.
+     *
+     * @param  MiddlewareInterface  $middleware  The middleware to add
+     * @param  int  $priority  Higher priority middleware runs first (default: 0)
+     * @return $this
+     */
+    public function addMiddleware(MiddlewareInterface $middleware, int $priority = 0): self;
+
+    /**
+     * Prepend middleware to run first (with highest priority).
+     *
+     * @param  MiddlewareInterface  $middleware  The middleware to prepend
+     * @return $this
+     */
+    public function prependMiddleware(MiddlewareInterface $middleware): self;
+
+    /**
+     * Get the middleware pipeline instance.
+     */
+    public function getMiddlewarePipeline(): \Fetch\Http\MiddlewarePipeline;
+
+    /**
+     * Check if any middleware is registered.
+     */
+    public function hasMiddleware(): bool;
+
+    /**
+     * Clear all middleware from the pipeline.
+     *
+     * @return $this
+     */
+    public function clearMiddleware(): self;
+
+    /**
+     * Conditionally add middleware.
+     *
+     * @param  bool  $condition  The condition to check
+     * @param  callable  $callback  Callback that receives $this and should add middleware
+     * @return $this
+     */
+    public function when(bool $condition, callable $callback): self;
+
+    /**
+     * Conditionally add middleware (inverse of when).
+     *
+     * @param  bool  $condition  The condition to check
+     * @param  callable  $callback  Callback that receives $this and should add middleware
+     * @return $this
+     */
+    public function unless(bool $condition, callable $callback): self;
 }

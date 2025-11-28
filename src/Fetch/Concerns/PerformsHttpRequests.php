@@ -13,6 +13,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Matrix\Exceptions\AsyncException;
+use Psr\Http\Message\RequestInterface;
 use React\Promise\PromiseInterface;
 
 use function Matrix\Support\async;
@@ -187,12 +188,96 @@ trait PerformsHttpRequests
             $handler->logRequest($methodStr, $fullUri, $guzzleOptions);
         }
 
-        // Send the request (async or sync)
+        // Check if middleware is available and should be used
+        if (method_exists($handler, 'hasMiddleware') && $handler->hasMiddleware()) {
+            return $handler->executeWithMiddleware($methodStr, $fullUri, $guzzleOptions, $startTime);
+        }
+
+        // Send the request (async or sync) without middleware
         if ($handler->isAsync) {
             return $handler->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions);
         } else {
             return $handler->executeSyncRequest($methodStr, $fullUri, $guzzleOptions, $startTime);
         }
+    }
+
+    /**
+     * Execute the request through the middleware pipeline.
+     *
+     * @param  string  $method  The HTTP method
+     * @param  string  $uri  The full URI
+     * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  float  $startTime  The request start time
+     * @return ResponseInterface|PromiseInterface The response or promise
+     */
+    protected function executeWithMiddleware(
+        string $method,
+        string $uri,
+        array $options,
+        float $startTime,
+    ): ResponseInterface|PromiseInterface {
+        // Create a PSR-7 request from the current state
+        $body = null;
+        if (isset($options['body'])) {
+            $body = $options['body'];
+        } elseif (isset($options['json'])) {
+            $body = json_encode($options['json']);
+        }
+
+        $psrRequest = new GuzzleRequest(
+            $method,
+            $uri,
+            $options['headers'] ?? [],
+            $body
+        );
+
+        // Define the core handler that will be called after all middleware
+        $coreHandler = function (RequestInterface $request) use ($options, $startTime): ResponseInterface|PromiseInterface {
+            // Extract method and URI from the (potentially modified) request
+            $method = $request->getMethod();
+            $uri = (string) $request->getUri();
+
+            // Merge any headers from the modified request back into options
+            $headers = [];
+            foreach ($request->getHeaders() as $name => $values) {
+                $headers[$name] = implode(', ', $values);
+            }
+            $options['headers'] = array_merge($options['headers'] ?? [], $headers);
+
+            // Handle body from modified request
+            $body = $request->getBody();
+            if ($body->getSize() > 0) {
+                $body->rewind();
+                $bodyContents = $body->getContents();
+                $body->rewind();
+
+                // Check if it's JSON
+                $contentType = $request->getHeaderLine('Content-Type');
+                if (str_contains($contentType, 'application/json')) {
+                    $decoded = json_decode($bodyContents, true);
+                    if ($decoded !== null) {
+                        $options['json'] = $decoded;
+                        unset($options['body']);
+                    } else {
+                        $options['body'] = $bodyContents;
+                        unset($options['json']);
+                    }
+                } else {
+                    $options['body'] = $bodyContents;
+                    unset($options['json']);
+                }
+            }
+
+            // Execute the actual request
+            if ($this->isAsync) {
+                return $this->executeAsyncRequest($method, $uri, $options);
+            } else {
+                return $this->executeSyncRequest($method, $uri, $options, $startTime);
+            }
+        };
+
+        // Execute through the middleware pipeline
+        return $this->getMiddlewarePipeline()->handle($psrRequest, $coreHandler);
     }
 
     /**
