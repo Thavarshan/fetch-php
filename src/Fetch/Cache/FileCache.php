@@ -12,6 +12,11 @@ use RuntimeException;
 class FileCache implements CacheInterface
 {
     /**
+     * File extension for cache files.
+     */
+    private const FILE_EXTENSION = '.cache';
+
+    /**
      * The cache directory.
      */
     private string $directory;
@@ -27,16 +32,7 @@ class FileCache implements CacheInterface
     private int $maxSize;
 
     /**
-     * File extension for cache files.
-     */
-    private const FILE_EXTENSION = '.cache';
-
-    /**
      * Create a new file cache instance.
-     *
-     * @param  string  $directory  The cache directory
-     * @param  int  $defaultTtl  Default TTL in seconds
-     * @param  int  $maxSize  Maximum cache size in bytes (default 100MB)
      */
     public function __construct(
         string $directory = '/tmp/fetch-cache',
@@ -210,6 +206,32 @@ class FileCache implements CacheInterface
     }
 
     /**
+     * Get cache statistics.
+     *
+     * @return array{directory: string, items: int, size: int, max_size: int, default_ttl: int}
+     */
+    public function getStats(): array
+    {
+        $files = glob($this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION);
+
+        return [
+            'directory' => $this->directory,
+            'items' => $files !== false ? count($files) : 0,
+            'size' => $this->getCacheSize(),
+            'max_size' => $this->maxSize,
+            'default_ttl' => $this->defaultTtl,
+        ];
+    }
+
+    /**
+     * Get the cache directory.
+     */
+    public function getDirectory(): string
+    {
+        return $this->directory;
+    }
+
+    /**
      * Get the file path for a cache key.
      */
     private function getPath(string $key): string
@@ -258,31 +280,5 @@ class FileCache implements CacheInterface
         }
 
         return $size;
-    }
-
-    /**
-     * Get cache statistics.
-     *
-     * @return array{directory: string, items: int, size: int, max_size: int, default_ttl: int}
-     */
-    public function getStats(): array
-    {
-        $files = glob($this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION);
-
-        return [
-            'directory' => $this->directory,
-            'items' => $files !== false ? count($files) : 0,
-            'size' => $this->getCacheSize(),
-            'max_size' => $this->maxSize,
-            'default_ttl' => $this->defaultTtl,
-        ];
-    }
-
-    /**
-     * Get the cache directory.
-     */
-    public function getDirectory(): string
-    {
-        return $this->directory;
     }
 }

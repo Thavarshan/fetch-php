@@ -30,9 +30,6 @@ class CacheControl
 
     /**
      * Parse a Cache-Control header string.
-     *
-     * @param  string  $cacheControl  The Cache-Control header value
-     * @return self
      */
     public static function parse(string $cacheControl): self
     {
@@ -61,9 +58,6 @@ class CacheControl
 
     /**
      * Parse Cache-Control from a response.
-     *
-     * @param  ResponseInterface  $response  The HTTP response
-     * @return self
      */
     public static function fromResponse(ResponseInterface $response): self
     {
@@ -71,11 +65,27 @@ class CacheControl
     }
 
     /**
-     * Determine if the response should be cached.
+     * Build a Cache-Control header string.
      *
-     * @param  ResponseInterface  $response  The HTTP response
-     * @param  bool  $isSharedCache  Whether this is a shared cache
-     * @return bool
+     * @param  array<string, mixed>  $directives  The directives to include
+     */
+    public static function build(array $directives): string
+    {
+        $parts = [];
+
+        foreach ($directives as $name => $value) {
+            if ($value === true) {
+                $parts[] = $name;
+            } elseif ($value !== false && $value !== null) {
+                $parts[] = "{$name}={$value}";
+            }
+        }
+
+        return implode(', ', $parts);
+    }
+
+    /**
+     * Determine if the response should be cached.
      */
     public function shouldCache(ResponseInterface $response, bool $isSharedCache = false): bool
     {
@@ -175,8 +185,6 @@ class CacheControl
     /**
      * Calculate the TTL for the response.
      *
-     * @param  ResponseInterface  $response  The HTTP response
-     * @param  bool  $isSharedCache  Whether this is a shared cache
      * @return int|null The TTL in seconds, or null if not cacheable
      */
     public function getTtl(ResponseInterface $response, bool $isSharedCache = false): ?int
@@ -244,26 +252,5 @@ class CacheControl
     public function getDirectives(): array
     {
         return $this->directives;
-    }
-
-    /**
-     * Build a Cache-Control header string.
-     *
-     * @param  array<string, mixed>  $directives  The directives to include
-     * @return string
-     */
-    public static function build(array $directives): string
-    {
-        $parts = [];
-
-        foreach ($directives as $name => $value) {
-            if ($value === true) {
-                $parts[] = $name;
-            } elseif ($value !== false && $value !== null) {
-                $parts[] = "{$name}={$value}";
-            }
-        }
-
-        return implode(', ', $parts);
     }
 }

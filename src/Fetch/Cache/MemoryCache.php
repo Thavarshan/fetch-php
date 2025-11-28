@@ -28,9 +28,6 @@ class MemoryCache implements CacheInterface
 
     /**
      * Create a new memory cache instance.
-     *
-     * @param  int  $maxItems  Maximum number of items to store
-     * @param  int  $defaultTtl  Default TTL in seconds
      */
     public function __construct(int $maxItems = 1000, int $defaultTtl = 3600)
     {
@@ -148,28 +145,6 @@ class MemoryCache implements CacheInterface
     }
 
     /**
-     * Evict the oldest entry from the cache.
-     */
-    private function evictOldest(): void
-    {
-        // Find the oldest entry
-        $oldestKey = null;
-        $oldestTime = PHP_INT_MAX;
-
-        foreach ($this->cache as $key => $entry) {
-            $createdAt = $entry['response']->getCreatedAt();
-            if ($createdAt < $oldestTime) {
-                $oldestTime = $createdAt;
-                $oldestKey = $key;
-            }
-        }
-
-        if ($oldestKey !== null) {
-            unset($this->cache[$oldestKey]);
-        }
-    }
-
-    /**
      * Get the number of items in the cache.
      */
     public function count(): int
@@ -189,5 +164,27 @@ class MemoryCache implements CacheInterface
             'max_items' => $this->maxItems,
             'default_ttl' => $this->defaultTtl,
         ];
+    }
+
+    /**
+     * Evict the oldest entry from the cache.
+     */
+    private function evictOldest(): void
+    {
+        // Find the oldest entry
+        $oldestKey = null;
+        $oldestTime = PHP_INT_MAX;
+
+        foreach ($this->cache as $key => $entry) {
+            $createdAt = $entry['response']->getCreatedAt();
+            if ($createdAt < $oldestTime) {
+                $oldestTime = $createdAt;
+                $oldestKey = $key;
+            }
+        }
+
+        if ($oldestKey !== null) {
+            unset($this->cache[$oldestKey]);
+        }
     }
 }
