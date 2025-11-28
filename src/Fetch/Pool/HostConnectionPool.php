@@ -142,8 +142,7 @@ class HostConnectionPool
     {
         while (! $this->availableConnections->isEmpty()) {
             $connection = $this->availableConnections->dequeue();
-            $connection->close();
-        }
+            // Let Guzzle negotiate HTTP version automatically
     }
 
     /**
