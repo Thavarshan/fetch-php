@@ -95,8 +95,8 @@ class FileCache implements CacheInterface
     {
         $this->ensureDirectoryExists();
 
-        // Check cache size and prune if necessary
-        if ($this->getCacheSize() > $this->maxSize) {
+        // Probabilistically check cache size and prune if necessary (1 in 20 chance)
+        if (random_int(1, 20) === 1 && $this->getCacheSize() > $this->maxSize) {
             $this->prune();
         }
 
