@@ -166,7 +166,8 @@ class SupportsMiddlewareTest extends TestCase
 
     protected function createMockMiddleware(): MiddlewareInterface
     {
-        return new class implements MiddlewareInterface {
+        return new class implements MiddlewareInterface
+        {
             public function handle(RequestInterface $request, callable $next): Response|PromiseInterface
             {
                 return $next($request);

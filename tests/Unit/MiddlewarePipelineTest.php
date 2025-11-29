@@ -91,7 +91,8 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_middleware_can_modify_request(): void
     {
-        $middleware = new class implements MiddlewareInterface {
+        $middleware = new class implements MiddlewareInterface
+        {
             public function handle(RequestInterface $request, callable $next): Response|PromiseInterface
             {
                 // Add a header to the request
@@ -119,7 +120,8 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_middleware_can_modify_response(): void
     {
-        $middleware = new class implements MiddlewareInterface {
+        $middleware = new class implements MiddlewareInterface
+        {
             public function handle(RequestInterface $request, callable $next): Response|PromiseInterface
             {
                 $response = $next($request);
@@ -143,7 +145,8 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_middleware_can_short_circuit(): void
     {
-        $shortCircuitMiddleware = new class implements MiddlewareInterface {
+        $shortCircuitMiddleware = new class implements MiddlewareInterface
+        {
             public function handle(RequestInterface $request, callable $next): Response|PromiseInterface
             {
                 // Return early without calling $next
@@ -171,7 +174,8 @@ class MiddlewarePipelineTest extends TestCase
     {
         $order = [];
 
-        $firstMiddleware = new class($order) implements MiddlewareInterface {
+        $firstMiddleware = new class($order) implements MiddlewareInterface
+        {
             public function __construct(private array &$order) {}
 
             public function handle(RequestInterface $request, callable $next): Response|PromiseInterface
@@ -184,7 +188,8 @@ class MiddlewarePipelineTest extends TestCase
             }
         };
 
-        $secondMiddleware = new class($order) implements MiddlewareInterface {
+        $secondMiddleware = new class($order) implements MiddlewareInterface
+        {
             public function __construct(private array &$order) {}
 
             public function handle(RequestInterface $request, callable $next): Response|PromiseInterface
@@ -244,7 +249,8 @@ class MiddlewarePipelineTest extends TestCase
 
     protected function createMockMiddleware(): MiddlewareInterface
     {
-        return new class implements MiddlewareInterface {
+        return new class implements MiddlewareInterface
+        {
             public function handle(RequestInterface $request, callable $next): Response|PromiseInterface
             {
                 return $next($request);
