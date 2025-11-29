@@ -22,7 +22,10 @@ trait SupportsMiddleware
     protected ?MiddlewarePipeline $middlewarePipeline = null;
 
     /**
-     * Set multiple middleware at once.
+     * Set multiple middleware at once, replacing any existing middleware.
+     *
+     * Note: This replaces the entire middleware pipeline. Use addMiddleware()
+     * to add middleware without removing existing ones.
      *
      * @param  array<MiddlewareInterface|array{middleware: MiddlewareInterface, priority: int}>  $middleware
      * @return $this
