@@ -629,7 +629,7 @@ interface ClientHandler
      * Conditionally add middleware (inverse of when).
      *
      * @param  bool  $condition  The condition to check
-     * @param  callable  $callback  Callback that receives $this and should add middleware
+     * @param  callable(static): void  $callback  Callback that receives $this for adding middleware
      * @return $this
      */
     public function unless(bool $condition, callable $callback): self;
