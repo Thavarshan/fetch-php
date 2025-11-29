@@ -102,7 +102,7 @@ trait SupportsMiddleware
      * Conditionally add middleware.
      *
      * @param  bool  $condition  The condition to check
-     * @param  callable  $callback  Callback that receives $this and should add middleware
+     * @param  callable(static): void  $callback  Callback that receives $this for adding middleware
      * @return $this
      */
     public function when(bool $condition, callable $callback): ClientHandler
@@ -124,5 +124,19 @@ trait SupportsMiddleware
     public function unless(bool $condition, callable $callback): ClientHandler
     {
         return $this->when(! $condition, $callback);
+    }
+
+    /**
+     * Clone the middleware pipeline when the handler is cloned.
+     *
+     * This ensures that the cloned handler has its own independent middleware
+     * pipeline instance, preventing modifications from affecting the original.
+     */
+    protected function cloneMiddlewarePipeline(): void
+    {
+        if ($this->middlewarePipeline !== null) {
+            $middleware = $this->middlewarePipeline->getMiddleware();
+            $this->middlewarePipeline = new MiddlewarePipeline($middleware);
+        }
     }
 }

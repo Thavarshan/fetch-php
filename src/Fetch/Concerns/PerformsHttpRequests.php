@@ -295,6 +295,9 @@ trait PerformsHttpRequests
 
         // Define the core handler that will be called after all middleware
         $coreHandler = function (RequestInterface $request) use ($options, $startTime): ResponseInterface|PromiseInterface {
+            // Work with a copy to avoid side effects
+            $modifiedOptions = $options;
+
             // Extract method and URI from the (potentially modified) request
             $method = $request->getMethod();
             $uri = (string) $request->getUri();
@@ -304,37 +307,43 @@ trait PerformsHttpRequests
             foreach ($request->getHeaders() as $name => $values) {
                 $headers[$name] = implode(', ', $values);
             }
-            $options['headers'] = array_merge($options['headers'] ?? [], $headers);
+            $modifiedOptions['headers'] = array_merge($modifiedOptions['headers'] ?? [], $headers);
 
             // Handle body from modified request
             $body = $request->getBody();
-            if ($body->getSize() > 0) {
-                $body->rewind();
-                $bodyContents = $body->getContents();
-                $body->rewind();
+            $bodySize = $body->getSize();
 
-                // Check if it's JSON
-                $contentType = $request->getHeaderLine('Content-Type');
-                if (str_contains($contentType, 'application/json')) {
-                    $decoded = json_decode($bodyContents, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        $options['json'] = $decoded;
-                        unset($options['body']);
+            // Check if body is readable and potentially has content (size is null or > 0)
+            if ($body->isReadable() && ($bodySize === null || $bodySize > 0)) {
+                if ($body->isSeekable()) {
+                    $body->rewind();
+                }
+                $bodyContents = $body->getContents();
+
+                if (! empty($bodyContents)) {
+                    // Check if it's JSON
+                    $contentType = $request->getHeaderLine('Content-Type');
+                    if (str_contains($contentType, 'application/json')) {
+                        $decoded = json_decode($bodyContents, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $modifiedOptions['json'] = $decoded;
+                            unset($modifiedOptions['body']);
+                        } else {
+                            $modifiedOptions['body'] = $bodyContents;
+                            unset($modifiedOptions['json']);
+                        }
                     } else {
-                        $options['body'] = $bodyContents;
-                        unset($options['json']);
+                        $modifiedOptions['body'] = $bodyContents;
+                        unset($modifiedOptions['json']);
                     }
-                } else {
-                    $options['body'] = $bodyContents;
-                    unset($options['json']);
                 }
             }
 
             // Execute the actual request
             if ($this->isAsync) {
-                return $this->executeAsyncRequest($method, $uri, $options);
+                return $this->executeAsyncRequest($method, $uri, $modifiedOptions);
             } else {
-                return $this->executeSyncRequest($method, $uri, $options, $startTime);
+                return $this->executeSyncRequest($method, $uri, $modifiedOptions, $startTime);
             }
         };
 

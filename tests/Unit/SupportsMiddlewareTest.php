@@ -164,6 +164,36 @@ class SupportsMiddlewareTest extends TestCase
         $this->assertSame($this->handler, $result);
     }
 
+    public function test_cloned_handler_has_independent_middleware_pipeline(): void
+    {
+        $middleware1 = $this->createMockMiddleware();
+        $this->handler->addMiddleware($middleware1);
+
+        $cloned = clone $this->handler;
+        $middleware2 = $this->createMockMiddleware();
+        $cloned->addMiddleware($middleware2);
+
+        // Original should only have 1 middleware
+        $this->assertEquals(1, $this->handler->getMiddlewarePipeline()->count());
+
+        // Cloned should have 2 middleware
+        $this->assertEquals(2, $cloned->getMiddlewarePipeline()->count());
+    }
+
+    public function test_cloned_handler_without_middleware_remains_independent(): void
+    {
+        $cloned = clone $this->handler;
+
+        $middleware = $this->createMockMiddleware();
+        $cloned->addMiddleware($middleware);
+
+        // Original should have no middleware
+        $this->assertFalse($this->handler->hasMiddleware());
+
+        // Cloned should have middleware
+        $this->assertTrue($cloned->hasMiddleware());
+    }
+
     protected function createMockMiddleware(): MiddlewareInterface
     {
         return new class implements MiddlewareInterface

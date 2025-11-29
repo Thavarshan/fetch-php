@@ -333,6 +333,16 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
+     * Handle cloning of the client handler.
+     *
+     * Ensures that cloned handlers have independent middleware pipelines.
+     */
+    public function __clone(): void
+    {
+        $this->cloneMiddlewarePipeline();
+    }
+
+    /**
      * Send the configured request asynchronously based on current options.
      *
      * Requires that 'method' and 'uri' are set in options.

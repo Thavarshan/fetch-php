@@ -575,7 +575,10 @@ interface ClientHandler
     public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
 
     /**
-     * Set multiple middleware at once.
+     * Set multiple middleware at once, replacing any existing middleware.
+     *
+     * Note: This replaces the entire middleware pipeline. Use addMiddleware()
+     * to add middleware without removing existing ones.
      *
      * @param  array<MiddlewareInterface|array{middleware: MiddlewareInterface, priority: int}>  $middleware
      * @return $this
@@ -620,7 +623,7 @@ interface ClientHandler
      * Conditionally add middleware.
      *
      * @param  bool  $condition  The condition to check
-     * @param  callable  $callback  Callback that receives $this and should add middleware
+     * @param  callable(static): void  $callback  Callback that receives $this for adding middleware
      * @return $this
      */
     public function when(bool $condition, callable $callback): self;

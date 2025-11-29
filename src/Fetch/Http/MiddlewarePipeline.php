@@ -30,14 +30,23 @@ class MiddlewarePipeline
      * Create a new middleware pipeline.
      *
      * @param  array<MiddlewareInterface|array{middleware: MiddlewareInterface, priority: int}>  $middleware
+     *
+     * @throws \InvalidArgumentException If middleware format is invalid
      */
     public function __construct(array $middleware = [])
     {
         foreach ($middleware as $item) {
             if ($item instanceof MiddlewareInterface) {
                 $this->middleware[] = ['middleware' => $item, 'priority' => 0];
+            } elseif (is_array($item) && isset($item['middleware']) && $item['middleware'] instanceof MiddlewareInterface) {
+                $this->middleware[] = [
+                    'middleware' => $item['middleware'],
+                    'priority' => $item['priority'] ?? 0,
+                ];
             } else {
-                $this->middleware[] = $item;
+                throw new \InvalidArgumentException(
+                    'Middleware must be an instance of MiddlewareInterface or an array with "middleware" key containing a MiddlewareInterface instance'
+                );
             }
         }
 

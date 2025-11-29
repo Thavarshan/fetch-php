@@ -257,4 +257,31 @@ class MiddlewarePipelineTest extends TestCase
             }
         };
     }
+
+    public function test_constructor_throws_exception_for_invalid_middleware(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Middleware must be an instance of MiddlewareInterface');
+
+        new MiddlewarePipeline(['invalid']);
+    }
+
+    public function test_constructor_throws_exception_for_array_without_middleware_key(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new MiddlewarePipeline([['priority' => 5]]);
+    }
+
+    public function test_pipeline_accepts_array_with_default_priority(): void
+    {
+        $middleware = $this->createMockMiddleware();
+        $pipeline = new MiddlewarePipeline([
+            ['middleware' => $middleware],
+        ]);
+
+        $stack = $pipeline->getMiddleware();
+
+        $this->assertEquals(0, $stack[0]['priority']);
+    }
 }
