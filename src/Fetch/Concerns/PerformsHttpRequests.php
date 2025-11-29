@@ -179,6 +179,21 @@ trait PerformsHttpRequests
             }
         }
 
+        // Check for cached response (if ManagesCache trait is available)
+        // Use handler options which includes cache config, not just guzzle options
+        $cachedResult = null;
+        if (method_exists($handler, 'getCachedResponse') && method_exists($handler, 'isCacheEnabled') && $handler->isCacheEnabled()) {
+            $cachedResult = $handler->getCachedResponse($methodStr, $fullUri, $handler->options);
+            if ($cachedResult['response'] !== null) {
+                return $cachedResult['response'];
+            }
+
+            // Add conditional headers if we have a stale cache entry
+            if ($cachedResult['cached'] !== null && method_exists($handler, 'addConditionalHeaders')) {
+                $guzzleOptions = $handler->addConditionalHeaders($guzzleOptions, $cachedResult['cached']);
+            }
+        }
+
         // Start timing for logging
         $startTime = microtime(true);
 
@@ -191,7 +206,7 @@ trait PerformsHttpRequests
         if ($handler->isAsync) {
             return $handler->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions);
         } else {
-            return $handler->executeSyncRequest($methodStr, $fullUri, $guzzleOptions, $startTime);
+            return $this->executeSyncRequestWithCache($methodStr, $fullUri, $guzzleOptions, $startTime, $cachedResult, $handler);
         }
     }
 
@@ -248,6 +263,53 @@ trait PerformsHttpRequests
 
         // Fall back to default
         return self::DEFAULT_TIMEOUT;
+    }
+
+    /**
+     * Execute a synchronous request with caching support.
+     *
+     * @param  string  $method  The HTTP method
+     * @param  string  $uri  The full URI
+     * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  float  $startTime  The request start time
+     * @param  array<string, mixed>|null  $cachedResult  The cached result data
+     * @param  self  $handler  The cloned handler instance with request-specific state
+     * @return ResponseInterface The response
+     */
+    protected function executeSyncRequestWithCache(
+        string $method,
+        string $uri,
+        array $options,
+        float $startTime,
+        ?array $cachedResult,
+        self $handler
+    ): ResponseInterface {
+        try {
+            $response = $handler->executeSyncRequest($method, $uri, $options, $startTime);
+
+            // Handle 304 Not Modified response
+            if ($response->getStatusCode() === 304 && $cachedResult !== null && isset($cachedResult['cached']) && method_exists($handler, 'handleNotModified')) {
+                $response = $handler->handleNotModified($cachedResult['cached'], $response);
+            }
+
+            // Cache the response if caching is enabled
+            // Use handler options which includes cache config
+            if (method_exists($handler, 'cacheResponse') && method_exists($handler, 'isCacheEnabled') && $handler->isCacheEnabled()) {
+                $handler->cacheResponse($method, $uri, $response, $handler->options);
+            }
+
+            return $response;
+        } catch (\Throwable $e) {
+            // Handle stale-if-error: serve stale response on error
+            if ($cachedResult !== null && isset($cachedResult['cached']) && method_exists($handler, 'handleStaleIfError')) {
+                $staleResponse = $handler->handleStaleIfError($cachedResult['cached']);
+                if ($staleResponse !== null) {
+                    return $staleResponse;
+                }
+            }
+
+            throw $e;
+        }
     }
 
     /**

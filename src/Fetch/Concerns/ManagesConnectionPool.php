@@ -24,15 +24,11 @@ trait ManagesConnectionPool
 {
     /**
      * The connection pool instance (shared across all handlers).
-     *
-     * @var ConnectionPool|null
      */
     protected static ?ConnectionPool $connectionPool = null;
 
     /**
      * The DNS cache instance (shared across all handlers).
-     *
-     * @var DnsCache|null
      */
     protected static ?DnsCache $dnsCache = null;
 

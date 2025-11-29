@@ -575,6 +575,28 @@ interface ClientHandler
     public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
 
     /**
+     * Enable caching with optional configuration.
+     *
+     * @param  array<string, mixed>  $options  Cache options
+     */
+    public function withCache(?\Fetch\Cache\CacheInterface $cache = null, array $options = []): self;
+
+    /**
+     * Disable caching.
+     */
+    public function withoutCache(): self;
+
+    /**
+     * Get the cache instance.
+     */
+    public function getCache(): ?\Fetch\Cache\CacheInterface;
+
+    /**
+     * Check if caching is enabled.
+     */
+    public function isCacheEnabled(): bool;
+
+    /**
      * Configure connection pooling for this handler.
      *
      * @param  array<string, mixed>|bool  $config  Pool configuration or boolean to enable/disable
