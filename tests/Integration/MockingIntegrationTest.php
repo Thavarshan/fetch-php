@@ -229,7 +229,8 @@ class MockingIntegrationTest extends TestCase
         $response = get('https://api.example.com/slow');
         $duration = (microtime(true) - $start) * 1000;
 
-        $this->assertGreaterThanOrEqual(50, $duration);
+        // Allow 2ms tolerance for timer precision issues on Windows
+        $this->assertGreaterThanOrEqual(48, $duration);
         $this->assertSame('Done', $response->body());
     }
 
