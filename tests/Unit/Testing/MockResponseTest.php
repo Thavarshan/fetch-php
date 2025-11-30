@@ -54,7 +54,8 @@ class MockResponseTest extends TestCase
         $executed = $response->execute();
         $duration = (microtime(true) - $start) * 1000; // Convert to milliseconds
 
-        $this->assertGreaterThanOrEqual(10, $duration);
+        // Allow 2ms tolerance for timer precision issues on Windows
+        $this->assertGreaterThanOrEqual(8, $duration);
         $this->assertSame(200, $executed->status());
         $this->assertSame('Test', $executed->body());
     }
