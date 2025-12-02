@@ -25,10 +25,9 @@ trait PerformsHttpRequests
     /**
      * Handles an HTTP request with the given method, URI, and options.
      *
-     * @param string               $method  The HTTP method to use
-     * @param string               $uri     The URI to request
-     * @param array<string, mixed> $options Additional options for the request
-     *
+     * @param  string  $method  The HTTP method to use
+     * @param  string  $uri  The URI to request
+     * @param  array<string, mixed>  $options  Additional options for the request
      * @return Response|PromiseInterface Response or promise
      */
     public static function handle(
@@ -45,8 +44,7 @@ trait PerformsHttpRequests
     /**
      * Send a HEAD request.
      *
-     * @param string $uri The URI to request
-     *
+     * @param  string  $uri  The URI to request
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function head(string $uri): ResponseInterface|PromiseInterface
@@ -57,15 +55,14 @@ trait PerformsHttpRequests
     /**
      * Send a GET request.
      *
-     * @param string               $uri         The URI to request
-     * @param array<string, mixed> $queryParams Optional query parameters
-     *
+     * @param  string  $uri  The URI to request
+     * @param  array<string, mixed>  $queryParams  Optional query parameters
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function get(string $uri, array $queryParams = []): ResponseInterface|PromiseInterface
     {
         $options = [];
-        if (!empty($queryParams)) {
+        if (! empty($queryParams)) {
             $options['query'] = $queryParams;
         }
 
@@ -75,10 +72,9 @@ trait PerformsHttpRequests
     /**
      * Send a POST request.
      *
-     * @param string             $uri         The URI to request
-     * @param mixed              $body        The request body
-     * @param ContentType|string $contentType The content type of the request
-     *
+     * @param  string  $uri  The URI to request
+     * @param  mixed  $body  The request body
+     * @param  ContentType|string  $contentType  The content type of the request
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function post(
@@ -92,10 +88,9 @@ trait PerformsHttpRequests
     /**
      * Send a PUT request.
      *
-     * @param string             $uri         The URI to request
-     * @param mixed              $body        The request body
-     * @param ContentType|string $contentType The content type of the request
-     *
+     * @param  string  $uri  The URI to request
+     * @param  mixed  $body  The request body
+     * @param  ContentType|string  $contentType  The content type of the request
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function put(
@@ -109,10 +104,9 @@ trait PerformsHttpRequests
     /**
      * Send a PATCH request.
      *
-     * @param string             $uri         The URI to request
-     * @param mixed              $body        The request body
-     * @param ContentType|string $contentType The content type of the request
-     *
+     * @param  string  $uri  The URI to request
+     * @param  mixed  $body  The request body
+     * @param  ContentType|string  $contentType  The content type of the request
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function patch(
@@ -126,10 +120,9 @@ trait PerformsHttpRequests
     /**
      * Send a DELETE request.
      *
-     * @param string             $uri         The URI to request
-     * @param mixed              $body        Optional request body
-     * @param ContentType|string $contentType The content type of the request
-     *
+     * @param  string  $uri  The URI to request
+     * @param  mixed  $body  Optional request body
+     * @param  ContentType|string  $contentType  The content type of the request
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function delete(
@@ -143,8 +136,7 @@ trait PerformsHttpRequests
     /**
      * Send an OPTIONS request.
      *
-     * @param string $uri The URI to request
-     *
+     * @param  string  $uri  The URI to request
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function options(string $uri): ResponseInterface|PromiseInterface
@@ -159,10 +151,9 @@ trait PerformsHttpRequests
      * from merged options and passes it through the execution stack without mutating
      * the handler's shared state. This makes the handler safe for concurrent usage.
      *
-     * @param Method|string        $method  The HTTP method
-     * @param string               $uri     The URI to request
-     * @param array<string, mixed> $options Additional options
-     *
+     * @param  Method|string  $method  The HTTP method
+     * @param  string  $uri  The URI to request
+     * @param  array<string, mixed>  $options  Additional options
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     public function sendRequest(
@@ -200,7 +191,7 @@ trait PerformsHttpRequests
         // Check for mock response first (if HandlesMocking trait is available)
         if (method_exists($this, 'handleMockRequest')) {
             $mockResponse = $this->handleMockRequest($methodStr, $fullUri, $guzzleOptions);
-            if (null !== $mockResponse) {
+            if ($mockResponse !== null) {
                 $this->recordProfilingEvent($requestId, 'response_start');
                 $this->endProfiling($requestId, $mockResponse->getStatusCode());
 
@@ -211,7 +202,7 @@ trait PerformsHttpRequests
                 $debugInfo = $this->captureDebugSnapshot($methodStr, $fullUri, $guzzleOptions, $mockResponse, $startTime, $startMemory, $connectionStats);
 
                 // Attach debug info to response if available
-                if (null !== $debugInfo && $mockResponse instanceof Response) {
+                if ($debugInfo !== null && $mockResponse instanceof Response) {
                     $mockResponse->withDebugInfo($debugInfo);
                 }
 
@@ -224,9 +215,9 @@ trait PerformsHttpRequests
         $cacheManager = $this->getCacheManagerFromHandler($this);
         $requestOptionsWithAsync = array_merge($context->toArray(), ['async' => $context->isAsync()]);
 
-        if (null !== $cacheManager) {
+        if ($cacheManager !== null) {
             $cachedResult = $cacheManager->getCachedResponse($methodStr, $fullUri, $requestOptionsWithAsync);
-            if (null !== $cachedResult['response']) {
+            if ($cachedResult['response'] !== null) {
                 $this->recordProfilingEvent($requestId, 'response_start');
                 $this->endProfiling($requestId, $cachedResult['response']->getStatusCode());
 
@@ -237,7 +228,7 @@ trait PerformsHttpRequests
                 $debugInfo = $this->captureDebugSnapshot($methodStr, $fullUri, $guzzleOptions, $cachedResult['response'], $startTime, $startMemory, $connectionStats);
 
                 // Attach debug info to cached response if available
-                if (null !== $debugInfo && $cachedResult['response'] instanceof Response) {
+                if ($debugInfo !== null && $cachedResult['response'] instanceof Response) {
                     $cachedResult['response']->withDebugInfo($debugInfo);
                 }
 
@@ -245,7 +236,7 @@ trait PerformsHttpRequests
             }
 
             // Add conditional headers if we have a stale cache entry
-            if (null !== $cachedResult['cached']) {
+            if ($cachedResult['cached'] !== null) {
                 $guzzleOptions = $cacheManager->addConditionalHeaders($guzzleOptions, $cachedResult['cached']);
             }
         }
@@ -295,12 +286,11 @@ trait PerformsHttpRequests
     /**
      * Sends an HTTP request with the specified parameters.
      *
-     * @param string|Method        $method      HTTP method (e.g., GET, POST)
-     * @param string               $uri         URI to send the request to
-     * @param mixed                $body        Request body
-     * @param string|ContentType   $contentType Content type of the request
-     * @param array<string, mixed> $options     Additional request options
-     *
+     * @param  string|Method  $method  HTTP method (e.g., GET, POST)
+     * @param  string  $uri  URI to send the request to
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type of the request
+     * @param  array<string, mixed>  $options  Additional request options
      * @return Response|PromiseInterface Response or promise
      */
     public function request(
@@ -312,7 +302,7 @@ trait PerformsHttpRequests
     ): Response|PromiseInterface {
         $mergedOptions = RequestOptions::merge($this->options, $options);
 
-        if (null !== $body) {
+        if ($body !== null) {
             $mergedOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
         }
 
@@ -324,14 +314,13 @@ trait PerformsHttpRequests
      *
      * Supports per-request timeout via RequestContext, with handler defaults as fallback.
      *
-     * @param RequestContext|null $context Optional request context for per-request override
-     *
+     * @param  RequestContext|null  $context  Optional request context for per-request override
      * @return int The timeout in seconds
      */
     public function getEffectiveTimeout(?RequestContext $context = null): int
     {
         // First check RequestContext for per-request override
-        if (null !== $context) {
+        if ($context !== null) {
             return $context->getTimeout();
         }
 
@@ -356,15 +345,14 @@ trait PerformsHttpRequests
      * a new options array with body configuration applied. It does not mutate
      * any handler properties, making it safe for concurrent usage.
      *
-     * @param array<string, mixed> $options     Base options array
-     * @param mixed                $body        The request body
-     * @param ContentType|string   $contentType The content type
-     *
+     * @param  array<string, mixed>  $options  Base options array
+     * @param  mixed  $body  The request body
+     * @param  ContentType|string  $contentType  The content type
      * @return array<string, mixed> New options array with body applied
      */
     protected function applyBodyOptions(array $options, mixed $body, ContentType|string $contentType): array
     {
-        if (null === $body) {
+        if ($body === null) {
             return $options;
         }
 
@@ -375,7 +363,7 @@ trait PerformsHttpRequests
             : (string) $contentTypeEnum;
 
         // Initialize headers if not set
-        if (!isset($options['headers'])) {
+        if (! isset($options['headers'])) {
             $options['headers'] = [];
         }
 
@@ -392,7 +380,7 @@ trait PerformsHttpRequests
         } else {
             // String body
             $options['body'] = $body;
-            if (!isset($options['headers']['Content-Type'])) {
+            if (! isset($options['headers']['Content-Type'])) {
                 $options['headers']['Content-Type'] = $contentTypeValue;
             }
         }
@@ -406,8 +394,7 @@ trait PerformsHttpRequests
      * Uses the CacheableHandler interface getter to properly encapsulate access.
      * Note: Cloning a handler shares the CacheManager instance (intentional - it's stateless per-request).
      *
-     * @param object $handler The handler instance to check
-     *
+     * @param  object  $handler  The handler instance to check
      * @return CacheManager|null The cache manager or null if not available
      */
     protected function getCacheManagerFromHandler(object $handler): ?CacheManager
@@ -422,16 +409,15 @@ trait PerformsHttpRequests
     /**
      * Execute a synchronous request with caching support.
      *
-     * @param string                    $method         The HTTP method
-     * @param string                    $uri            The full URI
-     * @param array<string, mixed>      $options        The Guzzle options
-     * @param array<string, mixed>      $requestOptions The request options with async flag
-     * @param float                     $startTime      The request start time
-     * @param int                       $startMemory    The starting memory usage
-     * @param array<string, mixed>|null $cachedResult   The cached result data
-     * @param string|null               $requestId      The request ID for profiling
-     * @param RequestContext            $context        The request context
-     *
+     * @param  string  $method  The HTTP method
+     * @param  string  $uri  The full URI
+     * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  array<string, mixed>  $requestOptions  The request options with async flag
+     * @param  float  $startTime  The request start time
+     * @param  int  $startMemory  The starting memory usage
+     * @param  array<string, mixed>|null  $cachedResult  The cached result data
+     * @param  string|null  $requestId  The request ID for profiling
+     * @param  RequestContext  $context  The request context
      * @return ResponseInterface The response
      */
     protected function executeSyncRequestWithCache(
@@ -451,12 +437,12 @@ trait PerformsHttpRequests
             $response = $this->executeSyncRequest($method, $uri, $options, $startTime, $startMemory, $requestId, $context);
 
             // Handle 304 Not Modified response
-            if (304 === $response->getStatusCode() && null !== $cachedResult && isset($cachedResult['cached']) && null !== $cacheManager) {
+            if ($response->getStatusCode() === 304 && $cachedResult !== null && isset($cachedResult['cached']) && $cacheManager !== null) {
                 $response = $cacheManager->handleNotModified($cachedResult['cached'], $response);
             }
 
             // Cache the response if caching is enabled
-            if (null !== $cacheManager) {
+            if ($cacheManager !== null) {
                 $cacheManager->cacheResponse($method, $uri, $response, $requestOptions);
             }
 
@@ -467,7 +453,7 @@ trait PerformsHttpRequests
             $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats);
 
             // Attach debug info to response if available
-            if (null !== $debugInfo && $response instanceof Response) {
+            if ($debugInfo !== null && $response instanceof Response) {
                 $response->withDebugInfo($debugInfo);
             }
 
@@ -478,9 +464,9 @@ trait PerformsHttpRequests
             return $response;
         } catch (\Throwable $e) {
             // Handle stale-if-error: serve stale response on error
-            if (null !== $cachedResult && isset($cachedResult['cached']) && null !== $cacheManager) {
+            if ($cachedResult !== null && isset($cachedResult['cached']) && $cacheManager !== null) {
                 $staleResponse = $cacheManager->handleStaleIfError($cachedResult['cached'], $method, $uri);
-                if (null !== $staleResponse) {
+                if ($staleResponse !== null) {
                     $this->recordProfilingEvent($requestId, 'response_start');
                     $this->endProfiling($requestId, $staleResponse->getStatusCode());
 
@@ -491,7 +477,7 @@ trait PerformsHttpRequests
                     $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $staleResponse, $startTime, $startMemory, $connectionStats);
 
                     // Attach debug info to stale response if available
-                    if (null !== $debugInfo && $staleResponse instanceof Response) {
+                    if ($debugInfo !== null && $staleResponse instanceof Response) {
                         $staleResponse->withDebugInfo($debugInfo);
                     }
 
@@ -506,12 +492,11 @@ trait PerformsHttpRequests
     /**
      * Send an HTTP request with a body.
      *
-     * @param Method|string        $method      The HTTP method
-     * @param string               $uri         The URI to request
-     * @param mixed                $body        The request body
-     * @param ContentType|string   $contentType The content type
-     * @param array<string, mixed> $options     Additional options
-     *
+     * @param  Method|string  $method  The HTTP method
+     * @param  string  $uri  The URI to request
+     * @param  mixed  $body  The request body
+     * @param  ContentType|string  $contentType  The content type
+     * @param  array<string, mixed>  $options  Additional options
      * @return ResponseInterface|PromiseInterface The response or promise
      */
     protected function sendRequestWithBody(
@@ -522,7 +507,7 @@ trait PerformsHttpRequests
         array $options = [],
     ): ResponseInterface|PromiseInterface {
         // Skip if no body
-        if (null === $body) {
+        if ($body === null) {
             return $this->sendRequest($method, $uri, $options);
         }
 
@@ -539,8 +524,7 @@ trait PerformsHttpRequests
      * operation. When context is not provided, it falls back to building a context
      * from handler options (for backwards compatibility).
      *
-     * @param RequestContext|null $context Optional explicit context (preferred)
-     *
+     * @param  RequestContext|null  $context  Optional explicit context (preferred)
      * @return array<string, mixed>
      */
     protected function prepareGuzzleOptions(?RequestContext $context = null): array
@@ -554,14 +538,13 @@ trait PerformsHttpRequests
     /**
      * Execute a synchronous HTTP request.
      *
-     * @param string               $method      The HTTP method
-     * @param string               $uri         The full URI
-     * @param array<string, mixed> $options     The Guzzle options
-     * @param float                $startTime   The request start time
-     * @param int                  $startMemory The starting memory usage
-     * @param string|null          $requestId   The request ID for profiling
-     * @param RequestContext|null  $context     The request context
-     *
+     * @param  string  $method  The HTTP method
+     * @param  string  $uri  The full URI
+     * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  float  $startTime  The request start time
+     * @param  int  $startMemory  The starting memory usage
+     * @param  string|null  $requestId  The request ID for profiling
+     * @param  RequestContext|null  $context  The request context
      * @return ResponseInterface The response
      */
     protected function executeSyncRequest(
@@ -574,14 +557,14 @@ trait PerformsHttpRequests
         ?RequestContext $context = null,
     ): ResponseInterface {
         // Start profiling if not already started
-        if (null === $requestId && method_exists($this, 'startProfiling')) {
+        if ($requestId === null && method_exists($this, 'startProfiling')) {
             $requestId = $this->startProfiling($method, $uri);
         }
 
         return $this->retryRequest($context, function () use ($method, $uri, $options, $startTime, $requestId, $startMemory, $context): ResponseInterface {
             try {
                 // Record request sent event for profiling
-                if (null !== $requestId && method_exists($this, 'recordProfilingEvent')) {
+                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
                     $this->recordProfilingEvent($requestId, 'request_sent');
                 }
 
@@ -589,7 +572,7 @@ trait PerformsHttpRequests
                 $psrResponse = $this->getHttpClient()->request($method, $uri, $options);
 
                 // Record response received event for profiling
-                if (null !== $requestId && method_exists($this, 'recordProfilingEvent')) {
+                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
                     $this->recordProfilingEvent($requestId, 'response_start');
                 }
 
@@ -600,7 +583,7 @@ trait PerformsHttpRequests
                 $response = Response::createFromBase($psrResponse);
 
                 // End profiling
-                if (null !== $requestId && method_exists($this, 'endProfiling')) {
+                if ($requestId !== null && method_exists($this, 'endProfiling')) {
                     $this->endProfiling($requestId, $response->getStatusCode());
                 }
 
@@ -611,13 +594,13 @@ trait PerformsHttpRequests
                 $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats);
 
                 // Attach debug info to response if available
-                if (null !== $debugInfo) {
+                if ($debugInfo !== null) {
                     $response->withDebugInfo($debugInfo);
                 }
 
                 // Trigger retry on configured retryable status codes
                 // IMPORTANT: Check context first for per-request retry status codes, fall back to handler state
-                $retryableStatusCodes = null !== $context && [] !== $context->getRetryableStatusCodes()
+                $retryableStatusCodes = $context !== null && $context->getRetryableStatusCodes() !== []
                     ? $context->getRetryableStatusCodes()
                     : $this->getRetryableStatusCodes();
 
@@ -635,7 +618,7 @@ trait PerformsHttpRequests
                 return $response;
             } catch (GuzzleException $e) {
                 // End profiling with error
-                if (null !== $requestId && method_exists($this, 'endProfiling')) {
+                if ($requestId !== null && method_exists($this, 'endProfiling')) {
                     $this->endProfiling($requestId, null);
                 }
 
@@ -658,14 +641,13 @@ trait PerformsHttpRequests
     /**
      * Execute an asynchronous HTTP request.
      *
-     * @param string               $method      The HTTP method
-     * @param string               $uri         The full URI
-     * @param array<string, mixed> $options     The Guzzle options
-     * @param float                $startTime   The request start time
-     * @param int                  $startMemory The starting memory usage
-     * @param string|null          $requestId   The request ID for profiling
-     * @param RequestContext|null  $context     The request context
-     *
+     * @param  string  $method  The HTTP method
+     * @param  string  $uri  The full URI
+     * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  float  $startTime  The request start time
+     * @param  int  $startMemory  The starting memory usage
+     * @param  string|null  $requestId  The request ID for profiling
+     * @param  RequestContext|null  $context  The request context
      * @return PromiseInterface A promise that resolves with the response
      */
     protected function executeAsyncRequest(
@@ -723,15 +705,14 @@ trait PerformsHttpRequests
     /**
      * Apply JSON body options without mutation.
      *
-     * @param array<string, mixed> $options
-     * @param array<string, mixed> $body
-     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
     private function applyJsonBodyPure(array $options, array $body): array
     {
         $options['json'] = $body;
-        if (!isset($options['headers']['Content-Type'])) {
+        if (! isset($options['headers']['Content-Type'])) {
             $options['headers']['Content-Type'] = ContentType::JSON->value;
         }
 
@@ -741,15 +722,14 @@ trait PerformsHttpRequests
     /**
      * Apply form params body options without mutation.
      *
-     * @param array<string, mixed> $options
-     * @param array<string, mixed> $body
-     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
     private function applyFormParamsPure(array $options, array $body): array
     {
         $options['form_params'] = $body;
-        if (!isset($options['headers']['Content-Type'])) {
+        if (! isset($options['headers']['Content-Type'])) {
             $options['headers']['Content-Type'] = ContentType::FORM_URLENCODED->value;
         }
 
@@ -759,9 +739,8 @@ trait PerformsHttpRequests
     /**
      * Apply multipart body options without mutation.
      *
-     * @param array<string, mixed> $options
-     * @param array<string, mixed> $body
-     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
     private function applyMultipartPure(array $options, array $body): array
@@ -778,13 +757,12 @@ trait PerformsHttpRequests
     /**
      * Normalize multipart array without mutation.
      *
-     * @param array<int, array{name: string, contents: mixed, headers?: array<string, string>}>|array<string, mixed> $multipart
-     *
+     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>|array<string, mixed>  $multipart
      * @return array<int, array{name: string, contents: mixed, headers?: array<string, string>}>
      */
     private function normalizeMultipartPure(array $multipart): array
     {
-        if ([] === $multipart || array_is_list($multipart)) {
+        if ($multipart === [] || array_is_list($multipart)) {
             /* @var array<int, array{name: string, contents: mixed, headers?: array<string, string>}> $multipart */
             return $multipart;
         }
@@ -806,15 +784,14 @@ trait PerformsHttpRequests
     /**
      * Apply generic array body as JSON string without mutation.
      *
-     * @param array<string, mixed> $options
-     * @param array<string, mixed> $body
-     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
     private function applyGenericArrayBodyPure(array $options, array $body, string $contentType): array
     {
         $options['body'] = json_encode($body);
-        if (!isset($options['headers']['Content-Type'])) {
+        if (! isset($options['headers']['Content-Type'])) {
             $options['headers']['Content-Type'] = $contentType;
         }
 

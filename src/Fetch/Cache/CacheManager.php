@@ -80,10 +80,10 @@ final class CacheManager
     /**
      * Create a new cache manager.
      *
-     * @param  CacheInterface|null  $cache  Cache backend (defaults to MemoryCache)
-     * @param  array<string, mixed>  $options  Cache options
-     * @param  LoggerInterface|null  $logger  Logger for events
-     * @param  string  $logLevel  Log level for cache events
+     * @param CacheInterface|null  $cache    Cache backend (defaults to MemoryCache)
+     * @param array<string, mixed> $options  Cache options
+     * @param LoggerInterface|null $logger   Logger for events
+     * @param string               $logLevel Log level for cache events
      */
     public function __construct(
         ?CacheInterface $cache = null,
@@ -91,9 +91,9 @@ final class CacheManager
         ?LoggerInterface $logger = null,
         string $logLevel = 'debug',
     ) {
-        $this->cache = $cache ?? new MemoryCache;
+        $this->cache = $cache ?? new MemoryCache();
         $this->options = array_merge(self::DEFAULT_OPTIONS, $options);
-        $this->logger = $logger ?? new NullLogger;
+        $this->logger = $logger ?? new NullLogger();
         $this->logLevel = $logLevel;
 
         $this->keyGenerator = new CacheKeyGenerator(
@@ -105,7 +105,7 @@ final class CacheManager
     /**
      * Create a cache manager with custom configuration.
      *
-     * @param  array<string, mixed>  $options
+     * @param array<string, mixed> $options
      */
     public static function create(
         ?CacheInterface $cache = null,
@@ -120,7 +120,7 @@ final class CacheManager
      */
     public static function disabled(): self
     {
-        return new self(new MemoryCache, ['enabled' => false]);
+        return new self(new MemoryCache(), ['enabled' => false]);
     }
 
     /**
@@ -152,13 +152,13 @@ final class CacheManager
     /**
      * Determine if the request should use caching.
      *
-     * @param  string  $method  HTTP method
-     * @param  bool  $isAsync  Whether the request is async
-     * @param  array<string, mixed>  $requestOptions  Per-request options
+     * @param string               $method         HTTP method
+     * @param bool                 $isAsync        Whether the request is async
+     * @param array<string, mixed> $requestOptions Per-request options
      */
     public function shouldUseCache(string $method, bool $isAsync, array $requestOptions = []): bool
     {
-        if (! $this->isEnabled()) {
+        if (!$this->isEnabled()) {
             return false;
         }
 
@@ -170,7 +170,7 @@ final class CacheManager
         }
 
         // Check if method is cacheable
-        if (! $this->isCacheableMethod($method)) {
+        if (!$this->isCacheableMethod($method)) {
             return false;
         }
 
@@ -189,14 +189,15 @@ final class CacheManager
     /**
      * Try to get a cached response for the request.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
-     * @param  array<string, mixed>  $requestOptions  Request options
+     * @param string               $method         HTTP method
+     * @param string               $uri            Request URI
+     * @param array<string, mixed> $requestOptions Request options
+     *
      * @return array{response: Response|null, cached: CachedResponse|null, status: string}
      */
     public function getCachedResponse(string $method, string $uri, array $requestOptions = []): array
     {
-        if (! $this->shouldUseCache($method, $requestOptions['async'] ?? false, $requestOptions)) {
+        if (!$this->shouldUseCache($method, $requestOptions['async'] ?? false, $requestOptions)) {
             $this->logEvent('BYPASS', $method, $uri);
 
             return ['response' => null, 'cached' => null, 'status' => 'BYPASS'];
@@ -213,7 +214,7 @@ final class CacheManager
         $key = $this->generateKey($method, $uri, $requestOptions);
         $cached = $this->cache->get($key);
 
-        if ($cached === null) {
+        if (null === $cached) {
             $this->logEvent('MISS', $method, $uri);
 
             return ['response' => null, 'cached' => null, 'status' => 'MISS'];
@@ -254,10 +255,10 @@ final class CacheManager
     /**
      * Store a response in the cache.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
-     * @param  ResponseInterface  $response  The response to cache
-     * @param  array<string, mixed>  $requestOptions  Request options
+     * @param string               $method         HTTP method
+     * @param string               $uri            Request URI
+     * @param ResponseInterface    $response       The response to cache
+     * @param array<string, mixed> $requestOptions Request options
      */
     public function storeResponse(
         string $method,
@@ -265,20 +266,20 @@ final class CacheManager
         ResponseInterface $response,
         array $requestOptions = [],
     ): void {
-        if (! $this->shouldUseCache($method, $requestOptions['async'] ?? false, $requestOptions)) {
+        if (!$this->shouldUseCache($method, $requestOptions['async'] ?? false, $requestOptions)) {
             return;
         }
 
         // Parse Cache-Control headers
         $cacheControl = CacheControl::fromResponse($response);
 
-        if (! $this->shouldStoreResponse($method, $response, $cacheControl, $requestOptions)) {
+        if (!$this->shouldStoreResponse($method, $response, $cacheControl, $requestOptions)) {
             return;
         }
 
         // Calculate TTL
         $ttl = $this->calculateTtl($response, $cacheControl, $requestOptions);
-        if ($ttl !== null && $ttl <= 0) {
+        if (null !== $ttl && $ttl <= 0) {
             return;
         }
 
@@ -292,29 +293,30 @@ final class CacheManager
     /**
      * Add conditional headers for revalidation.
      *
-     * @param  array<string, mixed>  $options  Request options
-     * @param  CachedResponse|null  $cached  Cached response to revalidate
+     * @param array<string, mixed> $options Request options
+     * @param CachedResponse|null  $cached  Cached response to revalidate
+     *
      * @return array<string, mixed> Modified options
      */
     public function addConditionalHeaders(array $options, ?CachedResponse $cached): array
     {
-        if ($cached === null) {
+        if (null === $cached) {
             return $options;
         }
 
-        if (! isset($options['headers'])) {
+        if (!isset($options['headers'])) {
             $options['headers'] = [];
         }
 
         // Add If-None-Match for ETag
         $etag = $cached->getETag();
-        if ($etag !== null) {
+        if (null !== $etag) {
             $options['headers']['If-None-Match'] = $etag;
         }
 
         // Add If-Modified-Since for Last-Modified
         $lastModified = $cached->getLastModified();
-        if ($lastModified !== null) {
+        if (null !== $lastModified) {
             $options['headers']['If-Modified-Since'] = $lastModified;
         }
 
@@ -324,8 +326,8 @@ final class CacheManager
     /**
      * Handle a 304 Not Modified response.
      *
-     * @param  CachedResponse  $cached  The cached response
-     * @param  ResponseInterface  $notModifiedResponse  The 304 response
+     * @param CachedResponse    $cached              The cached response
+     * @param ResponseInterface $notModifiedResponse The 304 response
      */
     public function handleNotModified(
         CachedResponse $cached,
@@ -355,11 +357,11 @@ final class CacheManager
     /**
      * Handle stale-if-error: serve stale response on error.
      *
-     * @param  CachedResponse|null  $cached  The cached response
+     * @param CachedResponse|null $cached The cached response
      */
     public function handleStaleIfError(?CachedResponse $cached, string $method, string $uri): ?Response
     {
-        if ($cached === null) {
+        if (null === $cached) {
             return null;
         }
 
@@ -368,7 +370,7 @@ final class CacheManager
             return null;
         }
 
-        if (! $cached->isUsableAsStale($staleIfError)) {
+        if (!$cached->isUsableAsStale($staleIfError)) {
             return null;
         }
 
@@ -381,6 +383,8 @@ final class CacheManager
 
     /**
      * Convenience alias matching legacy trait naming.
+     *
+     * @param array<string, mixed> $requestOptions
      */
     public function cacheResponse(string $method, string $uri, ResponseInterface $response, array $requestOptions = []): void
     {
@@ -390,7 +394,7 @@ final class CacheManager
     /**
      * Generate a cache key for the request.
      *
-     * @param  array<string, mixed>  $options
+     * @param array<string, mixed> $options
      */
     public function generateKey(string $method, string $uri, array $options = []): string
     {
@@ -413,6 +417,8 @@ final class CacheManager
 
     /**
      * Delete a specific cache entry.
+     *
+     * @param array<string, mixed> $options
      */
     public function delete(string $method, string $uri, array $options = []): bool
     {
@@ -444,7 +450,7 @@ final class CacheManager
     /**
      * Determine if a response should be stored.
      *
-     * @param  array<string, mixed>  $requestOptions
+     * @param array<string, mixed> $requestOptions
      */
     private function shouldStoreResponse(
         string $method,
@@ -452,11 +458,11 @@ final class CacheManager
         CacheControl $cacheControl,
         array $requestOptions = [],
     ): bool {
-        if (! $this->isCacheableMethod($method)) {
+        if (!$this->isCacheableMethod($method)) {
             return false;
         }
 
-        if (! $this->isCacheableStatusCode($response->getStatusCode())) {
+        if (!$this->isCacheableStatusCode($response->getStatusCode())) {
             return false;
         }
 
@@ -466,7 +472,7 @@ final class CacheManager
             ? ($cacheConfig['respect_headers'] ?? ($this->options['respect_cache_headers'] ?? true))
             : ($this->options['respect_cache_headers'] ?? true);
 
-        if (! $respectHeaders) {
+        if (!$respectHeaders) {
             return true;
         }
 
@@ -480,13 +486,13 @@ final class CacheManager
     /**
      * Calculate TTL for a response.
      *
-     * @param  array<string, mixed>  $requestOptions
+     * @param array<string, mixed> $requestOptions
      */
     private function calculateTtl(
         ResponseInterface $response,
         CacheControl $cacheControl,
         array $requestOptions = [],
-    ): ?int {
+    ): int {
         // Check for per-request TTL
         $cacheConfig = $requestOptions['cache'] ?? [];
         if (is_array($cacheConfig) && isset($cacheConfig['ttl'])) {
@@ -497,7 +503,7 @@ final class CacheManager
         if ($this->options['respect_cache_headers'] ?? true) {
             $isSharedCache = $this->options['is_shared_cache'] ?? false;
             $headerTtl = $cacheControl->getTtl($response, $isSharedCache);
-            if ($headerTtl !== null) {
+            if (null !== $headerTtl) {
                 return $headerTtl;
             }
         }

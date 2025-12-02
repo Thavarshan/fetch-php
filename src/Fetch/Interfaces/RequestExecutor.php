@@ -11,6 +11,8 @@ use React\Promise\PromiseInterface;
 interface RequestExecutor
 {
     /**
+     * @param array<string, mixed> $options
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function request(
@@ -18,16 +20,18 @@ interface RequestExecutor
         string $uri,
         mixed $body = null,
         string|ContentType $contentType = ContentType::JSON,
-        array $options = []
+        array $options = [],
     ): Response|PromiseInterface;
 
     /**
+     * @param array<string, mixed> $options
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function sendRequest(
         Method|string $method,
         string $uri,
-        array $options = []
+        array $options = [],
     ): Response|PromiseInterface;
 
     /**
@@ -36,7 +40,8 @@ interface RequestExecutor
     public function head(string $uri): Response|PromiseInterface;
 
     /**
-     * @param  array<string, mixed>  $queryParams
+     * @param array<string, mixed> $queryParams
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function get(string $uri, array $queryParams = []): Response|PromiseInterface;

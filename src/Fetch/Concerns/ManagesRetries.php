@@ -46,9 +46,8 @@ trait ManagesRetries
     /**
      * Set the retry logic for the request.
      *
-     * @param int $retries Maximum number of retry attempts
-     * @param int $delay   Initial delay in milliseconds
-     *
+     * @param  int  $retries  Maximum number of retry attempts
+     * @param  int  $delay  Initial delay in milliseconds
      * @return $this
      *
      * @throws \InvalidArgumentException If the parameters are invalid
@@ -72,8 +71,7 @@ trait ManagesRetries
     /**
      * Set the status codes that should be retried.
      *
-     * @param array<int> $statusCodes HTTP status codes
-     *
+     * @param  array<int>  $statusCodes  HTTP status codes
      * @return $this
      */
     public function retryStatusCodes(array $statusCodes): ClientHandler
@@ -86,8 +84,7 @@ trait ManagesRetries
     /**
      * Set the exception types that should be retried.
      *
-     * @param array<class-string<\Throwable>> $exceptions Exception class names
-     *
+     * @param  array<class-string<\Throwable>>  $exceptions  Exception class names
      * @return $this
      */
     public function retryExceptions(array $exceptions): ClientHandler
@@ -145,13 +142,12 @@ trait ManagesRetries
      * All retry settings (maxRetries, retryDelay, retryableStatusCodes, retryableExceptions)
      * are read from the context when provided, falling back to handler state otherwise.
      *
-     * @param \Fetch\Support\RequestContext|null $context The request context (optional)
-     * @param callable                           $request The request to execute
-     *
+     * @param  \Fetch\Support\RequestContext|null  $context  The request context (optional)
+     * @param  callable  $request  The request to execute
      * @return ResponseInterface The response after successful execution
      *
      * @throws FetchRequestException If the request fails after all retries
-     * @throws \RuntimeException     If something unexpected happens
+     * @throws \RuntimeException If something unexpected happens
      */
     protected function retryRequest(?\Fetch\Support\RequestContext $context, callable $request): ResponseInterface
     {
@@ -160,11 +156,11 @@ trait ManagesRetries
         $baseDelayMs = $context?->getRetryDelay() ?? $this->getRetryDelay();
 
         // Read retryable status codes and exceptions from context, falling back to handler state
-        $retryableStatusCodes = null !== $context
+        $retryableStatusCodes = $context !== null
             ? $context->getRetryableStatusCodes()
             : $this->retryableStatusCodes;
 
-        $retryableExceptions = null !== $context
+        $retryableExceptions = $context !== null
             ? $context->getRetryableExceptions()
             : $this->retryableExceptions;
 
@@ -173,7 +169,7 @@ trait ManagesRetries
             baseDelayMs: $baseDelayMs,
             retryableStatusCodes: $retryableStatusCodes,
             retryableExceptions: $retryableExceptions,
-            logger: $this->logger ?? new NullLogger()
+            logger: $this->logger ?? new NullLogger
         );
 
         return $strategy->execute(
@@ -187,11 +183,11 @@ trait ManagesRetries
     /**
      * Log a retry attempt with context information.
      *
-     * @param int                                $attempt     Current attempt number
-     * @param int                                $maxAttempts Maximum number of attempts
-     * @param \Throwable                         $exception   The exception that triggered the retry
-     * @param int                                $delayMs     The delay before the next attempt in milliseconds
-     * @param \Fetch\Support\RequestContext|null $context     Optional request context for additional info
+     * @param  int  $attempt  Current attempt number
+     * @param  int  $maxAttempts  Maximum number of attempts
+     * @param  \Throwable  $exception  The exception that triggered the retry
+     * @param  int  $delayMs  The delay before the next attempt in milliseconds
+     * @param  \Fetch\Support\RequestContext|null  $context  Optional request context for additional info
      */
     protected function logRetryAttempt(
         int $attempt,
@@ -208,9 +204,8 @@ trait ManagesRetries
     /**
      * Calculate backoff delay with exponential growth and jitter.
      *
-     * @param int $baseDelay The base delay in milliseconds
-     * @param int $attempt   The current attempt number (0-based)
-     *
+     * @param  int  $baseDelay  The base delay in milliseconds
+     * @param  int  $attempt  The current attempt number (0-based)
      * @return int The calculated delay in milliseconds
      */
     protected function calculateBackoffDelay(int $baseDelay, int $attempt): int
@@ -229,19 +224,18 @@ trait ManagesRetries
     /**
      * Determine if an error is retryable.
      *
-     * @param \Throwable                         $e       The exception to check
-     * @param \Fetch\Support\RequestContext|null $context Optional context for per-request retry config
-     *
+     * @param  \Throwable  $e  The exception to check
+     * @param  \Fetch\Support\RequestContext|null  $context  Optional context for per-request retry config
      * @return bool Whether the error is retryable
      */
     protected function isRetryableError(\Throwable $e, ?\Fetch\Support\RequestContext $context = null): bool
     {
         // Use context values if provided, otherwise fall back to handler state
-        $retryableStatusCodes = null !== $context
+        $retryableStatusCodes = $context !== null
             ? $context->getRetryableStatusCodes()
             : $this->retryableStatusCodes;
 
-        $retryableExceptions = null !== $context
+        $retryableExceptions = $context !== null
             ? $context->getRetryableExceptions()
             : $this->retryableExceptions;
 
@@ -260,7 +254,7 @@ trait ManagesRetries
         }
 
         // Check if the status code is in our list of retryable codes
-        $isRetryableStatusCode = null !== $statusCode && in_array($statusCode, $retryableStatusCodes, true);
+        $isRetryableStatusCode = $statusCode !== null && in_array($statusCode, $retryableStatusCodes, true);
 
         // Check if the exception or its previous is one of our retryable exception types
         $isRetryableException = false;

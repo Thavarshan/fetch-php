@@ -11,7 +11,7 @@ use Fetch\Support\ProfilerBridge;
 use Fetch\Support\ProfilerInterface;
 
 /**
- * Trait ManagesDebugAndProfiling
+ * Trait ManagesDebugAndProfiling.
  *
  * Provides debugging and profiling capabilities for HTTP requests.
  */
@@ -39,7 +39,8 @@ trait ManagesDebugAndProfiling
     /**
      * Enable debug mode with specified options.
      *
-     * @param  array<string, mixed>|bool  $options  Debug options or true to enable all
+     * @param array<string, mixed>|bool $options Debug options or true to enable all
+     *
      * @return $this
      */
     public function withDebug(array|bool $options = true): static
@@ -54,7 +55,8 @@ trait ManagesDebugAndProfiling
     /**
      * Set a profiler for performance tracking.
      *
-     * @param  FetchProfiler|ProfilerInterface  $profiler  The profiler instance
+     * @param FetchProfiler|ProfilerInterface $profiler The profiler instance
+     *
      * @return $this
      */
     public function withProfiler(FetchProfiler|ProfilerInterface $profiler): static
@@ -110,12 +112,14 @@ trait ManagesDebugAndProfiling
      * Returns a DebugInfo instance that should be attached to the response.
      * Also updates lastDebugInfo for backward compatibility.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
-     * @param  array<string, mixed>  $options  Request options
-     * @param  \Psr\Http\Message\ResponseInterface|null  $response  The response
-     * @param  array<string, float>  $timings  Timing information
-     * @param  int  $memoryUsage  Memory usage in bytes
+     * @param string                                   $method          HTTP method
+     * @param string                                   $uri             Request URI
+     * @param array<string, mixed>                     $options         Request options
+     * @param \Psr\Http\Message\ResponseInterface|null $response        The response
+     * @param array<string, float>                     $timings         Timing information
+     * @param array<string, mixed>                     $connectionStats Connection statistics
+     * @param int                                      $memoryUsage     Memory usage in bytes
+     *
      * @return DebugInfo The debug info to attach to the response
      */
     protected function createDebugInfo(
@@ -125,7 +129,7 @@ trait ManagesDebugAndProfiling
         ?\Psr\Http\Message\ResponseInterface $response = null,
         array $timings = [],
         array $connectionStats = [],
-        int $memoryUsage = 0
+        int $memoryUsage = 0,
     ): DebugInfo {
         $debugInfo = $this->getProfilerBridge()->createDebugInfo(
             $method,
@@ -146,8 +150,9 @@ trait ManagesDebugAndProfiling
     /**
      * Start profiling for a request.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
+     * @param string $method HTTP method
+     * @param string $uri    Request URI
+     *
      * @return string|null The request ID if profiling is enabled
      */
     protected function startProfiling(string $method, string $uri): ?string
@@ -158,8 +163,8 @@ trait ManagesDebugAndProfiling
     /**
      * Record a profiling event.
      *
-     * @param  string|null  $requestId  The request ID
-     * @param  string  $event  The event name
+     * @param string|null $requestId The request ID
+     * @param string      $event     The event name
      */
     protected function recordProfilingEvent(?string $requestId, string $event): void
     {
@@ -169,8 +174,8 @@ trait ManagesDebugAndProfiling
     /**
      * End profiling for a request.
      *
-     * @param  string|null  $requestId  The request ID
-     * @param  int|null  $statusCode  HTTP status code
+     * @param string|null $requestId  The request ID
+     * @param int|null    $statusCode HTTP status code
      */
     protected function endProfiling(?string $requestId, ?int $statusCode = null): void
     {
@@ -182,7 +187,7 @@ trait ManagesDebugAndProfiling
      */
     protected function getDebugConfig(): DebugConfig
     {
-        if ($this->debugConfig === null) {
+        if (null === $this->debugConfig) {
             $this->debugConfig = DebugConfig::create();
         }
 
@@ -194,7 +199,7 @@ trait ManagesDebugAndProfiling
      */
     protected function getProfilerBridge(): ProfilerBridge
     {
-        if ($this->profilerBridge === null) {
+        if (null === $this->profilerBridge) {
             $this->profilerBridge = new ProfilerBridge(
                 profiler: $this->debugConfig?->getProfiler(),
                 debugConfig: $this->debugConfig ?? DebugConfig::create()
@@ -210,8 +215,9 @@ trait ManagesDebugAndProfiling
      * Returns a DebugInfo instance that should be attached to the response.
      * Also updates lastDebugInfo for backward compatibility.
      *
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $connectionStats
+     * @param array<string, mixed> $options
+     * @param array<string, mixed> $connectionStats
+     *
      * @return DebugInfo|null The debug info to attach to the response, or null if debug disabled
      */
     protected function captureDebugSnapshot(
@@ -221,7 +227,7 @@ trait ManagesDebugAndProfiling
         ?\Psr\Http\Message\ResponseInterface $response,
         float $startTime,
         int $startMemory,
-        array $connectionStats = []
+        array $connectionStats = [],
     ): ?DebugInfo {
         $debugInfo = $this->getProfilerBridge()->captureSnapshot(
             $method,
@@ -233,7 +239,7 @@ trait ManagesDebugAndProfiling
             $connectionStats
         );
 
-        if ($debugInfo !== null) {
+        if (null !== $debugInfo) {
             // Update lastDebugInfo for backward compatibility
             $this->lastDebugInfo = $debugInfo;
         }
