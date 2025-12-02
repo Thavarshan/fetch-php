@@ -26,10 +26,9 @@ class AsyncRequestsTest extends TestCase
     protected function setUp(): void
     {
         // Create a mock handler that returns predictable responses
-        $this->mockHandler = new class extends ClientHandler
-        {
+        $this->mockHandler = new class extends ClientHandler {
             /**
-             * Override sendRequest with compatible signature
+             * Override sendRequest with compatible signature.
              */
             public function sendRequest(Method|string $method, string $uri, array $options = []): ResponseInterface|PromiseInterface
             {
@@ -64,7 +63,7 @@ class AsyncRequestsTest extends TestCase
         Recorder::resetInstance();
     }
 
-    public function test_async_request(): void
+    public function testAsyncRequest(): void
     {
         // First we need to get the handler and set it to async mode
         $handler = $this->client->getHandler();
@@ -83,7 +82,7 @@ class AsyncRequestsTest extends TestCase
         $this->assertTrue($data['async']);
     }
 
-    public function test_multiple_concurrent_requests(): void
+    public function testMultipleConcurrentRequests(): void
     {
         // First we need to get the handler and set it to async mode
         $handler = $this->client->getHandler();
@@ -107,13 +106,13 @@ class AsyncRequestsTest extends TestCase
         }
     }
 
-    public function test_mock_server_respected_in_async_mode(): void
+    public function testMockServerRespectedInAsyncMode(): void
     {
         MockServer::fake([
             'https://api.example.com/mock-async' => \Fetch\Testing\MockResponse::json(['mocked' => true]),
         ]);
 
-        $handler = new ClientHandler;
+        $handler = new ClientHandler();
         $handler->async();
         $client = new Client($handler);
 
@@ -123,10 +122,9 @@ class AsyncRequestsTest extends TestCase
         $this->assertEquals(['mocked' => true], $response->json());
     }
 
-    public function test_async_error_contains_context(): void
+    public function testAsyncErrorContainsContext(): void
     {
-        $handler = new class extends ClientHandler
-        {
+        $handler = new class extends ClientHandler {
             protected function executeSyncRequest(
                 string $method,
                 string $uri,
@@ -154,7 +152,7 @@ class AsyncRequestsTest extends TestCase
         $this->assertStringContainsString('simulated failure', $result->getPrevious()->getMessage());
     }
 
-    public function test_concurrency_helpers_all_and_race(): void
+    public function testConcurrencyHelpersAllAndRace(): void
     {
         $handler = $this->client->getHandler();
         $handler->async();
@@ -171,7 +169,7 @@ class AsyncRequestsTest extends TestCase
         $this->assertInstanceOf(Response::class, $raceResult);
     }
 
-    public function test_map_with_bounded_concurrency(): void
+    public function testMapWithBoundedConcurrency(): void
     {
         $handler = $this->client->getHandler();
         $handler->async();
@@ -188,5 +186,87 @@ class AsyncRequestsTest extends TestCase
         $results = await(all($promises));
 
         $this->assertCount(3, $results);
+    }
+
+    public function testAsyncRequestRespectsPerRequestRetryConfig(): void
+    {
+        // This test verifies that async requests respect per-request retry configuration
+        // The ConcurrentRequestsTest::test_retries_are_isolated_per_request covers the sync case
+        // Here we test that the config flows properly through the async path
+
+        $mockHandler = new \GuzzleHttp\Handler\MockHandler([
+            // First 2 attempts fail with 503
+            new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
+            new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
+            // Third attempt succeeds
+            new \GuzzleHttp\Psr7\Response(200, [], json_encode(['success' => true, 'attempt' => 3])),
+        ]);
+
+        $handlerStack = \GuzzleHttp\HandlerStack::create($mockHandler);
+        $guzzleClient = new \GuzzleHttp\Client(['handler' => $handlerStack]);
+
+        // Create handler with custom Guzzle client
+        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler->baseUri('https://api.example.com');
+        $handler->async();
+
+        // Fire async request with per-request retry config
+        // 503 is a default retryable status code
+        $promise = $handler->sendRequest('GET', '/test-retry', [
+            'retries' => 5,
+            'retry_delay' => 1, // 1ms for fast tests
+        ]);
+
+        $response = await($promise);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $data = $response->json();
+        $this->assertTrue($data['success']);
+        // Guzzle mock processes all 3 requests, so we expect success on the "3rd attempt"
+        $this->assertEquals(3, $data['attempt']);
+    }
+
+    public function testAsyncRequestRespectsPerRequestTimeout(): void
+    {
+        $capturedTimeout = null;
+
+        $handler = new class extends ClientHandler {
+            public ?int $capturedTimeout = null;
+
+            protected function executeSyncRequest(
+                string $method,
+                string $uri,
+                array $options,
+                float $startTime,
+                int $startMemory,
+                ?string $requestId = null,
+                ?\Fetch\Support\RequestContext $context = null,
+            ): ResponseInterface {
+                // Capture the timeout from context
+                if (null !== $context) {
+                    $this->capturedTimeout = $context->getTimeout();
+                }
+
+                return new Response(200, [], json_encode(['timeout_captured' => $this->capturedTimeout]));
+            }
+        };
+
+        // Set default timeout
+        $handler->timeout(30);
+        $handler->async();
+
+        // Make async request with per-request timeout override
+        $promise = $handler->sendRequest('GET', 'https://example.com/timeout-test', [
+            'timeout' => 99,
+        ]);
+
+        $response = await($promise);
+        $data = $response->json();
+
+        // Verify the per-request timeout was used
+        $this->assertEquals(99, $data['timeout_captured']);
+
+        // Verify handler state was not mutated
+        $this->assertEquals(30, $handler->getEffectiveTimeout());
     }
 }

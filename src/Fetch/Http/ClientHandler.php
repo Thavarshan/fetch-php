@@ -24,8 +24,6 @@ use Fetch\Support\RequestOptions as FetchRequestOptions;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\RequestOptions;
-use InvalidArgumentException;
-use LogicException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use React\Promise\PromiseInterface;
@@ -96,13 +94,13 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * ClientHandler constructor.
      *
-     * @param  ClientInterface|null  $httpClient  The HTTP client
-     * @param  array<string, mixed>  $options  The options for the request
-     * @param  int|null  $timeout  Timeout for the request in seconds
-     * @param  int|null  $maxRetries  Number of retries for the request
-     * @param  int|null  $retryDelay  Delay between retries in milliseconds
-     * @param  bool  $isAsync  Whether the request is asynchronous
-     * @param  LoggerInterface|null  $logger  Logger for request/response details
+     * @param ClientInterface|null $httpClient The HTTP client
+     * @param array<string, mixed> $options    The options for the request
+     * @param int|null             $timeout    Timeout for the request in seconds
+     * @param int|null             $maxRetries Number of retries for the request
+     * @param int|null             $retryDelay Delay between retries in milliseconds
+     * @param bool                 $isAsync    Whether the request is asynchronous
+     * @param LoggerInterface|null $logger     Logger for request/response details
      */
     public function __construct(
         protected ?ClientInterface $httpClient = null,
@@ -114,7 +112,7 @@ class ClientHandler implements ClientHandlerInterface
         ?LoggerInterface $logger = null,
         ?CacheManager $cacheManager = null,
     ) {
-        $this->logger = $logger ?? new NullLogger;
+        $this->logger = $logger ?? new NullLogger();
         $this->isAsync = $isAsync;
         $this->maxRetries = $maxRetries ?? self::DEFAULT_RETRIES;
         $this->retryDelay = $retryDelay ?? self::DEFAULT_RETRY_DELAY;
@@ -127,7 +125,7 @@ class ClientHandler implements ClientHandlerInterface
         );
 
         // Set the timeout in options
-        if ($this->timeout !== null) {
+        if (null !== $this->timeout) {
             $this->options['timeout'] = $this->timeout;
         } else {
             $this->timeout = $this->options['timeout'] ?? self::DEFAULT_TIMEOUT;
@@ -144,13 +142,14 @@ class ClientHandler implements ClientHandlerInterface
     {
         static::initializePool();
 
-        return new static;
+        return new static();
     }
 
     /**
      * Create a client handler with preconfigured base URI.
      *
-     * @param  string  $baseUri  Base URI for all requests
+     * @param string $baseUri Base URI for all requests
+     *
      * @return static New client handler instance
      *
      * @throws \InvalidArgumentException If the base URI is invalid
@@ -159,7 +158,7 @@ class ClientHandler implements ClientHandlerInterface
     {
         static::initializePool();
 
-        $instance = new static;
+        $instance = new static();
         $instance->baseUri($baseUri);
 
         return $instance;
@@ -168,7 +167,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Create a client handler with a custom HTTP client.
      *
-     * @param  ClientInterface  $client  Custom HTTP client
+     * @param ClientInterface $client Custom HTTP client
+     *
      * @return static New client handler instance
      */
     public static function createWithClient(ClientInterface $client): static
@@ -197,7 +197,7 @@ class ClientHandler implements ClientHandlerInterface
      *
      * Updates both legacy static property and GlobalServices.
      *
-     * @param  array<string, mixed>  $options  Default options
+     * @param array<string, mixed> $options Default options
      */
     public static function setDefaultOptions(array $options): void
     {
@@ -226,11 +226,12 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Create a new mock response for testing.
      *
-     * @param  int  $statusCode  HTTP status code
-     * @param  array<string, string|string[]>  $headers  Response headers
-     * @param  string|null  $body  Response body
-     * @param  string  $version  HTTP protocol version
-     * @param  string|null  $reason  Reason phrase
+     * @param int                            $statusCode HTTP status code
+     * @param array<string, string|string[]> $headers    Response headers
+     * @param string|null                    $body       Response body
+     * @param string                         $version    HTTP protocol version
+     * @param string|null                    $reason     Reason phrase
+     *
      * @return Response Mock response
      */
     public static function createMockResponse(
@@ -246,9 +247,10 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Create a JSON response for testing.
      *
-     * @param  array<mixed>|object  $data  JSON data
-     * @param  int  $statusCode  HTTP status code
-     * @param  array<string, string|string[]>  $headers  Additional headers
+     * @param array<mixed>|object            $data       JSON data
+     * @param int                            $statusCode HTTP status code
+     * @param array<string, string|string[]> $headers    Additional headers
+     *
      * @return Response Mock JSON response
      */
     public static function createJsonResponse(
@@ -273,7 +275,7 @@ class ClientHandler implements ClientHandlerInterface
      */
     public function getHttpClient(): ClientInterface
     {
-        if (! $this->httpClient) {
+        if (!$this->httpClient) {
             $this->httpClient = new GuzzleClient([
                 RequestOptions::CONNECT_TIMEOUT => $this->options['timeout'] ?? self::DEFAULT_TIMEOUT,
                 RequestOptions::HTTP_ERRORS => false, // We'll handle HTTP errors ourselves
@@ -286,7 +288,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Set the HTTP client.
      *
-     * @param  ClientInterface  $client  The HTTP client
+     * @param ClientInterface $client The HTTP client
+     *
      * @return $this
      */
     public function setHttpClient(ClientInterface $client): self
@@ -319,7 +322,7 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Enable caching with optional configuration.
      *
-     * @param  array<string, mixed>  $options  Cache options
+     * @param array<string, mixed> $options Cache options
      */
     public function withCache(?CacheInterface $cache = null, array $options = []): self
     {
@@ -370,7 +373,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Check if the request has a specific header.
      *
-     * @param  string  $header  Header name
+     * @param string $header Header name
+     *
      * @return bool Whether the header exists
      */
     public function hasHeader(string $header): bool
@@ -381,7 +385,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Check if the request has a specific option.
      *
-     * @param  string  $option  Option name
+     * @param string $option Option name
+     *
      * @return bool Whether the option exists
      */
     public function hasOption(string $option): bool
@@ -411,7 +416,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Set the logger instance.
      *
-     * @param  LoggerInterface  $logger  PSR-3 logger
+     * @param LoggerInterface $logger PSR-3 logger
+     *
      * @return $this
      */
     public function setLogger(LoggerInterface $logger): self
@@ -429,8 +435,8 @@ class ClientHandler implements ClientHandlerInterface
         $level = strtolower($level);
         $allowed = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
 
-        if (! in_array($level, $allowed, true)) {
-            throw new InvalidArgumentException("Invalid log level: {$level}");
+        if (!in_array($level, $allowed, true)) {
+            throw new \InvalidArgumentException("Invalid log level: {$level}");
         }
 
         $this->logLevel = $level;
@@ -441,7 +447,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Clone this client handler with the given options.
      *
-     * @param  array<string, mixed>  $options  Options to apply to the clone
+     * @param array<string, mixed> $options Options to apply to the clone
+     *
      * @return static New client handler instance with the applied options
      */
     public function withClonedOptions(array $options): static
@@ -464,23 +471,38 @@ class ClientHandler implements ClientHandlerInterface
         $method = $this->options['method'] ?? null;
         $uri = $this->options['uri'] ?? null;
 
-        if (! is_string($method) || ! is_string($uri)) {
-            throw new LogicException('sendAsync() requires method and uri to be set.');
+        if (!is_string($method) || !is_string($uri)) {
+            throw new \LogicException('sendAsync() requires method and uri to be set.');
         }
 
+        $startTime = microtime(true);
+        $startMemory = memory_get_usage(true);
+
         $context = RequestContext::fromOptions($this->options);
-        $fullUri = $this->buildFullUri($context->getUri());
+        // Use context-based URI building for stateless operation
+        $fullUri = $this->buildFullUriFromContext($context);
         $guzzleOptions = $context->toGuzzleOptions();
 
-        return $this->executeAsyncRequest($method, $fullUri, $guzzleOptions);
+        // Start profiling for this request
+        $requestId = $this->startProfiling($method, $fullUri);
+
+        return $this->executeAsyncRequest(
+            $method,
+            $fullUri,
+            $guzzleOptions,
+            $startTime,
+            $startMemory,
+            $requestId,
+            $context
+        );
     }
 
     /**
      * Log a retry attempt.
      *
-     * @param  int  $attempt  Current attempt number
-     * @param  int  $maxAttempts  Maximum attempts
-     * @param  \Throwable  $exception  The exception that caused the retry
+     * @param int        $attempt     Current attempt number
+     * @param int        $maxAttempts Maximum attempts
+     * @param \Throwable $exception   The exception that caused the retry
      */
     protected function logRetry(int $attempt, int $maxAttempts, \Throwable $exception): void
     {
@@ -500,9 +522,9 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Log a request.
      *
-     * @param  string  $method  HTTP method
-     * @param  string  $uri  Request URI
-     * @param  array<string, mixed>  $options  Request options
+     * @param string               $method  HTTP method
+     * @param string               $uri     Request URI
+     * @param array<string, mixed> $options Request options
      */
     protected function logRequest(string $method, string $uri, array $options): void
     {
@@ -523,8 +545,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Log a response.
      *
-     * @param  Response  $response  HTTP response
-     * @param  float  $duration  Request duration in seconds
+     * @param Response $response HTTP response
+     * @param float    $duration Request duration in seconds
      */
     protected function logResponse(Response $response, float $duration): void
     {
@@ -543,7 +565,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Get the content length of a response.
      *
-     * @param  Response  $response  The response
+     * @param Response $response The response
+     *
      * @return int|string The content length
      */
     protected function getResponseContentLength(Response $response): int|string
@@ -563,7 +586,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Sanitize options for logging.
      *
-     * @param  array<string, mixed>  $options  The options to sanitize
+     * @param array<string, mixed> $options The options to sanitize
+     *
      * @return array<string, mixed> Sanitized options
      */
     protected function sanitizeOptions(array $options): array

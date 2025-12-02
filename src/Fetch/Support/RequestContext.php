@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fetch\Support;
 
 use Fetch\Enum\Method;
+use GuzzleHttp\Exception\ConnectException;
 
 /**
  * Immutable value object representing per-request configuration and context.
@@ -26,6 +27,26 @@ use Fetch\Enum\Method;
  */
 final class RequestContext
 {
+    /**
+     * Default retryable HTTP status codes.
+     *
+     * @var array<int>
+     */
+    public const DEFAULT_RETRYABLE_STATUS_CODES = [
+        408, 429, 500, 502, 503,
+        504, 507, 509, 520, 521,
+        522, 523, 525, 527, 530,
+    ];
+
+    /**
+     * Default retryable exception class names.
+     *
+     * @var array<class-string<\Throwable>>
+     */
+    public const DEFAULT_RETRYABLE_EXCEPTIONS = [
+        ConnectException::class,
+    ];
+
     /**
      * HTTP method for the request.
      */
@@ -55,6 +76,20 @@ final class RequestContext
      * Delay between retries in milliseconds.
      */
     private readonly int $retryDelay;
+
+    /**
+     * HTTP status codes that should trigger a retry.
+     *
+     * @var array<int>
+     */
+    private readonly array $retryableStatusCodes;
+
+    /**
+     * Exception class names that should trigger a retry.
+     *
+     * @var array<class-string<\Throwable>>
+     */
+    private readonly array $retryableExceptions;
 
     /**
      * Whether caching is enabled for this request.
@@ -97,10 +132,12 @@ final class RequestContext
     /**
      * Private constructor - use static factory methods.
      *
-     * @param  array<string, string|string[]>  $headers
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $cacheOptions
-     * @param  array<string, mixed>  $debugOptions
+     * @param array<string, string|string[]>  $headers
+     * @param array<string, mixed>            $options
+     * @param array<string, mixed>            $cacheOptions
+     * @param array<string, mixed>            $debugOptions
+     * @param array<int>                      $retryableStatusCodes
+     * @param array<class-string<\Throwable>> $retryableExceptions
      */
     private function __construct(
         string $method = 'GET',
@@ -115,6 +152,8 @@ final class RequestContext
         array $options = [],
         array $cacheOptions = [],
         array $debugOptions = [],
+        array $retryableStatusCodes = [],
+        array $retryableExceptions = [],
     ) {
         $this->method = strtoupper($method);
         $this->uri = $uri;
@@ -128,6 +167,9 @@ final class RequestContext
         $this->options = $options;
         $this->cacheOptions = $cacheOptions;
         $this->debugOptions = $debugOptions;
+        // Use provided values or defaults - empty array means "use defaults"
+        $this->retryableStatusCodes = $retryableStatusCodes ?: self::DEFAULT_RETRYABLE_STATUS_CODES;
+        $this->retryableExceptions = $retryableExceptions ?: self::DEFAULT_RETRYABLE_EXCEPTIONS;
     }
 
     /**
@@ -135,7 +177,7 @@ final class RequestContext
      */
     public static function create(): self
     {
-        return new self;
+        return new self();
     }
 
     /**
@@ -143,7 +185,7 @@ final class RequestContext
      *
      * This method handles the various option formats used throughout the library.
      *
-     * @param  array<string, mixed>  $options
+     * @param array<string, mixed> $options
      */
     public static function fromOptions(array $options): self
     {
@@ -195,6 +237,17 @@ final class RequestContext
         $maxRetries = (int) ($options['retries'] ?? $options['max_retries'] ?? 1); // Fallback for safety
         $retryDelay = (int) ($options['retry_delay'] ?? 100);
 
+        // Extract retryable configuration
+        $retryableStatusCodes = [];
+        if (isset($options['retry_status_codes']) && is_array($options['retry_status_codes'])) {
+            $retryableStatusCodes = array_map('intval', $options['retry_status_codes']);
+        }
+
+        $retryableExceptions = [];
+        if (isset($options['retry_exceptions']) && is_array($options['retry_exceptions'])) {
+            $retryableExceptions = $options['retry_exceptions'];
+        }
+
         // Remove extracted properties from options
         unset(
             $options['method'],
@@ -203,7 +256,9 @@ final class RequestContext
             $options['timeout'],
             $options['retries'],
             $options['max_retries'], // Clean up legacy key if it somehow got through
-            $options['retry_delay']
+            $options['retry_delay'],
+            $options['retry_status_codes'],
+            $options['retry_exceptions']
         );
 
         return new self(
@@ -218,7 +273,9 @@ final class RequestContext
             headers: $headers,
             options: $options,
             cacheOptions: $cacheOptions,
-            debugOptions: $debugOptions
+            debugOptions: $debugOptions,
+            retryableStatusCodes: $retryableStatusCodes,
+            retryableExceptions: $retryableExceptions
         );
     }
 
@@ -227,7 +284,7 @@ final class RequestContext
      *
      * Options in $options take precedence over this context's values.
      *
-     * @param  array<string, mixed>  $options
+     * @param array<string, mixed> $options
      */
     public function merge(array $options): self
     {
@@ -260,7 +317,9 @@ final class RequestContext
             headers: $this->headers,
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
@@ -281,7 +340,9 @@ final class RequestContext
             headers: $this->headers,
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
@@ -302,7 +363,9 @@ final class RequestContext
             headers: $this->headers,
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
@@ -323,7 +386,9 @@ final class RequestContext
             headers: $this->headers,
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
@@ -344,14 +409,66 @@ final class RequestContext
             headers: $this->headers,
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
+        );
+    }
+
+    /**
+     * Create a copy with custom retryable status codes.
+     *
+     * @param array<int> $statusCodes HTTP status codes that should trigger a retry
+     */
+    public function withRetryableStatusCodes(array $statusCodes): self
+    {
+        return new self(
+            method: $this->method,
+            uri: $this->uri,
+            async: $this->async,
+            timeout: $this->timeout,
+            maxRetries: $this->maxRetries,
+            retryDelay: $this->retryDelay,
+            cacheEnabled: $this->cacheEnabled,
+            debugEnabled: $this->debugEnabled,
+            headers: $this->headers,
+            options: $this->options,
+            cacheOptions: $this->cacheOptions,
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: array_map('intval', $statusCodes),
+            retryableExceptions: $this->retryableExceptions
+        );
+    }
+
+    /**
+     * Create a copy with custom retryable exception types.
+     *
+     * @param array<class-string<\Throwable>> $exceptions Exception class names that should trigger a retry
+     */
+    public function withRetryableExceptions(array $exceptions): self
+    {
+        return new self(
+            method: $this->method,
+            uri: $this->uri,
+            async: $this->async,
+            timeout: $this->timeout,
+            maxRetries: $this->maxRetries,
+            retryDelay: $this->retryDelay,
+            cacheEnabled: $this->cacheEnabled,
+            debugEnabled: $this->debugEnabled,
+            headers: $this->headers,
+            options: $this->options,
+            cacheOptions: $this->cacheOptions,
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $exceptions
         );
     }
 
     /**
      * Create a copy with caching enabled/disabled.
      *
-     * @param  bool|array<string, mixed>  $cache
+     * @param bool|array<string, mixed> $cache
      */
     public function withCache(bool|array $cache = true): self
     {
@@ -370,14 +487,16 @@ final class RequestContext
             headers: $this->headers,
             options: $this->options,
             cacheOptions: $options,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
     /**
      * Create a copy with debugging enabled/disabled.
      *
-     * @param  bool|array<string, mixed>  $debug
+     * @param bool|array<string, mixed> $debug
      */
     public function withDebug(bool|array $debug = true): self
     {
@@ -396,14 +515,16 @@ final class RequestContext
             headers: $this->headers,
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $options
+            debugOptions: $options,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
     /**
      * Create a copy with a header added/replaced.
      *
-     * @param  string|string[]  $value
+     * @param string|string[] $value
      */
     public function withHeader(string $name, string|array $value): self
     {
@@ -422,14 +543,16 @@ final class RequestContext
             headers: $headers,
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
     /**
      * Create a copy with multiple headers added/replaced.
      *
-     * @param  array<string, string|string[]>  $headers
+     * @param array<string, string|string[]> $headers
      */
     public function withHeaders(array $headers): self
     {
@@ -445,7 +568,9 @@ final class RequestContext
             headers: array_merge($this->headers, $headers),
             options: $this->options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
@@ -469,7 +594,9 @@ final class RequestContext
             headers: $this->headers,
             options: $options,
             cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions
+            debugOptions: $this->debugOptions,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions
         );
     }
 
@@ -503,6 +630,26 @@ final class RequestContext
     public function getRetryDelay(): int
     {
         return $this->retryDelay;
+    }
+
+    /**
+     * Get the retryable HTTP status codes.
+     *
+     * @return array<int>
+     */
+    public function getRetryableStatusCodes(): array
+    {
+        return $this->retryableStatusCodes;
+    }
+
+    /**
+     * Get the retryable exception class names.
+     *
+     * @return array<class-string<\Throwable>>
+     */
+    public function getRetryableExceptions(): array
+    {
+        return $this->retryableExceptions;
     }
 
     public function isCacheEnabled(): bool
@@ -603,7 +750,7 @@ final class RequestContext
     public function shouldUseCache(): bool
     {
         return $this->cacheEnabled
-            && ! $this->async
+            && !$this->async
             && $this->isSafeMethod();
     }
 
@@ -625,6 +772,15 @@ final class RequestContext
             'retry_delay' => $this->retryDelay,
             'headers' => $this->headers,
         ];
+
+        // Add retry configuration if not using defaults
+        if (self::DEFAULT_RETRYABLE_STATUS_CODES !== $this->retryableStatusCodes) {
+            $result['retry_status_codes'] = $this->retryableStatusCodes;
+        }
+
+        if (self::DEFAULT_RETRYABLE_EXCEPTIONS !== $this->retryableExceptions) {
+            $result['retry_exceptions'] = $this->retryableExceptions;
+        }
 
         // Add cache options if enabled
         if ($this->cacheEnabled) {
@@ -667,7 +823,7 @@ final class RequestContext
         }
 
         // Add headers
-        if (! empty($this->headers)) {
+        if (!empty($this->headers)) {
             $guzzleOptions['headers'] = $this->headers;
         }
 
@@ -675,7 +831,7 @@ final class RequestContext
         $guzzleOptions['timeout'] = $this->timeout;
 
         // Ensure connect_timeout defaults sensibly
-        if (! isset($guzzleOptions['connect_timeout'])) {
+        if (!isset($guzzleOptions['connect_timeout'])) {
             $guzzleOptions['connect_timeout'] = $this->timeout;
         }
 
