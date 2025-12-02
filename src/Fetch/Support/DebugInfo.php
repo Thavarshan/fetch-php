@@ -48,11 +48,11 @@ class DebugInfo
     /**
      * Create a new DebugInfo instance.
      *
-     * @param array<string, mixed>   $requestData     Request data (method, uri, headers, body)
-     * @param ResponseInterface|null $response        The HTTP response
-     * @param array<string, float>   $timings         Timing information for the request
-     * @param array<string, mixed>   $connectionStats Connection statistics
-     * @param int                    $memoryUsage     Memory usage in bytes
+     * @param  array<string, mixed>  $requestData  Request data (method, uri, headers, body)
+     * @param  ResponseInterface|null  $response  The HTTP response
+     * @param  array<string, float>  $timings  Timing information for the request
+     * @param  array<string, mixed>  $connectionStats  Connection statistics
+     * @param  int  $memoryUsage  Memory usage in bytes
      */
     public function __construct(
         protected array $requestData,
@@ -60,19 +60,18 @@ class DebugInfo
         protected array $timings = [],
         protected array $connectionStats = [],
         protected int $memoryUsage = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * Create a DebugInfo instance from a request and response.
      *
-     * @param string                 $method          HTTP method
-     * @param string                 $uri             Request URI
-     * @param array<string, mixed>   $options         Request options including headers and body
-     * @param ResponseInterface|null $response        The HTTP response
-     * @param array<string, float>   $timings         Timing information
-     * @param array<string, mixed>   $connectionStats Connection statistics
-     * @param int                    $memoryUsage     Memory usage in bytes
+     * @param  string  $method  HTTP method
+     * @param  string  $uri  Request URI
+     * @param  array<string, mixed>  $options  Request options including headers and body
+     * @param  ResponseInterface|null  $response  The HTTP response
+     * @param  array<string, float>  $timings  Timing information
+     * @param  array<string, mixed>  $connectionStats  Connection statistics
+     * @param  int  $memoryUsage  Memory usage in bytes
      */
     public static function create(
         string $method,
@@ -109,7 +108,7 @@ class DebugInfo
     /**
      * Set default debug options.
      *
-     * @param array<string, mixed> $options
+     * @param  array<string, mixed>  $options
      */
     public static function setDefaultOptions(array $options): void
     {
@@ -119,8 +118,7 @@ class DebugInfo
     /**
      * Sanitize options to redact sensitive information.
      *
-     * @param array<string, mixed> $options The options to sanitize
-     *
+     * @param  array<string, mixed>  $options  The options to sanitize
      * @return array<string, mixed> Sanitized options
      */
     protected static function sanitizeOptions(array $options): array
@@ -143,8 +141,7 @@ class DebugInfo
     /**
      * Sanitize headers to redact sensitive information.
      *
-     * @param array<string, mixed> $headers The headers to sanitize
-     *
+     * @param  array<string, mixed>  $headers  The headers to sanitize
      * @return array<string, mixed> Sanitized headers
      */
     protected static function sanitizeHeaders(array $headers): array
@@ -213,8 +210,7 @@ class DebugInfo
     /**
      * Format the request information for output.
      *
-     * @param array<string, mixed> $options Output options
-     *
+     * @param  array<string, mixed>  $options  Output options
      * @return array<string, mixed>
      */
     public function formatRequest(array $options = []): array
@@ -231,7 +227,7 @@ class DebugInfo
 
         if ($options['request_body']) {
             $body = $this->requestData['body'] ?? null;
-            if (null !== $body) {
+            if ($body !== null) {
                 $formatted['body'] = $this->formatBody($body, $options['request_body']);
             }
         }
@@ -242,13 +238,12 @@ class DebugInfo
     /**
      * Format the response information for output.
      *
-     * @param array<string, mixed> $options Output options
-     *
+     * @param  array<string, mixed>  $options  Output options
      * @return array<string, mixed>|null
      */
     public function formatResponse(array $options = []): ?array
     {
-        if (null === $this->response) {
+        if ($this->response === null) {
             return null;
         }
 
@@ -262,7 +257,7 @@ class DebugInfo
             $formatted['headers'] = self::sanitizeHeaders($this->response->getHeaders());
         }
 
-        if (false !== $options['response_body']) {
+        if ($options['response_body'] !== false) {
             $body = (string) $this->response->getBody();
             $this->response->getBody()->rewind();
             $formatted['body'] = $this->formatBody($body, $options['response_body']);
@@ -274,8 +269,7 @@ class DebugInfo
     /**
      * Get the debug information as an array.
      *
-     * @param array<string, mixed> $options Output options
-     *
+     * @param  array<string, mixed>  $options  Output options
      * @return array<string, mixed>
      */
     public function toArray(array $options = []): array
@@ -285,11 +279,11 @@ class DebugInfo
             'request' => $this->formatRequest($options),
         ];
 
-        if (null !== $this->response) {
+        if ($this->response !== null) {
             $result['response'] = $this->formatResponse($options);
         }
 
-        if ($options['timing'] && !empty($this->timings)) {
+        if ($options['timing'] && ! empty($this->timings)) {
             $result['performance'] = $this->timings;
         }
 
@@ -300,7 +294,7 @@ class DebugInfo
             ];
         }
 
-        if (!empty($this->connectionStats)) {
+        if (! empty($this->connectionStats)) {
             $result['connection'] = $this->connectionStats;
         }
 
@@ -310,7 +304,7 @@ class DebugInfo
     /**
      * Get the debug information as a JSON string.
      *
-     * @param array<string, mixed> $options Output options
+     * @param  array<string, mixed>  $options  Output options
      */
     public function dump(array $options = []): string
     {
@@ -320,12 +314,12 @@ class DebugInfo
     /**
      * Format a body for output, optionally truncating.
      *
-     * @param mixed    $body   The body content
-     * @param bool|int $option True for full body, int for max bytes, false to disable
+     * @param  mixed  $body  The body content
+     * @param  bool|int  $option  True for full body, int for max bytes, false to disable
      */
     protected function formatBody(mixed $body, bool|int $option): mixed
     {
-        if (false === $option) {
+        if ($option === false) {
             return null;
         }
 
@@ -334,7 +328,7 @@ class DebugInfo
             $body = json_encode($body, JSON_PRETTY_PRINT);
         }
 
-        if (!is_string($body)) {
+        if (! is_string($body)) {
             return $body;
         }
 
@@ -356,7 +350,7 @@ class DebugInfo
 
         while ($bytes >= 1024 && $unitIndex < count($units) - 1) {
             $bytes /= 1024;
-            ++$unitIndex;
+            $unitIndex++;
         }
 
         return round($bytes, 2).' '.$units[$unitIndex];

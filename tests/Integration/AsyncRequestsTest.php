@@ -26,7 +26,8 @@ class AsyncRequestsTest extends TestCase
     protected function setUp(): void
     {
         // Create a mock handler that returns predictable responses
-        $this->mockHandler = new class extends ClientHandler {
+        $this->mockHandler = new class extends ClientHandler
+        {
             /**
              * Override sendRequest with compatible signature.
              */
@@ -63,7 +64,7 @@ class AsyncRequestsTest extends TestCase
         Recorder::resetInstance();
     }
 
-    public function testAsyncRequest(): void
+    public function test_async_request(): void
     {
         // First we need to get the handler and set it to async mode
         $handler = $this->client->getHandler();
@@ -82,7 +83,7 @@ class AsyncRequestsTest extends TestCase
         $this->assertTrue($data['async']);
     }
 
-    public function testMultipleConcurrentRequests(): void
+    public function test_multiple_concurrent_requests(): void
     {
         // First we need to get the handler and set it to async mode
         $handler = $this->client->getHandler();
@@ -106,13 +107,13 @@ class AsyncRequestsTest extends TestCase
         }
     }
 
-    public function testMockServerRespectedInAsyncMode(): void
+    public function test_mock_server_respected_in_async_mode(): void
     {
         MockServer::fake([
             'https://api.example.com/mock-async' => \Fetch\Testing\MockResponse::json(['mocked' => true]),
         ]);
 
-        $handler = new ClientHandler();
+        $handler = new ClientHandler;
         $handler->async();
         $client = new Client($handler);
 
@@ -122,9 +123,10 @@ class AsyncRequestsTest extends TestCase
         $this->assertEquals(['mocked' => true], $response->json());
     }
 
-    public function testAsyncErrorContainsContext(): void
+    public function test_async_error_contains_context(): void
     {
-        $handler = new class extends ClientHandler {
+        $handler = new class extends ClientHandler
+        {
             protected function executeSyncRequest(
                 string $method,
                 string $uri,
@@ -152,7 +154,7 @@ class AsyncRequestsTest extends TestCase
         $this->assertStringContainsString('simulated failure', $result->getPrevious()->getMessage());
     }
 
-    public function testConcurrencyHelpersAllAndRace(): void
+    public function test_concurrency_helpers_all_and_race(): void
     {
         $handler = $this->client->getHandler();
         $handler->async();
@@ -169,7 +171,7 @@ class AsyncRequestsTest extends TestCase
         $this->assertInstanceOf(Response::class, $raceResult);
     }
 
-    public function testMapWithBoundedConcurrency(): void
+    public function test_map_with_bounded_concurrency(): void
     {
         $handler = $this->client->getHandler();
         $handler->async();
@@ -188,7 +190,7 @@ class AsyncRequestsTest extends TestCase
         $this->assertCount(3, $results);
     }
 
-    public function testAsyncRequestRespectsPerRequestRetryConfig(): void
+    public function test_async_request_respects_per_request_retry_config(): void
     {
         // This test verifies that async requests respect per-request retry configuration
         // The ConcurrentRequestsTest::test_retries_are_isolated_per_request covers the sync case
@@ -226,11 +228,12 @@ class AsyncRequestsTest extends TestCase
         $this->assertEquals(3, $data['attempt']);
     }
 
-    public function testAsyncRequestRespectsPerRequestTimeout(): void
+    public function test_async_request_respects_per_request_timeout(): void
     {
         $capturedTimeout = null;
 
-        $handler = new class extends ClientHandler {
+        $handler = new class extends ClientHandler
+        {
             public ?int $capturedTimeout = null;
 
             protected function executeSyncRequest(
@@ -243,7 +246,7 @@ class AsyncRequestsTest extends TestCase
                 ?\Fetch\Support\RequestContext $context = null,
             ): ResponseInterface {
                 // Capture the timeout from context
-                if (null !== $context) {
+                if ($context !== null) {
                     $this->capturedTimeout = $context->getTimeout();
                 }
 

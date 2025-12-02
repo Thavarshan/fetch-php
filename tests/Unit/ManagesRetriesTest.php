@@ -16,7 +16,8 @@ class ManagesRetriesTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->handler = new class extends ClientHandler {
+        $this->handler = new class extends ClientHandler
+        {
             public function exposeIsRetryableError(\Throwable $e): bool
             {
                 return $this->isRetryableError($e);
@@ -34,7 +35,7 @@ class ManagesRetriesTest extends TestCase
         };
     }
 
-    public function testRetryConfiguration(): void
+    public function test_retry_configuration(): void
     {
         $this->handler->retry(3, 200);
 
@@ -42,7 +43,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals(200, $this->handler->getRetryDelay());
     }
 
-    public function testRetryStatusCodes(): void
+    public function test_retry_status_codes(): void
     {
         $statusCodes = [429, 503];
         $this->handler->retryStatusCodes($statusCodes);
@@ -50,7 +51,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals($statusCodes, $this->handler->getRetryableStatusCodes());
     }
 
-    public function testRetryExceptions(): void
+    public function test_retry_exceptions(): void
     {
         $exceptions = [ConnectException::class];
         $this->handler->retryExceptions($exceptions);
@@ -58,7 +59,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals($exceptions, $this->handler->getRetryableExceptions());
     }
 
-    public function testCalculateBackoffDelay(): void
+    public function test_calculate_backoff_delay(): void
     {
         // Test exponential backoff
         $baseDelay = 100; // 100ms
@@ -79,13 +80,13 @@ class ManagesRetriesTest extends TestCase
         $this->assertLessThanOrEqual($baseDelay * 8, $delay3); // Account for jitter
     }
 
-    public function testRetryRequestWithSuccess(): void
+    public function test_retry_request_with_success(): void
     {
         $mockResponse = new Response(200);
         $callCount = 0;
 
         $result = $this->handler->exposeRetryRequest(function () use (&$callCount, $mockResponse) {
-            ++$callCount;
+            $callCount++;
 
             return $mockResponse;
         });
@@ -94,7 +95,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals(1, $callCount, 'Request should be called exactly once on success');
     }
 
-    public function testRetryRequestWithRetryableErrorThenSuccess(): void
+    public function test_retry_request_with_retryable_error_then_success(): void
     {
         // Mock a request exception with a retryable status code (using Fetch RequestException)
         $mockRequest = $this->createMock(RequestInterface::class);
@@ -104,7 +105,8 @@ class ManagesRetriesTest extends TestCase
         $exception = new RequestException('Service unavailable', $mockRequest, $mockErrorResponse);
 
         // Create a test handler and manually configure it
-        $handler = new class extends ClientHandler {
+        $handler = new class extends ClientHandler
+        {
             // Override isRetryableError to always return true for the test
             protected function isRetryableError(\Throwable $e, ?\Fetch\Support\RequestContext $context = null): bool
             {
@@ -135,8 +137,8 @@ class ManagesRetriesTest extends TestCase
 
         // This should succeed on the second attempt
         $request = function () use (&$callCount, $exception, $mockSuccessResponse) {
-            ++$callCount;
-            if (1 === $callCount) {
+            $callCount++;
+            if ($callCount === 1) {
                 throw $exception;
             }
 
@@ -150,7 +152,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals(2, $callCount, 'Request should be called twice (one failure, one success)');
     }
 
-    public function testRequestContextRetryConfigurationOverridesHandlerDefaults(): void
+    public function test_request_context_retry_configuration_overrides_handler_defaults(): void
     {
         // Create a context with custom retry config that differs from handler defaults
         $context = \Fetch\Support\RequestContext::create()
@@ -170,7 +172,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals(100, $this->handler->getRetryDelay());
     }
 
-    public function testRequestContextFromOptionsWithRetryConfig(): void
+    public function test_request_context_from_options_with_retry_config(): void
     {
         // Create context from options array with retry configuration
         $options = [
@@ -190,7 +192,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals([ConnectException::class, \RuntimeException::class], $context->getRetryableExceptions());
     }
 
-    public function testRequestContextToArrayIncludesRetryConfig(): void
+    public function test_request_context_to_array_includes_retry_config(): void
     {
         $customStatusCodes = [418, 500, 502];
         $customExceptions = [\InvalidArgumentException::class];
@@ -209,7 +211,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertEquals($customExceptions, $array['retry_exceptions']);
     }
 
-    public function testRequestContextDefaultRetryableStatusCodes(): void
+    public function test_request_context_default_retryable_status_codes(): void
     {
         // Default context should have standard retryable status codes
         $context = \Fetch\Support\RequestContext::create();
@@ -220,7 +222,7 @@ class ManagesRetriesTest extends TestCase
         $this->assertContains(503, $context->getRetryableStatusCodes()); // Service Unavailable
     }
 
-    public function testRequestContextDefaultRetryableExceptions(): void
+    public function test_request_context_default_retryable_exceptions(): void
     {
         // Default context should have standard retryable exceptions
         $context = \Fetch\Support\RequestContext::create();

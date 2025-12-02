@@ -27,7 +27,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->handler = new ClientHandler($this->mockClient);
     }
 
-    public function testHandleStaticMethod(): void
+    public function test_handle_static_method(): void
     {
         // Create a mock client that will return a predefined response
         $mockClient = $this->createMock(Client::class);
@@ -45,7 +45,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testHeadMethod(): void
+    public function test_head_method(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json']);
@@ -66,7 +66,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testGetMethodWithQueryParams(): void
+    public function test_get_method_with_query_params(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":["item1","item2"]}');
@@ -93,7 +93,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals('{"data":["item1","item2"]}', $response->getBody()->getContents());
     }
 
-    public function testPostMethodWithJsonBody(): void
+    public function test_post_method_with_json_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(201, ['Content-Type' => 'application/json'], '{"id":123,"success":true}');
@@ -125,7 +125,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals('{"id":123,"success":true}', $response->getBody()->getContents());
     }
 
-    public function testPutMethodWithJsonBody(): void
+    public function test_put_method_with_json_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"id":123,"updated":true}');
@@ -157,7 +157,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals('{"id":123,"updated":true}', $response->getBody()->getContents());
     }
 
-    public function testPatchMethodWithJsonBody(): void
+    public function test_patch_method_with_json_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"id":123,"patched":true}');
@@ -189,7 +189,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals('{"id":123,"patched":true}', $response->getBody()->getContents());
     }
 
-    public function testDeleteMethod(): void
+    public function test_delete_method(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(204);
@@ -211,7 +211,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(204, $response->getStatusCode());
     }
 
-    public function testDeleteMethodWithBody(): void
+    public function test_delete_method_with_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"deleted":true}');
@@ -243,7 +243,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals('{"deleted":true}', $response->getBody()->getContents());
     }
 
-    public function testOptionsMethod(): void
+    public function test_options_method(): void
     {
         // Mock the client's request method to return a GuzzleResponse with CORS headers
         $mockResponse = new GuzzleResponse(
@@ -274,7 +274,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals('GET, POST, PUT, DELETE, OPTIONS', $response->getHeaderLine('Allow'));
     }
 
-    public function testRequestWithCustomMethodAndBody(): void
+    public function test_request_with_custom_method_and_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"success":true}');
@@ -305,7 +305,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testRequestWithFormContentType(): void
+    public function test_request_with_form_content_type(): void
     {
         // Mock the client's request method to return a GuzzleResponse
         $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"success":true}');
@@ -341,7 +341,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testExceptionHandlingDuringRequest(): void
+    public function test_exception_handling_during_request(): void
     {
         // Create a GuzzleHttp request to use in the exception
         $request = new GuzzleRequest('GET', 'https://example.com/');
@@ -364,7 +364,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->handler->get('');
     }
 
-    public function testStatusBasedRetryThenSuccess(): void
+    public function test_status_based_retry_then_success(): void
     {
         // First response is 503, then 200
         $this->mockClient->expects($this->exactly(2))
@@ -384,7 +384,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testConnectExceptionRetriedThenSuccess(): void
+    public function test_connect_exception_retried_then_success(): void
     {
         $request = new GuzzleRequest('GET', 'https://example.com/flaky');
         $connectException = new ConnectException('Connection failed', $request);
@@ -394,7 +394,7 @@ class PerformsHttpRequestsTest extends TestCase
             ->method('request')
             ->with('GET', 'https://example.com/flaky', $this->anything())
             ->willReturnCallback(function () use (&$call, $connectException) {
-                if (0 === $call++) {
+                if ($call++ === 0) {
                     throw $connectException;
                 }
 
@@ -409,7 +409,7 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testEffectiveTimeoutCalculation(): void
+    public function test_effective_timeout_calculation(): void
     {
         // Create a new handler with a specific timeout
         $handler = new ClientHandler(null, [], 45);
@@ -431,12 +431,12 @@ class PerformsHttpRequestsTest extends TestCase
         $this->assertEquals(60, $timeout);
 
         // Test fallback to default
-        $handler = new ClientHandler();
+        $handler = new ClientHandler;
         $timeout = $method->invoke($handler);
         $this->assertEquals(ClientHandler::DEFAULT_TIMEOUT, $timeout);
     }
 
-    public function testPrepareGuzzleOptions(): void
+    public function test_prepare_guzzle_options(): void
     {
         // Set up handler with various options
         $handler = new ClientHandler(null, [

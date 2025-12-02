@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class DebugInfoTest extends TestCase
 {
-    public function testCreateWithBasicRequestData(): void
+    public function test_create_with_basic_request_data(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -25,7 +25,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals(1024, $debugInfo->getMemoryUsage());
     }
 
-    public function testCreateWithResponse(): void
+    public function test_create_with_response(): void
     {
         $response = new Psr7Response(200, ['Content-Type' => 'application/json'], '{"data":"test"}');
 
@@ -42,7 +42,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals('https://example.com/api', $requestData['uri']);
     }
 
-    public function testFormatRequest(): void
+    public function test_format_request(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -57,7 +57,7 @@ class DebugInfoTest extends TestCase
         $this->assertArrayHasKey('headers', $formatted);
     }
 
-    public function testFormatRequestWithDisabledHeaders(): void
+    public function test_format_request_with_disabled_headers(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -70,7 +70,7 @@ class DebugInfoTest extends TestCase
         $this->assertArrayNotHasKey('headers', $formatted);
     }
 
-    public function testFormatResponse(): void
+    public function test_format_response(): void
     {
         $response = new Psr7Response(200, ['Content-Type' => 'application/json'], '{"status":"ok"}');
 
@@ -89,7 +89,7 @@ class DebugInfoTest extends TestCase
         $this->assertArrayHasKey('body', $formatted);
     }
 
-    public function testFormatResponseReturnsNullWhenNoResponse(): void
+    public function test_format_response_returns_null_when_no_response(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -100,7 +100,7 @@ class DebugInfoTest extends TestCase
         $this->assertNull($debugInfo->formatResponse());
     }
 
-    public function testFormatResponseBodyTruncation(): void
+    public function test_format_response_body_truncation(): void
     {
         $longBody = str_repeat('x', 2000);
         $response = new Psr7Response(200, [], $longBody);
@@ -119,7 +119,7 @@ class DebugInfoTest extends TestCase
         $this->assertLessThan(200, strlen($formatted['body']));
     }
 
-    public function testToArray(): void
+    public function test_to_array(): void
     {
         $response = new Psr7Response(200, [], '{"data":"test"}');
 
@@ -142,7 +142,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals(2048, $array['memory']['bytes']);
     }
 
-    public function testDumpReturnsJsonString(): void
+    public function test_dump_returns_json_string(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -158,7 +158,7 @@ class DebugInfoTest extends TestCase
         $this->assertArrayHasKey('request', $decoded);
     }
 
-    public function testToStringReturnsJson(): void
+    public function test_to_string_returns_json(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -171,7 +171,7 @@ class DebugInfoTest extends TestCase
         $this->assertJson($string);
     }
 
-    public function testGetAndSetDefaultOptions(): void
+    public function test_get_and_set_default_options(): void
     {
         $originalOptions = DebugInfo::getDefaultOptions();
 
@@ -184,7 +184,7 @@ class DebugInfoTest extends TestCase
         DebugInfo::setDefaultOptions($originalOptions);
     }
 
-    public function testFormatBodyWithArray(): void
+    public function test_format_body_with_array(): void
     {
         $debugInfo = DebugInfo::create(
             'POST',
@@ -198,7 +198,7 @@ class DebugInfoTest extends TestCase
         $this->assertArrayHasKey('body', $formatted);
     }
 
-    public function testMemoryFormatting(): void
+    public function test_memory_formatting(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -216,7 +216,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals('1 MB', $array['memory']['formatted']);
     }
 
-    public function testJsonBodyOptionIsCaptured(): void
+    public function test_json_body_option_is_captured(): void
     {
         $debugInfo = DebugInfo::create(
             'POST',
@@ -229,7 +229,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals(['name' => 'test', 'value' => 123], $requestData['body']);
     }
 
-    public function testSensitiveHeadersAreRedactedInRequest(): void
+    public function test_sensitive_headers_are_redacted_in_request(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -256,7 +256,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals('application/json', $headers['Content-Type']);
     }
 
-    public function testSensitiveHeadersAreRedactedInResponse(): void
+    public function test_sensitive_headers_are_redacted_in_response(): void
     {
         $response = new Psr7Response(
             200,
@@ -286,7 +286,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals(['application/json'], $headers['Content-Type']);
     }
 
-    public function testAuthOptionIsRedacted(): void
+    public function test_auth_option_is_redacted(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -305,7 +305,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals('application/json', $requestData['headers']['Accept']);
     }
 
-    public function testArrayValuedSensitiveHeadersAreRedacted(): void
+    public function test_array_valued_sensitive_headers_are_redacted(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',
@@ -326,7 +326,7 @@ class DebugInfoTest extends TestCase
         $this->assertEquals('application/json', $headers['Content-Type']);
     }
 
-    public function testCaseInsensitiveHeaderRedaction(): void
+    public function test_case_insensitive_header_redaction(): void
     {
         $debugInfo = DebugInfo::create(
             'GET',

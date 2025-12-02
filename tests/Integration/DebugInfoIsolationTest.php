@@ -147,7 +147,7 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $profiler = new FetchProfiler();
+        $profiler = new FetchProfiler;
 
         $handler = ClientHandler::createWithClient($guzzleClient);
         $handler->baseUri('https://api.example.com');
@@ -196,7 +196,7 @@ class DebugInfoIsolationTest extends TestCase
         $this->assertNull($response->getDebugInfo());
     }
 
-    public function test_getLastDebugInfo_still_works_for_backward_compatibility(): void
+    public function test_get_last_debug_info_still_works_for_backward_compatibility(): void
     {
         // Create mock response
         $mockHandler = new MockHandler([

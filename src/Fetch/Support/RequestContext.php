@@ -132,12 +132,12 @@ final class RequestContext
     /**
      * Private constructor - use static factory methods.
      *
-     * @param array<string, string|string[]>  $headers
-     * @param array<string, mixed>            $options
-     * @param array<string, mixed>            $cacheOptions
-     * @param array<string, mixed>            $debugOptions
-     * @param array<int>                      $retryableStatusCodes
-     * @param array<class-string<\Throwable>> $retryableExceptions
+     * @param  array<string, string|string[]>  $headers
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $cacheOptions
+     * @param  array<string, mixed>  $debugOptions
+     * @param  array<int>  $retryableStatusCodes
+     * @param  array<class-string<\Throwable>>  $retryableExceptions
      */
     private function __construct(
         string $method = 'GET',
@@ -177,7 +177,7 @@ final class RequestContext
      */
     public static function create(): self
     {
-        return new self();
+        return new self;
     }
 
     /**
@@ -185,7 +185,7 @@ final class RequestContext
      *
      * This method handles the various option formats used throughout the library.
      *
-     * @param array<string, mixed> $options
+     * @param  array<string, mixed>  $options
      */
     public static function fromOptions(array $options): self
     {
@@ -284,7 +284,7 @@ final class RequestContext
      *
      * Options in $options take precedence over this context's values.
      *
-     * @param array<string, mixed> $options
+     * @param  array<string, mixed>  $options
      */
     public function merge(array $options): self
     {
@@ -418,7 +418,7 @@ final class RequestContext
     /**
      * Create a copy with custom retryable status codes.
      *
-     * @param array<int> $statusCodes HTTP status codes that should trigger a retry
+     * @param  array<int>  $statusCodes  HTTP status codes that should trigger a retry
      */
     public function withRetryableStatusCodes(array $statusCodes): self
     {
@@ -443,7 +443,7 @@ final class RequestContext
     /**
      * Create a copy with custom retryable exception types.
      *
-     * @param array<class-string<\Throwable>> $exceptions Exception class names that should trigger a retry
+     * @param  array<class-string<\Throwable>>  $exceptions  Exception class names that should trigger a retry
      */
     public function withRetryableExceptions(array $exceptions): self
     {
@@ -468,7 +468,7 @@ final class RequestContext
     /**
      * Create a copy with caching enabled/disabled.
      *
-     * @param bool|array<string, mixed> $cache
+     * @param  bool|array<string, mixed>  $cache
      */
     public function withCache(bool|array $cache = true): self
     {
@@ -496,7 +496,7 @@ final class RequestContext
     /**
      * Create a copy with debugging enabled/disabled.
      *
-     * @param bool|array<string, mixed> $debug
+     * @param  bool|array<string, mixed>  $debug
      */
     public function withDebug(bool|array $debug = true): self
     {
@@ -524,7 +524,7 @@ final class RequestContext
     /**
      * Create a copy with a header added/replaced.
      *
-     * @param string|string[] $value
+     * @param  string|string[]  $value
      */
     public function withHeader(string $name, string|array $value): self
     {
@@ -552,7 +552,7 @@ final class RequestContext
     /**
      * Create a copy with multiple headers added/replaced.
      *
-     * @param array<string, string|string[]> $headers
+     * @param  array<string, string|string[]>  $headers
      */
     public function withHeaders(array $headers): self
     {
@@ -750,7 +750,7 @@ final class RequestContext
     public function shouldUseCache(): bool
     {
         return $this->cacheEnabled
-            && !$this->async
+            && ! $this->async
             && $this->isSafeMethod();
     }
 
@@ -774,11 +774,11 @@ final class RequestContext
         ];
 
         // Add retry configuration if not using defaults
-        if (self::DEFAULT_RETRYABLE_STATUS_CODES !== $this->retryableStatusCodes) {
+        if ($this->retryableStatusCodes !== self::DEFAULT_RETRYABLE_STATUS_CODES) {
             $result['retry_status_codes'] = $this->retryableStatusCodes;
         }
 
-        if (self::DEFAULT_RETRYABLE_EXCEPTIONS !== $this->retryableExceptions) {
+        if ($this->retryableExceptions !== self::DEFAULT_RETRYABLE_EXCEPTIONS) {
             $result['retry_exceptions'] = $this->retryableExceptions;
         }
 
@@ -823,7 +823,7 @@ final class RequestContext
         }
 
         // Add headers
-        if (!empty($this->headers)) {
+        if (! empty($this->headers)) {
             $guzzleOptions['headers'] = $this->headers;
         }
 
@@ -831,7 +831,7 @@ final class RequestContext
         $guzzleOptions['timeout'] = $this->timeout;
 
         // Ensure connect_timeout defaults sensibly
-        if (!isset($guzzleOptions['connect_timeout'])) {
+        if (! isset($guzzleOptions['connect_timeout'])) {
             $guzzleOptions['connect_timeout'] = $this->timeout;
         }
 
