@@ -2,6 +2,6 @@
 
 set -e # this makes the script fail on first error
 
-chmod +x bin/fix.sh && ./bin/fix.sh
-chmod +x bin/lint.sh && ./bin/lint.sh
+composer fix
+composer lint
 php artisan test || true
