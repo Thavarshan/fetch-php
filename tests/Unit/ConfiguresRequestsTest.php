@@ -63,6 +63,24 @@ class ConfiguresRequestsTest extends TestCase
         $this->assertEquals(ContentType::JSON->value, $this->handler->getHeaders()['Content-Type']);
     }
 
+    public function test_with_options_normalizes_conflicting_body(): void
+    {
+        $options = [
+            'json' => ['foo' => 'bar'],
+            'form' => ['should' => 'be removed'],
+            'body' => 'raw',
+            'headers' => [],
+        ];
+
+        $this->handler->withOptions($options);
+        $result = $this->handler->getOptions();
+
+        $this->assertArrayHasKey('json', $result);
+        $this->assertArrayNotHasKey('form', $result);
+        $this->assertArrayNotHasKey('body', $result);
+        $this->assertEquals(ContentType::JSON->value, $this->handler->getHeaders()['Content-Type']);
+    }
+
     public function test_with_form_params(): void
     {
         $data = ['name' => 'John Doe', 'email' => 'john@example.com'];

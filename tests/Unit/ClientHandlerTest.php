@@ -22,6 +22,8 @@ class ClientHandlerTest extends TestCase
 
     protected function setUp(): void
     {
+        \Fetch\Testing\MockServer::resetInstance();
+        \Fetch\Testing\Recorder::resetInstance();
         $this->mockClient = $this->createMock(Client::class);
         $this->handler = new ClientHandler($this->mockClient);
     }
@@ -325,13 +327,14 @@ class ClientHandlerTest extends TestCase
         // Create a mock logger that expects the logRequest call
         $mockLogger = $this->createMock(LoggerInterface::class);
         $mockLogger->expects($this->once())
-            ->method('debug')
+            ->method('log')
             ->with(
+                $this->equalTo('debug'),
                 $this->equalTo('Sending HTTP request'),
                 $this->callback(function ($context) {
                     return isset($context['method']) &&
-                           isset($context['uri']) &&
-                           isset($context['options']);
+                        isset($context['uri']) &&
+                        isset($context['options']);
                 })
             );
 
@@ -350,14 +353,15 @@ class ClientHandlerTest extends TestCase
         // Create a mock logger that expects the logResponse call
         $mockLogger = $this->createMock(LoggerInterface::class);
         $mockLogger->expects($this->once())
-            ->method('debug')
+            ->method('log')
             ->with(
+                $this->equalTo('debug'),
                 $this->equalTo('Received HTTP response'),
                 $this->callback(function ($context) {
                     return isset($context['status_code']) &&
-                           isset($context['reason']) &&
-                           isset($context['duration']) &&
-                           isset($context['content_length']);
+                        isset($context['reason']) &&
+                        isset($context['duration']) &&
+                        isset($context['content_length']);
                 })
             );
 

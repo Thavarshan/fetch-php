@@ -44,16 +44,7 @@ class MemoryCache implements CacheInterface
             return null;
         }
 
-        $entry = $this->cache[$key];
-
-        // Check if the entry has expired
-        if ($entry['expires_at'] !== null && time() > $entry['expires_at']) {
-            unset($this->cache[$key]);
-
-            return null;
-        }
-
-        return $entry['response'];
+        return $this->cache[$key]['response'];
     }
 
     /**
@@ -107,15 +98,6 @@ class MemoryCache implements CacheInterface
     public function has(string $key): bool
     {
         if (! isset($this->cache[$key])) {
-            return false;
-        }
-
-        $entry = $this->cache[$key];
-
-        // Check if the entry has expired
-        if ($entry['expires_at'] !== null && time() > $entry['expires_at']) {
-            unset($this->cache[$key]);
-
             return false;
         }
 

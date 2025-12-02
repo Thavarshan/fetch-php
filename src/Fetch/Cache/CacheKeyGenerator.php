@@ -52,17 +52,22 @@ class CacheKeyGenerator
             'headers' => $this->extractVaryHeaders($options),
         ];
 
-        // Include body hash for non-GET/HEAD requests if body is present
-        if (! in_array(strtoupper($method), ['GET', 'HEAD'], true)) {
+        $upperMethod = $components['method'];
+
+        // Include query parameters in the hash (normalized)
+        if (isset($options['query']) && is_array($options['query'])) {
+            $components['query'] = $this->normalizeArray($options['query']);
+        }
+
+        // Include body hash for unsafe methods when opt-in is set
+        $cacheConfig = $options['cache'] ?? [];
+        $bodyCachingEnabled = is_array($cacheConfig) && ($cacheConfig['cache_body'] ?? false);
+
+        if (! in_array($upperMethod, ['GET', 'HEAD'], true) && $bodyCachingEnabled) {
             $bodyHash = $this->hashBody($options);
             if ($bodyHash !== null) {
                 $components['body_hash'] = $bodyHash;
             }
-        }
-
-        // Include query parameters in the hash
-        if (isset($options['query']) && is_array($options['query'])) {
-            $components['query'] = $options['query'];
         }
 
         return $this->prefix.hash('sha256', serialize($components));
@@ -167,6 +172,25 @@ class CacheKeyGenerator
         }
 
         return implode('&', $normalized);
+    }
+
+    /**
+     * Normalize an array recursively for deterministic hashing.
+     *
+     * @param  array<mixed>  $value
+     * @return array<mixed>
+     */
+    private function normalizeArray(array $value): array
+    {
+        ksort($value);
+
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->normalizeArray($item);
+            }
+        }
+
+        return $value;
     }
 
     /**

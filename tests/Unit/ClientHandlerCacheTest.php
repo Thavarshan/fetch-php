@@ -7,21 +7,51 @@ namespace Tests\Unit;
 use Fetch\Cache\MemoryCache;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
+use Fetch\Testing\MockServer;
+use Fetch\Testing\Recorder;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use PHPUnit\Framework\TestCase;
 
+use function Matrix\Support\await;
+
 class ClientHandlerCacheTest extends TestCase
 {
     private function create_handler_with_mock_responses(array $responses): ClientHandler
     {
+        MockServer::resetInstance();
+        Recorder::resetInstance();
         $mock = new MockHandler($responses);
         $handlerStack = HandlerStack::create($mock);
         $client = new GuzzleClient(['handler' => $handlerStack]);
 
         return ClientHandler::createWithClient($client);
+    }
+
+    public function test_async_requests_bypass_cache(): void
+    {
+        $responses = [
+            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"first"}'),
+            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"second"}'),
+        ];
+
+        $handler = $this->create_handler_with_mock_responses($responses);
+        $handler->baseUri('https://api.example.com');
+        $handler->withCache(); // caching enabled for sync
+        $handler->async();
+
+        $promise1 = $handler->get('/users');
+        $promise2 = $handler->get('/users');
+
+        $response1 = await($promise1);
+        $response2 = await($promise2);
+
+        $this->assertEquals('{"data":"first"}', $response1->body());
+        $this->assertEquals('{"data":"second"}', $response2->body());
+        $this->assertEquals('', $response1->getHeaderLine('X-Cache-Status'));
+        $this->assertEquals('', $response2->getHeaderLine('X-Cache-Status'));
     }
 
     public function test_with_cache_enables_caching(): void
@@ -308,6 +338,87 @@ class ClientHandlerCacheTest extends TestCase
         // Should not be cached due to no-store
         $response2 = $handler->get('/users');
         $this->assertEquals('{"data":"second"}', $response2->body());
+    }
+
+    public function test_stale_while_revalidate_serves_stale_copy(): void
+    {
+        $responses = [
+            new GuzzleResponse(200, [
+                'Content-Type' => 'application/json',
+                'Cache-Control' => 'max-age=0, stale-while-revalidate=60',
+            ], '{"data":"stale-capable"}'),
+            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"fresh"}'),
+        ];
+
+        $handler = $this->create_handler_with_mock_responses($responses);
+        $handler->baseUri('https://api.example.com');
+        $handler->withCache(null, [
+            'stale_while_revalidate' => 60,
+            'respect_cache_headers' => false,
+            'default_ttl' => 1,
+        ]);
+
+        $first = $handler->get('/stale');
+        $this->assertEquals('{"data":"stale-capable"}', $first->body());
+
+        sleep(2); // expire the cached entry
+
+        // Second request should return stale response while revalidating
+        $second = $handler->get('/stale');
+        $this->assertEquals('{"data":"stale-capable"}', $second->body());
+        $this->assertContains($second->getHeaderLine('X-Cache-Status'), ['STALE', 'HIT']);
+    }
+
+    public function test_stale_if_error_serves_cached_body_on_failure(): void
+    {
+        $responses = [
+            new GuzzleResponse(200, [
+                'Content-Type' => 'application/json',
+                'Cache-Control' => 'max-age=0',
+            ], '{"data":"seed"}'),
+            new GuzzleResponse(500, ['Content-Type' => 'application/json'], '{"error":true}'),
+        ];
+
+        $handler = $this->create_handler_with_mock_responses($responses);
+        $handler->baseUri('https://api.example.com');
+        $handler->withCache(null, [
+            'stale_if_error' => 300,
+            'respect_cache_headers' => false,
+            'default_ttl' => 1,
+            'retries' => 0,
+        ]);
+
+        $first = $handler->get('/stale-if-error');
+        $this->assertEquals('{"data":"seed"}', $first->body());
+
+        sleep(2); // expire entry so it is stale
+
+        $second = $handler->get('/stale-if-error');
+        $this->assertEquals('{"data":"seed"}', $second->body());
+        $this->assertContains($second->getHeaderLine('X-Cache-Status'), ['STALE-IF-ERROR', 'HIT']);
+    }
+
+    public function test_revalidation_with_last_modified_header(): void
+    {
+        $responses = [
+            new GuzzleResponse(200, [
+                'Content-Type' => 'application/json',
+                'Cache-Control' => 'no-cache',
+                'Last-Modified' => 'Wed, 21 Oct 2015 07:28:00 GMT',
+            ], '{"data":"first"}'),
+            new GuzzleResponse(304, [], ''),
+        ];
+
+        $handler = $this->create_handler_with_mock_responses($responses);
+        $handler->baseUri('https://api.example.com');
+        $handler->withCache();
+
+        $first = $handler->get('/last-modified');
+        $this->assertEquals('{"data":"first"}', $first->body());
+
+        $second = $handler->get('/last-modified');
+        $this->assertEquals(200, $second->getStatusCode());
+        $this->assertEquals('{"data":"first"}', $second->body());
     }
 
     public function test_cache_requires_revalidation_with_no_cache_directive(): void

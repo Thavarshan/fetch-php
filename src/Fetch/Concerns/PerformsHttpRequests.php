@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace Fetch\Concerns;
 
+use Fetch\Cache\CacheManager;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\RequestContext;
+use Fetch\Support\RequestOptions;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Matrix\Exceptions\AsyncException;
 use React\Promise\PromiseInterface;
+use RuntimeException;
 
 use function Matrix\Support\async;
 
@@ -144,6 +148,10 @@ trait PerformsHttpRequests
     /**
      * Send an HTTP request.
      *
+     * This method is now stateless per-request: it builds an immutable RequestContext
+     * from merged options and passes it through the execution stack without mutating
+     * the handler's shared state. This makes the handler safe for concurrent usage.
+     *
      * @param  Method|string  $method  The HTTP method
      * @param  string  $uri  The URI to request
      * @param  array<string, mixed>  $options  Additional options
@@ -154,59 +162,125 @@ trait PerformsHttpRequests
         string $uri,
         array $options = [],
     ): ResponseInterface|PromiseInterface {
-        // Create a new handler with the combined options
-        $handler = clone $this;
-        $handler->withOptions($options);
+        $startTime = microtime(true);
+        $startMemory = memory_get_usage(true);
 
         // Normalize method to string
         $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
 
-        // Store URI in handler options
-        $handler->options['uri'] = $uri;
-        $handler->options['method'] = $methodStr;
+        // Build immutable request context from handler defaults + per-request options
+        $requestOptions = RequestOptions::merge(
+            $this->options,
+            ['async' => $this->isAsync],
+            $options,
+            ['method' => $methodStr, 'uri' => $uri],
+        );
 
-        // Build the full URI
-        $fullUri = $handler->buildFullUri($uri);
+        RequestOptions::validate($requestOptions);
 
-        // Prepare Guzzle options
-        $guzzleOptions = $handler->prepareGuzzleOptions();
+        $context = RequestContext::fromOptions($requestOptions);
+
+        // Build the full URI using context, not handler state
+        $fullUri = $this->buildFullUriFromContext($context);
+
+        // Prepare Guzzle options from context
+        $guzzleOptions = $context->toGuzzleOptions();
+
+        // Start profiling once for this request path
+        $requestId = $this->startProfiling($methodStr, $fullUri);
 
         // Check for mock response first (if HandlesMocking trait is available)
-        if (method_exists($handler, 'handleMockRequest')) {
-            $mockResponse = $handler->handleMockRequest($methodStr, $fullUri, $guzzleOptions);
+        if (method_exists($this, 'handleMockRequest')) {
+            $mockResponse = $this->handleMockRequest($methodStr, $fullUri, $guzzleOptions);
             if ($mockResponse !== null) {
+                $this->recordProfilingEvent($requestId, 'response_start');
+                $this->endProfiling($requestId, $mockResponse->getStatusCode());
+
+                $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                    ? $this->getConnectionDebugStats()
+                    : [];
+
+                $debugInfo = $this->captureDebugSnapshot($methodStr, $fullUri, $guzzleOptions, $mockResponse, $startTime, $startMemory, $connectionStats);
+
+                // Attach debug info to response if available
+                if ($debugInfo !== null && $mockResponse instanceof Response) {
+                    $mockResponse->withDebugInfo($debugInfo);
+                }
+
                 return $mockResponse;
             }
         }
 
-        // Check for cached response (if ManagesCache trait is available)
-        // Use handler options which includes cache config, not just guzzle options
+        // Check for cached response via CacheManager if available
         $cachedResult = null;
-        if (method_exists($handler, 'getCachedResponse') && method_exists($handler, 'isCacheEnabled') && $handler->isCacheEnabled()) {
-            $cachedResult = $handler->getCachedResponse($methodStr, $fullUri, $handler->options);
+        $cacheManager = $this->getCacheManagerFromHandler($this);
+        $requestOptionsWithAsync = array_merge($context->toArray(), ['async' => $context->isAsync()]);
+
+        if ($cacheManager !== null) {
+            $cachedResult = $cacheManager->getCachedResponse($methodStr, $fullUri, $requestOptionsWithAsync);
             if ($cachedResult['response'] !== null) {
+                $this->recordProfilingEvent($requestId, 'response_start');
+                $this->endProfiling($requestId, $cachedResult['response']->getStatusCode());
+
+                $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                    ? $this->getConnectionDebugStats()
+                    : [];
+
+                $debugInfo = $this->captureDebugSnapshot($methodStr, $fullUri, $guzzleOptions, $cachedResult['response'], $startTime, $startMemory, $connectionStats);
+
+                // Attach debug info to cached response if available
+                if ($debugInfo !== null && $cachedResult['response'] instanceof Response) {
+                    $cachedResult['response']->withDebugInfo($debugInfo);
+                }
+
                 return $cachedResult['response'];
             }
 
             // Add conditional headers if we have a stale cache entry
-            if ($cachedResult['cached'] !== null && method_exists($handler, 'addConditionalHeaders')) {
-                $guzzleOptions = $handler->addConditionalHeaders($guzzleOptions, $cachedResult['cached']);
+            if ($cachedResult['cached'] !== null) {
+                $guzzleOptions = $cacheManager->addConditionalHeaders($guzzleOptions, $cachedResult['cached']);
             }
         }
 
-        // Start timing for logging
-        $startTime = microtime(true);
-
         // Log the request if method exists
-        if (method_exists($handler, 'logRequest')) {
-            $handler->logRequest($methodStr, $fullUri, $guzzleOptions);
+        if (method_exists($this, 'logRequest')) {
+            $this->logRequest($methodStr, $fullUri, $guzzleOptions);
         }
 
-        // Send the request (async or sync)
-        if ($handler->isAsync) {
-            return $handler->executeAsyncRequest($methodStr, $fullUri, $guzzleOptions);
-        } else {
-            return $this->executeSyncRequestWithCache($methodStr, $fullUri, $guzzleOptions, $startTime, $cachedResult, $handler);
+        // Send the request (async or sync) based on context
+        if ($context->isAsync()) {
+            $promise = $this->executeAsyncRequest(
+                $methodStr,
+                $fullUri,
+                $guzzleOptions,
+                $startTime,
+                $startMemory,
+                $requestId,
+                $context
+            );
+
+            return $promise
+                ->otherwise(function (\Throwable $e) use ($methodStr, $fullUri) {
+                    throw $this->withErrorContext($e, $methodStr, $fullUri);
+                });
+        }
+
+        try {
+            $response = $this->executeSyncRequestWithCache(
+                $methodStr,
+                $fullUri,
+                $guzzleOptions,
+                $requestOptionsWithAsync,
+                $startTime,
+                $startMemory,
+                $cachedResult,
+                $requestId,
+                $context
+            );
+
+            return $response;
+        } catch (\Throwable $e) {
+            throw $this->withErrorContext($e, $methodStr, $fullUri);
         }
     }
 
@@ -227,21 +301,13 @@ trait PerformsHttpRequests
         string|ContentType $contentType = ContentType::JSON,
         array $options = [],
     ): Response|PromiseInterface {
-        // Normalize method to string
-        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+        $mergedOptions = RequestOptions::merge($this->options, $options);
 
-        // Apply any additional options
-        if (! empty($options)) {
-            $this->withOptions($options);
-        }
-
-        // Configure request body if provided
         if ($body !== null) {
-            $this->configureRequestBody($body, $contentType);
+            $mergedOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
         }
 
-        // Send the request using our unified method
-        return $this->sendRequest($methodStr, $uri);
+        return $this->sendRequest($method, $uri, $mergedOptions);
     }
 
     /**
@@ -266,44 +332,118 @@ trait PerformsHttpRequests
     }
 
     /**
+     * Apply body-related options in isolation to avoid mutating the handler state.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    protected function applyBodyOptions(array $options, mixed $body, ContentType|string $contentType): array
+    {
+        $originalOptions = $this->options;
+
+        try {
+            $this->options = $options;
+            $this->configureRequestBody($body, $contentType);
+
+            return $this->options;
+        } finally {
+            $this->options = $originalOptions;
+        }
+    }
+
+    /**
+     * Get the CacheManager from a handler instance if available.
+     *
+     * Uses the CacheableHandler interface getter to properly encapsulate access.
+     * Note: Cloning a handler shares the CacheManager instance (intentional - it's stateless per-request).
+     *
+     * @param  object  $handler  The handler instance to check
+     * @return CacheManager|null The cache manager or null if not available
+     */
+    protected function getCacheManagerFromHandler(object $handler): ?CacheManager
+    {
+        if (method_exists($handler, 'getCacheManager')) {
+            return $handler->getCacheManager();
+        }
+
+        return null;
+    }
+
+    /**
      * Execute a synchronous request with caching support.
      *
      * @param  string  $method  The HTTP method
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  array<string, mixed>  $requestOptions  The request options with async flag
      * @param  float  $startTime  The request start time
+     * @param  int  $startMemory  The starting memory usage
      * @param  array<string, mixed>|null  $cachedResult  The cached result data
-     * @param  self  $handler  The cloned handler instance with request-specific state
+     * @param  string|null  $requestId  The request ID for profiling
+     * @param  RequestContext  $context  The request context
      * @return ResponseInterface The response
      */
     protected function executeSyncRequestWithCache(
         string $method,
         string $uri,
         array $options,
+        array $requestOptions,
         float $startTime,
+        int $startMemory,
         ?array $cachedResult,
-        self $handler
+        ?string $requestId = null,
+        ?RequestContext $context = null,
     ): ResponseInterface {
+        $cacheManager = $this->getCacheManagerFromHandler($this);
+
         try {
-            $response = $handler->executeSyncRequest($method, $uri, $options, $startTime);
+            $response = $this->executeSyncRequest($method, $uri, $options, $startTime, $startMemory, $requestId, $context);
 
             // Handle 304 Not Modified response
-            if ($response->getStatusCode() === 304 && $cachedResult !== null && isset($cachedResult['cached']) && method_exists($handler, 'handleNotModified')) {
-                $response = $handler->handleNotModified($cachedResult['cached'], $response);
+            if ($response->getStatusCode() === 304 && $cachedResult !== null && isset($cachedResult['cached']) && $cacheManager !== null) {
+                $response = $cacheManager->handleNotModified($cachedResult['cached'], $response);
             }
 
             // Cache the response if caching is enabled
-            // Use handler options which includes cache config
-            if (method_exists($handler, 'cacheResponse') && method_exists($handler, 'isCacheEnabled') && $handler->isCacheEnabled()) {
-                $handler->cacheResponse($method, $uri, $response, $handler->options);
+            if ($cacheManager !== null) {
+                $cacheManager->cacheResponse($method, $uri, $response, $requestOptions);
             }
+
+            $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                ? $this->getConnectionDebugStats()
+                : [];
+
+            $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats);
+
+            // Attach debug info to response if available
+            if ($debugInfo !== null && $response instanceof Response) {
+                $response->withDebugInfo($debugInfo);
+            }
+
+            // Finalize profiling for the successful response
+            $this->recordProfilingEvent($requestId, 'response_start');
+            $this->endProfiling($requestId, $response->getStatusCode());
 
             return $response;
         } catch (\Throwable $e) {
             // Handle stale-if-error: serve stale response on error
-            if ($cachedResult !== null && isset($cachedResult['cached']) && method_exists($handler, 'handleStaleIfError')) {
-                $staleResponse = $handler->handleStaleIfError($cachedResult['cached']);
+            if ($cachedResult !== null && isset($cachedResult['cached']) && $cacheManager !== null) {
+                $staleResponse = $cacheManager->handleStaleIfError($cachedResult['cached'], $method, $uri);
                 if ($staleResponse !== null) {
+                    $this->recordProfilingEvent($requestId, 'response_start');
+                    $this->endProfiling($requestId, $staleResponse->getStatusCode());
+
+                    $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                        ? $this->getConnectionDebugStats()
+                        : [];
+
+                    $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $staleResponse, $startTime, $startMemory, $connectionStats);
+
+                    // Attach debug info to stale response if available
+                    if ($debugInfo !== null && $staleResponse instanceof Response) {
+                        $staleResponse->withDebugInfo($debugInfo);
+                    }
+
                     return $staleResponse;
                 }
             }
@@ -334,61 +474,22 @@ trait PerformsHttpRequests
             return $this->sendRequest($method, $uri, $options);
         }
 
-        // Create a new handler instance with cloned options
-        $handler = clone $this;
+        $mergedOptions = RequestOptions::merge($this->options, $options);
+        $bodyOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
 
-        // Merge options if provided
-        if (! empty($options)) {
-            $handler->withOptions($options);
-        }
-
-        // Configure the request body on the cloned handler
-        $handler->configureRequestBody($body, $contentType);
-
-        // Send the request using the configured handler
-        return $handler->sendRequest($method, $uri);
+        return $this->sendRequest($method, $uri, $bodyOptions);
     }
 
     /**
-     * Prepare options for Guzzle.
+     * Prepare options for Guzzle using the current request state.
      *
-     * @return array<string, mixed> Options ready for Guzzle
+     * @return array<string, mixed>
      */
     protected function prepareGuzzleOptions(): array
     {
-        $guzzleOptions = [];
+        $context = RequestContext::fromOptions($this->options);
 
-        // Standard Guzzle options to include
-        $standardOptions = [
-            'headers', 'json', 'form_params', 'multipart', 'body',
-            'query', 'auth', 'verify', 'proxy', 'cookies', 'allow_redirects',
-            'cert', 'ssl_key', 'stream', 'connect_timeout', 'read_timeout',
-            'debug', 'sink', 'version', 'decode_content',
-        ];
-
-        // Copy standard options if set
-        foreach ($standardOptions as $option) {
-            if (isset($this->options[$option])) {
-                $guzzleOptions[$option] = $this->options[$option];
-            }
-        }
-
-        // Set timeout consistently
-        if (isset($this->timeout)) {
-            $guzzleOptions['timeout'] = $this->timeout;
-        } elseif (isset($this->options['timeout'])) {
-            $guzzleOptions['timeout'] = $this->options['timeout'];
-        } else {
-            $guzzleOptions['timeout'] = $this->getEffectiveTimeout();
-        }
-
-        // Ensure connect_timeout defaults sensibly if not provided
-        if (! isset($guzzleOptions['connect_timeout'])) {
-            $guzzleOptions['connect_timeout'] = $guzzleOptions['connect_timeout']
-                ?? ($this->options['connect_timeout'] ?? $guzzleOptions['timeout']);
-        }
-
-        return $guzzleOptions;
+        return $context->toGuzzleOptions();
     }
 
     /**
@@ -398,6 +499,9 @@ trait PerformsHttpRequests
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The Guzzle options
      * @param  float  $startTime  The request start time
+     * @param  int  $startMemory  The starting memory usage
+     * @param  string|null  $requestId  The request ID for profiling
+     * @param  RequestContext|null  $context  The request context
      * @return ResponseInterface The response
      */
     protected function executeSyncRequest(
@@ -405,17 +509,16 @@ trait PerformsHttpRequests
         string $uri,
         array $options,
         float $startTime,
+        int $startMemory,
+        ?string $requestId = null,
+        ?RequestContext $context = null,
     ): ResponseInterface {
-        // Start profiling if profiler is available
-        $requestId = null;
-        if (method_exists($this, 'startProfiling')) {
+        // Start profiling if not already started
+        if ($requestId === null && method_exists($this, 'startProfiling')) {
             $requestId = $this->startProfiling($method, $uri);
         }
 
-        // Track memory for debugging
-        $startMemory = memory_get_usage(true);
-
-        return $this->retryRequest(function () use ($method, $uri, $options, $startTime, $requestId, $startMemory): ResponseInterface {
+        return $this->retryRequest($context, function () use ($method, $uri, $options, $startTime, $requestId, $startMemory, $context): ResponseInterface {
             try {
                 // Record request sent event for profiling
                 if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
@@ -441,18 +544,15 @@ trait PerformsHttpRequests
                     $this->endProfiling($requestId, $response->getStatusCode());
                 }
 
-                // Create debug info if debug mode is enabled
-                if (method_exists($this, 'isDebugEnabled') && $this->isDebugEnabled()) {
-                    $memoryUsage = memory_get_usage(true) - $startMemory;
-                    $timings = [
-                        'total_time' => round($duration * 1000, 3),
-                        'start_time' => $startTime,
-                        'end_time' => microtime(true),
-                    ];
+                $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                    ? $this->getConnectionDebugStats()
+                    : [];
 
-                    if (method_exists($this, 'createDebugInfo')) {
-                        $this->createDebugInfo($method, $uri, $options, $response, $timings, $memoryUsage);
-                    }
+                $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats);
+
+                // Attach debug info to response if available
+                if ($debugInfo !== null) {
+                    $response->withDebugInfo($debugInfo);
                 }
 
                 // Trigger retry on configured retryable status codes
@@ -496,20 +596,26 @@ trait PerformsHttpRequests
      * @param  string  $method  The HTTP method
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The Guzzle options
+     * @param  float  $startTime  The request start time
+     * @param  int  $startMemory  The starting memory usage
+     * @param  string|null  $requestId  The request ID for profiling
+     * @param  RequestContext|null  $context  The request context
      * @return PromiseInterface A promise that resolves with the response
      */
     protected function executeAsyncRequest(
         string $method,
         string $uri,
         array $options,
+        float $startTime,
+        int $startMemory,
+        ?string $requestId = null,
+        ?RequestContext $context = null,
     ): PromiseInterface {
-        return async(function () use ($method, $uri, $options): ResponseInterface {
-            $startTime = microtime(true);
-
+        return async(function () use ($method, $uri, $options, $startTime, $startMemory, $requestId): ResponseInterface {
             // Since this is in an async context, we can use try-catch for proper promise rejection
             try {
                 // Execute the synchronous request inside the async function
-                $response = $this->executeSyncRequest($method, $uri, $options, $startTime);
+                $response = $this->executeSyncRequest($method, $uri, $options, $startTime, $startMemory, $requestId);
 
                 return $response;
             } catch (\Throwable $e) {
@@ -523,12 +629,26 @@ trait PerformsHttpRequests
                     ]);
                 }
 
-                // Use withErrorContext to add request information to the error
-                $contextMessage = "Request $method $uri failed";
+                $wrapped = $this->withErrorContext($e, $method, $uri);
 
                 // Throw the exception - in the async context, this will properly reject the promise
-                throw new AsyncException($contextMessage.': '.$e->getMessage(), $e->getCode(), $e /* Preserve the original exception as previous */);
+                throw new AsyncException($wrapped->getMessage(), $wrapped->getCode(), $wrapped /* Preserve the original exception as previous */);
             }
         });
+    }
+
+    /**
+     * Add request context to exceptions while preserving the original chain.
+     */
+    protected function withErrorContext(\Throwable $e, string $method, string $uri): \Throwable
+    {
+        $contextMessage = sprintf('Request %s %s failed', strtoupper($method), $uri);
+
+        // Avoid double-wrapping if the exception already contains context
+        if (str_contains($e->getMessage(), $contextMessage)) {
+            return $e;
+        }
+
+        return new RuntimeException($contextMessage.': '.$e->getMessage(), (int) $e->getCode(), $e);
     }
 }

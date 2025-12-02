@@ -9,29 +9,21 @@ use Fetch\Pool\ConnectionPool;
 use Fetch\Pool\DnsCache;
 use Fetch\Pool\Http2Configuration;
 use Fetch\Pool\PoolConfiguration;
+use Fetch\Support\GlobalServices;
+use RuntimeException;
 
 /**
  * Trait for managing connection pooling and HTTP/2 support.
  *
- * Note: The connection pool and DNS cache are stored as static properties
+ * Note: The connection pool and DNS cache are managed by GlobalServices
  * to enable connection sharing across all ClientHandler instances. This is
  * intentional to maximize connection reuse. However, be aware that:
  * - Configuration changes affect all handlers globally
  * - In multi-threaded environments, proper synchronization may be needed
- * - Use resetPool() to isolate test environments
+ * - Use GlobalServices::reset() to isolate test environments
  */
 trait ManagesConnectionPool
 {
-    /**
-     * The connection pool instance (shared across all handlers).
-     */
-    protected static ?ConnectionPool $connectionPool = null;
-
-    /**
-     * The DNS cache instance (shared across all handlers).
-     */
-    protected static ?DnsCache $dnsCache = null;
-
     /**
      * The HTTP/2 configuration.
      */
@@ -49,10 +41,8 @@ trait ManagesConnectionPool
      */
     protected static function initializePool(?PoolConfiguration $config = null): void
     {
-        if (self::$connectionPool === null) {
-            $poolConfig = $config ?? new PoolConfiguration;
-            self::$connectionPool = new ConnectionPool($poolConfig);
-            self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
+        if (! GlobalServices::hasConnectionPool()) {
+            GlobalServices::initialize($config);
         }
     }
 
@@ -72,12 +62,8 @@ trait ManagesConnectionPool
 
         $this->poolingEnabled = true;
 
-        // Initialize or update the global pool
-        self::$connectionPool = ConnectionPool::fromArray($config);
-
-        // Always initialize DNS cache with configuration TTL (uses default if not specified)
-        $poolConfig = self::$connectionPool->getConfig();
-        self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
+        // Configure via GlobalServices
+        GlobalServices::configurePool($config);
 
         return $this;
     }
@@ -96,19 +82,7 @@ trait ManagesConnectionPool
             $this->http2Config = Http2Configuration::fromArray($config);
         }
 
-        // Apply HTTP/2 curl options to the handler options
-        if ($this->http2Config->isEnabled()) {
-            $curlOptions = $this->http2Config->getCurlOptions();
-            if (! empty($curlOptions)) {
-                $existingCurl = $this->options['curl'] ?? [];
-                // Use + operator to preserve integer keys (CURL constants)
-                // and give priority to existing options over defaults
-                $this->options['curl'] = $existingCurl + $curlOptions;
-            }
-
-            // Set HTTP version in options
-            $this->options['version'] = 2.0;
-        }
+        $this->applyHttp2Options();
 
         return $this;
     }
@@ -120,7 +94,7 @@ trait ManagesConnectionPool
      */
     public function getConnectionPool(): ?ConnectionPool
     {
-        return self::$connectionPool;
+        return GlobalServices::hasConnectionPool() ? GlobalServices::getConnectionPool() : null;
     }
 
     /**
@@ -130,7 +104,17 @@ trait ManagesConnectionPool
      */
     public function getDnsCache(): ?DnsCache
     {
-        return self::$dnsCache;
+        return GlobalServices::hasDnsCache() ? GlobalServices::getDnsCache() : null;
+    }
+
+    /**
+     * Get lightweight connection diagnostics for debugging/profiling.
+     *
+     * @return array<string, mixed>
+     */
+    public function getConnectionDebugStats(): array
+    {
+        return GlobalServices::getStats();
     }
 
     /**
@@ -148,7 +132,13 @@ trait ManagesConnectionPool
      */
     public function isPoolingEnabled(): bool
     {
-        return $this->poolingEnabled && self::$connectionPool !== null && self::$connectionPool->isEnabled();
+        if (! $this->poolingEnabled) {
+            return false;
+        }
+
+        $pool = $this->getConnectionPool();
+
+        return $pool !== null && $pool->isEnabled();
     }
 
     /**
@@ -166,11 +156,13 @@ trait ManagesConnectionPool
      */
     public function getPoolStats(): array
     {
-        if (self::$connectionPool === null) {
+        $pool = $this->getConnectionPool();
+
+        if ($pool === null) {
             return ['enabled' => false];
         }
 
-        return self::$connectionPool->getStats();
+        return $pool->getStats();
     }
 
     /**
@@ -180,11 +172,13 @@ trait ManagesConnectionPool
      */
     public function getDnsCacheStats(): array
     {
-        if (self::$dnsCache === null) {
+        $dnsCache = $this->getDnsCache();
+
+        if ($dnsCache === null) {
             return ['enabled' => false];
         }
 
-        return array_merge(['enabled' => true], self::$dnsCache->getStats());
+        return array_merge(['enabled' => true], $dnsCache->getStats());
     }
 
     /**
@@ -195,9 +189,7 @@ trait ManagesConnectionPool
      */
     public function clearDnsCache(?string $hostname = null): ClientHandler
     {
-        if (self::$dnsCache !== null) {
-            self::$dnsCache->clear($hostname);
-        }
+        GlobalServices::clearDnsCache($hostname);
 
         return $this;
     }
@@ -209,9 +201,7 @@ trait ManagesConnectionPool
      */
     public function closeAllConnections(): ClientHandler
     {
-        if (self::$connectionPool !== null) {
-            self::$connectionPool->closeAll();
-        }
+        GlobalServices::closeAllConnections();
 
         return $this;
     }
@@ -223,14 +213,46 @@ trait ManagesConnectionPool
      */
     public function resetPool(): ClientHandler
     {
-        if (self::$connectionPool !== null) {
-            self::$connectionPool->closeAll();
-        }
-        self::$connectionPool = null;
-        self::$dnsCache = null;
+        GlobalServices::reset(preserveDefaults: true);
         $this->poolingEnabled = false;
 
         return $this;
+    }
+
+    /**
+     * Apply HTTP/2-specific options to the handler in a single place with validation.
+     */
+    protected function applyHttp2Options(): void
+    {
+        if (! $this->isHttp2Enabled()) {
+            return;
+        }
+
+        // Validate environment support
+        if (! defined('CURL_HTTP_VERSION_2_0')) {
+            throw new RuntimeException('HTTP/2 requested but CURL_HTTP_VERSION_2_0 is not available in this environment.');
+        }
+
+        $curlOptions = $this->http2Config?->getCurlOptions() ?? [];
+        if (! empty($curlOptions)) {
+            $existingCurl = $this->options['curl'] ?? [];
+            // Use + operator to preserve numeric keys (CURL constants)
+            // Give priority to existing user-provided curl options to avoid silent overrides
+            $this->options['curl'] = $curlOptions + $existingCurl;
+        }
+
+        // Set HTTP version if user hasn't provided one
+        if (! isset($this->options['version'])) {
+            $this->options['version'] = 2.0;
+        }
+    }
+
+    /**
+     * Check if pool/DNS cache have been initialized.
+     */
+    protected function isPoolInitialized(): bool
+    {
+        return GlobalServices::hasConnectionPool() || GlobalServices::hasDnsCache();
     }
 
     /**
@@ -258,12 +280,14 @@ trait ManagesConnectionPool
      */
     protected function resolveHostname(string $hostname): ?string
     {
-        if (self::$dnsCache === null) {
+        $dnsCache = $this->getDnsCache();
+
+        if ($dnsCache === null) {
             return null;
         }
 
         try {
-            return self::$dnsCache->resolveFirst($hostname);
+            return $dnsCache->resolveFirst($hostname);
         } catch (\Throwable) {
             return null;
         }

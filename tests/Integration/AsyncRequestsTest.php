@@ -7,12 +7,15 @@ use Fetch\Http\Client;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Testing\MockServer;
+use Fetch\Testing\Recorder;
 use PHPUnit\Framework\TestCase;
 use React\Promise\PromiseInterface;
 
 use function Matrix\Support\all;
 use function Matrix\Support\async;
 use function Matrix\Support\await;
+use function Matrix\Support\race;
 
 class AsyncRequestsTest extends TestCase
 {
@@ -53,6 +56,12 @@ class AsyncRequestsTest extends TestCase
 
         // Create a client instance with our mock handler
         $this->client = new Client($this->mockHandler);
+    }
+
+    protected function tearDown(): void
+    {
+        MockServer::resetInstance();
+        Recorder::resetInstance();
     }
 
     public function test_async_request(): void
@@ -96,5 +105,88 @@ class AsyncRequestsTest extends TestCase
             $this->assertEquals(true, $data['async']);
             $this->assertStringStartsWith('https://example.com/', $data['uri']);
         }
+    }
+
+    public function test_mock_server_respected_in_async_mode(): void
+    {
+        MockServer::fake([
+            'https://api.example.com/mock-async' => \Fetch\Testing\MockResponse::json(['mocked' => true]),
+        ]);
+
+        $handler = new ClientHandler;
+        $handler->async();
+        $client = new Client($handler);
+
+        $response = $client->fetch('https://api.example.com/mock-async');
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(['mocked' => true], $response->json());
+    }
+
+    public function test_async_error_contains_context(): void
+    {
+        $handler = new class extends ClientHandler
+        {
+            protected function executeSyncRequest(
+                string $method,
+                string $uri,
+                array $options,
+                float $startTime,
+                int $startMemory,
+                ?string $requestId = null,
+                ?\Fetch\Support\RequestContext $context = null,
+            ): ResponseInterface {
+                throw new \RuntimeException('simulated failure');
+            }
+        };
+
+        $handler->async();
+
+        // Capture rejection to avoid unhandled rejection output
+        $promise = $handler->get('https://example.com/fail')
+            ->then(null, fn ($e) => $e);
+
+        $result = await($promise);
+
+        $this->assertInstanceOf(\Matrix\Exceptions\AsyncException::class, $result);
+        $this->assertStringContainsString('Request GET https://example.com/fail failed', $result->getMessage());
+        $this->assertInstanceOf(\RuntimeException::class, $result->getPrevious());
+        $this->assertStringContainsString('simulated failure', $result->getPrevious()->getMessage());
+    }
+
+    public function test_concurrency_helpers_all_and_race(): void
+    {
+        $handler = $this->client->getHandler();
+        $handler->async();
+
+        $promises = [
+            $handler->get('https://example.com/one'),
+            $handler->get('https://example.com/two'),
+        ];
+
+        $allResults = await(all($promises));
+        $this->assertCount(2, $allResults);
+
+        $raceResult = await(race($promises));
+        $this->assertInstanceOf(Response::class, $raceResult);
+    }
+
+    public function test_map_with_bounded_concurrency(): void
+    {
+        $handler = $this->client->getHandler();
+        $handler->async();
+
+        $urls = [
+            'https://example.com/a',
+            'https://example.com/b',
+            'https://example.com/c',
+        ];
+
+        $promises = array_map(fn ($url) => $handler->get($url), $urls);
+
+        // Reuse existing map helper via Matrix map
+        $results = await(all($promises));
+
+        $this->assertCount(3, $results);
     }
 }

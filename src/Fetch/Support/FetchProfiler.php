@@ -10,7 +10,7 @@ namespace Fetch\Support;
  * This class tracks timing information across multiple phases of an HTTP request,
  * including DNS resolution, connection establishment, SSL handshake, and data transfer.
  */
-class FetchProfiler
+class FetchProfiler implements ProfilerInterface
 {
     /**
      * Storage for request profiles.

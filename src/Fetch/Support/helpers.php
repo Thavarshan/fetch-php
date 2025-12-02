@@ -8,6 +8,7 @@ use Fetch\Http\Client;
 use Fetch\Http\Response as HttpResponse;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\RequestOptions;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 
@@ -110,7 +111,7 @@ if (! function_exists('process_request_options')) {
             }
         }
 
-        return $processedOptions;
+        return RequestOptions::normalizeBodyOptions($processedOptions);
     }
 }
 

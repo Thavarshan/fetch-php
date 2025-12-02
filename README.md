@@ -24,8 +24,15 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 - **Promise-based API**: Use familiar `.then()`, `.catch()`, and `.finally()` methods for async operations
 - **Fluent Interface**: Build requests with a clean, chainable API
 - **Built on Guzzle**: Benefit from Guzzle's robust functionality with a more elegant API
-- **Retry Mechanics**: Automatically retry failed requests with exponential backoff
+- **Retry Mechanics**: Configurable retry logic with exponential backoff for transient failures
+- **RFC 7234 HTTP Caching**: Full caching support with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error
+- **Connection Pooling**: Reuse TCP connections across requests with global connection pool and DNS caching
+- **HTTP/2 Support**: Native HTTP/2 protocol support for improved performance
+- **Debug & Profiling**: Built-in debugging and performance profiling capabilities
+- **Type-Safe Enums**: Modern PHP 8.3+ enums for HTTP methods, content types, and status codes
+- **Testing Utilities**: Built-in mock responses and request recording for testing
 - **PHP-style Helper Functions**: Includes traditional PHP function helpers (`get()`, `post()`, etc.) for those who prefer that style
+- **PSR Compliant**: Implements PSR-7 (HTTP Messages), PSR-18 (HTTP Client), and PSR-3 (Logger) standards
 
 ## Why Choose Fetch PHP?
 
@@ -326,13 +333,13 @@ $data = await(retry(
 
 ### Automatic Retries
 
-Fetch PHP automatically retries transient failures with exponential backoff and jitter.
+Fetch PHP automatically retries transient failures with exponential backoff.
 
-- Default attempts: initial try + 1 retry (configurable)
-- Default delay: 100ms base with exponential backoff and jitter
+- Default: No retries enabled (set `maxRetries` to null by default)
+- Default delay: 100ms base with exponential backoff (when retries configured)
 - Retry triggers:
-  - Network/connect errors (e.g., timeouts, DNS, connection refused)
-  - HTTP status codes such as 408, 429, 500, 502, 503, 504 (customizable)
+  - Network/connect errors (e.g., ConnectException)
+  - HTTP status codes: 408, 429, 500, 502, 503, 504, 507, 509, 520-523, 525, 527, 530 (customizable)
 
 Configure per-request:
 
@@ -340,13 +347,14 @@ Configure per-request:
 $response = fetch_client()
     ->retry(3, 200)                // 3 retries, 200ms base delay
     ->retryStatusCodes([429, 503]) // optional: customize which statuses retry
+    ->retryExceptions([ConnectException::class]) // optional: customize exception types
     ->get('https://api.example.com/unstable');
 ```
 
 Notes:
 
 - HTTP error statuses do not throw; you receive the response. Retries happen internally when configured.
-- Network failures are retried and, if all attempts fail, throw a `Fetch\\Exceptions\\RequestException`.
+- Network failures are retried and, if all attempts fail, throw a `Fetch\Exceptions\RequestException`.
 
 ### Authentication
 
@@ -408,21 +416,37 @@ if ($response->successful()) {
     // HTTP status code
     echo $response->getStatusCode(); // 200
 
-    // Response body as JSON
+    // Response body as JSON (returns array by default)
     $user = $response->json();
 
+    // Response body as object
+    $userObject = $response->object();
+
+    // Response body as array
+    $userArray = $response->array();
+
     // Response body as string
-    $body = $response->getBody()->getContents();
+    $body = $response->text();
 
     // Get a specific header
     $contentType = $response->getHeaderLine('Content-Type');
 
     // Check status code categories
-    if ($response->statusEnum()->isSuccess()) {
-        echo "Request succeeded";
+    if ($response->isSuccess()) {
+        echo "Request succeeded (2xx)";
+    }
+
+    if ($response->isOk()) {
+        echo "Request returned 200 OK";
+    }
+
+    if ($response->isNotFound()) {
+        echo "Resource not found (404)";
     }
 }
-```
+
+// ArrayAccess support
+$name = $response['name']; // Access JSON response data directly
 
 // Inspect retry-related statuses explicitly if needed
 if ($response->getStatusCode() === 429) {
@@ -441,7 +465,12 @@ $client = fetch_client();
 $response = $client->request(Method::POST, '/users', $userData);
 
 // Check HTTP status with enums
-if ($response->getStatus() === Status::OK) {
+if ($response->statusEnum() === Status::OK) {
+    // Process successful response
+}
+
+// Or use the isStatus helper
+if ($response->isStatus(Status::OK)) {
     // Process successful response
 }
 
@@ -500,6 +529,250 @@ When request/response logging is enabled via a logger, sensitive values are reda
 - Options: `auth` credentials
 
 Logged context includes method, URI, selected options (sanitized), status code, duration, and content length.
+
+## Caching (sync-only)
+
+> **Note:** Caching is available for synchronous requests only. Async requests intentionally bypass the cache.
+
+Fetch PHP implements RFC 7234-aware HTTP caching with ETag/Last-Modified revalidation, `stale-while-revalidate`, and `stale-if-error` support. The default backend is an in-memory cache (`MemoryCache`), but you can use `FileCache` or implement your own backend via `CacheInterface`.
+
+### Cache Behavior
+
+- **Cacheable methods by default**: `GET`, `HEAD`
+- **Cacheable status codes**: 200, 203, 204, 206, 300, 301, 404, 410 (RFC 7234 defaults)
+- **Cache-Control headers respected**: `no-store`, `no-cache`, `max-age`, `s-maxage`, etc.
+- **Revalidation**: Automatically adds `If-None-Match` (ETag) and `If-Modified-Since` (Last-Modified) headers for stale entries
+- **304 Not Modified**: Merges headers and returns cached body
+- **Vary headers**: Supports cache variance by headers (default: Accept, Accept-Encoding, Accept-Language)
+
+### Basic Cache Setup
+
+```php
+use Fetch\Cache\MemoryCache;
+use Fetch\Cache\FileCache;
+
+$handler = fetch_client()->getHandler();
+
+// Enable cache with in-memory backend (default)
+$handler->withCache();
+
+// Or use file-based cache
+$handler->withCache(new FileCache('/path/to/cache'));
+
+// Disable cache
+$handler->withoutCache();
+
+$response = $handler->get('https://api.example.com/users');
+```
+
+### Advanced Cache Configuration
+
+```php
+$handler->withCache(null, [
+    'ttl' => 3600,                      // Default TTL in seconds (overridden by Cache-Control)
+    'respect_headers' => true,           // Respect Cache-Control headers (default: true)
+    'is_shared_cache' => false,          // Act as shared cache (respects s-maxage)
+    'stale_while_revalidate' => 60,      // Serve stale for 60s while revalidating
+    'stale_if_error' => 300,             // Serve stale for 300s if backend fails
+    'vary_headers' => ['Accept', 'Accept-Language'], // Headers to vary cache by
+    'cache_methods' => ['GET', 'HEAD'],  // Cacheable HTTP methods
+    'cache_status_codes' => [200, 301],  // Cacheable status codes
+    'force_refresh' => false,            // Bypass cache and force fresh request
+]);
+```
+
+### Per-Request Cache Control
+
+```php
+// Force a fresh request (bypass cache)
+$response = $handler->withOptions(['cache' => ['force_refresh' => true]])
+    ->get('https://api.example.com/users');
+
+// Custom TTL for specific request
+$response = $handler->withOptions(['cache' => ['ttl' => 600]])
+    ->get('https://api.example.com/users');
+
+// Custom cache key
+$response = $handler->withOptions(['cache' => ['key' => 'custom:users']])
+    ->get('https://api.example.com/users');
+```
+
+## Connection Pooling & HTTP/2
+
+Connection pooling enables reuse of TCP connections across multiple requests, reducing latency and improving performance. The pool is **shared globally** across all handler instances, and includes DNS caching for faster lookups.
+
+### Enable Connection Pooling
+
+```php
+$handler = fetch_client()->getHandler();
+
+// Enable with default settings
+$handler->withConnectionPool(true);
+
+// Or configure with custom options
+$handler->withConnectionPool([
+    'enabled' => true,
+    'max_connections' => 50,        // Total connections across all hosts
+    'max_per_host' => 10,           // Max connections per host
+    'connection_ttl' => 60,         // Connection lifetime in seconds
+    'idle_timeout' => 30,           // Idle connection timeout in seconds
+    'dns_cache_ttl' => 300,         // DNS cache TTL in seconds
+]);
+```
+
+### Enable HTTP/2
+
+```php
+// Enable HTTP/2 (requires curl with HTTP/2 support)
+$handler->withHttp2(true);
+
+// Or configure with options
+$handler->withHttp2([
+    'enabled' => true,
+    // Additional HTTP/2 configuration options...
+]);
+```
+
+### Pool Management
+
+```php
+// Get pool statistics
+$stats = $handler->getPoolStats();
+// Returns: connections_created, connections_reused, total_requests, total_latency_ms
+
+// Close all active connections
+$handler->closeAllConnections();
+
+// Reset pool and DNS cache (useful for testing)
+$handler->resetPool();
+```
+
+> **Note**: The connection pool is static/global and shared across all handlers. Call `resetPool()` in your test teardown to ensure isolation between tests.
+
+## Debugging & Profiling
+
+Enable debug snapshots and optional profiling:
+
+```php
+$handler = fetch_client()->getHandler();
+
+// Enable debug with default options (captures everything)
+$handler->withDebug();
+
+// Or enable with specific options
+$handler->withDebug([
+    'request_headers' => true,
+    'request_body' => true,
+    'response_headers' => true,
+    'response_body' => 1024,  // Truncate response body at 1024 bytes
+    'timing' => true,
+    'memory' => true,
+    'dns_resolution' => true,
+]);
+
+// Enable profiling
+$handler->withProfiler(new \Fetch\Support\FetchProfiler);
+
+// Set log level (requires PSR-3 logger to be configured)
+$handler->withLogLevel('info'); // default: debug
+
+$response = $handler->get('https://api.example.com/users');
+
+// Get debug info from last request
+$debug = $handler->getLastDebugInfo();
+```
+
+## Testing Support
+
+Fetch PHP includes built-in testing utilities for mocking HTTP responses:
+
+```php
+use Fetch\Testing\MockResponse;
+use Fetch\Testing\MockResponseSequence;
+
+// Mock a single response
+$handler = fetch_client()->getHandler();
+$handler->mock(MockResponse::make(['id' => 1, 'name' => 'John'], 200));
+
+$response = $handler->get('https://api.example.com/users/1');
+// Returns mocked response without making actual HTTP request
+
+// Mock a sequence of responses
+$sequence = new MockResponseSequence([
+    MockResponse::make(['id' => 1], 200),
+    MockResponse::make(['id' => 2], 200),
+    MockResponse::make(null, 404),
+]);
+
+$handler->mock($sequence);
+// Each subsequent request returns the next response in sequence
+```
+
+## Advanced Response Features
+
+### Response Status Checks
+
+```php
+$response = fetch('https://api.example.com/data');
+
+// Status category checks
+$response->isInformational(); // 1xx
+$response->isSuccess();       // 2xx
+$response->isRedirection();   // 3xx
+$response->isClientError();   // 4xx
+$response->isServerError();   // 5xx
+
+// Specific status checks
+$response->isOk();            // 200
+$response->isCreated();       // 201
+$response->isNoContent();     // 204
+$response->isNotFound();      // 404
+$response->isForbidden();     // 403
+$response->isUnauthorized();  // 401
+
+// Generic status check
+$response->isStatus(Status::CREATED);
+$response->isStatus(201);
+```
+
+### Response Helpers
+
+```php
+// Check if response contains JSON
+if ($response->isJson()) {
+    $data = $response->json();
+}
+
+// Get response as different types with error handling
+$data = $response->json(assoc: true, throwOnError: false);
+$object = $response->object(throwOnError: false);
+$array = $response->array(throwOnError: false);
+```
+
+## Connection Pool Management
+
+Clean up connections or reset the pool (useful in tests):
+
+```php
+$handler = fetch_client()->getHandler();
+
+// Close all active connections
+$handler->closeAllConnections();
+
+// Reset the entire pool and DNS cache (useful in tests)
+$handler->resetPool();
+
+// Get pool statistics
+$stats = $handler->getPoolStats();
+// Returns: connections_created, connections_reused, total_requests, total_latency_ms
+```
+
+## Async Notes
+
+- Async requests use the same pipeline (mocking, profiling, logging) but bypass caching by design.
+- Matrix helpers (`async`, `await`, `all`, `race`, `map`, `batch`, `retry`) are re-exported in `Fetch\Support\helpers.php`.
+- Errors are wrapped with method/URL context while preserving the original exception chain.
+- Use `$handler->async()` to enable async mode, or use the Matrix async utilities directly.
 
 ## License
 

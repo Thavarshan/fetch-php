@@ -5,7 +5,13 @@ namespace Tests\Unit;
 use Fetch\Http\ClientHandler;
 use Fetch\Pool\ConnectionPool;
 use Fetch\Pool\Http2Configuration;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use PHPUnit\Framework\TestCase;
+
+use function Matrix\Support\await;
 
 class ManagesConnectionPoolTest extends TestCase
 {
@@ -14,8 +20,7 @@ class ManagesConnectionPoolTest extends TestCase
         parent::tearDown();
 
         // Reset static pool after each test
-        $handler = new ClientHandler;
-        $handler->resetPool();
+        (new ClientHandler)->resetPool();
     }
 
     public function test_with_connection_pool_enabled(): void
@@ -25,8 +30,7 @@ class ManagesConnectionPoolTest extends TestCase
         $result = $handler->withConnectionPool(true);
 
         $this->assertSame($handler, $result);
-        // Pool is not fully enabled until configured with array
-        $this->assertFalse($handler->isPoolingEnabled());
+        $this->assertTrue($handler->isPoolingEnabled());
     }
 
     public function test_with_connection_pool_config(): void
@@ -51,6 +55,9 @@ class ManagesConnectionPoolTest extends TestCase
     {
         $handler = ClientHandler::create();
 
+        // Pre-set a custom version to ensure HTTP/2 setup does not overwrite it
+        $handler->withOptions(['version' => 1.1]);
+
         $handler->withHttp2(true);
 
         $this->assertTrue($handler->isHttp2Enabled());
@@ -58,6 +65,9 @@ class ManagesConnectionPoolTest extends TestCase
         $config = $handler->getHttp2Config();
         $this->assertInstanceOf(Http2Configuration::class, $config);
         $this->assertTrue($config->isEnabled());
+        // Custom version should remain since user set it explicitly
+        $this->assertSame(1.1, $handler->getOptions()['version']);
+        $this->assertArrayHasKey(CURLOPT_HTTP_VERSION, $handler->getOptions()['curl']);
     }
 
     public function test_with_http2_config(): void
@@ -75,6 +85,8 @@ class ManagesConnectionPoolTest extends TestCase
         $config = $handler->getHttp2Config();
         $this->assertEquals(200, $config->getMaxConcurrentStreams());
         $this->assertTrue($config->isServerPushEnabled());
+        $this->assertSame(2.0, $handler->getOptions()['version']);
+        $this->assertArrayHasKey(CURLOPT_HTTP_VERSION, $handler->getOptions()['curl']);
     }
 
     public function test_with_http2_disabled(): void
@@ -92,7 +104,7 @@ class ManagesConnectionPoolTest extends TestCase
 
         // Before pooling is configured
         $stats = $handler->getPoolStats();
-        $this->assertFalse($stats['enabled']);
+        $this->assertTrue($stats['enabled']);
 
         // After pooling is configured
         $handler->withConnectionPool([
@@ -112,7 +124,7 @@ class ManagesConnectionPoolTest extends TestCase
 
         // Before DNS cache is configured
         $stats = $handler->getDnsCacheStats();
-        $this->assertFalse($stats['enabled']);
+        $this->assertTrue($stats['enabled']);
 
         // After pooling is configured (DNS cache is initialized too)
         $handler->withConnectionPool([
@@ -202,5 +214,54 @@ class ManagesConnectionPoolTest extends TestCase
 
         $this->assertEquals(100, $handler->getConnectionPool()->getConfig()->getMaxConnections());
         $this->assertEquals(50, $handler->getHttp2Config()->getMaxConcurrentStreams());
+    }
+
+    public function test_dns_cache_stats_reflect_entries(): void
+    {
+        $handler = ClientHandler::create();
+        $handler->withConnectionPool(['enabled' => true, 'dns_cache_ttl' => 10]);
+
+        $dnsCache = $handler->getDnsCache();
+        $this->assertNotNull($dnsCache);
+
+        $ref = new \ReflectionClass($dnsCache);
+        $prop = $ref->getProperty('cache');
+        $prop->setAccessible(true);
+        $prop->setValue($dnsCache, [
+            'example.com' => ['addresses' => ['127.0.0.1'], 'expires_at' => time() + 10],
+        ]);
+
+        $stats = $handler->getDnsCacheStats();
+        $this->assertTrue($stats['enabled']);
+        $this->assertSame(1, $stats['total_entries']);
+        $this->assertSame(1, $stats['valid_entries']);
+    }
+
+    public function test_sync_request_with_pooling_enabled(): void
+    {
+        $mock = new MockHandler([new GuzzleResponse(200, [], 'ok')]);
+        $stack = HandlerStack::create($mock);
+        $client = new GuzzleClient(['handler' => $stack]);
+
+        $handler = ClientHandler::createWithClient($client);
+        $handler->withConnectionPool(true);
+
+        $response = $handler->get('https://example.com');
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function test_async_request_with_pooling_enabled(): void
+    {
+        $mock = new MockHandler([new GuzzleResponse(200, [], 'ok')]);
+        $stack = HandlerStack::create($mock);
+        $client = new GuzzleClient(['handler' => $stack]);
+
+        $handler = ClientHandler::createWithClient($client);
+        $handler->withConnectionPool(true)->async();
+
+        $promise = $handler->get('https://example.com');
+        $response = await($promise);
+
+        $this->assertEquals(200, $response->getStatusCode());
     }
 }

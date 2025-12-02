@@ -15,6 +15,8 @@ trait HandlesUris
      * @return string The full URI
      *
      * @throws InvalidArgumentException If the URI is invalid
+     *
+     * @deprecated Use buildFullUriFromContext() instead for stateless URI building
      */
     protected function buildFullUri(string $uri): string
     {
@@ -41,6 +43,40 @@ trait HandlesUris
     }
 
     /**
+     * Build the full URI from a RequestContext without accessing handler state.
+     *
+     * This method is stateless and safe for concurrent usage.
+     *
+     * @param  \Fetch\Support\RequestContext  $context  The request context
+     * @return string The full URI
+     *
+     * @throws InvalidArgumentException If the URI is invalid
+     */
+    protected function buildFullUriFromContext(\Fetch\Support\RequestContext $context): string
+    {
+        $uri = $context->getUri();
+        $baseUri = $context->getOption('base_uri', '');
+        $queryParams = $context->getOption('query', []);
+
+        // Normalize URIs before processing
+        $uri = $this->normalizeUri($uri);
+        if (! empty($baseUri)) {
+            $baseUri = $this->normalizeUri((string) $baseUri);
+        }
+
+        // Validate inputs
+        $this->validateUriInputs($uri, (string) $baseUri);
+
+        // Build the final URI
+        $fullUri = $this->isAbsoluteUrl($uri)
+            ? $uri
+            : $this->joinUriPaths((string) $baseUri, $uri);
+
+        // Add query parameters if any
+        return $this->appendQueryParameters($fullUri, is_array($queryParams) ? $queryParams : []);
+    }
+
+    /**
      * Get the full URI using the URI from options.
      *
      * @return string The full URI
@@ -64,6 +100,16 @@ trait HandlesUris
      */
     protected function validateUriInputs(string $uri, string $baseUri): void
     {
+        // Validate URI string format first
+        if (! empty($uri)) {
+            $this->validateUriString($uri);
+        }
+
+        // Validate base URI string format if provided
+        if (! empty($baseUri)) {
+            $this->validateUriString($baseUri);
+        }
+
         // Check if we have any URI to work with
         if (empty($uri) && empty($baseUri)) {
             throw new InvalidArgumentException('URI cannot be empty');
@@ -80,6 +126,45 @@ trait HandlesUris
         // Ensure base URI is valid if provided
         if (! empty($baseUri) && ! $this->isAbsoluteUrl($baseUri)) {
             throw new InvalidArgumentException("Invalid base URI: {$baseUri}");
+        }
+    }
+
+    /**
+     * Validate a URI string for common issues.
+     *
+     * @param  string  $uri  The URI to validate
+     *
+     * @throws InvalidArgumentException If the URI is invalid
+     */
+    protected function validateUriString(string $uri): void
+    {
+        // Check for empty or whitespace-only URI
+        if (empty(trim($uri))) {
+            throw new InvalidArgumentException('URI cannot be empty or whitespace');
+        }
+
+        // Check for whitespace characters (common mistake)
+        if (preg_match('/\s/', $uri)) {
+            throw new InvalidArgumentException(
+                'URI cannot contain whitespace. Did you mean to URL-encode it?'
+            );
+        }
+    }
+
+    /**
+     * Check if a URI string is valid.
+     *
+     * @param  string  $uri  The URI to check
+     * @return bool Whether the URI is valid
+     */
+    protected function isValidUriString(string $uri): bool
+    {
+        try {
+            $this->validateUriString($uri);
+
+            return true;
+        } catch (InvalidArgumentException $e) {
+            return false;
         }
     }
 

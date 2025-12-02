@@ -54,6 +54,7 @@ class DebugInfo
      * @param  array<string, mixed>  $options  Request options including headers and body
      * @param  ResponseInterface|null  $response  The HTTP response
      * @param  array<string, float>  $timings  Timing information
+     * @param  array<string, mixed>  $connectionStats  Connection statistics
      * @param  int  $memoryUsage  Memory usage in bytes
      */
     public static function create(
@@ -62,6 +63,7 @@ class DebugInfo
         array $options,
         ?ResponseInterface $response = null,
         array $timings = [],
+        array $connectionStats = [],
         int $memoryUsage = 0
     ): static {
         $requestData = [
@@ -71,7 +73,7 @@ class DebugInfo
             'body' => $options['body'] ?? ($options['json'] ?? null),
         ];
 
-        return new static($requestData, $response, $timings, [], $memoryUsage);
+        return new static($requestData, $response, $timings, $connectionStats, $memoryUsage);
     }
 
     /**

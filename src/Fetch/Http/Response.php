@@ -8,6 +8,7 @@ use ArrayAccess;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Status;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\DebugInfo;
 use Fetch\Traits\ResponseImmutabilityTrait;
 use GuzzleHttp\Psr7\Response as BaseResponse;
 use JsonException;
@@ -26,6 +27,13 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      * The buffered content of the body.
      */
     protected string $bodyContents;
+
+    /**
+     * Debug information for this specific request/response.
+     *
+     * This is stored per-response to avoid race conditions in concurrent usage.
+     */
+    protected ?DebugInfo $debugInfo = null;
 
     /**
      * Create new response instance.
@@ -309,7 +317,17 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function contentType(): ?string
     {
-        return $this->getHeaderLine('Content-Type') ?: null;
+        $header = $this->getHeaderLine('Content-Type') ?: null;
+        if ($header === null) {
+            return null;
+        }
+
+        // Strip parameters like charset
+        if (($pos = strpos($header, ';')) !== false) {
+            return trim(substr($header, 0, $pos));
+        }
+
+        return $header;
     }
 
     /**
@@ -318,16 +336,8 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     public function contentTypeEnum(): ?ContentType
     {
         $contentType = $this->contentType();
-        if (! $contentType) {
-            return null;
-        }
 
-        // Strip parameters like charset
-        if (($pos = strpos($contentType, ';')) !== false) {
-            $contentType = trim(substr($contentType, 0, $pos));
-        }
-
-        return ContentType::tryFromString($contentType);
+        return $contentType ? ContentType::tryFromString($contentType) : null;
     }
 
     /**
@@ -591,6 +601,40 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
         }
 
         return $default;
+    }
+
+    /**
+     * Attach debug information to this response.
+     *
+     * This method is called internally to store per-request debug info.
+     *
+     * @internal
+     *
+     * @return $this
+     */
+    public function withDebugInfo(DebugInfo $debugInfo): static
+    {
+        $this->debugInfo = $debugInfo;
+
+        return $this;
+    }
+
+    /**
+     * Get the debug information for this specific request/response.
+     *
+     * Returns null if debug mode was not enabled for this request.
+     */
+    public function getDebugInfo(): ?DebugInfo
+    {
+        return $this->debugInfo;
+    }
+
+    /**
+     * Check if this response has debug information attached.
+     */
+    public function hasDebugInfo(): bool
+    {
+        return $this->debugInfo !== null;
     }
 
     /**

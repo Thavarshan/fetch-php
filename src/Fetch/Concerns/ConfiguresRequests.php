@@ -6,6 +6,7 @@ namespace Fetch\Concerns;
 
 use Fetch\Enum\ContentType;
 use Fetch\Interfaces\ClientHandler;
+use Fetch\Support\RequestOptions;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use InvalidArgumentException;
 
@@ -38,6 +39,9 @@ trait ConfiguresRequests
      */
     public function withOptions(array $options): ClientHandler
     {
+        // Normalize body-related options to avoid conflicts
+        $options = RequestOptions::normalizeBodyOptions($options);
+
         $this->options = array_merge($this->options, $options);
 
         // Map retry-related options to handler properties

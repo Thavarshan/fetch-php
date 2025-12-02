@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Fetch\Http;
 
+use Fetch\Cache\CacheInterface;
+use Fetch\Cache\CacheManager;
 use Fetch\Concerns\ConfiguresRequests;
 use Fetch\Concerns\HandlesMocking;
 use Fetch\Concerns\HandlesUris;
-use Fetch\Concerns\ManagesCache;
 use Fetch\Concerns\ManagesConnectionPool;
 use Fetch\Concerns\ManagesDebugAndProfiling;
 use Fetch\Concerns\ManagesPromises;
@@ -17,6 +18,9 @@ use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseContract;
+use Fetch\Support\GlobalServices;
+use Fetch\Support\RequestContext;
+use Fetch\Support\RequestOptions as FetchRequestOptions;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\RequestOptions;
@@ -28,25 +32,31 @@ use React\Promise\PromiseInterface;
 
 class ClientHandler implements ClientHandlerInterface
 {
-    use ConfiguresRequests,
-        HandlesMocking,
-        HandlesUris,
-        ManagesCache,
-        ManagesConnectionPool,
-        ManagesDebugAndProfiling,
-        ManagesPromises,
-        ManagesRetries,
-        PerformsHttpRequests;
+    use ConfiguresRequests;
+    use HandlesMocking;
+    use HandlesUris;
+    use ManagesConnectionPool;
+    use ManagesDebugAndProfiling;
+    use ManagesPromises;
+    use ManagesRetries;
+    use PerformsHttpRequests;
 
     /**
-     * Default options for the request.
+     * Default options for the request (legacy).
      *
      * @var array<string, mixed>
+     *
+     * @deprecated Use GlobalServices::getDefaultOptions() instead
      */
     protected static array $defaultOptions = [
-        'method' => Method::GET->value,
+        'method' => self::DEFAULT_HTTP_METHOD,
         'headers' => [],
     ];
+
+    /**
+     * Default HTTP method.
+     */
+    public const DEFAULT_HTTP_METHOD = 'GET';
 
     /**
      * Default timeout for requests in seconds.
@@ -74,6 +84,16 @@ class ClientHandler implements ClientHandlerInterface
     protected LoggerInterface $logger;
 
     /**
+     * Log level used for request/response traces.
+     */
+    protected string $logLevel = 'debug';
+
+    /**
+     * Cache manager for this handler.
+     */
+    protected ?CacheManager $cacheManager = null;
+
+    /**
      * ClientHandler constructor.
      *
      * @param  ClientInterface|null  $httpClient  The HTTP client
@@ -91,15 +111,20 @@ class ClientHandler implements ClientHandlerInterface
         ?int $maxRetries = null,
         ?int $retryDelay = null,
         bool $isAsync = false,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?CacheManager $cacheManager = null,
     ) {
         $this->logger = $logger ?? new NullLogger;
         $this->isAsync = $isAsync;
         $this->maxRetries = $maxRetries ?? self::DEFAULT_RETRIES;
         $this->retryDelay = $retryDelay ?? self::DEFAULT_RETRY_DELAY;
+        $this->cacheManager = $cacheManager;
 
-        // Initialize with default options
-        $this->options = array_merge(self::getDefaultOptions(), $this->options);
+        // Initialize with default options using centralized merging
+        $this->options = FetchRequestOptions::merge(
+            self::getDefaultOptions(),
+            $this->options
+        );
 
         // Set the timeout in options
         if ($this->timeout !== null) {
@@ -117,6 +142,8 @@ class ClientHandler implements ClientHandlerInterface
      */
     public static function create(): static
     {
+        static::initializePool();
+
         return new static;
     }
 
@@ -126,10 +153,12 @@ class ClientHandler implements ClientHandlerInterface
      * @param  string  $baseUri  Base URI for all requests
      * @return static New client handler instance
      *
-     * @throws InvalidArgumentException If the base URI is invalid
+     * @throws \InvalidArgumentException If the base URI is invalid
      */
     public static function createWithBaseUri(string $baseUri): static
     {
+        static::initializePool();
+
         $instance = new static;
         $instance->baseUri($baseUri);
 
@@ -144,29 +173,54 @@ class ClientHandler implements ClientHandlerInterface
      */
     public static function createWithClient(ClientInterface $client): static
     {
+        static::initializePool();
+
         return new static(httpClient: $client);
     }
 
     /**
      * Get the default options for the request.
      *
+     * Combines factory defaults with global defaults from GlobalServices.
+     *
      * @return array<string, mixed> Default options
      */
     public static function getDefaultOptions(): array
     {
-        return array_merge(self::$defaultOptions, [
-            'timeout' => self::DEFAULT_TIMEOUT,
-        ]);
+        // GlobalServices::getDefaultOptions() already merges factory defaults
+        // with any custom defaults set via setDefaultOptions()
+        return GlobalServices::getDefaultOptions();
     }
 
     /**
      * Set the default options for all instances.
      *
+     * Updates both legacy static property and GlobalServices.
+     *
      * @param  array<string, mixed>  $options  Default options
      */
     public static function setDefaultOptions(array $options): void
     {
+        // Update legacy static property for backward compatibility
         self::$defaultOptions = array_merge(self::$defaultOptions, $options);
+
+        // Update GlobalServices for new architecture
+        GlobalServices::setDefaultOptions($options);
+    }
+
+    /**
+     * Reset default options to factory defaults.
+     *
+     * This is called by GlobalServices::reset() to ensure complete test isolation.
+     *
+     * @internal Used by GlobalServices for test isolation
+     */
+    public static function resetDefaultOptions(): void
+    {
+        self::$defaultOptions = [
+            'method' => Method::GET->value,
+            'headers' => [],
+        ];
     }
 
     /**
@@ -184,7 +238,7 @@ class ClientHandler implements ClientHandlerInterface
         array $headers = [],
         ?string $body = null,
         string $version = '1.1',
-        ?string $reason = null
+        ?string $reason = null,
     ): Response {
         return new Response($statusCode, $headers, $body, $version, $reason);
     }
@@ -200,7 +254,7 @@ class ClientHandler implements ClientHandlerInterface
     public static function createJsonResponse(
         array|object $data,
         int $statusCode = 200,
-        array $headers = []
+        array $headers = [],
     ): Response {
         $jsonData = json_encode($data, JSON_PRETTY_PRINT);
 
@@ -263,6 +317,57 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
+     * Enable caching with optional configuration.
+     *
+     * @param  array<string, mixed>  $options  Cache options
+     */
+    public function withCache(?CacheInterface $cache = null, array $options = []): self
+    {
+        $this->cacheManager = new CacheManager(
+            cache: $cache,
+            options: array_merge(['enabled' => true], $options),
+            logger: $this->logger,
+            logLevel: $this->logLevel
+        );
+
+        return $this;
+    }
+
+    /**
+     * Disable caching.
+     */
+    public function withoutCache(): self
+    {
+        $this->cacheManager = null;
+
+        return $this;
+    }
+
+    /**
+     * Get the cache instance.
+     */
+    public function getCache(): ?CacheInterface
+    {
+        return $this->cacheManager?->getCache();
+    }
+
+    /**
+     * Check if caching is enabled.
+     */
+    public function isCacheEnabled(): bool
+    {
+        return $this->cacheManager?->isEnabled() ?? false;
+    }
+
+    /**
+     * Get the cache manager.
+     */
+    public function getCacheManager(): ?CacheManager
+    {
+        return $this->cacheManager;
+    }
+
+    /**
      * Check if the request has a specific header.
      *
      * @param  string  $header  Header name
@@ -317,6 +422,23 @@ class ClientHandler implements ClientHandlerInterface
     }
 
     /**
+     * Set the log level for request/response traces.
+     */
+    public function withLogLevel(string $level): self
+    {
+        $level = strtolower($level);
+        $allowed = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
+
+        if (! in_array($level, $allowed, true)) {
+            throw new InvalidArgumentException("Invalid log level: {$level}");
+        }
+
+        $this->logLevel = $level;
+
+        return $this;
+    }
+
+    /**
      * Clone this client handler with the given options.
      *
      * @param  array<string, mixed>  $options  Options to apply to the clone
@@ -346,8 +468,9 @@ class ClientHandler implements ClientHandlerInterface
             throw new LogicException('sendAsync() requires method and uri to be set.');
         }
 
-        $fullUri = $this->buildFullUri($uri);
-        $guzzleOptions = $this->prepareGuzzleOptions();
+        $context = RequestContext::fromOptions($this->options);
+        $fullUri = $this->buildFullUri($context->getUri());
+        $guzzleOptions = $context->toGuzzleOptions();
 
         return $this->executeAsyncRequest($method, $fullUri, $guzzleOptions);
     }
@@ -386,7 +509,8 @@ class ClientHandler implements ClientHandlerInterface
         // Remove potentially sensitive data
         $sanitizedOptions = $this->sanitizeOptions($options);
 
-        $this->logger->debug(
+        $this->logger->log(
+            $this->logLevel,
             'Sending HTTP request',
             [
                 'method' => $method,
@@ -404,7 +528,8 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected function logResponse(Response $response, float $duration): void
     {
-        $this->logger->debug(
+        $this->logger->log(
+            $this->logLevel,
             'Received HTTP response',
             [
                 'status_code' => $response->getStatusCode(),

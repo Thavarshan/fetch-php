@@ -43,8 +43,8 @@ class HelperFunctionsTest extends TestCase
         $processed = process_request_options($options);
 
         $this->assertEquals('POST', $processed['method']);
-        $this->assertEquals(['X-Custom' => 'value'], $processed['headers']);
-        $this->assertEquals(['name' => 'John'], $processed['body']);
+        $this->assertEquals(['X-Custom' => 'value', 'Content-Type' => 'application/json'], $processed['headers']);
+        $this->assertEquals(['name' => 'John'], $processed['json']);
         $this->assertEquals(['page' => 1], $processed['query']);
         $this->assertEquals(30, $processed['timeout']);
     }

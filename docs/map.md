@@ -26,8 +26,11 @@ docs/
 │   ├── async-requests.md    # Async usage from fetch-http-client-usage-guide.md
 │   ├── promise-operations.md # Promise operations from client-handler docs
 │   ├── retry-handling.md    # Retry configuration
+│   ├── http-caching.md      # RFC7234 caching, stale-if-error, revalidation
+│   ├── connection-pooling.md# Shared pool, DNS cache, HTTP/2
 │   ├── file-uploads.md      # File upload examples
 │   ├── custom-clients.md    # Custom client configuration
+│   ├── debugging-and-profiling.md # Debug snapshots, logging, profiling
 │   └── testing.md           # Testing with mock responses
 ├── api/
 │   ├── index.md             # API overview

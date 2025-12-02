@@ -334,7 +334,7 @@ class CacheTest extends TestCase
         $this->assertEquals(2, $cache->count());
     }
 
-    public function test_memory_cache_expired_items_not_returned(): void
+    public function test_memory_cache_expired_items_retained_for_stale_handling(): void
     {
         $cache = new MemoryCache;
 
@@ -348,10 +348,10 @@ class CacheTest extends TestCase
         );
 
         // Set with a very short TTL (but the cache uses its own TTL calculation)
-        // To test expired items, we need to directly manipulate the cache internals
-        // or use the internal expiration check
+        // Cache now retains expired items to allow stale-if-error / stale-while-revalidate handling
         $cache->set('expired-key', $cached, -1); // TTL of -1 means already expired
-        $this->assertNull($cache->get('expired-key'));
+        $this->assertInstanceOf(CachedResponse::class, $cache->get('expired-key'));
+        $this->assertTrue($cache->has('expired-key'));
     }
 
     public function test_memory_cache_prune(): void

@@ -16,6 +16,7 @@ class DebugInfoTest extends TestCase
             ['headers' => ['Authorization' => 'Bearer token']],
             null,
             ['total_time' => 100.5],
+            [],
             1024
         );
 
@@ -128,6 +129,7 @@ class DebugInfoTest extends TestCase
             [],
             $response,
             ['total_time' => 50.0],
+            [],
             2048
         );
 
@@ -203,6 +205,7 @@ class DebugInfoTest extends TestCase
             'https://example.com/api',
             [],
             null,
+            [],
             [],
             1024 * 1024 // 1MB
         );

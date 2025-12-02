@@ -7,8 +7,10 @@ namespace Fetch\Concerns;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Interfaces\ClientHandler;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\RetryStrategy;
 use GuzzleHttp\Exception\ConnectException;
 use InvalidArgumentException;
+use Psr\Log\NullLogger;
 use RuntimeException;
 use Throwable;
 
@@ -138,68 +140,38 @@ trait ManagesRetries
     /**
      * Implement retry logic for the request with exponential backoff.
      *
+     * This method now accepts an optional RequestContext to read retry configuration
+     * from per-request context instead of handler state, making it safe for concurrent usage.
+     *
+     * @param  \Fetch\Support\RequestContext|null  $context  The request context (optional)
      * @param  callable  $request  The request to execute
      * @return ResponseInterface The response after successful execution
      *
      * @throws FetchRequestException If the request fails after all retries
      * @throws RuntimeException If something unexpected happens
      */
-    protected function retryRequest(callable $request): ResponseInterface
+    protected function retryRequest(?\Fetch\Support\RequestContext $context, callable $request): ResponseInterface
     {
-        $attempts = $this->maxRetries ?? self::DEFAULT_RETRIES;
-        $delay = $this->retryDelay ?? self::DEFAULT_RETRY_DELAY;
-        $exceptions = [];
+        // Read retry config from context if provided, otherwise fall back to handler state
+        $maxRetries = $context?->getMaxRetries() ?? $this->getMaxRetries();
+        $baseDelayMs = $context?->getRetryDelay() ?? $this->getRetryDelay();
 
-        for ($attempt = 0; $attempt <= $attempts; $attempt++) {
-            try {
-                // Execute the request
-                return $request();
-            } catch (Throwable $e) {
-                // Collect exception for later
-                $exceptions[] = $e;
+        $strategy = new RetryStrategy(
+            maxRetries: $maxRetries,
+            baseDelayMs: $baseDelayMs,
+            retryableStatusCodes: $this->retryableStatusCodes,
+            retryableExceptions: $this->retryableExceptions,
+            logger: $this->logger ?? new NullLogger
+        );
 
-                // If this was the last attempt, break to throw the most recent exception
-                if ($attempt === $attempts) {
-                    break;
-                }
-
-                // Only retry on retryable errors
-                if (! $this->isRetryableError($e)) {
-                    throw $e;
-                }
-
-                // Log the retry for debugging purposes
+        return $strategy->execute(
+            $request,
+            function (int $attempt, int $maxAttempts, Throwable $exception, int $delayMs): void {
                 if (method_exists($this, 'logRetry')) {
-                    $this->logRetry($attempt + 1, $attempts, $e);
+                    $this->logRetry($attempt, $maxAttempts, $exception);
                 }
-
-                // Calculate delay with exponential backoff and jitter
-                $currentDelay = $this->calculateBackoffDelay($delay, $attempt);
-
-                // Sleep before the next retry
-                usleep($currentDelay * 1000); // Convert milliseconds to microseconds
             }
-        }
-
-        // If we got here, all retries failed
-        $lastException = end($exceptions) ?: new RuntimeException('Request failed after all retries');
-
-        // Enhanced failure reporting
-        if ($lastException instanceof FetchRequestException && $lastException->getResponse()) {
-            $statusCode = $lastException->getResponse()->getStatusCode();
-            throw new RuntimeException(
-                sprintf(
-                    'Request failed after %d attempts with status code %d: %s',
-                    $attempts + 1,
-                    $statusCode,
-                    $lastException->getMessage()
-                ),
-                $statusCode,
-                $lastException
-            );
-        }
-
-        throw $lastException;
+        );
     }
 
     /**

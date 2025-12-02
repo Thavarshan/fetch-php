@@ -56,6 +56,12 @@ features:
   - title: Powerful Responses
     details: Rich Response objects with methods for JSON parsing, XML handling, and more.
     icon: 📦
+  - title: RFC 7234 Caching
+    details: Sync-only cache with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error support.
+  - title: Pooling & HTTP/2
+    details: Shared connection pooling, DNS cache, and optional HTTP/2 with validation and stats for debugging.
+  - title: Debug & Profiling
+    details: Unified debug snapshots and optional profiler with timing, memory, and connection stats; configurable log level.
 ---
 
 <!-- The rest of your existing content starts here, properly formatted with Markdown -->
@@ -138,6 +144,9 @@ Fetch PHP brings the simplicity of JavaScript's fetch API to PHP, while adding p
     <li>Built on Guzzle for rock-solid performance with an elegant API</li>
     <li>Type-safe enums for HTTP methods, content types, and status codes</li>
     <li>Automatic retry mechanics with exponential backoff</li>
+    <li>RFC 7234 caching (sync-only) with stale-while-revalidate and stale-if-error</li>
+    <li>Shared connection pooling, DNS cache, and optional HTTP/2</li>
+    <li>Unified debug/profiler with sanitized logging and configurable log levels</li>
   </ul>
 </div>
 

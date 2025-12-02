@@ -199,10 +199,22 @@ export default defineConfig({
                             text: "Retry Handling",
                             link: "/guide/retry-handling",
                         },
+                        {
+                            text: "HTTP Caching",
+                            link: "/guide/http-caching",
+                        },
+                        {
+                            text: "Connection Pooling & HTTP/2",
+                            link: "/guide/connection-pooling",
+                        },
                         { text: "File Uploads", link: "/guide/file-uploads" },
                         {
                             text: "Custom Clients",
                             link: "/guide/custom-clients",
+                        },
+                        {
+                            text: "Debugging & Profiling",
+                            link: "/guide/debugging-and-profiling",
                         },
                         { text: "Testing with Mocks", link: "/guide/testing" },
                     ],

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Fetch\Concerns;
 
+use Fetch\Support\DebugConfig;
 use Fetch\Support\DebugInfo;
 use Fetch\Support\FetchProfiler;
+use Fetch\Support\ProfilerBridge;
+use Fetch\Support\ProfilerInterface;
 
 /**
  * Trait ManagesDebugAndProfiling
@@ -15,26 +18,23 @@ use Fetch\Support\FetchProfiler;
 trait ManagesDebugAndProfiling
 {
     /**
-     * Whether debug mode is enabled.
+     * Centralized debug configuration.
      */
-    protected bool $debugEnabled = false;
-
-    /**
-     * Debug options configuration.
-     *
-     * @var array<string, mixed>
-     */
-    protected array $debugOptions = [];
-
-    /**
-     * The profiler instance for performance tracking.
-     */
-    protected ?FetchProfiler $profiler = null;
+    protected ?DebugConfig $debugConfig = null;
 
     /**
      * The last debug info from the most recent request.
+     *
+     * @deprecated This property is kept for backward compatibility only.
+     *             Debug info is now stored per-response via Response::getDebugInfo().
+     *             This will be removed in a future major version.
      */
     protected ?DebugInfo $lastDebugInfo = null;
+
+    /**
+     * Bridge for profiling/debug operations.
+     */
+    protected ?ProfilerBridge $profilerBridge = null;
 
     /**
      * Enable debug mode with specified options.
@@ -44,8 +44,9 @@ trait ManagesDebugAndProfiling
      */
     public function withDebug(array|bool $options = true): static
     {
-        $this->debugEnabled = $options !== false;
-        $this->debugOptions = array_merge(DebugInfo::getDefaultOptions(), is_array($options) ? $options : []);
+        $bridge = $this->getProfilerBridge()->enableDebug($options);
+        $this->profilerBridge = $bridge;
+        $this->debugConfig = $bridge->getDebugConfig();
 
         return $this;
     }
@@ -53,12 +54,14 @@ trait ManagesDebugAndProfiling
     /**
      * Set a profiler for performance tracking.
      *
-     * @param  FetchProfiler  $profiler  The profiler instance
+     * @param  FetchProfiler|ProfilerInterface  $profiler  The profiler instance
      * @return $this
      */
-    public function withProfiler(FetchProfiler $profiler): static
+    public function withProfiler(FetchProfiler|ProfilerInterface $profiler): static
     {
-        $this->profiler = $profiler;
+        $bridge = $this->getProfilerBridge()->withProfilerInstance($profiler);
+        $this->profilerBridge = $bridge;
+        $this->debugConfig = $bridge->getDebugConfig();
 
         return $this;
     }
@@ -66,9 +69,9 @@ trait ManagesDebugAndProfiling
     /**
      * Get the profiler instance if set.
      */
-    public function getProfiler(): ?FetchProfiler
+    public function getProfiler(): ?ProfilerInterface
     {
-        return $this->profiler;
+        return $this->getProfilerBridge()->getProfiler();
     }
 
     /**
@@ -76,7 +79,7 @@ trait ManagesDebugAndProfiling
      */
     public function isDebugEnabled(): bool
     {
-        return $this->debugEnabled;
+        return $this->getProfilerBridge()->isDebugEnabled();
     }
 
     /**
@@ -86,11 +89,15 @@ trait ManagesDebugAndProfiling
      */
     public function getDebugOptions(): array
     {
-        return $this->debugOptions;
+        return $this->getProfilerBridge()->getDebugConfig()->getOptions();
     }
 
     /**
      * Get the last debug info from the most recent request.
+     *
+     * @deprecated Use Response::getDebugInfo() instead for per-request debug info.
+     *             This method is kept for backward compatibility but may return
+     *             incorrect data in concurrent async scenarios.
      */
     public function getLastDebugInfo(): ?DebugInfo
     {
@@ -100,12 +107,16 @@ trait ManagesDebugAndProfiling
     /**
      * Create debug info for the current request.
      *
+     * Returns a DebugInfo instance that should be attached to the response.
+     * Also updates lastDebugInfo for backward compatibility.
+     *
      * @param  string  $method  HTTP method
      * @param  string  $uri  Request URI
      * @param  array<string, mixed>  $options  Request options
      * @param  \Psr\Http\Message\ResponseInterface|null  $response  The response
      * @param  array<string, float>  $timings  Timing information
      * @param  int  $memoryUsage  Memory usage in bytes
+     * @return DebugInfo The debug info to attach to the response
      */
     protected function createDebugInfo(
         string $method,
@@ -113,18 +124,23 @@ trait ManagesDebugAndProfiling
         array $options,
         ?\Psr\Http\Message\ResponseInterface $response = null,
         array $timings = [],
+        array $connectionStats = [],
         int $memoryUsage = 0
     ): DebugInfo {
-        $this->lastDebugInfo = DebugInfo::create(
+        $debugInfo = $this->getProfilerBridge()->createDebugInfo(
             $method,
             $uri,
             $options,
             $response,
             $timings,
+            $connectionStats,
             $memoryUsage
         );
 
-        return $this->lastDebugInfo;
+        // Update lastDebugInfo for backward compatibility
+        $this->lastDebugInfo = $debugInfo;
+
+        return $debugInfo;
     }
 
     /**
@@ -136,14 +152,7 @@ trait ManagesDebugAndProfiling
      */
     protected function startProfiling(string $method, string $uri): ?string
     {
-        if ($this->profiler === null || ! $this->profiler->isEnabled()) {
-            return null;
-        }
-
-        $requestId = FetchProfiler::generateRequestId($method, $uri);
-        $this->profiler->startProfile($requestId);
-
-        return $requestId;
+        return $this->getProfilerBridge()->startRequest($method, $uri);
     }
 
     /**
@@ -154,11 +163,7 @@ trait ManagesDebugAndProfiling
      */
     protected function recordProfilingEvent(?string $requestId, string $event): void
     {
-        if ($requestId === null || $this->profiler === null) {
-            return;
-        }
-
-        $this->profiler->recordEvent($requestId, $event);
+        $this->getProfilerBridge()->recordEvent($requestId, $event);
     }
 
     /**
@@ -169,10 +174,70 @@ trait ManagesDebugAndProfiling
      */
     protected function endProfiling(?string $requestId, ?int $statusCode = null): void
     {
-        if ($requestId === null || $this->profiler === null) {
-            return;
+        $this->getProfilerBridge()->endRequest($requestId, $statusCode);
+    }
+
+    /**
+     * Lazily initialize debug configuration.
+     */
+    protected function getDebugConfig(): DebugConfig
+    {
+        if ($this->debugConfig === null) {
+            $this->debugConfig = DebugConfig::create();
         }
 
-        $this->profiler->endProfile($requestId, $statusCode);
+        return $this->debugConfig;
+    }
+
+    /**
+     * Lazily initialize profiler bridge.
+     */
+    protected function getProfilerBridge(): ProfilerBridge
+    {
+        if ($this->profilerBridge === null) {
+            $this->profilerBridge = new ProfilerBridge(
+                profiler: $this->debugConfig?->getProfiler(),
+                debugConfig: $this->debugConfig ?? DebugConfig::create()
+            );
+        }
+
+        return $this->profilerBridge;
+    }
+
+    /**
+     * Capture and store debug info via the profiler bridge.
+     *
+     * Returns a DebugInfo instance that should be attached to the response.
+     * Also updates lastDebugInfo for backward compatibility.
+     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $connectionStats
+     * @return DebugInfo|null The debug info to attach to the response, or null if debug disabled
+     */
+    protected function captureDebugSnapshot(
+        string $method,
+        string $uri,
+        array $options,
+        ?\Psr\Http\Message\ResponseInterface $response,
+        float $startTime,
+        int $startMemory,
+        array $connectionStats = []
+    ): ?DebugInfo {
+        $debugInfo = $this->getProfilerBridge()->captureSnapshot(
+            $method,
+            $uri,
+            $options,
+            $response,
+            $startTime,
+            $startMemory,
+            $connectionStats
+        );
+
+        if ($debugInfo !== null) {
+            // Update lastDebugInfo for backward compatibility
+            $this->lastDebugInfo = $debugInfo;
+        }
+
+        return $debugInfo;
     }
 }

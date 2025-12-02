@@ -30,7 +30,7 @@ class ManagesRetriesTest extends TestCase
 
             public function exposeRetryRequest(callable $request): ResponseInterface
             {
-                return $this->retryRequest($request);
+                return $this->retryRequest(null, $request);
             }
         };
     }
@@ -116,7 +116,7 @@ class ManagesRetriesTest extends TestCase
             // Expose the protected retryRequest method for testing
             public function exposeRetryRequest(callable $request)
             {
-                return $this->retryRequest($request);
+                return $this->retryRequest(null, $request);
             }
 
             // Override logRetry to avoid URI issues
