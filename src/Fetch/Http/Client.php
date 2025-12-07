@@ -229,7 +229,7 @@ class Client implements ClientInterface, LoggerAwareInterface
                 $handler = $handler->withBody($body, $contentType);
             }
 
-            /* @var ClientHandlerInterface $handler */
+            /** @var ClientHandlerInterface $handler */
             return $handler->sendRequest($method, $url);
         } catch (GuzzleRequestException $e) {
             // Handle Guzzle exceptions - Note: this catch block is incomplete in the original
