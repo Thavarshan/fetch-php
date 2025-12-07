@@ -37,9 +37,9 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Client constructor.
      *
-     * @param ClientHandlerInterface|null $handler The client handler
-     * @param array<string, mixed>        $options Default request options
-     * @param LoggerInterface|null        $logger  PSR-3 logger
+     * @param  ClientHandlerInterface|null  $handler  The client handler
+     * @param  array<string, mixed>  $options  Default request options
+     * @param  LoggerInterface|null  $logger  PSR-3 logger
      */
     public function __construct(
         ?ClientHandlerInterface $handler = null,
@@ -47,7 +47,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         ?LoggerInterface $logger = null,
     ) {
         $this->handler = $handler ?? new ClientHandler(options: $options);
-        $this->logger = $logger ?? new NullLogger();
+        $this->logger = $logger ?? new NullLogger;
 
         // If handler supports logging, set the logger
         if (method_exists($this->handler, 'setLogger')) {
@@ -58,16 +58,15 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Create a new client with a base URI.
      *
-     * @param string               $baseUri The base URI for all requests
-     * @param array<string, mixed> $options Default request options
-     *
+     * @param  string  $baseUri  The base URI for all requests
+     * @param  array<string, mixed>  $options  Default request options
      * @return static New client instance
      */
     public static function createWithBaseUri(string $baseUri, array $options = []): static
     {
         $handler = ClientHandler::createWithBaseUri($baseUri);
 
-        if ([] !== $options) {
+        if ($options !== []) {
             $handler->withOptions($options);
         }
 
@@ -77,7 +76,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Set a PSR-3 logger.
      *
-     * @param LoggerInterface $logger PSR-3 logger
+     * @param  LoggerInterface  $logger  PSR-3 logger
      */
     public function setLogger(LoggerInterface $logger): void
     {
@@ -102,8 +101,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Sends a PSR-7 request and returns a PSR-7 response.
      *
-     * @param RequestInterface $request PSR-7 request
-     *
+     * @param  RequestInterface  $request  PSR-7 request
      * @return PsrResponseInterface PSR-7 response
      *
      * @throws ClientExceptionInterface If an error happens while processing the request
@@ -164,9 +162,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Create and send an HTTP request.
      *
-     * @param string|null               $url     The URL to fetch
-     * @param array<string, mixed>|null $options Request options
-     *
+     * @param  string|null  $url  The URL to fetch
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface|ClientHandlerInterface Response or handler for method chaining
      *
      * @throws \RuntimeException If the request fails
@@ -225,7 +222,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         try {
             $handler = $this->handler->withOptions($options);
 
-            if (null !== $body) {
+            if ($body !== null) {
                 $handler = $handler->withBody($body, $contentType);
             }
 
@@ -251,10 +248,9 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make a GET request.
      *
-     * @param string                    $url         The URL to fetch
-     * @param array<string, mixed>|null $queryParams Query parameters
-     * @param array<string, mixed>|null $options     Request options
-     *
+     * @param  string  $url  The URL to fetch
+     * @param  array<string, mixed>|null  $queryParams  Query parameters
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     public function get(string $url, ?array $queryParams = null, ?array $options = []): ResponseInterface
@@ -271,11 +267,10 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make a POST request.
      *
-     * @param string                    $url         The URL to fetch
-     * @param mixed                     $body        Request body
-     * @param string|ContentType        $contentType Content type
-     * @param array<string, mixed>|null $options     Request options
-     *
+     * @param  string  $url  The URL to fetch
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     public function post(
@@ -290,11 +285,10 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make a PUT request.
      *
-     * @param string                    $url         The URL to fetch
-     * @param mixed                     $body        Request body
-     * @param string|ContentType        $contentType Content type
-     * @param array<string, mixed>|null $options     Request options
-     *
+     * @param  string  $url  The URL to fetch
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     public function put(
@@ -309,11 +303,10 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make a PATCH request.
      *
-     * @param string                    $url         The URL to fetch
-     * @param mixed                     $body        Request body
-     * @param string|ContentType        $contentType Content type
-     * @param array<string, mixed>|null $options     Request options
-     *
+     * @param  string  $url  The URL to fetch
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     public function patch(
@@ -328,11 +321,10 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make a DELETE request.
      *
-     * @param string                    $url         The URL to fetch
-     * @param mixed                     $body        Request body
-     * @param string|ContentType        $contentType Content type
-     * @param array<string, mixed>|null $options     Request options
-     *
+     * @param  string  $url  The URL to fetch
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     public function delete(
@@ -347,9 +339,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make a HEAD request.
      *
-     * @param string                    $url     The URL to fetch
-     * @param array<string, mixed>|null $options Request options
-     *
+     * @param  string  $url  The URL to fetch
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     public function head(string $url, ?array $options = []): ResponseInterface
@@ -360,9 +351,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make an OPTIONS request.
      *
-     * @param string                    $url     The URL to fetch
-     * @param array<string, mixed>|null $options Request options
-     *
+     * @param  string  $url  The URL to fetch
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     public function options(string $url, ?array $options = []): ResponseInterface
@@ -381,12 +371,11 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Make a request with a specific HTTP method.
      *
-     * @param Method                    $method      The HTTP method
-     * @param string                    $url         The URL to fetch
-     * @param mixed                     $body        Request body
-     * @param string|ContentType        $contentType Content type
-     * @param array<string, mixed>|null $options     Request options
-     *
+     * @param  Method  $method  The HTTP method
+     * @param  string  $url  The URL to fetch
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type
+     * @param  array<string, mixed>|null  $options  Request options
      * @return ResponseInterface The response
      */
     protected function methodRequest(
@@ -399,7 +388,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $options = $options ?? [];
         $options['method'] = $method->value;
 
-        if (null !== $body) {
+        if ($body !== null) {
             $options['body'] = $body;
 
             // Use the global normalize_content_type function
@@ -418,8 +407,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Extract options from a PSR-7 request.
      *
-     * @param RequestInterface $request PSR-7 request
-     *
+     * @param  RequestInterface  $request  PSR-7 request
      * @return array<string, mixed> Request options
      */
     protected function extractOptionsFromRequest(RequestInterface $request): array
@@ -432,13 +420,13 @@ class Client implements ClientInterface, LoggerAwareInterface
             $headers[$name] = implode(', ', $values);
         }
 
-        if ([] !== $headers) {
+        if ($headers !== []) {
             $options['headers'] = $headers;
         }
 
         // Add body if present
         $body = (string) $request->getBody();
-        if ('' !== $body) {
+        if ($body !== '') {
             $options['body'] = $body;
         }
 
