@@ -9,6 +9,7 @@ use Fetch\Interfaces\ClientHandler;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Fetch\Support\RetryStrategy;
 use GuzzleHttp\Exception\ConnectException;
+use InvalidArgumentException;
 use Psr\Log\NullLogger;
 
 trait ManagesRetries
@@ -55,11 +56,11 @@ trait ManagesRetries
     public function retry(int $retries, int $delay = 100): ClientHandler
     {
         if ($retries < 0) {
-            throw new \InvalidArgumentException('Retries must be a non-negative integer');
+            throw new InvalidArgumentException('Retries must be a non-negative integer');
         }
 
         if ($delay < 0) {
-            throw new \InvalidArgumentException('Delay must be a non-negative integer');
+            throw new InvalidArgumentException('Delay must be a non-negative integer');
         }
 
         $this->maxRetries = $retries;

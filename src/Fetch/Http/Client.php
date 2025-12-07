@@ -14,6 +14,7 @@ use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
+use InvalidArgumentException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -21,6 +22,7 @@ use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 class Client implements ClientInterface, LoggerAwareInterface
 {
@@ -127,7 +129,7 @@ class Client implements ClientInterface, LoggerAwareInterface
             }
 
             // Handle case where a promise was returned (should not happen in sendRequest)
-            throw new \RuntimeException('Async operations not supported in sendRequest()');
+            throw new RuntimeException('Async operations not supported in sendRequest()');
         } catch (ConnectException $e) {
             $this->logger->error('Network error', [
                 'message' => $e->getMessage(),
@@ -183,7 +185,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         try {
             $methodEnum = Method::fromString($method);
         } catch (\ValueError $e) {
-            throw new \InvalidArgumentException("Invalid HTTP method: {$method}");
+            throw new InvalidArgumentException("Invalid HTTP method: {$method}");
         }
 
         // Process the request body

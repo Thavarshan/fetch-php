@@ -17,6 +17,7 @@ use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Matrix\Exceptions\AsyncException;
 use React\Promise\PromiseInterface;
+use RuntimeException;
 
 use function Matrix\Support\async;
 
@@ -699,7 +700,7 @@ trait PerformsHttpRequests
             return $e;
         }
 
-        return new \RuntimeException($contextMessage.': '.$e->getMessage(), (int) $e->getCode(), $e);
+        return new RuntimeException($contextMessage.': '.$e->getMessage(), (int) $e->getCode(), $e);
     }
 
     /**
