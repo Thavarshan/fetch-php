@@ -1,6 +1,71 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.3.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.4.0...HEAD)
+
+## [v3.4.0](https://github.com/Thavarshan/fetch-php/compare/v3.3.0...v3.4.0) - 2025-12-07
+
+### Added
+
+- **RFC 7234 HTTP Caching Support** with intelligent cache control:
+  - `MemoryCache` for fast in-memory caching
+  - `FileCache` for persistent disk-based caching with TTL support
+  - `CacheControl` parser for RFC 7234 compliant cache directive handling
+  - `CacheKeyGenerator` with collision-resistant SHA-256 hashing
+  - `CachedResponse` wrapper with metadata and validation support
+  - `ManagesCache` trait integrated into `ClientHandler` for transparent caching
+  - Automatic cache revalidation with `If-None-Match` and `If-Modified-Since` headers
+  - Support for `Cache-Control`, `ETag`, `Last-Modified`, `Expires`, `Age`, and `Vary` headers
+  - Configurable cache TTL, stale responses, and revalidation strategies
+  - 802 new test assertions for caching functionality
+
+- **Connection Pooling & HTTP/2 Support** for improved performance:
+  - `ConnectionPool` for managing persistent connections across hosts
+  - `HostConnectionPool` for per-host connection management with limits
+  - `DnsCache` for caching DNS lookups to reduce resolution overhead
+  - `Connection` class for tracking connection state and reuse
+  - `PoolConfiguration` for customizable pool settings (max connections, idle timeout, TTL)
+  - `Http2Configuration` for HTTP/2 multiplexing and push support
+  - `ManagesConnectionPool` trait with connection pool lifecycle management
+  - Automatic connection recycling and health monitoring
+  - 558 new test assertions for connection pooling
+
+- **Debugging & Profiling Tools** for request analysis:
+  - `DebugInfo` class capturing detailed request/response information
+  - `FetchProfiler` for comprehensive performance metrics and bottleneck detection
+  - `ManagesDebugAndProfiling` trait for debug mode support
+  - Sensitive header redaction and sanitization methods (Authorization, API keys, tokens)
+  - Timing breakdown: DNS lookup, connection, TLS handshake, TTFB, transfer times
+  - Memory usage tracking and cURL transfer statistics
+  - Debug mode with detailed logging and inspection capabilities
+  - 570 new test assertions for debugging/profiling features
+
+- New interfaces for extensibility:
+  - `CacheableHandler` for cache manager access
+  - `CacheableRequestHandler` for cache operations
+  - `DebuggableHandler` for debug/profiling support
+  - `PoolAwareHandler` for connection pool management
+
+### Changed
+
+- Refactored `ClientHandler` interface to extend multiple focused interfaces for better separation of concerns
+- Enhanced `PerformsHttpRequests` trait with integrated caching support
+- Improved PHPDoc comments with detailed parameter types for better IDE support and static analysis
+- Updated method signatures in `RequestConfigurator` to return specific types instead of `self`
+- Streamlined pre-commit script to use Composer commands instead of shell commands
+- Enhanced type hints across `CacheManager`, `ManagesDebugAndProfiling`, `ManagesRetries`, and `PerformsHttpRequests` traits
+
+### Fixed
+
+- Fixed timing precision issues in delay tests on Windows (#72)
+- Fixed PHPStan type inference for `ClientHandler` method chaining
+- Improved TTL behavior consistency in cache implementations
+- Enhanced null handling and race condition prevention in cache operations
+- Fixed status code handling consistency across caching layer
+- Improved URI handling in connection pool exceptions
+- Corrected time-to-first-byte calculation in profiling metrics
+- Enhanced code style consistency: proper namespace imports, class element ordering, and PHPDoc cleanup
+
+**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/v3.3.0...v3.4.0>
 
 ## [v3.3.0](https://github.com/Thavarshan/fetch-php/compare/v3.2.3...v3.3.0) - 2025-01-17
 
