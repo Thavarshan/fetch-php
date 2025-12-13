@@ -855,9 +855,9 @@ foreach ($checks as $check) {
     echo "{$status} {$check['url']} - {$check['latency_ms']}ms\n";
 }
 
-// Pool stats (getPoolStats() is on the handler via ManagesConnectionPool trait)
+// Connection pool stats via ClientHandler (uses ManagesConnectionPool trait)
 print_r($handler->getPoolStats());
-// Profiler summary (getSummary() is on FetchProfiler)
+// Profiler metrics via FetchProfiler instance
 print_r($profiler->getSummary());
 ```
 
