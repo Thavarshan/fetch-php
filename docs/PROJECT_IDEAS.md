@@ -167,14 +167,19 @@ This document provides a comprehensive analysis of the Fetch PHP package's capab
 ### Fluent Interface Methods
 
 ```php
-fetch_client()
+$handler = fetch_client()->getHandler();
+
+$response = $handler
     ->baseUri('https://api.example.com')
     ->withHeaders(['Accept' => 'application/json'])
     ->withToken('token')
     ->withAuth('user', 'pass')
     ->withQueryParameters(['page' => 1])
     ->withBody($data, ContentType::JSON)
-    ->withMultipart([...])
+    ->withMultipart([
+        ['name' => 'file', 'contents' => fopen('/path/to/file.jpg', 'r'), 'filename' => 'upload.jpg'],
+        ['name' => 'description', 'contents' => 'File description']
+    ])
     ->withProxy('http://proxy:8080')
     ->withOptions(['timeout' => 10])
     ->retry(3, 100)
@@ -185,7 +190,6 @@ fetch_client()
     ->withDebug()
     ->withProfiler($profiler)
     ->withLogLevel('info')
-    ->async()
     ->get('/endpoint');
 ```
 
@@ -809,6 +813,11 @@ fetch_client()
 
 ```php
 // fetchwatch.php
+use Fetch\Support\FetchProfiler;
+use function async;
+use function await;
+use function map;
+
 $config = yaml_parse_file('config.yaml');
 $profiler = new FetchProfiler();
 
@@ -846,8 +855,9 @@ foreach ($checks as $check) {
     echo "{$status} {$check['url']} - {$check['latency_ms']}ms\n";
 }
 
-// Pool stats
+// Pool stats (getPoolStats() is on the handler via ManagesConnectionPool trait)
 print_r($handler->getPoolStats());
+// Profiler summary (getSummary() is on FetchProfiler)
 print_r($profiler->getSummary());
 ```
 
