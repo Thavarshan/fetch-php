@@ -747,39 +747,12 @@ trait PerformsHttpRequests
     private function applyMultipartPure(array $options, array $body): array
     {
         // Normalize multipart if needed
-        $multipart = $this->normalizeMultipartPure($body);
+        $multipart = RequestOptions::normalizeMultipart($body);
         $options['multipart'] = $multipart;
         // Remove Content-Type header as Guzzle sets it with boundary
         unset($options['headers']['Content-Type']);
 
         return $options;
-    }
-
-    /**
-     * Normalize multipart array without mutation.
-     *
-     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>|array<string, mixed>  $multipart
-     * @return array<int, array{name: string, contents: mixed, headers?: array<string, string>}>
-     */
-    private function normalizeMultipartPure(array $multipart): array
-    {
-        if ($multipart === [] || array_is_list($multipart)) {
-            /* @var array<int, array{name: string, contents: mixed, headers?: array<string, string>}> $multipart */
-            return $multipart;
-        }
-
-        $part = [
-            'name' => (string) ($multipart['name'] ?? 'file'),
-            'contents' => $multipart['contents'] ?? ($multipart['body'] ?? ''),
-        ];
-
-        if (isset($multipart['headers']) && is_array($multipart['headers'])) {
-            $part['headers'] = array_map(static function ($v): string {
-                return (string) $v;
-            }, $multipart['headers']);
-        }
-
-        return [$part];
     }
 
     /**

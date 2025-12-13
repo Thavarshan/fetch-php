@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Fetch\Support;
 
 use Fetch\Enum\Method;
-use GuzzleHttp\Exception\ConnectException;
 
 /**
  * Immutable value object representing per-request configuration and context.
@@ -31,21 +30,19 @@ final class RequestContext
      * Default retryable HTTP status codes.
      *
      * @var array<int>
+     *
+     * @deprecated Use RetryDefaults::STATUS_CODES instead
      */
-    public const DEFAULT_RETRYABLE_STATUS_CODES = [
-        408, 429, 500, 502, 503,
-        504, 507, 509, 520, 521,
-        522, 523, 525, 527, 530,
-    ];
+    public const DEFAULT_RETRYABLE_STATUS_CODES = RetryDefaults::STATUS_CODES;
 
     /**
      * Default retryable exception class names.
      *
      * @var array<class-string<\Throwable>>
+     *
+     * @deprecated Use RetryDefaults::EXCEPTIONS instead
      */
-    public const DEFAULT_RETRYABLE_EXCEPTIONS = [
-        ConnectException::class,
-    ];
+    public const DEFAULT_RETRYABLE_EXCEPTIONS = RetryDefaults::EXCEPTIONS;
 
     /**
      * HTTP method for the request.
@@ -305,22 +302,7 @@ final class RequestContext
     {
         $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
 
-        return new self(
-            method: $methodStr,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['method' => $methodStr]);
     }
 
     /**
@@ -328,22 +310,7 @@ final class RequestContext
      */
     public function withUri(string $uri): self
     {
-        return new self(
-            method: $this->method,
-            uri: $uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['uri' => $uri]);
     }
 
     /**
@@ -351,22 +318,7 @@ final class RequestContext
      */
     public function withAsync(bool $async = true): self
     {
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['async' => $async]);
     }
 
     /**
@@ -374,22 +326,7 @@ final class RequestContext
      */
     public function withTimeout(int $timeout): self
     {
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['timeout' => $timeout]);
     }
 
     /**
@@ -397,22 +334,10 @@ final class RequestContext
      */
     public function withRetry(int $maxRetries, int $delayMs = 100): self
     {
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: max(0, $maxRetries),
-            retryDelay: max(0, $delayMs),
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith([
+            'maxRetries' => max(0, $maxRetries),
+            'retryDelay' => max(0, $delayMs),
+        ]);
     }
 
     /**
@@ -422,22 +347,7 @@ final class RequestContext
      */
     public function withRetryableStatusCodes(array $statusCodes): self
     {
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: array_map('intval', $statusCodes),
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['retryableStatusCodes' => array_map('intval', $statusCodes)]);
     }
 
     /**
@@ -447,22 +357,7 @@ final class RequestContext
      */
     public function withRetryableExceptions(array $exceptions): self
     {
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $exceptions
-        );
+        return $this->cloneWith(['retryableExceptions' => $exceptions]);
     }
 
     /**
@@ -472,25 +367,10 @@ final class RequestContext
      */
     public function withCache(bool|array $cache = true): self
     {
-        $enabled = is_bool($cache) ? $cache : true;
-        $options = is_array($cache) ? $cache : [];
-
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $enabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $options,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith([
+            'cacheEnabled' => is_bool($cache) ? $cache : true,
+            'cacheOptions' => is_array($cache) ? $cache : [],
+        ]);
     }
 
     /**
@@ -500,25 +380,10 @@ final class RequestContext
      */
     public function withDebug(bool|array $debug = true): self
     {
-        $enabled = is_bool($debug) ? $debug : true;
-        $options = is_array($debug) ? $debug : [];
-
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $enabled,
-            headers: $this->headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $options,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith([
+            'debugEnabled' => is_bool($debug) ? $debug : true,
+            'debugOptions' => is_array($debug) ? $debug : [],
+        ]);
     }
 
     /**
@@ -531,22 +396,7 @@ final class RequestContext
         $headers = $this->headers;
         $headers[$name] = $value;
 
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $headers,
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['headers' => $headers]);
     }
 
     /**
@@ -556,22 +406,7 @@ final class RequestContext
      */
     public function withHeaders(array $headers): self
     {
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: array_merge($this->headers, $headers),
-            options: $this->options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['headers' => array_merge($this->headers, $headers)]);
     }
 
     /**
@@ -582,22 +417,7 @@ final class RequestContext
         $options = $this->options;
         $options[$key] = $value;
 
-        return new self(
-            method: $this->method,
-            uri: $this->uri,
-            async: $this->async,
-            timeout: $this->timeout,
-            maxRetries: $this->maxRetries,
-            retryDelay: $this->retryDelay,
-            cacheEnabled: $this->cacheEnabled,
-            debugEnabled: $this->debugEnabled,
-            headers: $this->headers,
-            options: $options,
-            cacheOptions: $this->cacheOptions,
-            debugOptions: $this->debugOptions,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions
-        );
+        return $this->cloneWith(['options' => $options]);
     }
 
     // Getters
@@ -836,5 +656,34 @@ final class RequestContext
         }
 
         return $guzzleOptions;
+    }
+
+    /**
+     * Create a new instance with specific properties overridden.
+     *
+     * This helper eliminates duplication in with* methods by centralizing
+     * the cloning logic. All properties default to current values unless
+     * explicitly overridden.
+     *
+     * @param  array<string, mixed>  $overrides  Properties to override
+     */
+    private function cloneWith(array $overrides): self
+    {
+        return new self(
+            method: $overrides['method'] ?? $this->method,
+            uri: $overrides['uri'] ?? $this->uri,
+            async: $overrides['async'] ?? $this->async,
+            timeout: $overrides['timeout'] ?? $this->timeout,
+            maxRetries: $overrides['maxRetries'] ?? $this->maxRetries,
+            retryDelay: $overrides['retryDelay'] ?? $this->retryDelay,
+            cacheEnabled: $overrides['cacheEnabled'] ?? $this->cacheEnabled,
+            debugEnabled: $overrides['debugEnabled'] ?? $this->debugEnabled,
+            headers: $overrides['headers'] ?? $this->headers,
+            options: $overrides['options'] ?? $this->options,
+            cacheOptions: $overrides['cacheOptions'] ?? $this->cacheOptions,
+            debugOptions: $overrides['debugOptions'] ?? $this->debugOptions,
+            retryableStatusCodes: $overrides['retryableStatusCodes'] ?? $this->retryableStatusCodes,
+            retryableExceptions: $overrides['retryableExceptions'] ?? $this->retryableExceptions,
+        );
     }
 }

@@ -447,22 +447,6 @@ trait ConfiguresRequests
      */
     protected function normalizeMultipart(array $multipart): array
     {
-        if ($multipart === [] || array_is_list($multipart)) {
-            /** @var array<int, array{name: string, contents: mixed, headers?: array<string, string>}> $multipart */
-            return $multipart;
-        }
-
-        $part = [
-            'name' => (string) ($multipart['name'] ?? 'file'),
-            'contents' => $multipart['contents'] ?? ($multipart['body'] ?? ''),
-        ];
-
-        if (isset($multipart['headers']) && is_array($multipart['headers'])) {
-            $part['headers'] = array_map(static function ($v): string {
-                return (string) $v;
-            }, $multipart['headers']);
-        }
-
-        return [$part];
+        return RequestOptions::normalizeMultipart($multipart);
     }
 }

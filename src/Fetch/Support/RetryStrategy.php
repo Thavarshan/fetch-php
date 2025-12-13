@@ -6,7 +6,6 @@ namespace Fetch\Support;
 
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Interfaces\Response as ResponseInterface;
-use GuzzleHttp\Exception\ConnectException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -35,42 +34,6 @@ use RuntimeException;
  */
 final class RetryStrategy
 {
-    /**
-     * Maximum delay in milliseconds (30 seconds).
-     */
-    private const MAX_DELAY_MS = 30000;
-
-    /**
-     * Default retryable HTTP status codes.
-     *
-     * These indicate temporary server-side issues that may resolve on retry:
-     * - 408: Request Timeout
-     * - 429: Too Many Requests
-     * - 500: Internal Server Error
-     * - 502: Bad Gateway
-     * - 503: Service Unavailable
-     * - 504: Gateway Timeout
-     * - 507: Insufficient Storage
-     * - 509: Bandwidth Limit Exceeded
-     * - 520-530: Cloudflare errors
-     *
-     * @var array<int>
-     */
-    private const DEFAULT_RETRYABLE_STATUS_CODES = [
-        408, 429, 500, 502, 503,
-        504, 507, 509, 520, 521,
-        522, 523, 525, 527, 530,
-    ];
-
-    /**
-     * Default retryable exception types.
-     *
-     * @var array<class-string<\Throwable>>
-     */
-    private const DEFAULT_RETRYABLE_EXCEPTIONS = [
-        ConnectException::class,
-    ];
-
     /**
      * Maximum number of retry attempts.
      */
@@ -110,16 +73,16 @@ final class RetryStrategy
      * @param  LoggerInterface|null  $logger  Logger for events
      */
     public function __construct(
-        int $maxRetries = 1,
-        int $baseDelayMs = 100,
+        int $maxRetries = RetryDefaults::MAX_RETRIES,
+        int $baseDelayMs = RetryDefaults::RETRY_DELAY,
         ?array $retryableStatusCodes = null,
         ?array $retryableExceptions = null,
         ?LoggerInterface $logger = null,
     ) {
         $this->maxRetries = max(0, $maxRetries);
         $this->baseDelayMs = max(0, $baseDelayMs);
-        $this->retryableStatusCodes = $retryableStatusCodes ?? self::DEFAULT_RETRYABLE_STATUS_CODES;
-        $this->retryableExceptions = $retryableExceptions ?? self::DEFAULT_RETRYABLE_EXCEPTIONS;
+        $this->retryableStatusCodes = $retryableStatusCodes ?? RetryDefaults::STATUS_CODES;
+        $this->retryableExceptions = $retryableExceptions ?? RetryDefaults::EXCEPTIONS;
         $this->logger = $logger ?? new NullLogger;
     }
 
@@ -258,7 +221,7 @@ final class RetryStrategy
         $delay = (int) ($exponentialDelay * (1 + $jitter));
 
         // Cap at maximum delay
-        return min($delay, self::MAX_DELAY_MS);
+        return min($delay, RetryDefaults::MAX_DELAY_MS);
     }
 
     /**
@@ -302,13 +265,7 @@ final class RetryStrategy
      */
     public function withMaxRetries(int $maxRetries): self
     {
-        return new self(
-            maxRetries: $maxRetries,
-            baseDelayMs: $this->baseDelayMs,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions,
-            logger: $this->logger
-        );
+        return $this->cloneWith(['maxRetries' => $maxRetries]);
     }
 
     /**
@@ -316,13 +273,7 @@ final class RetryStrategy
      */
     public function withBaseDelay(int $baseDelayMs): self
     {
-        return new self(
-            maxRetries: $this->maxRetries,
-            baseDelayMs: $baseDelayMs,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $this->retryableExceptions,
-            logger: $this->logger
-        );
+        return $this->cloneWith(['baseDelayMs' => $baseDelayMs]);
     }
 
     /**
@@ -332,13 +283,7 @@ final class RetryStrategy
      */
     public function withRetryableStatusCodes(array $statusCodes): self
     {
-        return new self(
-            maxRetries: $this->maxRetries,
-            baseDelayMs: $this->baseDelayMs,
-            retryableStatusCodes: $statusCodes,
-            retryableExceptions: $this->retryableExceptions,
-            logger: $this->logger
-        );
+        return $this->cloneWith(['retryableStatusCodes' => $statusCodes]);
     }
 
     /**
@@ -348,12 +293,22 @@ final class RetryStrategy
      */
     public function withRetryableExceptions(array $exceptions): self
     {
+        return $this->cloneWith(['retryableExceptions' => $exceptions]);
+    }
+
+    /**
+     * Create a new instance with specific properties overridden.
+     *
+     * @param  array<string, mixed>  $overrides  Properties to override
+     */
+    private function cloneWith(array $overrides): self
+    {
         return new self(
-            maxRetries: $this->maxRetries,
-            baseDelayMs: $this->baseDelayMs,
-            retryableStatusCodes: $this->retryableStatusCodes,
-            retryableExceptions: $exceptions,
-            logger: $this->logger
+            maxRetries: $overrides['maxRetries'] ?? $this->maxRetries,
+            baseDelayMs: $overrides['baseDelayMs'] ?? $this->baseDelayMs,
+            retryableStatusCodes: $overrides['retryableStatusCodes'] ?? $this->retryableStatusCodes,
+            retryableExceptions: $overrides['retryableExceptions'] ?? $this->retryableExceptions,
+            logger: $overrides['logger'] ?? $this->logger,
         );
     }
 

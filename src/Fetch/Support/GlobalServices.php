@@ -98,11 +98,7 @@ final class GlobalServices
      */
     public static function getFactoryDefaults(): array
     {
-        return [
-            'method' => Method::GET->value,
-            'headers' => [],
-            'timeout' => 30, // DEFAULT_TIMEOUT constant value
-        ];
+        return Defaults::options();
     }
 
     /**

@@ -397,6 +397,36 @@ class RequestOptions
     }
 
     /**
+     * Normalize multipart array to the expected shape for Guzzle.
+     *
+     * Handles both list-style multipart arrays and single-part associative arrays,
+     * converting them to the standard Guzzle multipart format.
+     *
+     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>|array<string, mixed>  $multipart
+     * @return array<int, array{name: string, contents: mixed, headers?: array<string, string>}>
+     */
+    public static function normalizeMultipart(array $multipart): array
+    {
+        // Empty array or already a list - return as-is
+        if ($multipart === [] || array_is_list($multipart)) {
+            /** @var array<int, array{name: string, contents: mixed, headers?: array<string, string>}> $multipart */
+            return $multipart;
+        }
+
+        // Single associative array - convert to list format
+        $part = [
+            'name' => (string) ($multipart['name'] ?? 'file'),
+            'contents' => $multipart['contents'] ?? ($multipart['body'] ?? ''),
+        ];
+
+        if (isset($multipart['headers']) && is_array($multipart['headers'])) {
+            $part['headers'] = array_map(static fn ($v): string => (string) $v, $multipart['headers']);
+        }
+
+        return [$part];
+    }
+
+    /**
      * Remove body-related options except the provided whitelist.
      *
      * @param  array<string, mixed>  $options

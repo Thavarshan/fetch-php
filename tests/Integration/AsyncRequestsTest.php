@@ -142,11 +142,16 @@ class AsyncRequestsTest extends TestCase
 
         $handler->async();
 
-        // Capture rejection to avoid unhandled rejection output
+        // Silence expected unhandled rejection output from React Promise
+        $previousHandler = \React\Promise\set_rejection_handler(fn () => null);
+
         $promise = $handler->get('https://example.com/fail')
             ->then(null, fn ($e) => $e);
 
         $result = await($promise);
+
+        // Restore original handler
+        \React\Promise\set_rejection_handler($previousHandler);
 
         $this->assertInstanceOf(\Matrix\Exceptions\AsyncException::class, $result);
         $this->assertStringContainsString('Request GET https://example.com/fail failed', $result->getMessage());

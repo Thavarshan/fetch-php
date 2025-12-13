@@ -7,8 +7,8 @@ namespace Fetch\Concerns;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Interfaces\ClientHandler;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\RetryDefaults;
 use Fetch\Support\RetryStrategy;
-use GuzzleHttp\Exception\ConnectException;
 use InvalidArgumentException;
 use Psr\Log\NullLogger;
 
@@ -29,20 +29,14 @@ trait ManagesRetries
      *
      * @var array<int>
      */
-    protected array $retryableStatusCodes = [
-        408, 429, 500, 502, 503,
-        504, 507, 509, 520, 521,
-        522, 523, 525, 527, 530,
-    ];
+    protected array $retryableStatusCodes = RetryDefaults::STATUS_CODES;
 
     /**
      * The exceptions that should be retried.
      *
      * @var array<class-string<\Throwable>>
      */
-    protected array $retryableExceptions = [
-        ConnectException::class,
-    ];
+    protected array $retryableExceptions = RetryDefaults::EXCEPTIONS;
 
     /**
      * Set the retry logic for the request.
@@ -205,25 +199,23 @@ trait ManagesRetries
     /**
      * Calculate backoff delay with exponential growth and jitter.
      *
+     * Delegates to RetryStrategy for the actual calculation to avoid duplication.
+     *
      * @param  int  $baseDelay  The base delay in milliseconds
      * @param  int  $attempt  The current attempt number (0-based)
      * @return int The calculated delay in milliseconds
      */
     protected function calculateBackoffDelay(int $baseDelay, int $attempt): int
     {
-        // Exponential backoff: baseDelay * 2^attempt
-        $exponentialDelay = $baseDelay * (2 ** $attempt);
+        $strategy = new RetryStrategy(baseDelayMs: $baseDelay);
 
-        // Add jitter: random value between 0-100% of the calculated delay
-        $jitter = mt_rand(0, 100) / 100; // Random value between 0 and 1
-        $delay = (int) ($exponentialDelay * (1 + $jitter));
-
-        // Cap the maximum delay at 30 seconds (30000ms)
-        return min($delay, 30000);
+        return $strategy->calculateDelay($attempt);
     }
 
     /**
      * Determine if an error is retryable.
+     *
+     * Delegates to RetryStrategy for the actual check to avoid duplication.
      *
      * @param  \Throwable  $e  The exception to check
      * @param  \Fetch\Support\RequestContext|null  $context  Optional context for per-request retry config
@@ -240,35 +232,11 @@ trait ManagesRetries
             ? $context->getRetryableExceptions()
             : $this->retryableExceptions;
 
-        $statusCode = null;
+        $strategy = new RetryStrategy(
+            retryableStatusCodes: $retryableStatusCodes,
+            retryableExceptions: $retryableExceptions,
+        );
 
-        // Try to extract status code from a Fetch RequestException
-        if ($e instanceof FetchRequestException && $e->getResponse()) {
-            $statusCode = $e->getResponse()->getStatusCode();
-        } elseif (method_exists($e, 'getResponse')) {
-            // Guzzle RequestException also has getResponse()
-            $response = $e->getResponse();
-            if ($response && method_exists($response, 'getStatusCode')) {
-                /** @var \Psr\Http\Message\ResponseInterface $response */
-                $statusCode = $response->getStatusCode();
-            }
-        }
-
-        // Check if the status code is in our list of retryable codes
-        $isRetryableStatusCode = $statusCode !== null && in_array($statusCode, $retryableStatusCodes, true);
-
-        // Check if the exception or its previous is one of our retryable exception types
-        $isRetryableException = false;
-        $exception = $e;
-
-        while ($exception) {
-            if (in_array(get_class($exception), $retryableExceptions, true)) {
-                $isRetryableException = true;
-                break;
-            }
-            $exception = $exception->getPrevious();
-        }
-
-        return $isRetryableStatusCode || $isRetryableException;
+        return $strategy->isRetryable($e);
     }
 }

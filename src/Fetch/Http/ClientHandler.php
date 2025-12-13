@@ -18,9 +18,11 @@ use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseContract;
+use Fetch\Support\Defaults;
 use Fetch\Support\GlobalServices;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions as FetchRequestOptions;
+use Fetch\Support\RetryDefaults;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\RequestOptions;
@@ -49,29 +51,37 @@ class ClientHandler implements ClientHandlerInterface
      * @deprecated Use GlobalServices::getDefaultOptions() instead
      */
     protected static array $defaultOptions = [
-        'method' => self::DEFAULT_HTTP_METHOD,
+        'method' => Defaults::HTTP_METHOD->value,
         'headers' => [],
     ];
 
     /**
      * Default HTTP method.
+     *
+     * @deprecated Use Defaults::HTTP_METHOD instead
      */
-    public const DEFAULT_HTTP_METHOD = 'GET';
+    public const DEFAULT_HTTP_METHOD = Defaults::HTTP_METHOD->value;
 
     /**
      * Default timeout for requests in seconds.
+     *
+     * @deprecated Use Defaults::TIMEOUT instead
      */
-    public const DEFAULT_TIMEOUT = 30;
+    public const DEFAULT_TIMEOUT = Defaults::TIMEOUT;
 
     /**
      * Default number of retries.
+     *
+     * @deprecated Use RetryDefaults::MAX_RETRIES instead
      */
-    public const DEFAULT_RETRIES = 1;
+    public const DEFAULT_RETRIES = RetryDefaults::MAX_RETRIES;
 
     /**
      * Default delay between retries in milliseconds.
+     *
+     * @deprecated Use RetryDefaults::RETRY_DELAY instead
      */
-    public const DEFAULT_RETRY_DELAY = 100;
+    public const DEFAULT_RETRY_DELAY = RetryDefaults::RETRY_DELAY;
 
     /**
      * Whether the request should be asynchronous.
