@@ -373,6 +373,82 @@ $data = graphqlRequest($query, ['id' => '123']);
 $user = $data['user'];
 ```
 
+## FetchWatch-Style Health Monitor
+
+This example combines retries, shared pooling, caching, debug snapshots, and async batching to monitor several internal services in parallel.
+
+```php
+use Fetch\Cache\MemoryCache;
+use Fetch\Http\ClientHandler;
+use Fetch\Support\FetchProfiler;
+use function async;
+use function await;
+use function map;
+
+$handler = ClientHandler::create()
+    ->baseUri('https://status.internal.example')
+    ->withConnectionPool([
+        'max_connections' => 100,
+        'dns_cache_ttl' => 600,
+    ])
+    ->withCache(new MemoryCache(), [
+        'default_ttl' => 60,
+        'stale_if_error' => 30,
+    ])
+    ->retry(2, 200)
+    ->withDebug([
+        'response_body' => 512,
+        'timing' => true,
+        'memory' => true,
+    ])
+    ->withProfiler(new FetchProfiler);
+
+$checks = [
+    'api' => '/api/health',
+    'billing' => '/billing/health',
+    'notifications' => '/notifications/health',
+];
+
+$results = await(map($checks, function (string $path, string $service) use ($handler) {
+    return async(function () use ($handler, $path, $service) {
+        $response = $handler
+            ->withQueryParameter('check', 'deep')
+            ->get($path);
+
+        return [
+            'service' => $service,
+            'status' => $response->successful() ? 'ok' : 'down',
+            'payload' => $response->json(),
+            'debug' => $response->getDebugInfo()?->toArray(['response_body' => 256]),
+        ];
+    });
+}));
+
+foreach ($results as $result) {
+    printf(
+        "[%s] %s (%s)\n",
+        strtoupper($result['service']),
+        $result['status'],
+        $result['payload']['version'] ?? 'unknown'
+    );
+
+    if ($result['status'] !== 'ok' && $result['debug']) {
+        // Persist debug snapshot for later inspection
+        file_put_contents(
+            __DIR__ . "/logs/{$result['service']}-last.json",
+            json_encode($result['debug'], JSON_PRETTY_PRINT)
+        );
+    }
+}
+```
+
+*Highlights:*
+
+- **Retries** keep transient 5xx errors from triggering false alarms.
+- **Connection pooling & DNS cache** minimize latency when hitting multiple services repeatedly.
+- **Caching** allows the monitor to stay responsive even if a downstream service stalls (stale-if-error).
+- **Debug snapshots + profiler** give you structured context (`X-Cache-Status`, timing, memory deltas) for any failing check.
+
 ## Integration with OAuth 2.0
 
 ```php

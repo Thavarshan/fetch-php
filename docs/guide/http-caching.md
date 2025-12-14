@@ -71,8 +71,8 @@ $response = fetch('https://api.example.com/users', [
 
 Useful patterns:
 
-- **Force refresh**: set `force_refresh => true` to ignore stored entries.
-- **Cache POST/PUT**: add `cache_body => true` and include a body to hash into the key.
+- **Force refresh**: set `force_refresh => true` on the request to ignore stored entries.
+- **Cache POST/PUT**: allow the verb in `cache_methods` (configured via `withCache()`) and add `cache_body => true` so the body participates in the cache key.
 - **Static assets**: pin a custom `key` for predictable lookups regardless of URL params.
 
 ## What gets cached

@@ -44,7 +44,7 @@ class RequestOptions
         'headers', 'json', 'form_params', 'multipart', 'body',
         'query', 'auth', 'verify', 'proxy', 'cookies', 'allow_redirects',
         'cert', 'ssl_key', 'stream', 'connect_timeout', 'read_timeout',
-        'debug', 'sink', 'version', 'decode_content', 'curl', 'timeout',
+        'debug', 'sink', 'version', 'decode_content', 'curl', 'timeout', 'progress',
     ];
 
     /**

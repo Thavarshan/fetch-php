@@ -434,6 +434,34 @@ Check if the response has text content.
 public function hasTextContent(): bool
 ```
 
+## Debug Information
+
+When `withDebug()` is enabled on the handler, every response stores a per-request snapshot.
+
+### `withDebugInfo()`
+
+Attach a `DebugInfo` instance (used internally by the handler).
+
+```php
+public function withDebugInfo(\Fetch\Support\DebugInfo $debugInfo): static
+```
+
+### `getDebugInfo()`
+
+Retrieve the `DebugInfo` for this response, or `null` when debug mode was disabled.
+
+```php
+public function getDebugInfo(): ?\Fetch\Support\DebugInfo
+```
+
+### `hasDebugInfo()`
+
+Convenience method to check whether debug data is present.
+
+```php
+public function hasDebugInfo(): bool
+```
+
 ## ArrayAccess Implementation
 
 ### `offsetExists()`

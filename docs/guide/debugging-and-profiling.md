@@ -26,9 +26,12 @@ $handler = fetch_client()->getHandler()
 
 $response = $handler->get('https://api.example.com/users');
 
-$debug = $handler->getLastDebugInfo();
-print_r($debug?->toArray());     // Structured array
-echo $debug?->dump();            // Pretty JSON string
+$debug = $response->getDebugInfo();    // Preferred per-response snapshot
+print_r($debug?->toArray());           // Structured array
+echo $debug?->dump();                  // Pretty JSON string
+
+// Legacy fallback for backwards compatibility
+$handlerDebug = $handler->getLastDebugInfo();
 ```
 
 Notes:

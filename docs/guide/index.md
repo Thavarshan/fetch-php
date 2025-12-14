@@ -262,9 +262,10 @@ $name = $response['user']['name'];
 
 The package provides several exception types for different error scenarios:
 
-- `NetworkException`: For connection and network-related errors
+- `NetworkException`: For connection and network-related errors (including timeouts surfaced from cURL)
 - `RequestException`: For HTTP request errors
 - `ClientException`: For unexpected client errors
-- `TimeoutException`: For request timeouts
+
+> **Note:** When you call the async helpers provided by the bundled Matrix library (`await`, `map`, etc.), a `\Matrix\Exceptions\TimeoutException` may bubble up. Inside the Fetch fluency (`awaitPromise()` / `retry()`), that timeout is wrapped in a `RuntimeException` so you can catch it alongside other client errors.
 
 Each exception provides context about the failed request to aid in debugging and error handling.

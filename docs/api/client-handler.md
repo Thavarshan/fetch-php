@@ -18,7 +18,10 @@ class ClientHandler implements ClientHandlerInterface
         HandlesUris,
         ManagesPromises,
         ManagesRetries,
-        PerformsHttpRequests;
+        PerformsHttpRequests,
+        HandlesMocking,
+        ManagesConnectionPool,
+        ManagesDebugAndProfiling;
 
     // ...
 }
@@ -379,6 +382,50 @@ Configures the request body for POST/PUT/PATCH/DELETE requests.
 
 ```php
 protected function configureRequestBody(mixed $body = null, string|ContentType $contentType = ContentType::JSON): void
+```
+
+## Caching
+
+### `withCache()`
+
+Enable caching with an optional cache backend and configuration.
+
+```php
+public function withCache(?CacheInterface $cache = null, array $options = []): self
+```
+
+`$options` mirror the keys described in [HTTP Caching](/guide/http-caching) (`default_ttl`, `stale_while_revalidate`, `cache_methods`, etc.).
+
+### `withoutCache()`
+
+Disable caching for the handler.
+
+```php
+public function withoutCache(): self
+```
+
+### `getCache()`
+
+Access the active cache backend (if any).
+
+```php
+public function getCache(): ?CacheInterface
+```
+
+### `isCacheEnabled()`
+
+Check whether caching is currently enabled.
+
+```php
+public function isCacheEnabled(): bool
+```
+
+### `getCacheManager()`
+
+Return the underlying `CacheManager` instance for advanced inspection.
+
+```php
+public function getCacheManager(): ?\Fetch\Cache\CacheManager
 ```
 
 ## Query Parameters
@@ -862,6 +909,143 @@ Sanitizes options for logging.
 protected function sanitizeOptions(array $options): array
 ```
 
+## Debugging & Profiling
+
+### `withLogLevel()`
+
+Set the PSR-3 log level used for request/response traces.
+
+```php
+public function withLogLevel(string $level): self
+```
+
+### `withDebug()`
+
+Enable or disable debug snapshots. Passing an array merges with `DebugInfo::getDefaultOptions()`.
+
+```php
+public function withDebug(array|bool $options = true): self
+```
+
+### `getDebugOptions()`
+
+Retrieve the current debug options array.
+
+```php
+public function getDebugOptions(): array
+```
+
+### `getLastDebugInfo()`
+
+Legacy accessor for the last captured `DebugInfo` instance (responses expose `getDebugInfo()` directly).
+
+```php
+public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo
+```
+
+### `debug()`
+
+Return a quick diagnostic array (URI, method, timeout, configured retries, etc.).
+
+```php
+public function debug(): array
+```
+
+### `withProfiler()`
+
+Attach a `Fetch\Support\FetchProfiler` (or any `ProfilerInterface`) to capture timings/memory metrics.
+
+```php
+public function withProfiler(FetchProfiler|ProfilerInterface $profiler): self
+```
+
+### `getProfiler()`
+
+Access the currently attached profiler instance.
+
+```php
+public function getProfiler(): ?ProfilerInterface
+```
+
+## Connection Pool & DNS
+
+Pooling and DNS cache instances are shared across handlers (via `GlobalServices`). Changing the configuration affects every handler in the process.
+
+### `withConnectionPool()`
+
+Enable/disable pooling or provide a configuration array.
+
+```php
+public function withConnectionPool(array|bool $config = true): self
+```
+
+Accepted keys mirror `Fetch\Pool\PoolConfiguration` (`max_connections`, `max_per_host`, `keep_alive_timeout`, `connection_timeout`, `dns_cache_ttl`, etc.).
+
+### `withHttp2()`
+
+Enable HTTP/2 support and optional curl tuning.
+
+```php
+public function withHttp2(array|bool $config = true): self
+```
+
+### `getConnectionPool()`
+
+```php
+public function getConnectionPool(): ?\Fetch\Pool\ConnectionPool
+```
+
+### `getDnsCache()`
+
+```php
+public function getDnsCache(): ?\Fetch\Pool\DnsCache
+```
+
+### `getHttp2Config()`
+
+```php
+public function getHttp2Config(): ?\Fetch\Pool\Http2Configuration
+```
+
+### `isPoolingEnabled()` / `isHttp2Enabled()`
+
+```php
+public function isPoolingEnabled(): bool
+public function isHttp2Enabled(): bool
+```
+
+### `getPoolStats()` / `getDnsCacheStats()`
+
+```php
+public function getPoolStats(): array
+public function getDnsCacheStats(): array
+```
+
+### `getConnectionDebugStats()`
+
+Convenience helper (used by debug snapshots) that combines pool and DNS state.
+
+```php
+public function getConnectionDebugStats(): array
+```
+
+### `clearDnsCache()`
+
+Clear the DNS cache (optionally for a single hostname).
+
+```php
+public function clearDnsCache(?string $hostname = null): self
+```
+
+### `closeAllConnections()` / `resetPool()`
+
+Tear down pooled connections or fully reset the shared pool state.
+
+```php
+public function closeAllConnections(): self
+public function resetPool(): self
+```
+
 ## Utility Methods
 
 ### `reset()`
@@ -870,14 +1054,6 @@ Resets the handler state.
 
 ```php
 public function reset(): ClientHandler
-```
-
-### `debug()`
-
-Returns debug information about the request.
-
-```php
-public function debug(): array
 ```
 
 ## Testing Utilities

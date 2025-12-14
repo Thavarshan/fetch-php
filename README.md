@@ -335,8 +335,8 @@ $data = await(retry(
 
 Fetch PHP automatically retries transient failures with exponential backoff.
 
-- Default: No retries enabled (set `maxRetries` to null by default)
-- Default delay: 100ms base with exponential backoff (when retries configured)
+- Default: 1 retry attempt (`ClientHandler::DEFAULT_RETRIES`) with a 100 ms base delay
+- Default delay: 100 ms base with exponential backoff (when retries configured)
 - Retry triggers:
   - Network/connect errors (e.g., ConnectException)
   - HTTP status codes: 408, 429, 500, 502, 503, 504, 507, 509, 520-523, 525, 527, 530 (customizable)
@@ -569,15 +569,14 @@ $response = $handler->get('https://api.example.com/users');
 
 ```php
 $handler->withCache(null, [
-    'ttl' => 3600,                      // Default TTL in seconds (overridden by Cache-Control)
-    'respect_headers' => true,           // Respect Cache-Control headers (default: true)
-    'is_shared_cache' => false,          // Act as shared cache (respects s-maxage)
-    'stale_while_revalidate' => 60,      // Serve stale for 60s while revalidating
-    'stale_if_error' => 300,             // Serve stale for 300s if backend fails
+    'default_ttl' => 3600,                  // Default TTL in seconds (overridden by Cache-Control)
+    'respect_cache_headers' => true,        // Honor Cache-Control headers (default: true)
+    'is_shared_cache' => false,             // Act as shared cache (respects s-maxage)
+    'stale_while_revalidate' => 60,         // Serve stale for 60s while revalidating
+    'stale_if_error' => 300,                // Serve stale for 300s if backend fails
     'vary_headers' => ['Accept', 'Accept-Language'], // Headers to vary cache by
-    'cache_methods' => ['GET', 'HEAD'],  // Cacheable HTTP methods
-    'cache_status_codes' => [200, 301],  // Cacheable status codes
-    'force_refresh' => false,            // Bypass cache and force fresh request
+    'cache_methods' => ['GET', 'HEAD'],     // Cacheable HTTP methods
+    'cache_status_codes' => [200, 301],     // Cacheable status codes
 ]);
 ```
 
@@ -595,6 +594,23 @@ $response = $handler->withOptions(['cache' => ['ttl' => 600]])
 // Custom cache key
 $response = $handler->withOptions(['cache' => ['key' => 'custom:users']])
     ->get('https://api.example.com/users');
+
+// Cache POST/PUT payloads (requires allowing the method globally)
+$handler->withCache(null, [
+    'cache_methods' => ['GET', 'HEAD', 'POST'],
+]);
+$report = $handler->withOptions([
+    'cache' => [
+        'ttl' => 120,
+        'cache_body' => true, // include the JSON body in the cache key
+    ],
+])->post('https://api.example.com/reports', ['range' => 'weekly']);
+
+Useful patterns:
+
+- **Force refresh**: set `force_refresh => true` on the request to ignore stored entries.
+- **Cache POST/PUT**: allow the verb in `cache_methods` via `withCache()` and set `cache_body => true` so the request body participates in the cache key.
+- **Static assets**: pin a custom `key` for predictable lookups regardless of URL params.
 ```
 
 ## Connection Pooling & HTTP/2
@@ -614,9 +630,12 @@ $handler->withConnectionPool([
     'enabled' => true,
     'max_connections' => 50,        // Total connections across all hosts
     'max_per_host' => 10,           // Max connections per host
-    'connection_ttl' => 60,         // Connection lifetime in seconds
-    'idle_timeout' => 30,           // Idle connection timeout in seconds
+    'max_idle_per_host' => 5,       // Idle sockets kept per host
+    'keep_alive_timeout' => 60,     // Connection lifetime in seconds
+    'connection_timeout' => 5,      // Dial timeout in seconds
     'dns_cache_ttl' => 300,         // DNS cache TTL in seconds
+    'connection_warmup' => false,
+    'warmup_connections' => 0,
 ]);
 ```
 
@@ -638,7 +657,7 @@ $handler->withHttp2([
 ```php
 // Get pool statistics
 $stats = $handler->getPoolStats();
-// Returns: connections_created, connections_reused, total_requests, total_latency_ms
+// Returns: connections_created, connections_reused, total_requests, average_latency, reuse_rate
 
 // Close all active connections
 $handler->closeAllConnections();
@@ -678,8 +697,11 @@ $handler->withLogLevel('info'); // default: debug
 
 $response = $handler->get('https://api.example.com/users');
 
-// Get debug info from last request
-$debug = $handler->getLastDebugInfo();
+// Preferred: read per-response debug snapshot
+$responseDebug = $response->getDebugInfo();
+
+// Legacy fallback for BC: handler-level snapshot (may lag in concurrent flows)
+$lastDebug = $handler->getLastDebugInfo();
 ```
 
 ## Testing Support
@@ -687,25 +709,33 @@ $debug = $handler->getLastDebugInfo();
 Fetch PHP includes built-in testing utilities for mocking HTTP responses:
 
 ```php
+use Fetch\Testing\MockServer;
 use Fetch\Testing\MockResponse;
-use Fetch\Testing\MockResponseSequence;
 
 // Mock a single response
-$handler = fetch_client()->getHandler();
-$handler->mock(MockResponse::make(['id' => 1, 'name' => 'John'], 200));
-
-$response = $handler->get('https://api.example.com/users/1');
-// Returns mocked response without making actual HTTP request
-
-// Mock a sequence of responses
-$sequence = new MockResponseSequence([
-    MockResponse::make(['id' => 1], 200),
-    MockResponse::make(['id' => 2], 200),
-    MockResponse::make(null, 404),
+MockServer::fake([
+    'GET https://api.example.com/users/1' => MockResponse::json([
+        'id' => 1,
+        'name' => 'Ada Lovelace',
+    ]),
 ]);
 
-$handler->mock($sequence);
-// Each subsequent request returns the next response in sequence
+$response = fetch('https://api.example.com/users/1');
+// Returns mocked response without making an actual HTTP request
+MockServer::assertSent('GET https://api.example.com/users/1');
+
+// Mock a sequence of responses
+MockServer::fake([
+    'https://api.example.com/users/*' => MockResponse::sequence([
+        MockResponse::json(['id' => 1]),
+        MockResponse::json(['id' => 2]),
+        MockResponse::notFound(),
+    ]),
+]);
+
+fetch('https://api.example.com/users/alpha'); // gets id 1
+fetch('https://api.example.com/users/beta');  // gets id 2
+fetch('https://api.example.com/users/omega'); // 404 from sequence
 ```
 
 ## Advanced Response Features
@@ -764,7 +794,7 @@ $handler->resetPool();
 
 // Get pool statistics
 $stats = $handler->getPoolStats();
-// Returns: connections_created, connections_reused, total_requests, total_latency_ms
+// Returns: connections_created, connections_reused, total_requests, average_latency, reuse_rate
 ```
 
 ## Async Notes

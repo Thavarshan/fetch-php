@@ -107,7 +107,6 @@ When network errors or other exceptions occur, they are thrown as PHP exceptions
 use Fetch\Exceptions\NetworkException;
 use Fetch\Exceptions\RequestException;
 use Fetch\Exceptions\ClientException;
-use Fetch\Exceptions\TimeoutException;
 
 try {
     $response = get('https://api.example.com/users');
@@ -120,9 +119,6 @@ try {
 } catch (NetworkException $e) {
     // Network-related issues (DNS failure, connection refused, etc.)
     echo "Network error: " . $e->getMessage();
-} catch (TimeoutException $e) {
-    // Request timed out
-    echo "Request timed out: " . $e->getMessage();
 } catch (RequestException $e) {
     // HTTP request errors
     echo "Request error: " . $e->getMessage();
@@ -141,6 +137,8 @@ try {
     // Catch any other exceptions
     echo "Error: " . $e->getMessage();
 }
+
+> **Timeouts:** When cURL reaches the configured `timeout`/`connect_timeout`, Guzzle raises a `ConnectException`, which Fetch re-emits as a `NetworkException`. If you are using the Matrix async helpers (`await`, `map`, etc.), a `\Matrix\Exceptions\TimeoutException` may bubble up instead; wrap those calls in their own `try/catch` if you need to distinguish the cause.
 ```
 
 ## Handling JSON Decoding Errors

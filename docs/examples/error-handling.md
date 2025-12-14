@@ -71,7 +71,6 @@ Handling network and other exceptions:
 use function fetch;
 use Fetch\Exceptions\NetworkException;
 use Fetch\Exceptions\RequestException;
-use Fetch\Exceptions\TimeoutException;
 
 try {
     $response = fetch('https://api.example.com/users');
@@ -86,10 +85,6 @@ try {
     // Network-related issues (DNS failure, connection refused, etc.)
     echo "Network error: " . $e->getMessage();
     logError('network', $e->getMessage());
-} catch (TimeoutException $e) {
-    // Request timed out
-    echo "Request timed out: " . $e->getMessage();
-    logError('timeout', $e->getMessage());
 } catch (RequestException $e) {
     // HTTP request errors
     echo "Request error: " . $e->getMessage();
@@ -108,6 +103,9 @@ try {
     echo "Error: " . $e->getMessage();
     logError('general', $e->getMessage());
 }
+```
+
+> **Timeouts:** When cURL hits your configured `timeout` or `connect_timeout`, Guzzle throws a `ConnectException`, which Fetch rethrows as a `NetworkException`. If you are inside a Matrix `async`/`await` flow, you may instead see a `\Matrix\Exceptions\TimeoutException`; catch it the same way to log timeout-specific telemetry.
 ```
 
 ## Handling Validation Errors

@@ -304,28 +304,42 @@ $response = makeRequestWithCustomRetry('https://api.example.com/users');
 
 ## Monitoring Retry Activity
 
-To monitor retry activity, you can combine logging with a custom callback:
+The built-in retry strategy logs every attempt, so attaching a PSR-3 logger is the easiest way to see what happened:
 
 ```php
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 use Fetch\Http\ClientHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 
-// Create a logger
 $logger = new Logger('retry');
 $logger->pushHandler(new StreamHandler('logs/retry.log', Logger::INFO));
 
-// Create a client with the logger
-$client = ClientHandler::create();
-$client->setLogger($logger);
-$client->retry(3, 100);
+$client = ClientHandler::create()
+    ->setLogger($logger)
+    ->withLogLevel('info') // retry logs default to info
+    ->retry(3, 100);
 
-// Make the request
-$response = $client->get('https://api.example.com/unstable-endpoint');
+$response = $client->get('https://api.example.com/unstable');
+```
 
-// After the request completes, you can get debug info
-$debugInfo = $client->debug();
-echo "Request required " . $debugInfo['retries'] . " retries\n";
+Each retry attempt results in a log entry similar to:
+
+```
+[2024-03-22T11:14:33+00:00] retry.INFO: Retrying request {"attempt":1,"max_attempts":3,"uri":"https://api.example.com/unstable","method":"GET","error":"Connection timed out","code":28}
+```
+
+If you need to capture the number of attempts programmatically, wrap your call with a counter:
+
+```php
+$attempts = 0;
+
+$response = retry(function () use (&$attempts) {
+    $attempts++;
+
+    return fetch('https://api.example.com/unstable');
+}, attempts: 3);
+
+echo "Tried {$attempts} times\n";
 ```
 
 ## Best Practices

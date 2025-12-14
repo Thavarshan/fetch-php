@@ -52,12 +52,21 @@ An associative array of request options:
 | `retry_delay` | `int` | Initial delay between retries in milliseconds |
 | `auth` | `array` | Basic auth credentials [username, password] |
 | `token` | `string` | Bearer token |
+| `content_type` | `string\|ContentType` | Explicit `Content-Type` header when sending a raw `body` |
+| `cache` | `bool\|array` | Enable/disable caching or supply per-request cache options (sync-only) |
+| `debug` | `bool\|array` | Enable debug snapshots; array merges with `DebugInfo::getDefaultOptions()` |
 | `proxy` | `string\|array` | Proxy configuration |
 | `cookies` | `bool\|CookieJarInterface` | Cookies configuration |
 | `allow_redirects` | `bool\|array` | Redirect handling configuration |
 | `cert` | `string\|array` | SSL certificate |
 | `ssl_key` | `string\|array` | SSL key |
 | `stream` | `bool` | Whether to stream the response |
+| `progress` | `callable` | Progress callback signature compatible with Guzzle |
+| `async` | `bool` | Return a promise instead of waiting for the response |
+
+`cache` accepts either a boolean or the same array structure described in [HTTP Caching](/guide/http-caching) (`ttl`, `respect_headers`, `force_refresh`, etc.). Remember that caching only applies to synchronous requests; when `async` is `true` the cache layer is bypassed.
+
+`debug` can be set to `true` (use defaults), `false`, or an array overriding keys such as `response_body`, `timing`, `memory`, and so on. See [Debugging & Profiling](/guide/debugging-and-profiling) for the full option list.
 
 ## Return Value
 
@@ -66,6 +75,7 @@ The return value depends on the `$resource` parameter:
 - If `$resource` is `null`: Returns the client instance (`ClientHandlerInterface` or `Client`) for method chaining
 - If `$resource` is a URL string: Returns a `ResponseInterface` object
 - If `$resource` is a `Request` object: Returns a `ResponseInterface` object
+- If the `async` option is `true`: the above values are wrapped in a `React\Promise\PromiseInterface`
 
 ## Throws
 
@@ -237,11 +247,12 @@ The `fetch()` function works by:
 ## Notes
 
 - The `fetch()` function is not a direct implementation of the Web Fetch API; it's inspired by it but adapted for PHP
-- When passing an array as the request body, it's automatically encoded as JSON
+- When you pass an array as the request body, it is only coerced into JSON if you use the `json` option or leave the `content_type` unset/JSON—otherwise the array is preserved (e.g., multipart form data)
 - For more complex request scenarios, use method chaining with `fetch()` or the `ClientHandler` class
 - The function automatically handles conversion between different data formats based on content type
 - When used without arguments, `fetch()` returns the global client instance for method chaining
 - Retry behavior: transient network errors (e.g., connection timeouts) and certain HTTP statuses (e.g., 408, 429, 5xx) are retried when configured. HTTP error responses are returned (not thrown) and may be retried internally.
+- HTTP caching (`cache` option/`withCache()`) is only applied to synchronous requests. When `async` is enabled the cache layer is bypassed.
 
 ## See Also
 

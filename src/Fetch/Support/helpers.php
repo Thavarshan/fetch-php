@@ -47,7 +47,7 @@ if (! function_exists('fetch')) {
 
         // If no resource is provided, return the client handler for chaining
         if ($resource === null) {
-            return fetch_client();
+            return fetch_client()->fetch();
         }
 
         // Process fetch-style options
@@ -102,7 +102,7 @@ if (! function_exists('process_request_options')) {
         // Copy other direct pass options
         $directPassOptions = [
             'timeout', 'connect_timeout', 'retries', 'retry_delay', 'auth', 'token',
-            'proxy', 'cookies', 'allow_redirects', 'cert', 'ssl_key', 'stream',
+            'proxy', 'cookies', 'allow_redirects', 'cert', 'ssl_key', 'stream', 'progress', 'debug',
         ];
 
         foreach ($directPassOptions as $opt) {
