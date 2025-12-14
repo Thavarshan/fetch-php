@@ -1,6 +1,23 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.4.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.4.1...HEAD)
+
+## [v3.4.1](https://github.com/Thavarshan/fetch-php/compare/v3.4.0...v3.4.1) - 2025-12-14
+
+### Added
+
+- Introduced `CODE_MAP.md` as an internal reference of every public helper, trait, interface, and subsystem so docs/tests can stay aligned with the codebase.
+- Added a FetchWatch-style “health monitor” example demonstrating retries, pooling, caching, async batching, and debug snapshots in `docs/examples/api-integration.md`.
+
+### Changed
+
+- Expanded the API docs for `fetch()`, `ClientHandler`, and `Response` to cover the full option surface (cache/debug/profiler/async) and newly exposed helpers (debug snapshots, pooling controls, cache methods).
+- Clarified retry monitoring guidance to rely on PSR-3 logs or explicit counters instead of the `debug()` array, and documented sync-only caching behaviour for async requests.
+
+### Fixed
+
+- Removed references to the non-existent `Fetch\Exceptions\TimeoutException` across guides and examples, explaining how timeouts bubble up via `NetworkException` or Matrix’s `TimeoutException`.
+- Updated error-handling documentation to disambiguate timeout handling and ensure users catch the correct exception classes.
 
 ## [v3.4.0](https://github.com/Thavarshan/fetch-php/compare/v3.3.0...v3.4.0) - 2025-12-07
 
