@@ -1,7 +1,6 @@
 {
     "name": "jerome/fetch-php",
     "description": "The JavaScript fetch API for PHP.",
-    "version": "3.3.0",
     "type": "library",
     "license": "MIT",
     "authors": [
