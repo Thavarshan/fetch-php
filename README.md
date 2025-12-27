@@ -64,18 +64,28 @@ composer require jerome/fetch-php
 
 ## Basic Usage
 
-### JavaScript-style API
+### JavaScript-style API (Promise Chaining)
 
 ```php
-// Simple GET request
-$response = fetch('https://api.example.com/users');
-$users = $response->json();
+use function async;
 
-// POST request with JSON body
-$response = fetch('https://api.example.com/users', [
-    'method' => 'POST',
-    'json' => ['name' => 'John Doe', 'email' => 'john@example.com'],
-]);
+// JavaScript-like promise chaining in PHP
+async(fn() => fetch('https://api.example.com/users'))
+    ->then(fn ($response) => $response->json())
+    ->catch(fn ($error) => echo "Error: " . $error->getMessage())
+    ->finally(fn () => echo "Request completed.");
+```
+
+Or, using the client handler for more control:
+
+```php
+$handler = fetch_client()->getHandler();
+$handler->async();
+
+$handler->get('https://api.example.com/users')
+    ->then(fn ($response) => $response->json())
+    ->catch(fn ($error) => echo "Error: " . $error->getMessage())
+    ->finally(fn () => echo "Request completed.");
 ```
 
 ### PHP-style Helpers
@@ -110,19 +120,11 @@ $response = fetch_client()
 ### Using Async/Await
 
 ```php
-// Import async/await functions from Matrix library
 use function async;
 use function await;
 
-// Wrap your fetch call in an async function
-$promise = async(function() {
-    return fetch('https://api.example.com/users');
-});
-
-// Await the result
-$response = await($promise);
+$response = await(async(fn() => fetch('https://api.example.com/users')));
 $users = $response->json();
-
 echo "Fetched " . count($users) . " users";
 ```
 
