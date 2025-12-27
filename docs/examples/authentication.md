@@ -810,8 +810,8 @@ An API client for applications that need to support multiple users or organizati
 
 ```php
 use function fetch;
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 class MultiTenantApiClient
 {

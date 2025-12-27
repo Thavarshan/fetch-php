@@ -115,10 +115,10 @@ $promise->then(
 ### Request Batching and Concurrency
 
 ```php
-use function async;
-use function await;
-use function all;
-use function map;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
+use function Matrix\Support\map;
 
 // Execute multiple requests in parallel
 $results = await(all([

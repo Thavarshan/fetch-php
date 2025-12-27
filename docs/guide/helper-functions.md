@@ -587,9 +587,9 @@ try {
 ### Parallel Requests with Modern Async/Await
 
 ```php
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 await(async(function() {
     // Create multiple requests

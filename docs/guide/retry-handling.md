@@ -164,9 +164,9 @@ A typical retry log entry looks like:
 Retries also work with asynchronous requests:
 
 ```php
-use function async;
-use function await;
-use function retry;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\retry;
 
 // Retry asynchronous operations
 $result = await(retry(

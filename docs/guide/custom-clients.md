@@ -255,9 +255,9 @@ $resources = $oauth2Client->get('/resources', ['type' => 'active']);
 You can create asynchronous API clients using the async features:
 
 ```php
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 class AsyncApiClient
 {

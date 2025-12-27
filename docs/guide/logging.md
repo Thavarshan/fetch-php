@@ -322,9 +322,9 @@ $client->setLogger($logger);
 When making asynchronous requests, logging still works the same way:
 
 ```php
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 

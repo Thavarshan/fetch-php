@@ -324,8 +324,8 @@ fclose($outputFile);
 For large files, you might want to use asynchronous uploads to prevent blocking:
 
 ```php
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 $result = await(async(function() {
     // Open file as a stream

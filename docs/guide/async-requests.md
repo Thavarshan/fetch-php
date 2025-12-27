@@ -30,9 +30,9 @@ To make asynchronous requests, wrap your `fetch()` calls with the `async()` func
 
 ```php
 // Import the async functions
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 // Create a promise for an async request
 $promise = async(function() {
@@ -166,7 +166,7 @@ $handler->async()
 Sometimes you may want whichever request finishes first:
 
 ```php
-use function race;
+use function Matrix\Support\race;
 
 // Create promises for redundant endpoints
 $promises = [
@@ -186,7 +186,7 @@ echo "Got data from the fastest source";
 To get the first successful result (ignoring failures):
 
 ```php
-use function any;
+use function Matrix\Support\any;
 
 // Create promises for redundant endpoints
 $promises = [
@@ -210,7 +210,7 @@ try {
 For processing many items with controlled parallelism:
 
 ```php
-use function map;
+use function Matrix\Support\map;
 
 // List of user IDs to fetch
 $userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -234,7 +234,7 @@ foreach ($responses as $index => $response) {
 For processing items in batches with controlled concurrency:
 
 ```php
-use function batch;
+use function Matrix\Support\batch;
 
 // Array of items to process
 $items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -304,7 +304,7 @@ await(async(function() {
 You can combine async operations with retry logic for more resilient requests:
 
 ```php
-use function retry;
+use function Matrix\Support\retry;
 
 // Retry a flaky request up to 3 times with exponential backoff
 $data = await(retry(
@@ -326,7 +326,7 @@ $data = await(retry(
 You can set a timeout when waiting for a promise:
 
 ```php
-use function timeout;
+use function Matrix\Support\timeout;
 
 try {
     // Add a 5-second timeout to a request

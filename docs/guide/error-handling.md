@@ -283,8 +283,8 @@ if ($response->isTooManyRequests()) {
 When working with asynchronous requests, you can use try/catch blocks with await or the catch method with promises:
 
 ```php
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 // Using try/catch with await
 await(async(function() {

@@ -252,9 +252,9 @@ $response = fetch_client()
 ### Asynchronous Requests
 
 ```php
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 // Modern async/await pattern
 await(async(function() {

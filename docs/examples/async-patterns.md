@@ -13,8 +13,8 @@ Making simple asynchronous requests:
 
 ```php
 use function fetch;
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 // Create an async function
 $fetchUsers = async(function() {
@@ -34,9 +34,9 @@ Making multiple requests in parallel:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 // Create async functions for different endpoints
 $fetchUsers = async(function() {
@@ -74,8 +74,8 @@ Making sequential requests where each depends on the result of the previous one:
 
 ```php
 use function fetch;
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 await(async(function() {
     // First, get a list of users
@@ -119,9 +119,9 @@ Using `race()` to get the result from whichever request finishes first:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function race;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\race;
 
 // Create promises for multiple mirror servers
 $promises = [
@@ -151,9 +151,9 @@ Using `any()` to get the first successful result, ignoring failures:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function any;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\any;
 
 // Create promises for redundant endpoints
 $promises = [
@@ -178,9 +178,9 @@ Process many items concurrently, but limit how many run at once:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function map;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\map;
 
 // List of user IDs to process
 $userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -212,9 +212,9 @@ Process items in batches rather than individually:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function batch;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\batch;
 
 // List of item IDs to process
 $itemIds = range(1, 100);
@@ -258,9 +258,9 @@ Adding timeouts to async operations:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function timeout;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\timeout;
 
 try {
     // Add a 5-second timeout to a potentially slow request
@@ -283,10 +283,10 @@ Implementing retry logic with async requests:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function retry;
-use function delay;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\retry;
+use function Matrix\Support\delay;
 
 // Define a function that might fail
 $fetchData = function() {
@@ -331,9 +331,9 @@ Implementing a rate-limited API client:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function delay;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\delay;
 
 class RateLimitedClient
 {
@@ -402,9 +402,9 @@ Handling paginated API results with async requests:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 await(async(function() {
     // Get the first page to determine total pages
@@ -447,9 +447,9 @@ Execute requests with complex dependencies:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 await(async(function() {
     // First level: fetch user and categories in parallel
@@ -506,9 +506,9 @@ Robust error handling for async requests:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 await(async(function() {
     try {
@@ -565,8 +565,8 @@ Using async requests with a caching layer:
 
 ```php
 use function fetch;
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 class AsyncCachedAPI
 {

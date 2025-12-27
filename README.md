@@ -67,7 +67,7 @@ composer require jerome/fetch-php
 ### JavaScript-style API (Promise Chaining)
 
 ```php
-use function async;
+use function Matrix\Support\async;
 
 // JavaScript-like promise chaining in PHP
 async(fn() => fetch('https://api.example.com/users'))
@@ -120,8 +120,8 @@ $response = fetch_client()
 ### Using Async/Await
 
 ```php
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 $response = await(async(fn() => fetch('https://api.example.com/users')));
 $users = $response->json();
@@ -132,9 +132,9 @@ echo "Fetched " . count($users) . " users";
 
 ```php
 // These async functions are provided by the Matrix library dependency
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 // Execute an async function
 await(async(function() {
@@ -159,8 +159,8 @@ await(async(function() {
 ### Sequential Requests with Async/Await
 
 ```php
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 await(async(function() {
     // First request: get auth token
@@ -190,8 +190,8 @@ await(async(function() {
 ### Error Handling with Async/Await
 
 ```php
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 try {
     $data = await(async(function() {
@@ -245,7 +245,7 @@ $promise->then(
 ### Concurrent Requests with Promise Utilities
 
 ```php
-use function race;
+use function Matrix\Support\race;
 
 // Create promises for redundant endpoints
 $promises = [
@@ -263,7 +263,7 @@ echo "Got data from the fastest source";
 ### Controlled Concurrency with Map
 
 ```php
-use function map;
+use function Matrix\Support\map;
 
 // List of user IDs to fetch
 $userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -285,7 +285,7 @@ foreach ($responses as $index => $response) {
 ### Batch Processing
 
 ```php
-use function batch;
+use function Matrix\Support\batch;
 
 // Array of items to process
 $items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -314,7 +314,7 @@ $results = await(batch(
 ### With Retries
 
 ```php
-use function retry;
+use function Matrix\Support\retry;
 
 // Retry a flaky request up to 3 times with exponential backoff
 $data = await(retry(

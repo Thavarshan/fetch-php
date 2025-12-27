@@ -224,8 +224,8 @@ $response = $client->get('/protected-resource');
 For scenarios where you need to perform authentication in an asynchronous context:
 
 ```php
-use function async;
-use function await;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
 await(async(function() {
     // First, get an auth token

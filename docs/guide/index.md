@@ -154,9 +154,9 @@ $response = $client->withBody($data, ContentType::JSON)->post('/users');
 For handling multiple requests efficiently:
 
 ```php
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 // Execute an async function
 await(async(function() {

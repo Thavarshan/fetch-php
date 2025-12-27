@@ -381,9 +381,9 @@ This example combines retries, shared pooling, caching, debug snapshots, and asy
 use Fetch\Cache\MemoryCache;
 use Fetch\Http\ClientHandler;
 use Fetch\Support\FetchProfiler;
-use function async;
-use function await;
-use function map;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\map;
 
 $handler = ClientHandler::create()
     ->baseUri('https://status.internal.example')

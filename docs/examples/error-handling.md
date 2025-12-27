@@ -252,9 +252,9 @@ Handling errors in asynchronous code:
 
 ```php
 use function fetch;
-use function async;
-use function await;
-use function all;
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
 await(async(function() {
     try {

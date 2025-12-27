@@ -305,7 +305,7 @@ await(async(function() {
 The `map()` function applies an async function to each item in an array with controlled concurrency:
 
 ```php
-use function map;
+use function Matrix\Support\map;
 
 // List of user IDs
 $userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -341,7 +341,7 @@ $responses = $handler->awaitPromise($handler->map($userIds, function($id) use ($
 For processing items in batches rather than one at a time:
 
 ```php
-use function batch;
+use function Matrix\Support\batch;
 
 // List of user IDs
 $userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -371,7 +371,7 @@ foreach ($results as $response) {
 You can add timeouts to promises:
 
 ```php
-use function timeout;
+use function Matrix\Support\timeout;
 
 try {
     // Add a 5-second timeout to a request
@@ -399,7 +399,7 @@ try {
 For operations that might fail, you can use the `retry()` function:
 
 ```php
-use function retry;
+use function Matrix\Support\retry;
 
 $result = await(retry(
     function() {
