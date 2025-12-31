@@ -58,10 +58,13 @@ features:
     icon: 📦
   - title: RFC 7234 Caching
     details: Sync-only cache with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error support.
+    icon: 🧠
   - title: Pooling & HTTP/2
     details: Shared connection pooling, DNS cache, and optional HTTP/2 with validation and stats for debugging.
+    icon: 🌐
   - title: Debug & Profiling
     details: Unified debug snapshots and optional profiler with timing, memory, and connection stats; configurable log level.
+    icon: 🧭
 ---
 
 <!-- The rest of your existing content starts here, properly formatted with Markdown -->
