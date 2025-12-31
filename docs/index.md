@@ -23,8 +23,8 @@ head:
 # Your existing hero section (unchanged)
 hero:
   name: Fetch PHP
-  text: The JavaScript fetch API for PHP
-  tagline: Modern, simple HTTP client with a familiar API
+  text: Write fetch() in PHP
+  tagline: The JavaScript fetch API experience, built for PHP 8.3+
   image:
     src: /logo.png
     alt: Fetch PHP
@@ -39,22 +39,22 @@ hero:
 # Your existing features section (unchanged)
 features:
   - title: Familiar API
-    details: If you know JavaScript's fetch() API, you'll feel right at home with Fetch PHP's intuitive interface.
+    details: Write requests in PHP the same way you do in JavaScript with fetch(), async, and await.
     icon: 🚀
   - title: Promise-Based Async
-    details: Support for async/await-style programming with promises for concurrent HTTP requests.
+    details: Promise-first API with then(), catch(), finally(), and helpers for concurrency.
     icon: ⚡
   - title: Fluent Interface
-    details: Chain methods together for clean, expressive code that's easy to read and maintain.
+    details: Chain config and requests for readable, composable HTTP code.
     icon: 🔗
   - title: Helper Functions
-    details: Simple global helpers like get(), post(), and fetch() for quick and easy HTTP requests.
+    details: Global helpers like fetch(), get(), post() for quick calls.
     icon: 🧰
   - title: PSR Compatible
     details: Implements PSR-7 (HTTP Messages), PSR-18 (HTTP Client), and PSR-3 (Logging) standards.
     icon: 🔄
   - title: Powerful Responses
-    details: Rich Response objects with methods for JSON parsing, XML handling, and more.
+    details: Rich response helpers for json(), text(), array(), object(), and status checks.
     icon: 📦
   - title: RFC 7234 Caching
     details: Sync-only cache with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error support.
@@ -66,82 +66,90 @@ features:
 
 <!-- The rest of your existing content starts here, properly formatted with Markdown -->
 
-## The Modern HTTP Client for PHP
+## The Fetch Experience, Now in PHP
+
+If you can write this in JavaScript:
+
+```js
+const response = await fetch('https://api.example.com/users');
+const users = await response.json();
+```
+
+You can write this in PHP:
 
 ```php
-// Quick API requests with fetch()
-$response = fetch('https://api.example.com/users');
-$users = $response->json();
+use function Matrix\Support\async;
+use function Matrix\Support\await;
 
-// Or use HTTP method helpers
+$response = await(async(fn() => fetch('https://api.example.com/users')));
+$users = $response->json();
+```
+
+Same mental model. Same simple flow. PHP-native results.
+
+### Promise Chaining That Feels Like JavaScript
+
+```php
+use function Matrix\Support\async;
+
+async(fn() => fetch('https://api.example.com/users'))
+    ->then(fn ($response) => $response->json())
+    ->catch(fn ($error) => $error->getMessage())
+    ->finally(fn () => echo 'Request completed.');
+```
+
+### Fluent, Readable Requests
+
+```php
+$response = fetch_client()
+    ->baseUri('https://api.example.com')
+    ->withHeaders(['Accept' => 'application/json'])
+    ->withToken('your-auth-token')
+    ->withQueryParameters(['page' => 1, 'limit' => 10])
+    ->get('/users');
+```
+
+### Quick Helpers When You Want Less Syntax
+
+```php
+$users = get('https://api.example.com/users')->json();
 $user = post('https://api.example.com/users', [
     'name' => 'John Doe',
-    'email' => 'john@example.com'
+    'email' => 'john@example.com',
 ])->json();
 ```
 
-### Flexible Authentication
+### Async Concurrency, Not Boilerplate
 
 ```php
-// Bearer token auth
-$response = fetch('https://api.example.com/me', [
-    'token' => 'your-oauth-token'
-]);
+use function Matrix\Support\async;
+use function Matrix\Support\await;
+use function Matrix\Support\all;
 
-// Basic auth
-$response = fetch('https://api.example.com/private', [
-    'auth' => ['username', 'password']
-]);
-```
-
-### Powerful Async Support
-
-```php
-// Create promises for parallel requests
-$usersPromise = async(function() {
-    return fetch('https://api.example.com/users');
-});
-
-$postsPromise = async(function() {
-    return fetch('https://api.example.com/posts');
-});
-
-// Wait for all to complete
-all(['users' => $usersPromise, 'posts' => $postsPromise])
-    ->then(function ($results) {
-        // Process results from both requests
-        $users = $results['users']->json();
-        $posts = $results['posts']->json();
-    });
-```
-
-### Modern Await-Style Syntax
-
-```php
 await(async(function() {
-    // Process multiple requests in parallel
     $results = await(all([
         'users' => async(fn() => fetch('https://api.example.com/users')),
-        'posts' => async(fn() => fetch('https://api.example.com/posts'))
+        'posts' => async(fn() => fetch('https://api.example.com/posts')),
     ]));
 
-    // Work with results as if they were synchronous
     foreach ($results['users']->json() as $user) {
         echo $user['name'] . "\n";
     }
 }));
 ```
 
+> Note: Async helpers like `async()`, `await()`, `all()`, `race()`, `map()`, and `batch()` come from the Matrix library dependency and are available out of the box.
+
 ## Why Fetch PHP?
 
-Fetch PHP brings the simplicity of JavaScript's fetch API to PHP, while adding powerful features like retry handling, promise-based asynchronous requests, and fluent interface for request building. It's designed to be both simple for beginners and powerful for advanced users.
+Fetch PHP brings the simplicity of JavaScript's fetch API to PHP and layers in modern PHP features: retries with exponential backoff, async helpers, fluent configuration, type-safe enums, and first-class response utilities. It feels familiar to full-stack developers and stays powerful enough for real production workloads.
 
 <div class="custom-block tip">
   <p><strong>Key Benefits:</strong></p>
   <ul>
     <li>JavaScript-like syntax that's familiar to full-stack developers</li>
-    <li>Promise-based API with .then(), .catch(), and .finally() methods</li>
-    <li>Built on Guzzle for rock-solid performance with an elegant API</li>
+    <li>Promise-based API with .then(), .catch(), and .finally()</li>
+    <li>Built on Guzzle for performance with a more elegant API</li>
     <li>Type-safe enums for HTTP methods, content types, and status codes</li>
     <li>Automatic retry mechanics with exponential backoff</li>
     <li>RFC 7234 caching (sync-only) with stale-while-revalidate and stale-if-error</li>
@@ -169,9 +177,9 @@ While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by pro
 
 Yes! Fetch PHP works seamlessly with all PHP frameworks including Laravel, Symfony, CodeIgniter, and others. It requires PHP 8.3 or higher.
 
-### Does Fetch PHP support file uploads?
+### Does Fetch PHP support retries and caching?
 
-Absolutely. Fetch PHP provides an elegant API for file uploads, supporting both single and multiple file uploads with progress tracking.
+Yes. Fetch PHP includes retry mechanics with exponential backoff, and RFC 7234 caching for sync requests.
 
 ### Is Fetch PHP suitable for production use?
 
