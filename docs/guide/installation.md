@@ -32,7 +32,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 While we strongly recommend using Composer, you can also manually download the package and include it in your project:
 
-1. Download the latest release from [GitHub](https://github.com/jerome/fetch-php/releases)
+1. Download the latest release from [GitHub](https://github.com/Thavarshan/fetch-php/releases)
 2. Extract the files into your project directory
 3. Set up your own autoloading system or include files manually
 

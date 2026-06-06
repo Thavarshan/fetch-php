@@ -1,6 +1,25 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/v3.4.1...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.5.0...HEAD)
+
+## [v3.5.0](https://github.com/Thavarshan/fetch-php/compare/3.4.1...3.5.0) - 2026-06-06
+
+### Added
+
+- Introduced a custom VitePress home page and shared docs theme components for a clearer first-run documentation experience.
+- Added lucide-powered feature icons and refreshed documentation examples around the JavaScript-style Fetch PHP API.
+
+### Changed
+
+- Updated Matrix helper imports throughout the README and documentation to consistently use the `Matrix\Support` namespace.
+- Refined homepage copy and feature descriptions to better explain Fetch PHP's JavaScript-like request flow, async helpers, caching, retries, debugging, and testing utilities.
+- Hardened the tag release workflow now that package versions are derived from Git tags instead of a `version` field in `composer.json`.
+- Expanded the tag release workflow setup to match package extension requirements and run the release test suite with `NO_NETWORK=1`.
+
+### Fixed
+
+- Corrected stale GitHub/support links in the installation guide and repository support metadata.
+- Removed a stale cache comment that referenced the old `ManagesCache` trait name.
 
 ## [v3.4.1](https://github.com/Thavarshan/fetch-php/compare/v3.4.0...v3.4.1) - 2025-12-14
 

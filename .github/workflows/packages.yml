@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - '[0-9]*.[0-9]*.[0-9]*'
   release:
     types: [published]
 
@@ -14,7 +15,7 @@ permissions:
 jobs:
   validate-tag:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/')
 
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -27,7 +28,8 @@ jobs:
       - name: Validate version tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
           # Check if it's a pre-release (contains alpha, beta, rc)
@@ -45,8 +47,13 @@ jobs:
 
       - name: Check version matches composer.json
         run: |
-          COMPOSER_VERSION=$(php -r "echo json_decode(file_get_contents('composer.json'))->version;")
-          if [ "${{ steps.version.outputs.version }}" != "$COMPOSER_VERSION" ]; then
+          COMPOSER_VERSION=$(php -r '$composer = json_decode(file_get_contents("composer.json")); echo $composer->version ?? "";')
+
+          # Libraries published through Packagist usually derive the package
+          # version from the Git tag. composer.json intentionally omits
+          # "version" as of v3.4.1, so only enforce this check when a version
+          # field is explicitly present.
+          if [ -n "$COMPOSER_VERSION" ] && [ "${{ steps.version.outputs.version }}" != "$COMPOSER_VERSION" ]; then
             echo "Version mismatch: tag ${{ steps.version.outputs.version }} != composer.json $COMPOSER_VERSION"
             exit 1
           fi
@@ -54,7 +61,7 @@ jobs:
   test-before-release:
     runs-on: ubuntu-latest
     needs: validate-tag
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Checkout code
@@ -64,7 +71,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: curl, mbstring, json, openssl, gd
+          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
           coverage: none
           tools: composer:v2
 
@@ -73,11 +80,13 @@ jobs:
 
       - name: Run full test suite
         run: composer check
+        env:
+          NO_NETWORK: 1
 
   create-release:
     runs-on: ubuntu-latest
     needs: [validate-tag, test-before-release]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Checkout code
@@ -89,7 +98,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: curl, mbstring, json, openssl, gd
+          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
           tools: composer:v2
 
       - name: Install dependencies
@@ -129,7 +138,7 @@ jobs:
   packagist-webhook:
     runs-on: ubuntu-latest
     needs: [validate-tag, create-release]
-    if: startsWith(github.ref, 'refs/tags/v') && needs.validate-tag.outputs.is_prerelease == 'false'
+    if: startsWith(github.ref, 'refs/tags/') && needs.validate-tag.outputs.is_prerelease == 'false'
 
     steps:
       - name: Update Packagist
