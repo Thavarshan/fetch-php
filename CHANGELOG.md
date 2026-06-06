@@ -13,6 +13,7 @@
 
 - Updated Matrix helper imports throughout the README and documentation to consistently use the `Matrix\Support` namespace.
 - Refined homepage copy and feature descriptions to better explain Fetch PHP's JavaScript-like request flow, async helpers, caching, retries, debugging, and testing utilities.
+- Pinned Duster to the known-compatible 3.3.0 release so tag builds do not drift onto stricter formatter rules without an intentional style migration.
 - Hardened the tag release workflow now that package versions are derived from Git tags instead of a `version` field in `composer.json`.
 - Expanded the tag release workflow setup to match package extension requirements and run the release test suite with `NO_NETWORK=1`.
 

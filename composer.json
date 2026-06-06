@@ -41,7 +41,7 @@
         "phpunit/phpunit": "^11.5",
         "squizlabs/php_codesniffer": "^3.7",
         "symfony/var-dumper": "^6.0|^7.2",
-        "tightenco/duster": "^3.2"
+        "tightenco/duster": "3.3.0"
     },
     "autoload-dev": {
         "psr-4": {
