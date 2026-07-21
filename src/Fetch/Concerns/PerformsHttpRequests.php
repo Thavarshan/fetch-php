@@ -19,6 +19,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Matrix\Exceptions\AsyncException;
+use Psr\Http\Message\RequestInterface;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 
@@ -243,6 +244,141 @@ trait PerformsHttpRequests
         // Start profiling once for this request path
         $requestId = $this->startProfiling($methodStr, $fullUri);
 
+        // Wrap the send in the middleware pipeline when any middleware is
+        // registered. Middleware sit outside the built-in mock/cache/retry
+        // logic, so they can inspect, modify, or short-circuit the request.
+        $resolvedMiddleware = method_exists($this, 'resolveMiddleware')
+            ? $this->resolveMiddleware()
+            : [];
+
+        if ($resolvedMiddleware === []) {
+            return $this->executeCore($methodStr, $fullUri, $guzzleOptions, $context, $startTime, $startMemory, $requestId);
+        }
+
+        [$psrRequest, $seedBody] = $this->buildMiddlewareRequest($methodStr, $fullUri, $guzzleOptions);
+
+        $core = function (RequestInterface $request) use ($guzzleOptions, $seedBody, $context, $startTime, $startMemory, $requestId): ResponseInterface|PromiseInterface {
+            $mergedOptions = $this->mergeRequestIntoOptions($request, $guzzleOptions, $seedBody);
+
+            return $this->executeCore(
+                $request->getMethod(),
+                (string) $request->getUri(),
+                $mergedOptions,
+                $context,
+                $startTime,
+                $startMemory,
+                $requestId,
+            );
+        };
+
+        return $this->coerceMiddlewareResult($this->runThroughMiddleware($psrRequest, $core));
+    }
+
+    /**
+     * Sends an HTTP request with the specified parameters.
+     *
+     * @param  string|Method  $method  HTTP method (e.g., GET, POST)
+     * @param  string  $uri  URI to send the request to
+     * @param  mixed  $body  Request body
+     * @param  string|ContentType  $contentType  Content type of the request
+     * @param  array<string, mixed>  $options  Additional request options
+     * @return Response|PromiseInterface Response or promise
+     */
+    public function request(
+        string|Method $method,
+        string $uri,
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+        array $options = [],
+    ): Response|PromiseInterface {
+        $mergedOptions = RequestOptions::merge($this->options, $options);
+
+        if ($body !== null) {
+            $mergedOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
+        }
+
+        return $this->sendRequest($method, $uri, $mergedOptions);
+    }
+
+    /**
+     * Get the effective timeout for the request.
+     *
+     * Supports per-request timeout via RequestContext, with handler defaults as fallback.
+     *
+     * @param  RequestContext|null  $context  Optional request context for per-request override
+     * @return int The timeout in seconds
+     */
+    public function getEffectiveTimeout(?RequestContext $context = null): int
+    {
+        // First check RequestContext for per-request override
+        if ($context !== null) {
+            return $context->getTimeout();
+        }
+
+        // Next check options array
+        if (isset($this->options['timeout']) && is_int($this->options['timeout'])) {
+            return $this->options['timeout'];
+        }
+
+        // Then check explicitly set timeout property
+        if (isset($this->timeout) && is_int($this->timeout)) {
+            return $this->timeout;
+        }
+
+        // Fall back to default
+        return self::DEFAULT_TIMEOUT;
+    }
+
+    /**
+     * Normalize whatever the middleware pipeline returns into a Fetch response.
+     *
+     * Middleware may short-circuit with any PSR-7 response; those are wrapped in
+     * a buffered {@see Response} so the public contract always yields a Fetch
+     * response (or a promise of one).
+     */
+    protected function coerceMiddlewareResult(\Psr\Http\Message\ResponseInterface|PromiseInterface $result): ResponseInterface|PromiseInterface
+    {
+        if ($result instanceof PromiseInterface) {
+            return $result->then(fn ($response) => $this->coerceResponseValue($response));
+        }
+
+        return $this->coerceResponseValue($result);
+    }
+
+    /**
+     * Wrap a foreign PSR-7 response in a Fetch response, leaving Fetch
+     * responses untouched.
+     */
+    protected function coerceResponseValue(mixed $response): mixed
+    {
+        if ($response instanceof ResponseInterface) {
+            return $response;
+        }
+
+        if ($response instanceof \Psr\Http\Message\ResponseInterface) {
+            return Response::createFromBase($response);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Execute the built-in send pipeline: mocking, caching, and the actual
+     * synchronous or asynchronous request. This is the core handler wrapped by
+     * any registered middleware.
+     *
+     * @param  array<string, mixed>  $guzzleOptions
+     * @return ResponseInterface|PromiseInterface The response or promise
+     */
+    protected function executeCore(
+        string $methodStr,
+        string $fullUri,
+        array $guzzleOptions,
+        RequestContext $context,
+        float $startTime,
+        int $startMemory,
+        ?string $requestId,
+    ): ResponseInterface|PromiseInterface {
         // Check for mock response first (if HandlesMocking trait is available)
         if (method_exists($this, 'handleMockRequest')) {
             $mockResponse = $this->handleMockRequest($methodStr, $fullUri, $guzzleOptions);
@@ -339,58 +475,94 @@ trait PerformsHttpRequests
     }
 
     /**
-     * Sends an HTTP request with the specified parameters.
+     * Build the PSR-7 request handed to the middleware pipeline.
      *
-     * @param  string|Method  $method  HTTP method (e.g., GET, POST)
-     * @param  string  $uri  URI to send the request to
-     * @param  mixed  $body  Request body
-     * @param  string|ContentType  $contentType  Content type of the request
-     * @param  array<string, mixed>  $options  Additional request options
-     * @return Response|PromiseInterface Response or promise
+     * The request carries the resolved method, absolute URI, and headers, plus
+     * a best-effort serialization of the body so middleware can read it. The
+     * seeded body string is returned alongside so the core handler can detect
+     * whether a middleware replaced it.
+     *
+     * @param  array<string, mixed>  $guzzleOptions
+     * @return array{0: RequestInterface, 1: string|null}
      */
-    public function request(
-        string|Method $method,
-        string $uri,
-        mixed $body = null,
-        string|ContentType $contentType = ContentType::JSON,
-        array $options = [],
-    ): Response|PromiseInterface {
-        $mergedOptions = RequestOptions::merge($this->options, $options);
+    protected function buildMiddlewareRequest(string $method, string $uri, array $guzzleOptions): array
+    {
+        $headers = $guzzleOptions['headers'] ?? [];
+        $seedBody = $this->encodeSeedBody($guzzleOptions);
 
-        if ($body !== null) {
-            $mergedOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
-        }
+        $request = new GuzzleRequest($method, $uri, $headers, $seedBody ?? '');
 
-        return $this->sendRequest($method, $uri, $mergedOptions);
+        return [$request, $seedBody];
     }
 
     /**
-     * Get the effective timeout for the request.
+     * Serialize the outgoing body to a string for middleware inspection.
      *
-     * Supports per-request timeout via RequestContext, with handler defaults as fallback.
+     * Returns null when there is no representable body (e.g. multipart uploads,
+     * which Guzzle streams itself, or no body at all).
      *
-     * @param  RequestContext|null  $context  Optional request context for per-request override
-     * @return int The timeout in seconds
+     * @param  array<string, mixed>  $guzzleOptions
      */
-    public function getEffectiveTimeout(?RequestContext $context = null): int
+    protected function encodeSeedBody(array $guzzleOptions): ?string
     {
-        // First check RequestContext for per-request override
-        if ($context !== null) {
-            return $context->getTimeout();
+        if (array_key_exists('body', $guzzleOptions) && is_string($guzzleOptions['body'])) {
+            return $guzzleOptions['body'];
         }
 
-        // Next check options array
-        if (isset($this->options['timeout']) && is_int($this->options['timeout'])) {
-            return $this->options['timeout'];
+        if (isset($guzzleOptions['json'])) {
+            try {
+                return json_encode($guzzleOptions['json'], JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                return null;
+            }
         }
 
-        // Then check explicitly set timeout property
-        if (isset($this->timeout) && is_int($this->timeout)) {
-            return $this->timeout;
+        if (isset($guzzleOptions['form_params']) && is_array($guzzleOptions['form_params'])) {
+            return http_build_query($guzzleOptions['form_params'], '', '&');
         }
 
-        // Fall back to default
-        return self::DEFAULT_TIMEOUT;
+        return null;
+    }
+
+    /**
+     * Fold any middleware changes to the request back into the Guzzle options.
+     *
+     * Headers from the (possibly modified) request replace the outgoing header
+     * set. If a middleware replaced the body, it is sent verbatim and the
+     * structured body keys are dropped so they do not conflict.
+     *
+     * @param  array<string, mixed>  $guzzleOptions
+     * @return array<string, mixed>
+     */
+    protected function mergeRequestIntoOptions(RequestInterface $request, array $guzzleOptions, ?string $seedBody): array
+    {
+        $headers = [];
+        foreach ($request->getHeaders() as $name => $values) {
+            $headers[$name] = count($values) === 1 ? $values[0] : $values;
+        }
+
+        if ($headers !== []) {
+            $guzzleOptions['headers'] = $headers;
+        }
+
+        // The URI is already absolute; ensure no base_uri is re-applied.
+        unset($guzzleOptions['base_uri']);
+
+        $body = (string) $request->getBody();
+
+        if ($seedBody !== null && $body !== $seedBody) {
+            // A middleware rewrote the body: send it raw.
+            unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);
+            $guzzleOptions['body'] = $body;
+        } elseif ($seedBody === null && $body !== ''
+            && ! isset($guzzleOptions['multipart'])
+            && ! isset($guzzleOptions['form_params'])
+            && ! isset($guzzleOptions['json'])) {
+            // No structured body existed, but a middleware added one.
+            $guzzleOptions['body'] = $body;
+        }
+
+        return $guzzleOptions;
     }
 
     /**

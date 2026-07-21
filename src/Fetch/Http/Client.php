@@ -10,6 +10,7 @@ use Fetch\Exceptions\ClientException;
 use Fetch\Exceptions\NetworkException;
 use Fetch\Exceptions\RequestException;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
+use Fetch\Interfaces\Middleware;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
 use GuzzleHttp\ClientInterface as GuzzleClientInterface;
@@ -391,6 +392,95 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|Method $method = Method::GET,
     ): EventSource {
         return $this->handler->withOptions($options ?? [])->sse($method, $url);
+    }
+
+    /**
+     * Append a middleware to the underlying handler's stack.
+     *
+     * @param  Middleware|callable(\Psr\Http\Message\RequestInterface, callable): mixed  $middleware
+     * @return $this
+     */
+    public function addMiddleware(Middleware|callable $middleware, int $priority = 0): self
+    {
+        $this->handler->addMiddleware($middleware, $priority);
+
+        return $this;
+    }
+
+    /**
+     * Replace the underlying handler's middleware stack.
+     *
+     * @param  array<int, Middleware|callable|array{0: Middleware|callable, 1?: int}>  $middleware
+     * @return $this
+     */
+    public function middleware(array $middleware): self
+    {
+        $this->handler->middleware($middleware);
+
+        return $this;
+    }
+
+    /**
+     * Remove middleware from the underlying handler's stack.
+     *
+     * @param  class-string|null  $class
+     * @return $this
+     */
+    public function withoutMiddleware(?string $class = null): self
+    {
+        $this->handler->withoutMiddleware($class);
+
+        return $this;
+    }
+
+    /**
+     * Get the resolved middleware stack in execution order.
+     *
+     * @return array<int, Middleware|callable>
+     */
+    public function getMiddleware(): array
+    {
+        return $this->handler->getMiddleware();
+    }
+
+    /**
+     * Apply the callback to the client when the condition is truthy.
+     *
+     * @param  callable(self, mixed): mixed  $callback
+     * @param  callable(self, mixed): mixed|null  $default
+     * @return $this
+     */
+    public function when(mixed $condition, callable $callback, ?callable $default = null): self
+    {
+        $value = is_callable($condition) ? $condition($this) : $condition;
+
+        if ($value) {
+            $callback($this, $value);
+        } elseif ($default !== null) {
+            $default($this, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Apply the callback to the client when the condition is falsy.
+     *
+     * @param  callable(self, mixed): mixed  $callback
+     * @param  callable(self, mixed): mixed|null  $default
+     * @return $this
+     */
+    public function unless(mixed $condition, callable $callback, ?callable $default = null): self
+    {
+        $value = is_callable($condition) ? $condition($this) : $condition;
+
+        if (! $value) {
+            $callback($this, $value);
+        } elseif ($default !== null) {
+            $default($this, $value);
+        }
+
+        return $this;
     }
 
     /**

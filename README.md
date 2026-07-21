@@ -25,6 +25,7 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 - **Fluent Interface**: Build requests with a clean, chainable API
 - **Built on Guzzle**: Benefit from Guzzle's robust functionality with a more elegant API
 - **Streaming & Server-Sent Events**: Consume response bodies incrementally (`response.body`-style) and parse `text/event-stream` responses — ideal for streaming LLM APIs and live feeds
+- **Middleware Pipeline**: PSR-7-based middleware/interceptors for cross-cutting concerns (auth, logging, versioning) with priority ordering and conditional application
 - **Retry Mechanics**: Configurable retry logic with exponential backoff for transient failures
 - **RFC 7234 HTTP Caching**: Full caching support with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error
 - **Connection Pooling**: Reuse TCP connections across requests with global connection pool and DNS caching

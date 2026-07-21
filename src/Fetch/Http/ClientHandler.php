@@ -11,6 +11,7 @@ use Fetch\Concerns\HandlesMocking;
 use Fetch\Concerns\HandlesUris;
 use Fetch\Concerns\ManagesConnectionPool;
 use Fetch\Concerns\ManagesDebugAndProfiling;
+use Fetch\Concerns\ManagesMiddleware;
 use Fetch\Concerns\ManagesPromises;
 use Fetch\Concerns\ManagesRetries;
 use Fetch\Concerns\PerformsHttpRequests;
@@ -39,6 +40,7 @@ class ClientHandler implements ClientHandlerInterface
     use HandlesUris;
     use ManagesConnectionPool;
     use ManagesDebugAndProfiling;
+    use ManagesMiddleware;
     use ManagesPromises;
     use ManagesRetries;
     use PerformsHttpRequests;

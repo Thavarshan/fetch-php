@@ -1,6 +1,18 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.6.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.7.0...HEAD)
+
+## [v3.7.0](https://github.com/Thavarshan/fetch-php/compare/3.6.0...3.7.0) - 2026-07-21
+
+### Added
+
+- **Middleware/Interceptor system** ([#39](https://github.com/Thavarshan/fetch-php/issues/39)) for wrapping the request/response lifecycle with cross-cutting concerns:
+  - `Fetch\Interfaces\Middleware` — `handle(RequestInterface $request, callable $next)` contract; plain callables with the same signature are accepted anywhere a middleware is.
+  - `Fetch\Http\MiddlewarePipeline` — composes an ordered, outermost-first stack into a single onion around the core request handler; transport-agnostic across sync responses and async promises.
+  - `Fetch\Concerns\ManagesMiddleware` — `addMiddleware()`, `middleware()`, `withoutMiddleware()`, and `getMiddleware()` on `ClientHandler` and `Client`, with priority ordering (highest runs first, stable on ties).
+  - Conditional configuration via `when()` / `unless()`.
+  - Middleware can modify the request, short-circuit with any PSR-7 response (coerced into a buffered `Response`), inspect/modify the response, and run in both synchronous and asynchronous modes. They sit outside the built-in mocking, caching, and retry logic.
+  - Built-in middleware: `Fetch\Middleware\AddHeadersMiddleware` and `Fetch\Middleware\LoggingMiddleware`.
 
 ## [v3.6.0](https://github.com/Thavarshan/fetch-php/compare/3.5.1...3.6.0) - 2026-07-21
 

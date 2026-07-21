@@ -211,6 +211,10 @@ export default defineConfig({
                             text: "Streaming & Server-Sent Events",
                             link: "/guide/streaming",
                         },
+                        {
+                            text: "Middleware & Interceptors",
+                            link: "/guide/middleware",
+                        },
                         { text: "File Uploads", link: "/guide/file-uploads" },
                         {
                             text: "Custom Clients",
