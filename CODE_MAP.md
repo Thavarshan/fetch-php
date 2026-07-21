@@ -115,6 +115,18 @@ Key runtime behaviors:
 
 ---
 
+## Middleware Pipeline
+
+- `Fetch\Interfaces\Middleware` – `handle(RequestInterface $request, callable $next): ResponseInterface|PromiseInterface`. Plain callables with the same shape are accepted anywhere a middleware is.
+- `Fetch\Interfaces\MiddlewareAware` – handler/client contract: `addMiddleware()`, `middleware()`, `withoutMiddleware()`, `getMiddleware()`, `when()`, `unless()`.
+- `Fetch\Concerns\ManagesMiddleware` – trait mixed into `ClientHandler`. Stores middleware with a priority + insertion sequence; `resolveMiddleware()` orders them highest-priority-first (stable on ties). `runThroughMiddleware()` builds the pipeline around a core handler.
+- `Fetch\Http\MiddlewarePipeline` – composes an ordered (outermost-first) list into a single callable onion via `array_reduce`; supports both `Middleware` objects and callables and is transport-agnostic (passes through sync responses or promises).
+- Integration: `PerformsHttpRequests::sendRequest()` builds a PSR-7 request from the resolved method/URI/headers/body, runs it through the pipeline, and folds middleware changes back into the Guzzle options before the built-in mock/cache/retry/execute core (`executeCore`). Middleware therefore sit outside caching and can short-circuit; a foreign PSR-7 response returned by a middleware is coerced into a buffered `Fetch\Http\Response`.
+- `Client` mirrors the middleware methods, delegating to its handler.
+- Built-in middleware (`src/Fetch/Middleware`): `AddHeadersMiddleware` (inject/override headers) and `LoggingMiddleware` (PSR-3 request/response logging with a correlation id; works sync and async).
+
+---
+
 ## Support Services
 
 - `Fetch\Support\RequestOptions`
