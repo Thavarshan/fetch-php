@@ -5,9 +5,11 @@ declare(strict_types=1);
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Http\Client;
+use Fetch\Http\EventSource;
 use Fetch\Http\Response as HttpResponse;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
 use Fetch\Support\RequestOptions;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestInterface;
@@ -356,6 +358,64 @@ if (! function_exists('delete')) {
     function delete(string $url, mixed $data = null, ?array $options = []): ResponseInterface
     {
         return request_method('DELETE', $url, $data, $options);
+    }
+}
+
+if (! function_exists('fetch_stream')) {
+    /**
+     * Perform a request and return an unbuffered, streamable response.
+     *
+     * Unlike {@see fetch()}, the response body is not read into memory. Pull
+     * chunks or lines from the returned {@see StreamedResponse} as the server
+     * produces them — the PHP equivalent of JavaScript's `response.body`.
+     *
+     * ```php
+     * foreach (fetch_stream('https://example.com/large-file')->lines() as $line) {
+     *     // process each line as it arrives
+     * }
+     * ```
+     *
+     * @param  string  $url  URL to fetch
+     * @param  array<string, mixed>|null  $options  Additional request options (method defaults to GET)
+     */
+    function fetch_stream(string $url, ?array $options = []): StreamedResponseInterface
+    {
+        $options = $options ?? [];
+        $method = $options['method'] ?? Method::GET;
+        unset($options['method']);
+
+        return fetch_client()->stream($url, $options, $method);
+    }
+}
+
+if (! function_exists('fetch_sse')) {
+    /**
+     * Perform a request and consume the response as Server-Sent Events.
+     *
+     * Returns an {@see EventSource} that lazily yields {@see ServerSentEvent}
+     * objects, matching the transport used by streaming LLM APIs and live
+     * feeds. An `Accept: text/event-stream` header is added automatically.
+     *
+     * ```php
+     * foreach (fetch_sse('https://api.example.com/v1/stream') as $event) {
+     *     if ($event->isDone()) {
+     *         break;
+     *     }
+     *
+     *     $chunk = $event->json();
+     * }
+     * ```
+     *
+     * @param  string  $url  URL to fetch
+     * @param  array<string, mixed>|null  $options  Additional request options (method defaults to GET)
+     */
+    function fetch_sse(string $url, ?array $options = []): EventSource
+    {
+        $options = $options ?? [];
+        $method = $options['method'] ?? Method::GET;
+        unset($options['method']);
+
+        return fetch_client()->sse($url, $options, $method);
     }
 }
 
