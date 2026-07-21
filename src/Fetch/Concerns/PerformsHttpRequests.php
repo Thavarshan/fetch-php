@@ -8,8 +8,11 @@ use Fetch\Cache\CacheManager;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Exceptions\RequestException as FetchRequestException;
+use Fetch\Http\EventSource;
 use Fetch\Http\Response;
+use Fetch\Http\StreamedResponse;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions;
 use GuzzleHttp\Exception\GuzzleException;
@@ -143,6 +146,57 @@ trait PerformsHttpRequests
     public function options(string $uri): ResponseInterface|PromiseInterface
     {
         return $this->sendRequest(Method::OPTIONS, $uri);
+    }
+
+    /**
+     * Send a request and return an unbuffered, streamable response.
+     *
+     * The response body is not read into memory; callers pull chunks or lines
+     * as the server produces them (see {@see StreamedResponse}). Streaming is
+     * always synchronous and bypasses the response cache.
+     *
+     * @param  array<string, mixed>  $options  Additional options
+     */
+    public function stream(
+        Method|string $method = Method::GET,
+        string $uri = '',
+        array $options = [],
+    ): StreamedResponseInterface {
+        $options['stream'] = true;
+
+        return $this->sendStreamingRequest($method, $uri, $options);
+    }
+
+    /**
+     * Send a request and consume the response as Server-Sent Events.
+     *
+     * Adds an `Accept: text/event-stream` header when none is present and
+     * returns an {@see EventSource} yielding parsed {@see ServerSentEvent}s.
+     *
+     * @param  array<string, mixed>  $options  Additional options
+     */
+    public function sse(
+        Method|string $method = Method::GET,
+        string $uri = '',
+        array $options = [],
+    ): EventSource {
+        $headers = $options['headers'] ?? [];
+
+        $hasAccept = false;
+        foreach (array_keys($headers) as $name) {
+            if (strcasecmp((string) $name, 'Accept') === 0) {
+                $hasAccept = true;
+                break;
+            }
+        }
+
+        if (! $hasAccept) {
+            $headers['Accept'] = ContentType::EVENT_STREAM->value;
+        }
+
+        $options['headers'] = $headers;
+
+        return new EventSource($this->stream($method, $uri, $options));
     }
 
     /**
@@ -337,6 +391,52 @@ trait PerformsHttpRequests
 
         // Fall back to default
         return self::DEFAULT_TIMEOUT;
+    }
+
+    /**
+     * Execute a synchronous streaming request and wrap the raw PSR-7 response.
+     *
+     * @param  array<string, mixed>  $options  Additional options
+     */
+    protected function sendStreamingRequest(
+        Method|string $method,
+        string $uri,
+        array $options = [],
+    ): StreamedResponseInterface {
+        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+
+        // Streaming is inherently synchronous: force async off for this path.
+        $requestOptions = RequestOptions::merge(
+            $this->options,
+            $options,
+            ['method' => $methodStr, 'uri' => $uri, 'async' => false, 'stream' => true],
+        );
+
+        RequestOptions::validate($requestOptions);
+
+        $context = RequestContext::fromOptions($requestOptions);
+        $fullUri = $this->buildFullUriFromContext($context);
+        $guzzleOptions = $context->toGuzzleOptions();
+        $guzzleOptions['stream'] = true;
+
+        $requestId = $this->startProfiling($methodStr, $fullUri);
+
+        if (method_exists($this, 'logRequest')) {
+            $this->logRequest($methodStr, $fullUri, $guzzleOptions);
+        }
+
+        try {
+            $this->recordProfilingEvent($requestId, 'request_sent');
+
+            $psrResponse = $this->getHttpClient()->request($methodStr, $fullUri, $guzzleOptions);
+
+            $this->recordProfilingEvent($requestId, 'response_start');
+            $this->endProfiling($requestId, $psrResponse->getStatusCode());
+
+            return StreamedResponse::createFromBase($psrResponse);
+        } catch (\Throwable $e) {
+            throw $this->withErrorContext($e, $methodStr, $fullUri);
+        }
     }
 
     /**

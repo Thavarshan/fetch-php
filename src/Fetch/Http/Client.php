@@ -11,6 +11,7 @@ use Fetch\Exceptions\NetworkException;
 use Fetch\Exceptions\RequestException;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
 use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
@@ -360,6 +361,36 @@ class Client implements ClientInterface, LoggerAwareInterface
     public function options(string $url, ?array $options = []): ResponseInterface
     {
         return $this->methodRequest(Method::OPTIONS, $url, null, ContentType::JSON, $options);
+    }
+
+    /**
+     * Send a request and return an unbuffered, streamable response.
+     *
+     * @param  string  $url  The URL to fetch
+     * @param  array<string, mixed>|null  $options  Request options
+     * @param  string|Method  $method  The HTTP method
+     */
+    public function stream(
+        string $url,
+        ?array $options = [],
+        string|Method $method = Method::GET,
+    ): StreamedResponseInterface {
+        return $this->handler->withOptions($options ?? [])->stream($method, $url);
+    }
+
+    /**
+     * Send a request and consume the response as Server-Sent Events.
+     *
+     * @param  string  $url  The URL to fetch
+     * @param  array<string, mixed>|null  $options  Request options
+     * @param  string|Method  $method  The HTTP method
+     */
+    public function sse(
+        string $url,
+        ?array $options = [],
+        string|Method $method = Method::GET,
+    ): EventSource {
+        return $this->handler->withOptions($options ?? [])->sse($method, $url);
     }
 
     /**

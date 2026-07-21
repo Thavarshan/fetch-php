@@ -207,6 +207,10 @@ export default defineConfig({
                             text: "Connection Pooling & HTTP/2",
                             link: "/guide/connection-pooling",
                         },
+                        {
+                            text: "Streaming & Server-Sent Events",
+                            link: "/guide/streaming",
+                        },
                         { text: "File Uploads", link: "/guide/file-uploads" },
                         {
                             text: "Custom Clients",

@@ -6,6 +6,7 @@ namespace Fetch\Interfaces;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Http\EventSource;
 use React\Promise\PromiseInterface;
 
 interface RequestExecutor
@@ -67,4 +68,26 @@ interface RequestExecutor
      * @return Response|PromiseInterface<Response>
      */
     public function options(string $uri): Response|PromiseInterface;
+
+    /**
+     * Send a request and return an unbuffered, streamable response.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function stream(
+        Method|string $method = Method::GET,
+        string $uri = '',
+        array $options = [],
+    ): StreamedResponse;
+
+    /**
+     * Send a request and consume the response as Server-Sent Events.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function sse(
+        Method|string $method = Method::GET,
+        string $uri = '',
+        array $options = [],
+    ): EventSource;
 }

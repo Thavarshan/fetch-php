@@ -1,6 +1,23 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.5.1...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.6.0...HEAD)
+
+## [v3.6.0](https://github.com/Thavarshan/fetch-php/compare/3.5.1...3.6.0) - 2026-07-21
+
+### Added
+
+- **Streaming responses and Server-Sent Events** for consuming response bodies incrementally instead of buffering them into memory:
+  - `Fetch\Http\StreamedResponse` — an unbuffered response returned by the new `stream()` methods; pull raw chunks via `stream()`, newline-delimited lines via `lines()`, iterate the object directly, or fall back to a buffered `Response` with `buffer()`.
+  - `Fetch\Http\EventSource` — a WHATWG-compliant `text/event-stream` parser that lazily yields events and tracks `lastEventId()`/`reconnectionTime()`.
+  - `Fetch\Http\ServerSentEvent` — an immutable event value object with `data`, `type`, `id`, and `retry` fields plus `json()` and `isDone()` helpers.
+  - `stream()` and `sse()` methods on `ClientHandler` and `Client`, exposed through the `RequestExecutor` interface.
+  - `fetch_stream()` and `fetch_sse()` global helper functions mirroring the existing `fetch()`/`get()` style.
+  - `ContentType::EVENT_STREAM` and `ContentType::NDJSON` cases with `isEventStream()`/`isStreamable()` helpers.
+- Added PHP 8.5 to the CI test matrix across Ubuntu, Windows, and macOS.
+
+### Changed
+
+- Streaming requests are synchronous and intentionally bypass the response cache, consistent with the library's existing sync-only caching behaviour.
 
 ## [v3.5.1](https://github.com/Thavarshan/fetch-php/compare/3.5.0...3.5.1) - 2026-06-06
 

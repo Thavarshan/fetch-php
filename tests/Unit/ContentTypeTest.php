@@ -53,7 +53,23 @@ class ContentTypeTest extends TestCase
     {
         $this->assertTrue(ContentType::JSON->isText());
         $this->assertTrue(ContentType::TEXT->isText());
+        $this->assertTrue(ContentType::EVENT_STREAM->isText());
         $this->assertFalse(ContentType::MULTIPART->isText());
+    }
+
+    public function test_is_event_stream(): void
+    {
+        $this->assertTrue(ContentType::EVENT_STREAM->isEventStream());
+        $this->assertFalse(ContentType::JSON->isEventStream());
+        $this->assertSame(ContentType::EVENT_STREAM, ContentType::fromString('text/event-stream'));
+    }
+
+    public function test_is_streamable(): void
+    {
+        $this->assertTrue(ContentType::EVENT_STREAM->isStreamable());
+        $this->assertTrue(ContentType::NDJSON->isStreamable());
+        $this->assertFalse(ContentType::JSON->isStreamable());
+        $this->assertFalse(ContentType::BINARY->isStreamable());
     }
 
     public function test_normalize_content_type(): void

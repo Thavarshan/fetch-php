@@ -19,6 +19,8 @@ enum ContentType: string
     case ZIP = 'application/zip';
     case JAVASCRIPT = 'application/javascript';
     case CSS = 'text/css';
+    case EVENT_STREAM = 'text/event-stream';
+    case NDJSON = 'application/x-ndjson';
 
     /**
      * Get a content type from a string.
@@ -85,10 +87,30 @@ enum ContentType: string
     {
         return match ($this) {
             // These are text-based content types
-            self::JSON, self::FORM_URLENCODED, self::TEXT, self::HTML, self::XML, self::CSV => true,
+            self::JSON, self::FORM_URLENCODED, self::TEXT, self::HTML, self::XML, self::CSV, self::EVENT_STREAM, self::NDJSON => true,
             // These are binary/non-text content types
             self::MULTIPART => false,
             // Default for any new enum values added in the future
+            default => false,
+        };
+    }
+
+    /**
+     * Check if the content type is a Server-Sent Events stream.
+     */
+    public function isEventStream(): bool
+    {
+        return $this === self::EVENT_STREAM;
+    }
+
+    /**
+     * Check if the content type is typically consumed as an incremental
+     * stream rather than a single buffered payload (e.g. SSE or NDJSON).
+     */
+    public function isStreamable(): bool
+    {
+        return match ($this) {
+            self::EVENT_STREAM, self::NDJSON => true,
             default => false,
         };
     }

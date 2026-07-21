@@ -15,6 +15,9 @@ This reference captures the concrete public surface of the FetchPHP library as i
   - Maintains a static `Client` instance; `reset=true` recreates it.
   - Passing `$options` clones the current handler with merged defaults (exceptions are wrapped in `RuntimeException` with context).
 - Verb helpers `get/post/put/patch/delete()` call `request_method()` which coerces array bodies to JSON unless `$dataIsQuery` is true.
+- Streaming helpers:
+  - `fetch_stream(string $url, ?array $options = []): Fetch\Interfaces\StreamedResponse` – returns an unbuffered `StreamedResponse`; the body is pulled incrementally via `stream()`/`lines()` rather than read into memory. Method defaults to GET (override with `$options['method']`).
+  - `fetch_sse(string $url, ?array $options = []): Fetch\Http\EventSource` – consumes a `text/event-stream` response as lazily-yielded `Fetch\Http\ServerSentEvent` objects; adds an `Accept: text/event-stream` header automatically.
 - Matrix async bridge helpers (`async`, `await`, `all`, `race`, `map`, `batch`, `retry`) are re-exported when the corresponding `\Matrix\*` functions exist.
 - Internal helpers:
   - `process_request_options(array $options)` normalizes method enums/strings, headers, body precedence (`json` > `form` > `multipart` > `body`) and high-level flags.
@@ -95,6 +98,20 @@ Key runtime behaviors:
   - JSON ArrayAccess (`$response['data']`) for quick reads.
   - Debugging hooks: `withDebugInfo(DebugInfo $info)` and `getDebugInfo()` to inspect per-request snapshots.
   - `ResponseImmutabilityTrait` keeps buffered body contents in sync when streams are replaced.
+
+### `Fetch\Http\StreamedResponse`
+
+- Extends `GuzzleHttp\Psr7\Response`, implements `Fetch\Interfaces\StreamedResponse` + `IteratorAggregate`.
+- Returned by `ClientHandler::stream()` / `Client::stream()` / `fetch_stream()` when a request runs with `stream => true`. The body is **not** buffered.
+- Consumption: `stream(int $chunkSize = 8192)` yields raw chunks; `lines()` yields newline-delimited lines (handles `\r\n` and chunk boundaries); iterating the object itself yields chunks.
+- `sse()` wraps the stream in an `EventSource`; `buffer()` drains the remaining stream into a normal `Fetch\Http\Response`.
+- Mirrors `Response` status/header helpers: `status()`, `statusEnum()`, `ok()`, `failed()`, `headers()`, `header()`, `contentType()`, `contentTypeEnum()`.
+
+### `Fetch\Http\EventSource` & `Fetch\Http\ServerSentEvent`
+
+- `EventSource` (implements `IteratorAggregate`) parses a `text/event-stream` body per the WHATWG SSE algorithm, yielding events lazily via `events()` (or direct iteration). Tracks `lastEventId()` and `reconnectionTime()` across the stream.
+- `ServerSentEvent` – immutable DTO with `data`, `type`, `id`, `retry`; helpers `json()` (decode payload), `isDone()` (detects the `[DONE]` sentinel), and `__toString()`.
+- Returned by `ClientHandler::sse()` / `Client::sse()` / `fetch_sse()`. Streaming is synchronous and bypasses the response cache.
 
 ---
 

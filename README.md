@@ -24,6 +24,7 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 - **Promise-based API**: Use familiar `.then()`, `.catch()`, and `.finally()` methods for async operations
 - **Fluent Interface**: Build requests with a clean, chainable API
 - **Built on Guzzle**: Benefit from Guzzle's robust functionality with a more elegant API
+- **Streaming & Server-Sent Events**: Consume response bodies incrementally (`response.body`-style) and parse `text/event-stream` responses — ideal for streaming LLM APIs and live feeds
 - **Retry Mechanics**: Configurable retry logic with exponential backoff for transient failures
 - **RFC 7234 HTTP Caching**: Full caching support with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error
 - **Connection Pooling**: Reuse TCP connections across requests with global connection pool and DNS caching
