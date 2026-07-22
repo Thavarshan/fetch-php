@@ -1,4 +1,4 @@
-name-template: "$RESOLVED_VERSION"
+name-template: "v$RESOLVED_VERSION"
 tag-template: "$RESOLVED_VERSION"
 
 categories:
