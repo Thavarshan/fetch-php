@@ -171,6 +171,11 @@ trait ManagesRetries
             $request,
             function (int $attempt, int $maxAttempts, \Throwable $exception, int $delayMs) use ($context): void {
                 $this->logRetryAttempt($attempt, $maxAttempts, $exception, $delayMs, $context);
+
+                // Fire the request.retrying event when the events trait is present.
+                if ($context !== null && method_exists($this, 'emitRetryEvent')) {
+                    $this->emitRetryEvent($context, $exception, $attempt, $maxAttempts, $delayMs);
+                }
             }
         );
     }

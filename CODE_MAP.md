@@ -127,6 +127,18 @@ Key runtime behaviors:
 
 ---
 
+## Lifecycle Events & Hooks
+
+- `Fetch\Events\FetchEvent` – abstract base carrying `request`, `correlationId`, `timestamp`, and `context`. Subclasses (each with a `NAME` constant):
+  - `RequestEvent` (`request.sending`), `ResponseEvent` (`response.received`, adds `duration`/`getLatency()`), `ErrorEvent` (`error.occurred`, adds `exception`/`attempt`/`response`), `RetryEvent` (`request.retrying`, adds `previousException`/`attempt`/`maxAttempts`/`delay`/`isLastAttempt()`), `TimeoutEvent` (`request.timeout`), `RedirectEvent` (`request.redirecting`, adds `location`/`redirectCount`).
+- `Fetch\Interfaces\EventDispatcher` + `Fetch\Events\EventDispatcher` – priority-aware dispatcher (higher priority first, stable on ties). A throwing listener is isolated and logged, never breaking the request.
+- `Fetch\Concerns\ManagesEvents` – trait mixed into `ClientHandler`. Fluent `on()`, `onRequest()`/`onResponse()`/`onError()`/`onRetry()`/`onTimeout()`/`onRedirect()`, and `hooks([...])` (aliases: `before_send`, `after_response`, `on_error`, `on_retry`, `on_timeout`, `on_redirect`). Dispatch is lazy and guarded — no listener means no event object is built.
+- `Fetch\Interfaces\EventAware` – the handler/client event contract.
+- Integration: a correlation ID is generated per request in `sendRequest()` and carried on the `RequestContext` option bag, so every event for one logical request shares it. `request.sending`/`response.received`/`error.occurred`/`request.timeout` are dispatched from `executeCore` (covering mock and cache hits, sync and async); `request.retrying` from `ManagesRetries`; `request.redirecting` via a Guzzle `on_redirect` hook injected only when a redirect listener is registered.
+- `Client` mirrors the event methods, delegating to its handler.
+
+---
+
 ## Support Services
 
 - `Fetch\Support\RequestOptions`

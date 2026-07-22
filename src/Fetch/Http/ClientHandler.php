@@ -11,6 +11,7 @@ use Fetch\Concerns\HandlesMocking;
 use Fetch\Concerns\HandlesUris;
 use Fetch\Concerns\ManagesConnectionPool;
 use Fetch\Concerns\ManagesDebugAndProfiling;
+use Fetch\Concerns\ManagesEvents;
 use Fetch\Concerns\ManagesMiddleware;
 use Fetch\Concerns\ManagesPromises;
 use Fetch\Concerns\ManagesRetries;
@@ -40,6 +41,7 @@ class ClientHandler implements ClientHandlerInterface
     use HandlesUris;
     use ManagesConnectionPool;
     use ManagesDebugAndProfiling;
+    use ManagesEvents;
     use ManagesMiddleware;
     use ManagesPromises;
     use ManagesRetries;
@@ -516,7 +518,10 @@ class ClientHandler implements ClientHandlerInterface
             [
                 'attempt' => $attempt,
                 'max_attempts' => $maxAttempts,
-                'uri' => $this->getFullUri(),
+                // Read the raw URI option rather than getFullUri(): requests are
+                // dispatched statelessly, so handler-state URI resolution would
+                // throw when no URI is configured on the handler itself.
+                'uri' => $this->options['uri'] ?? '',
                 'method' => $this->options['method'] ?? Method::GET->value,
                 'error' => $exception->getMessage(),
                 'code' => $exception->getCode(),
