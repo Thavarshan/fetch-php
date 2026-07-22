@@ -215,6 +215,10 @@ export default defineConfig({
                             text: "Middleware & Interceptors",
                             link: "/guide/middleware",
                         },
+                        {
+                            text: "Events & Hooks",
+                            link: "/guide/events",
+                        },
                         { text: "File Uploads", link: "/guide/file-uploads" },
                         {
                             text: "Custom Clients",

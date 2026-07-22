@@ -6,7 +6,7 @@ namespace Fetch\Interfaces;
 
 use GuzzleHttp\ClientInterface;
 
-interface ClientHandler extends CacheableRequestHandler, DebuggableHandler, HttpClientAware, MiddlewareAware, PoolAwareHandler, PromiseHandler, RequestConfigurator, RequestExecutor, RetryableHandler
+interface ClientHandler extends CacheableRequestHandler, DebuggableHandler, EventAware, HttpClientAware, MiddlewareAware, PoolAwareHandler, PromiseHandler, RequestConfigurator, RequestExecutor, RetryableHandler
 {
     /**
      * @return array<string, mixed>

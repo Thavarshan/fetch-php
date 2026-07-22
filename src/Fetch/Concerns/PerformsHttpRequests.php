@@ -7,6 +7,7 @@ namespace Fetch\Concerns;
 use Fetch\Cache\CacheManager;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Events\RedirectEvent;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Http\EventSource;
 use Fetch\Http\Response;
@@ -233,6 +234,13 @@ trait PerformsHttpRequests
 
         RequestOptions::validate($requestOptions);
 
+        // Tag the request with a correlation ID so every lifecycle event fired
+        // for it can be tied together. Kept in the context option bag, which is
+        // threaded everywhere and never leaked to Guzzle.
+        $requestOptions['__correlation_id'] = method_exists($this, 'generateCorrelationId')
+            ? $this->generateCorrelationId()
+            : '';
+
         $context = RequestContext::fromOptions($requestOptions);
 
         // Build the full URI using context, not handler state
@@ -379,6 +387,21 @@ trait PerformsHttpRequests
         int $startMemory,
         ?string $requestId,
     ): ResponseInterface|PromiseInterface {
+        // Set up lifecycle events (if the ManagesEvents trait is present).
+        $eventsEnabled = method_exists($this, 'emitRequestEvent');
+        $eventRequest = $eventsEnabled
+            ? $this->eventRequest($methodStr, $fullUri, $guzzleOptions['headers'] ?? [])
+            : null;
+
+        if ($eventsEnabled && $eventRequest !== null) {
+            $this->emitRequestEvent($eventRequest, $context, $startTime);
+
+            // Observe redirects through Guzzle's on_redirect hook.
+            if ($this->hasEventListeners(RedirectEvent::NAME)) {
+                $guzzleOptions = $this->attachRedirectListener($guzzleOptions, $eventRequest, $context);
+            }
+        }
+
         // Check for mock response first (if HandlesMocking trait is available)
         if (method_exists($this, 'handleMockRequest')) {
             $mockResponse = $this->handleMockRequest($methodStr, $fullUri, $guzzleOptions);
@@ -395,6 +418,10 @@ trait PerformsHttpRequests
                 // Attach debug info to response if available
                 if ($debugInfo !== null && $mockResponse instanceof Response) {
                     $mockResponse->withDebugInfo($debugInfo);
+                }
+
+                if ($eventsEnabled && $eventRequest !== null) {
+                    $this->emitResponseEvent($eventRequest, $mockResponse, $context, $startTime);
                 }
 
                 return $mockResponse;
@@ -421,6 +448,10 @@ trait PerformsHttpRequests
                 // Attach debug info to cached response if available
                 if ($debugInfo !== null && $cachedResult['response'] instanceof Response) {
                     $cachedResult['response']->withDebugInfo($debugInfo);
+                }
+
+                if ($eventsEnabled && $eventRequest !== null) {
+                    $this->emitResponseEvent($eventRequest, $cachedResult['response'], $context, $startTime);
                 }
 
                 return $cachedResult['response'];
@@ -450,7 +481,18 @@ trait PerformsHttpRequests
             );
 
             return $promise
-                ->otherwise(function (\Throwable $e) use ($methodStr, $fullUri) {
+                ->then(function ($response) use ($eventsEnabled, $eventRequest, $context, $startTime) {
+                    if ($eventsEnabled && $eventRequest !== null && $response instanceof \Psr\Http\Message\ResponseInterface) {
+                        $this->emitResponseEvent($eventRequest, $response, $context, $startTime);
+                    }
+
+                    return $response;
+                })
+                ->otherwise(function (\Throwable $e) use ($methodStr, $fullUri, $eventsEnabled, $eventRequest, $context, $startTime) {
+                    if ($eventsEnabled && $eventRequest !== null) {
+                        $this->emitErrorEvent($eventRequest, $e, $context, $startTime);
+                    }
+
                     throw $this->withErrorContext($e, $methodStr, $fullUri);
                 });
         }
@@ -468,8 +510,16 @@ trait PerformsHttpRequests
                 $context
             );
 
+            if ($eventsEnabled && $eventRequest !== null) {
+                $this->emitResponseEvent($eventRequest, $response, $context, $startTime);
+            }
+
             return $response;
         } catch (\Throwable $e) {
+            if ($eventsEnabled && $eventRequest !== null) {
+                $this->emitErrorEvent($eventRequest, $e, $context, $startTime);
+            }
+
             throw $this->withErrorContext($e, $methodStr, $fullUri);
         }
     }

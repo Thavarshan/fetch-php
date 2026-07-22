@@ -484,6 +484,99 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Register a listener for a named lifecycle event on the handler.
+     *
+     * @return $this
+     */
+    public function on(string $eventName, callable $listener, int $priority = 0): self
+    {
+        $this->handler->on($eventName, $listener, $priority);
+
+        return $this;
+    }
+
+    /**
+     * Register multiple lifecycle listeners keyed by event name or hook alias.
+     *
+     * @param  array<string, callable>  $hooks
+     * @return $this
+     */
+    public function hooks(array $hooks): self
+    {
+        $this->handler->hooks($hooks);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function onRequest(callable $listener, int $priority = 0): self
+    {
+        $this->handler->onRequest($listener, $priority);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function onResponse(callable $listener, int $priority = 0): self
+    {
+        $this->handler->onResponse($listener, $priority);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function onError(callable $listener, int $priority = 0): self
+    {
+        $this->handler->onError($listener, $priority);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function onRetry(callable $listener, int $priority = 0): self
+    {
+        $this->handler->onRetry($listener, $priority);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function onTimeout(callable $listener, int $priority = 0): self
+    {
+        $this->handler->onTimeout($listener, $priority);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function onRedirect(callable $listener, int $priority = 0): self
+    {
+        $this->handler->onRedirect($listener, $priority);
+
+        return $this;
+    }
+
+    /**
+     * Get the underlying event dispatcher.
+     */
+    public function getEventDispatcher(): \Fetch\Interfaces\EventDispatcher
+    {
+        return $this->handler->getEventDispatcher();
+    }
+
+    /**
      * Get the underlying Guzzle HTTP client.
      */
     public function getHttpClient(): GuzzleClientInterface

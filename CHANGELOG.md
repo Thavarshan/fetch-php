@@ -1,6 +1,21 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.7.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.8.0...HEAD)
+
+## [v3.8.0](https://github.com/Thavarshan/fetch-php/compare/3.7.0...3.8.0) - 2026-07-21
+
+### Added
+
+- **Request/Response Hooks & Events system** ([#41](https://github.com/Thavarshan/fetch-php/issues/41)) for observing the request lifecycle:
+  - Six lifecycle events under `Fetch\Events`: `RequestEvent` (`request.sending`), `ResponseEvent` (`response.received`), `ErrorEvent` (`error.occurred`), `RetryEvent` (`request.retrying`), `TimeoutEvent` (`request.timeout`), and `RedirectEvent` (`request.redirecting`), all extending `FetchEvent`.
+  - `Fetch\Events\EventDispatcher` (with `Fetch\Interfaces\EventDispatcher`) — a priority-aware dispatcher where a throwing listener is isolated and logged rather than breaking the request.
+  - Fluent registration on `ClientHandler` and `Client`: `on()`, `onRequest()`, `onResponse()`, `onError()`, `onRetry()`, `onTimeout()`, `onRedirect()`, and `hooks([...])` with friendly aliases (`before_send`, `after_response`, `on_error`, `on_retry`, `on_timeout`, `on_redirect`).
+  - A correlation ID generated per request and shared across every event for that request.
+  - Events fire in both synchronous and asynchronous modes and for cache/mock hits; redirects are observed through a Guzzle `on_redirect` hook wired only when a redirect listener is registered. Dispatch is lazy — with no listeners registered the overhead is a single array check.
+
+### Fixed
+
+- Retry logging no longer throws `InvalidArgumentException: URI cannot be empty` for statelessly dispatched requests; `ClientHandler::logRetry()` now reads the raw URI option instead of resolving handler-state URIs.
 
 ## [v3.7.0](https://github.com/Thavarshan/fetch-php/compare/3.6.0...3.7.0) - 2026-07-21
 
