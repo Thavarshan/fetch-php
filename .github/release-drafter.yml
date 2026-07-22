@@ -1,46 +1,70 @@
 name-template: "v$RESOLVED_VERSION"
- tag-template: "v$RESOLVED_VERSION"
- categories:
-   - title: "🚀 Features"
-     labels: ["feat", "feature", "enhancement"]
-   - title: "🐛 Fixes"
-     labels: ["fix", "bug"]
-   - title: "🧰 Maintenance"
-     labels: ["chore", "maintenance", "refactor"]
-   - title: "🧪 Tests"
-     labels: ["test", "tests"]
-   - title: "📚 Documentation"
-     labels: ["docs", "documentation"]
- change-template: "- $TITLE (#$NUMBER) (@$AUTHOR)"
- exclude-labels: ["skip-changelog"]
- autolabeler:
-   - label: "feat"
-     title:
-       - "/^feat/i"
-   - label: "fix"
-     title:
-       - "/^fix/i"
-   - label: "chore"
-     title:
-       - "/^chore/i"
-   - label: "docs"
-     title:
-       - "/^docs/i"
-   - label: "test"
-     title:
-       - "/^test/i"
-   - label: "refactor"
-     title:
-       - "/^refactor/i"
- version-resolver:
-   major:
-     labels: ["breaking-change"]
-   minor:
-     labels: ["feat", "feature", "enhancement"]
-   patch:
-     labels: ["fix", "bug", "chore", "documentation", "docs", "test", "tests"]
-   default: patch
- template: |
-   ## Changes
+tag-template: "v$RESOLVED_VERSION"
 
-   $CHANGES
+categories:
+  - title: "🚀 Features"
+    labels: ["enhancement", "feature"]
+  - title: "🐛 Bug Fixes"
+    labels: ["bug"]
+  - title: "🔒 Security"
+    labels: ["security"]
+  - title: "⚡ Performance"
+    labels: ["performance"]
+  - title: "🏗 Architecture & Refactoring"
+    labels: ["architecture", "refactor", "tech-debt"]
+  - title: "🧪 Tests"
+    labels: ["testing"]
+  - title: "📚 Documentation"
+    labels: ["documentation"]
+  - title: "⚙️ CI/CD"
+    labels: ["ci/cd", "github_actions"]
+  - title: "📦 Dependencies"
+    labels: ["dependencies"]
+  - title: "🔧 Maintenance"
+    labels: ["chore", "maintenance"]
+
+change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
+change-title-escapes: '\<*_&'
+exclude-labels: ["skip-changelog", "duplicate", "invalid", "wontfix"]
+
+autolabeler:
+  - label: "enhancement"
+    title:
+      - "/^feat/i"
+  - label: "bug"
+    title:
+      - "/^fix/i"
+  - label: "documentation"
+    title:
+      - "/^docs/i"
+  - label: "testing"
+    title:
+      - "/^test/i"
+  - label: "refactor"
+    title:
+      - "/^refactor/i"
+  - label: "ci/cd"
+    title:
+      - "/^ci/i"
+  - label: "chore"
+    title:
+      - "/^chore/i"
+  - label: "performance"
+    title:
+      - "/^perf/i"
+
+version-resolver:
+  major:
+    labels: ["breaking-change"]
+  minor:
+    labels: ["enhancement", "feature"]
+  patch:
+    labels: ["bug", "security", "performance", "documentation", "testing", "refactor", "ci/cd", "dependencies", "chore", "maintenance", "tech-debt", "architecture"]
+  default: patch
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/Thavarshan/fetch-php/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

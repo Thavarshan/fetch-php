@@ -3,24 +3,33 @@
 
 repository:
   name: fetch-php
-  description: "The JavaScript fetch API for PHP"
+  description: "Modern PHP HTTP client inspired by JavaScript's fetch API. Async/await, streaming, SSE, middleware, RFC 7234 caching, and full PSR-7/18 compliance."
   homepage: https://fetch-php.thavarshan.com
   topics:
     - php
     - http-client
     - fetch-api
+    - fetch-php
     - guzzle
-    - promises
+    - guzzlehttp
     - async
-    - http-requests
-    - javascript-fetch
+    - promises
+    - fibers
     - psr-7
     - psr-18
+    - psr-3
+    - middleware
+    - streaming
+    - server-sent-events
+    - caching
+    - rest-api
+    - php8
 
   private: false
   has_issues: true
   has_projects: false
   has_wiki: false
+  has_discussions: true
   has_downloads: true
   default_branch: main
 
@@ -88,6 +97,54 @@ labels:
     color: "0366d6"
     description: "Pull requests that update a dependency file"
 
+  - name: "refactor"
+    color: "c5def5"
+    description: "Code refactoring without functional change"
+
+  - name: "tech-debt"
+    color: "e4e669"
+    description: "Technical debt to be addressed"
+
+  - name: "testing"
+    color: "0e8a16"
+    description: "Related to tests or test coverage"
+
+  - name: "ci/cd"
+    color: "1d76db"
+    description: "CI/CD pipeline and automation"
+
+  - name: "architecture"
+    color: "bfd4f2"
+    description: "Architectural design or structural changes"
+
+  - name: "maintenance"
+    color: "fef2c0"
+    description: "General project maintenance"
+
+  - name: "chore"
+    color: "d4edda"
+    description: "Routine tasks and housekeeping"
+
+  - name: "duplicate"
+    color: "cfd3d7"
+    description: "This issue or pull request already exists"
+
+  - name: "priority: critical"
+    color: "b60205"
+    description: "Must be fixed immediately — data loss or security risk"
+
+  - name: "priority: high"
+    color: "e11d48"
+    description: "Significant impact on functionality or reliability"
+
+  - name: "priority: medium"
+    color: "f97316"
+    description: "Moderate impact, should be addressed soon"
+
+  - name: "priority: low"
+    color: "84cc16"
+    description: "Minor issue, nice to have"
+
 # Branch protection rules
 branches:
   - name: main
@@ -114,9 +171,9 @@ branches:
 # Milestones
 milestones:
   - title: "v4.0.0"
-    description: "Major version release with breaking changes"
+    description: "Major version release with breaking changes — God Class decomposition, SRP refactoring, API improvements"
     state: open
 
-  - title: "v3.3.0"
-    description: "Minor improvements and new features"
+  - title: "v3.9.0"
+    description: "Targeted improvements — test coverage, PHPStan level escalation, multipart binary fix"
     state: open

@@ -4,7 +4,7 @@
 [![CI](https://github.com/Thavarshan/fetch-php/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Thavarshan/fetch-php/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/gh/Thavarshan/fetch-php/branch/main/graph/badge.svg)](https://codecov.io/gh/Thavarshan/fetch-php)
 [![CodeQL](https://github.com/Thavarshan/fetch-php/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/Thavarshan/fetch-php/actions/workflows/github-code-scanning/codeql)
-[![PHPStan](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](https://phpstan.org/)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%206-blue.svg)](https://phpstan.org/)
 [![PHP Version](https://img.shields.io/packagist/php-v/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
 [![License](https://img.shields.io/packagist/l/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
 [![Total Downloads](https://img.shields.io/packagist/dt/jerome/fetch-php.svg)](https://packagist.org/packages/jerome/fetch-php)
