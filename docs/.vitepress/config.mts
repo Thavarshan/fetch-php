@@ -11,6 +11,10 @@ export default defineConfig({
     // IMPORTANT: Set canonical URL base to avoid duplicate content issues
     base: "/",
 
+    // Contributor-facing AI-tooling docs (docs/ai/**) are not part of the
+    // published user documentation site; they link to repo files outside docs/.
+    srcExclude: ["ai/**"],
+
     sitemap: {
         hostname: "https://fetch-php.thavarshan.com",
     },

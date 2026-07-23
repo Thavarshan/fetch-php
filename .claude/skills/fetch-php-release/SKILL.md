@@ -5,8 +5,15 @@ description: Prepare, publish, verify, and recover Fetch PHP releases through Gi
 
 # Fetch PHP Release
 
+See [AGENTS.md](../../../AGENTS.md) for repository commands and Git boundaries.
+This skill covers release-specific procedure only.
+
 ## Core Rules
 
+- **Never release autonomously.** Cutting a tag, creating a GitHub Release,
+  updating Packagist, or moving a tag are outward-facing, hard-to-reverse
+  actions — do them only on explicit maintainer instruction for a specific
+  version, and confirm the version before pushing anything.
 - Treat stable Packagist versions as immutable. After Packagist observes a stable tag, never move that tag to new code.
 - If a published stable tag points at the wrong commit, restore it to the previously published commit and tag a new patch release for the fix.
 - Follow the repository's tag convention: numeric tags such as `3.5.1`, not `v3.5.1`.
@@ -58,12 +65,14 @@ rm -rf docs/.vitepress/.temp
 
 5. Commit.
 
+Stage only the files this release actually changed — inspect first with
+`git status --short`, then add them explicitly (do not `git add -A`):
+
 ```bash
-git add CHANGELOG.md composer.json .github/workflows/packages.yml .github/SUPPORT.md docs/guide/installation.md src/Fetch/Cache/CacheControl.php
+git status --short
+git add CHANGELOG.md   # plus any other files this release genuinely touched
 git commit -m "Prepare vX.Y.Z release"
 ```
-
-Only stage files that actually changed.
 
 6. Create an annotated numeric tag.
 

@@ -56,6 +56,7 @@
         "test:integration": "phpunit --no-coverage tests/Integration",
         "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage",
         "analyse": "phpstan analyse",
+        "ai:validate": "php tools/validate-ai-config.php",
         "check": [
             "@analyse",
             "@lint",
