@@ -254,6 +254,33 @@ final class RequestTest extends TestCase
 - Update the changelog for significant changes
 - Consider adding documentation to the docs/ folder
 
+## AI-Assisted Contributions
+
+AI coding assistants are welcome, and this repository ships a shared
+configuration for them (see [docs/ai/README.md](docs/ai/README.md)). If you use
+one, these rules apply:
+
+- **You own the code.** AI-generated changes must meet the same review, testing,
+  and static-analysis bar as any other contribution. Understand every line you
+  submit — "the tool wrote it" is not a review.
+- **Same gates.** Run `composer fix`, `composer analyse`, and `composer test`
+  (or `composer check`) before opening a PR, exactly as for hand-written code.
+- **No secrets in prompts.** Never paste credentials, tokens, private data, or
+  proprietary code into an AI tool. Keep secrets out of code, tests, fixtures,
+  logs, and docs examples.
+- **Respect licenses.** Don't submit AI-produced content copied from
+  incompatible or source-available sources. Attribution for adapted material
+  goes in [docs/ai/SOURCES.md](docs/ai/SOURCES.md).
+- **Keep changes reviewable.** Split large AI-generated changes into small,
+  focused, reviewable commits. Don't bundle a behavior change with a broad
+  reformat.
+- **Preserve the public API.** Backward-compatibility-sensitive changes (public
+  classes, signatures, helpers, enums, exceptions, defaults) need the impact
+  analysis described in `AGENTS.md`; breaking changes need maintainer approval.
+
+Contributors and maintainers can validate the AI configuration itself with
+`composer ai:validate`.
+
 ## Issue Reporting
 
 ### Bug Reports

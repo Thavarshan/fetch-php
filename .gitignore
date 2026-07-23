@@ -34,3 +34,8 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 /duster_*
 docs/.obsidian/*
+
+# AI agent local/personal config (keep shared config committed)
+.claude/settings.local.json
+CLAUDE.local.md
+.agents/skills

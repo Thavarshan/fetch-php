@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(composer install*)",
+      "Bash(composer test*)",
+      "Bash(composer test:unit*)",
+      "Bash(composer test:integration*)",
+      "Bash(composer test:coverage*)",
+      "Bash(composer lint*)",
+      "Bash(composer fix*)",
+      "Bash(composer analyse*)",
+      "Bash(composer check*)",
+      "Bash(composer validate*)",
+      "Bash(composer audit*)",
+      "Bash(composer ai:validate*)",
+      "Bash(./vendor/bin/phpunit*)",
+      "Bash(vendor/bin/phpunit*)",
+      "Bash(php -v)",
+      "Bash(php tools/validate-ai-config.php*)",
+      "Bash(npm ci)",
+      "Bash(npm install)",
+      "Bash(npm run build*)",
+      "Bash(npm run dev*)",
+      "Bash(npm run preview*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch)",
+      "Bash(git ls-files*)",
+      "Bash(git ls-remote*)",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)",
+      "Bash(gh release view*)",
+      "Bash(gh pr view*)",
+      "Bash(gh repo view*)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git tag*)",
+      "Bash(git commit*)",
+      "Bash(gh release*)",
+      "Bash(gh pr create*)",
+      "Bash(composer require*)",
+      "Bash(composer update*)",
+      "Bash(composer remove*)",
+      "Bash(npm install *)",
+      "Bash(npm i *)",
+      "Bash(curl*)",
+      "Bash(wget*)"
+    ],
+    "deny": [
+      "Bash(git reset --hard*)",
+      "Bash(git clean -*f*d*)",
+      "Bash(git clean -*d*f*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push --force-with-lease*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(./secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/id_rsa*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/hosts.yml)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-destructive.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
