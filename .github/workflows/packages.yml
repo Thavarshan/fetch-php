@@ -127,7 +127,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Release ${{ needs.validate-tag.outputs.version }}
+          name: v${{ needs.validate-tag.outputs.version }}
           body_path: ${{ steps.changelog.outputs.changelog_file }}
           draft: false
           prerelease: ${{ needs.validate-tag.outputs.is_prerelease == 'true' }}

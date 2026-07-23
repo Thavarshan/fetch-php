@@ -16,7 +16,7 @@ This skill covers release-specific procedure only.
   version, and confirm the version before pushing anything.
 - Treat stable Packagist versions as immutable. After Packagist observes a stable tag, never move that tag to new code.
 - If a published stable tag points at the wrong commit, restore it to the previously published commit and tag a new patch release for the fix.
-- Follow the repository's tag convention: numeric tags such as `3.5.1`, not `v3.5.1`.
+- Follow the repository's naming convention: **Git tags are bare semver** (`3.5.1`, not `v3.5.1`), while the **GitHub Release title is `v`-prefixed** (`v3.5.1`). Both `release-drafter.yml` and `packages.yml` (`name: v${{ needs.validate-tag.outputs.version }}`) must produce `vX.Y.Z` titles.
 - Keep `composer.json` without a `version` field. Package versions come from Git tags.
 - Use `NO_NETWORK=1` for test gates unless deliberately testing network behavior.
 - Do not rely on `gh auth status` alone. Public `gh run`/`gh release` commands may work even if an old default token is reported invalid.
@@ -74,10 +74,10 @@ git add CHANGELOG.md   # plus any other files this release genuinely touched
 git commit -m "Prepare vX.Y.Z release"
 ```
 
-6. Create an annotated numeric tag.
+6. Create an annotated **bare numeric** tag (no `v` prefix).
 
 ```bash
-git tag -a X.Y.Z -m "Release X.Y.Z"
+git tag -a X.Y.Z -m "vX.Y.Z"
 ```
 
 7. Push.
@@ -93,6 +93,12 @@ git push origin X.Y.Z
 gh run list --repo Thavarshan/fetch-php --workflow "Package & Release" --limit 5
 gh run watch <run-id> --repo Thavarshan/fetch-php --exit-status
 gh release view X.Y.Z --repo Thavarshan/fetch-php --json tagName,name,isDraft,isPrerelease,publishedAt,url
+```
+
+Confirm the naming convention held: **`tagName` is bare `X.Y.Z`** and **`name` is `vX.Y.Z`**. If the workflow produced `Release X.Y.Z` (older `packages.yml` behavior), correct the title — this does not touch the tag or Packagist:
+
+```bash
+gh release edit X.Y.Z --repo Thavarshan/fetch-php --title "vX.Y.Z"
 ```
 
 Also check the normal push workflows:
@@ -114,7 +120,7 @@ Use this when Packagist emails that a stable version update was blocked because 
 2. Restore the published tag to `OLD_SHA`.
 
 ```bash
-git tag -f -a X.Y.Z OLD_SHA -m "Release X.Y.Z"
+git tag -f -a X.Y.Z OLD_SHA -m "vX.Y.Z"
 git push --force origin X.Y.Z
 ```
 
@@ -128,7 +134,7 @@ This force push is acceptable only because it restores the tag to Packagist's al
 - Tag and push `X.Y.(Z+1)`.
 
 ```bash
-git tag -a X.Y.N -m "Release X.Y.N"
+git tag -a X.Y.N -m "vX.Y.N"
 git push origin main
 git push origin X.Y.N
 ```
@@ -159,7 +165,8 @@ The tag workflow should:
 - strip an optional `v` before semantic-version validation;
 - not require `composer.json` to contain `version`;
 - install all required extensions, including `pcntl`, `xml`, `dom`, `simplexml`, `tokenizer`, and `intl`;
-- run release tests with `NO_NETWORK=1`.
+- run release tests with `NO_NETWORK=1`;
+- title the GitHub Release `vX.Y.Z` (`name: v${{ needs.validate-tag.outputs.version }}`) while the pushed tag stays bare `X.Y.Z`.
 
 If `Package & Release` fails in `composer check`, inspect job logs:
 
