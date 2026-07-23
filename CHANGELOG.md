@@ -1,6 +1,28 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.8.0...HEAD)
+## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.8.1...HEAD)
+
+## [v3.8.1](https://github.com/Thavarshan/fetch-php/compare/3.8.0...3.8.1) - 2026-07-23
+
+Development-tooling and documentation release. **No runtime library changes** —
+the public API, behavior, and dependencies are unchanged.
+
+### Added
+
+- **Cross-agent AI development configuration** targeting Claude Code and OpenAI
+  Codex while staying compatible with the `AGENTS.md` / Agent Skills standard:
+  a canonical `AGENTS.md`, a `CLAUDE.md` that imports it, 10 task/review skills,
+  6 specialist subagents, 7 path-scoped rules, conservative `.claude/settings.json`
+  permissions with a destructive-command guard hook, a `docs/ai/` guide with
+  license-verified sources, and a dependency-free validator (`composer ai:validate`).
+
+### Changed
+
+- Corrected stale contributor/AI instructions against the repository: removed
+  references to a nonexistent `bin/` script directory, clarified that
+  `composer lint` runs Duster (PHPStan is `composer analyse`), documented the
+  PHP 8.3/8.4/8.5 CI matrix, aligned the `jerome/matrix ^3.4` constraint, and
+  clarified `NO_NETWORK=1` semantics.
 
 ## [v3.8.0](https://github.com/Thavarshan/fetch-php/compare/3.7.0...3.8.0) - 2026-07-21
 
