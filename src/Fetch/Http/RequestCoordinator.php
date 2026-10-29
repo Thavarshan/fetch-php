@@ -92,15 +92,77 @@ final class RequestCoordinator
                 },
             ));
 
-        if ($coreDispatched) {
-            return $result instanceof PromiseInterface
-                ? $result->then(fn (mixed $response): FetchResponseInterface => $this->requireFetchResponse($response))
-                : $this->requireFetchResponse($result);
+        if ($result instanceof PromiseInterface) {
+            return $result->then(
+                function (mixed $response) use (&$coreDispatched, $lastMiddlewareRequest, $guzzleOptions, $seedBody, $context, $startTime, $startMemory, $requestId): FetchResponseInterface|PromiseInterface {
+                    if ($coreDispatched) {
+                        return $this->requireFetchResponse($response);
+                    }
+
+                    return $this->completeMiddlewareShortCircuit(
+                        $response,
+                        $lastMiddlewareRequest,
+                        $guzzleOptions,
+                        $seedBody,
+                        $context,
+                        $startTime,
+                        $startMemory,
+                        $requestId,
+                    );
+                },
+                function (Throwable $exception) use (&$coreDispatched, $lastMiddlewareRequest, $guzzleOptions, $seedBody, $context, $startTime, $requestId): never {
+                    if ($coreDispatched) {
+                        throw $exception;
+                    }
+
+                    $this->failMiddlewareBeforeDispatch(
+                        $exception,
+                        $lastMiddlewareRequest,
+                        $guzzleOptions,
+                        $seedBody,
+                        $context,
+                        $startTime,
+                        $requestId,
+                    );
+                },
+            );
         }
 
+        if ($coreDispatched) {
+            return $this->requireFetchResponse($result);
+        }
+
+        return $this->completeMiddlewareShortCircuit(
+            $result,
+            $lastMiddlewareRequest,
+            $guzzleOptions,
+            $seedBody,
+            $context,
+            $startTime,
+            $startMemory,
+            $requestId,
+        );
+    }
+
+    /**
+     * Complete a middleware response after the pipeline settles without dispatching its core.
+     *
+     * @param  array<string, mixed>  $guzzleOptions
+     * @return FetchResponseInterface|PromiseInterface<FetchResponseInterface>
+     */
+    private function completeMiddlewareShortCircuit(
+        mixed $result,
+        RequestInterface $request,
+        array $guzzleOptions,
+        ?string $seedBody,
+        RequestContext $context,
+        float $startTime,
+        int $startMemory,
+        ?string $requestId,
+    ): FetchResponseInterface|PromiseInterface {
         try {
-            $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($lastMiddlewareRequest, $guzzleOptions, $seedBody);
-            $validationRequest = $this->requestBuilder->withQueryOptions($lastMiddlewareRequest, $shortCircuitOptions);
+            $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody);
+            $validationRequest = $this->requestBuilder->withQueryOptions($request, $shortCircuitOptions);
             $operation = $this->validationManager->validateRequest($validationRequest, $shortCircuitOptions, $this->validationPolicy);
         } catch (Throwable $exception) {
             if ($context->isAsync()) {
@@ -110,31 +172,27 @@ final class RequestCoordinator
             throw $exception;
         }
 
-        $shortCircuitMethod = $lastMiddlewareRequest->getMethod();
-        $shortCircuitUri = (string) $lastMiddlewareRequest->getUri();
-        $eventRequest = ($this->hooks->eventRequest)(
-            $shortCircuitMethod,
-            $shortCircuitUri,
-            $lastMiddlewareRequest->getHeaders(),
-        );
+        $method = $request->getMethod();
+        $uri = (string) $request->getUri();
+        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $request->getHeaders());
         ($this->hooks->emitRequestEvent)($eventRequest, $context, $startTime);
 
-        $complete = function (mixed $response) use ($shortCircuitMethod, $shortCircuitUri, $shortCircuitOptions, $context, $operation, $eventRequest, $startTime, $startMemory, $requestId): FetchResponseInterface {
+        $complete = function (mixed $response) use ($method, $uri, $shortCircuitOptions, $context, $operation, $eventRequest, $startTime, $startMemory, $requestId): FetchResponseInterface {
             $finalResponse = $this->requireFetchResponse($response);
             $this->validationManager->validateResponse($finalResponse, $this->validationPolicy, $operation);
             ($this->hooks->recordProfilingEvent)($requestId, 'response_start');
             ($this->hooks->endProfiling)($requestId, $finalResponse->getStatusCode());
-            $this->attachDebugInfo($shortCircuitMethod, $shortCircuitUri, $shortCircuitOptions, $finalResponse, $startTime, $startMemory);
+            $this->attachDebugInfo($method, $uri, $shortCircuitOptions, $finalResponse, $startTime, $startMemory);
             ($this->hooks->emitResponseEvent)($eventRequest, $finalResponse, $context, $startTime);
 
             return $finalResponse;
         };
 
-        $fail = function (Throwable $exception) use ($shortCircuitMethod, $shortCircuitUri, $context, $eventRequest, $startTime, $requestId): never {
+        $fail = function (Throwable $exception) use ($method, $uri, $context, $eventRequest, $startTime, $requestId): never {
             ($this->hooks->endProfiling)($requestId, null);
             ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);
 
-            throw ($this->hooks->withErrorContext)($exception, $shortCircuitMethod, $shortCircuitUri);
+            throw ($this->hooks->withErrorContext)($exception, $method, $uri);
         };
 
         if ($result instanceof PromiseInterface) {
@@ -150,6 +208,34 @@ final class RequestCoordinator
         } catch (Throwable $exception) {
             return $fail($exception);
         }
+    }
+
+    /**
+     * Propagate a middleware failure that occurs before the core request is dispatched.
+     *
+     * @param  array<string, mixed>  $guzzleOptions
+     */
+    private function failMiddlewareBeforeDispatch(
+        Throwable $exception,
+        RequestInterface $request,
+        array $guzzleOptions,
+        ?string $seedBody,
+        RequestContext $context,
+        float $startTime,
+        ?string $requestId,
+    ): never {
+        $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody);
+        $validationRequest = $this->requestBuilder->withQueryOptions($request, $shortCircuitOptions);
+        $this->validationManager->validateRequest($validationRequest, $shortCircuitOptions, $this->validationPolicy);
+
+        $method = $request->getMethod();
+        $uri = (string) $request->getUri();
+        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $request->getHeaders());
+        ($this->hooks->emitRequestEvent)($eventRequest, $context, $startTime);
+        ($this->hooks->endProfiling)($requestId, null);
+        ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);
+
+        throw ($this->hooks->withErrorContext)($exception, $method, $uri);
     }
 
     /**

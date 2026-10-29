@@ -23,6 +23,8 @@
 
 - Preserve JSON object-versus-array types, including empty objects and numeric property names, during schema validation.
 - Validate JSON request bodies provided as resources or PSR-7 streams from their current position while preserving seekable stream positions before dispatch.
+- Preserve Guzzle's incremental stream handler while routing other requests through the tracked cURL multi handler.
+- Wait for asynchronous middleware to settle before deciding whether it dispatched the core request, preventing premature validation and duplicate lifecycle events.
 
 ### Compatibility
 

@@ -117,4 +117,4 @@ Without cURL multi or another loop-compatible transport, Fetch rejects async req
 
 ## Streaming
 
-`stream()` and `sse()` remain synchronous streaming APIs. They expose response data incrementally and do not buffer the whole body. Asynchronous streaming is not currently provided.
+`stream()` and `sse()` remain synchronous streaming APIs. They expose response data incrementally and do not buffer the whole body. When cURL is available, the default client routes buffered requests through cURL multi and `stream => true` requests through Guzzle's streaming handler. Asynchronous streaming is not currently provided.

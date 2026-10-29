@@ -131,6 +131,8 @@ final class AsyncCacheMiddleware implements Middleware
 }
 ```
 
+Middleware may finish asynchronous preparation before calling `$next($request)`. Fetch waits for the middleware promise to settle before deciding whether the request was dispatched or short-circuited, so request validation and lifecycle events follow the final path.
+
 The built-in `LoggingMiddleware` handles both modes transparently.
 
 ## Built-in middleware

@@ -23,6 +23,7 @@ use GuzzleHttp\Psr7\Utils;
 use Matrix\Exceptions\CancellationException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Loop;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
@@ -168,6 +169,57 @@ final class ValidationLifecycleTest extends TestCase
         $responseError = await($validRequest);
         self::assertInstanceOf(ResponseValidationException::class, $responseError);
         self::assertCount(0, $mock);
+    }
+
+    public function test_async_middleware_can_transform_request_before_validation_and_dispatch_once(): void
+    {
+        $state = (object) ['dispatches' => 0, 'request_events' => 0, 'response_events' => 0, 'error_events' => 0];
+        $transport = new class($state) implements AsyncTransport
+        {
+            public function __construct(private \stdClass $state) {}
+
+            public function requestAsync(string $method, string $uri, array $options): PromiseInterface
+            {
+                $this->state->dispatches++;
+
+                return \React\Promise\resolve(new Psr7Response(204));
+            }
+        };
+        $handler = new ClientHandler;
+        $handler->setAsyncTransport($transport)
+            ->withRequestSchema($this->userSchema())
+            ->async();
+        $handler->onRequest(static function () use ($state): void {
+            $state->request_events++;
+        });
+        $handler->onResponse(static function () use ($state): void {
+            $state->response_events++;
+        });
+        $handler->onError(static function () use ($state): void {
+            $state->error_events++;
+        });
+        $handler->addMiddleware(static function (RequestInterface $request, callable $next): PromiseInterface {
+            $deferred = new Deferred;
+            Loop::futureTick(static function () use ($request, $next, $deferred): void {
+                $result = $next($request->withBody(Utils::streamFor('{"name":"Ada"}')));
+                self::assertInstanceOf(PromiseInterface::class, $result);
+                $result->then(
+                    static fn (mixed $response): mixed => $deferred->resolve($response),
+                    static fn (\Throwable $error): mixed => $deferred->reject($error),
+                );
+            });
+
+            return $deferred->promise();
+        });
+
+        $result = await($handler->post('https://example.test/users', ['name' => 42])
+            ->catch(static fn (\Throwable $error): \Throwable => $error));
+
+        self::assertInstanceOf(ResponseInterface::class, $result);
+        self::assertSame(1, $state->dispatches);
+        self::assertSame(1, $state->request_events);
+        self::assertSame(1, $state->response_events);
+        self::assertSame(0, $state->error_events);
     }
 
     public function test_mocked_and_middleware_short_circuit_responses_are_validated(): void

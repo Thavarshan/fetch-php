@@ -34,6 +34,8 @@ use Fetch\Validation\ValidationPolicy;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Handler\CurlMultiHandler;
+use GuzzleHttp\Handler\Proxy;
+use GuzzleHttp\Handler\StreamHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\RequestOptions;
 use InvalidArgumentException;
@@ -404,8 +406,11 @@ class ClientHandler implements ClientHandlerInterface, LoggerAwareHandler
             ];
 
             if (extension_loaded('curl')) {
-                $this->curlMultiHandler = new CurlMultiHandler(['select_timeout' => 0.001]);
-                $clientOptions['handler'] = HandlerStack::create($this->curlMultiHandler);
+                $curlMultiHandler = new CurlMultiHandler(['select_timeout' => 0.001]);
+                $this->curlMultiHandler = $curlMultiHandler;
+                $clientOptions['handler'] = HandlerStack::create(
+                    Proxy::wrapStreaming($curlMultiHandler, new StreamHandler),
+                );
             }
 
             $this->httpClient = new GuzzleClient($clientOptions);
