@@ -9,6 +9,7 @@ use Fetch\Support\DebugInfo;
 use Fetch\Support\FetchProfiler;
 use Fetch\Support\ProfilerBridge;
 use Fetch\Support\ProfilerInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Trait ManagesDebugAndProfiling.
@@ -113,21 +114,21 @@ trait ManagesDebugAndProfiling
      * @param  string  $method  HTTP method
      * @param  string  $uri  Request URI
      * @param  array<string, mixed>  $options  Request options
-     * @param  \Psr\Http\Message\ResponseInterface|null  $response  The response
+     * @param  ResponseInterface|null  $response  The response
      * @param  array<string, float>  $timings  Timing information
      * @param  array<string, mixed>  $connectionStats  Connection statistics
      * @param  int  $memoryUsage  Memory usage in bytes
-     * @return DebugInfo The debug info to attach to the response
+     * @return DebugInfo|null The debug info when debug capture is enabled
      */
     protected function createDebugInfo(
         string $method,
         string $uri,
         array $options,
-        ?\Psr\Http\Message\ResponseInterface $response = null,
+        ?ResponseInterface $response = null,
         array $timings = [],
         array $connectionStats = [],
         int $memoryUsage = 0,
-    ): DebugInfo {
+    ): ?DebugInfo {
         $debugInfo = $this->getProfilerBridge()->createDebugInfo(
             $method,
             $uri,
@@ -219,7 +220,7 @@ trait ManagesDebugAndProfiling
         string $method,
         string $uri,
         array $options,
-        ?\Psr\Http\Message\ResponseInterface $response,
+        ?ResponseInterface $response,
         float $startTime,
         int $startMemory,
         array $connectionStats = [],

@@ -76,7 +76,7 @@ class MockResponse
     {
         $headers['Content-Type'] = 'application/json';
 
-        return new self($status, json_encode($data), $headers);
+        return new self($status, json_encode($data, JSON_THROW_ON_ERROR), $headers);
     }
 
     /**
@@ -271,7 +271,7 @@ class MockResponse
         }
 
         // Convert body to string if it's not already
-        $body = is_string($this->body) ? $this->body : json_encode($this->body);
+        $body = is_string($this->body) ? $this->body : json_encode($this->body, JSON_THROW_ON_ERROR);
 
         return Response::createFromBase(
             new GuzzleResponse($this->status, $this->headers, $body)

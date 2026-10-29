@@ -11,6 +11,7 @@
 - Route handler-wide defaults through `GlobalServices`, cache decoded response arrays, and map Guzzle transport failures to Fetch's PSR client exceptions.
 - Include `Fetch/Support` in coverage, enforce an 80% line-coverage floor in CI, make assertion-free tests risky, and check local Markdown links during documentation CI.
 - Remove `buildFullUri()` from internal URI resolution; mark external uses deprecated with a Fetch 4.0 removal target.
+- Raise PHPStan to level 8 and tighten internal return and interface annotations to keep the stricter analysis clean.
 
 ### Compatibility
 

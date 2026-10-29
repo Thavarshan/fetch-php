@@ -31,7 +31,7 @@ class CachedResponse
         private readonly ?int $expiresAt = null,
         private readonly ?string $etag = null,
         private readonly ?string $lastModified = null,
-        private readonly array $metadata = []
+        private readonly array $metadata = [],
     ) {}
 
     /**
@@ -59,7 +59,7 @@ class CachedResponse
             createdAt: $now,
             expiresAt: $expiresAt,
             etag: $etag,
-            lastModified: $lastModified
+            lastModified: $lastModified,
         );
     }
 
@@ -82,7 +82,7 @@ class CachedResponse
             expiresAt: isset($data['expires_at']) ? (int) $data['expires_at'] : null,
             etag: $data['etag'] ?? null,
             lastModified: $data['last_modified'] ?? null,
-            metadata: $data['metadata'] ?? []
+            metadata: $data['metadata'] ?? [],
         );
     }
 

@@ -10,6 +10,7 @@ use Fetch\Testing\MockServer;
 use Fetch\Testing\Recorder;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use GuzzleHttp\Psr7\Utils;
+use Psr\Http\Message\RequestInterface;
 
 trait HandlesMocking
 {
@@ -56,7 +57,7 @@ trait HandlesMocking
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The request options
      */
-    protected function createPsrRequest(string $method, string $uri, array $options): \Psr\Http\Message\RequestInterface
+    protected function createPsrRequest(string $method, string $uri, array $options): RequestInterface
     {
         $headers = $options['headers'] ?? [];
         $body = null;

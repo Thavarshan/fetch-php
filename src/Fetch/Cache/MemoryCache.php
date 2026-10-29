@@ -163,6 +163,7 @@ class MemoryCache implements CacheInterface
 
         foreach ($this->cache as $key => $entry) {
             $createdAt = $entry['response']->getCreatedAt();
+
             if ($createdAt < $oldestTime) {
                 $oldestTime = $createdAt;
                 $oldestKey = $key;

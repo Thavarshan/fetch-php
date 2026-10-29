@@ -65,6 +65,7 @@ class CacheKeyGenerator
 
         if (! in_array($upperMethod, ['GET', 'HEAD'], true) && $bodyCachingEnabled) {
             $bodyHash = $this->hashBody($options);
+
             if ($bodyHash !== null) {
                 $components['body_hash'] = $bodyHash;
             }
@@ -107,6 +108,7 @@ class CacheKeyGenerator
     private function normalizeUri(string $uri): string
     {
         $parsed = parse_url($uri);
+
         if ($parsed === false) {
             return $uri;
         }
@@ -126,6 +128,7 @@ class CacheKeyGenerator
             // Only include non-default ports
             $defaultPorts = ['http' => 80, 'https' => 443];
             $scheme = $parsed['scheme'] ?? 'http';
+
             if (! isset($defaultPorts[$scheme]) || $parsed['port'] !== $defaultPorts[$scheme]) {
                 $normalized .= ':'.$parsed['port'];
             }
@@ -148,6 +151,7 @@ class CacheKeyGenerator
     {
         // Parse query string into array of [key, value] pairs, preserving duplicates and order
         $pairs = [];
+
         foreach (explode('&', $query) as $part) {
             if ($part === '') {
                 continue;
@@ -167,6 +171,7 @@ class CacheKeyGenerator
         });
         // Rebuild query string
         $normalized = [];
+
         foreach ($pairs as [$key, $value]) {
             $normalized[] = rawurlencode($key).'='.rawurlencode($value);
         }
@@ -208,6 +213,7 @@ class CacheKeyGenerator
             foreach ($headers as $name => $value) {
                 if (strcasecmp($name, $header) === 0) {
                     $varyHeaders[strtolower($header)] = is_array($value) ? implode(', ', $value) : (string) $value;
+
                     break;
                 }
             }
@@ -229,6 +235,7 @@ class CacheKeyGenerator
 
         if (isset($options['body'])) {
             $body = $options['body'];
+
             if (is_string($body)) {
                 return hash('sha256', $body);
             }

@@ -98,7 +98,7 @@ final class CacheManager
 
         $this->keyGenerator = new CacheKeyGenerator(
             'fetch:',
-            $this->options['vary_headers'] ?? []
+            $this->options['vary_headers'] ?? [],
         );
     }
 
@@ -176,9 +176,11 @@ final class CacheManager
 
         // Check per-request cache settings
         $cacheConfig = $requestOptions['cache'] ?? [];
+
         if (is_bool($cacheConfig)) {
             return $cacheConfig;
         }
+
         if (is_array($cacheConfig) && isset($cacheConfig['enabled'])) {
             return (bool) $cacheConfig['enabled'];
         }
@@ -204,6 +206,7 @@ final class CacheManager
 
         // Check for force refresh
         $cacheConfig = $requestOptions['cache'] ?? [];
+
         if (is_array($cacheConfig) && ($cacheConfig['force_refresh'] ?? false)) {
             $this->logEvent('REFRESH', $method, $uri);
 
@@ -223,6 +226,7 @@ final class CacheManager
         if ($cached->isFresh()) {
             // Respect no-cache: must revalidate every time
             $cachedCacheControl = CacheControl::parse($cached->getHeaders()['Cache-Control'][0] ?? '');
+
             if ($cachedCacheControl->hasNoCache()) {
                 $this->logEvent('REVALIDATE', $method, $uri);
 
@@ -238,6 +242,7 @@ final class CacheManager
 
         // Check for stale-while-revalidate
         $staleWhileRevalidate = $this->options['stale_while_revalidate'] ?? 0;
+
         if ($staleWhileRevalidate > 0 && $cached->isUsableAsStale($staleWhileRevalidate)) {
             $response = $this->createResponseFromCached($cached);
             $response = $response->withHeader('X-Cache-Status', 'STALE');
@@ -278,6 +283,7 @@ final class CacheManager
 
         // Calculate TTL
         $ttl = $this->calculateTtl($response, $cacheControl, $requestOptions);
+
         if ($ttl !== null && $ttl <= 0) {
             return;
         }
@@ -308,12 +314,14 @@ final class CacheManager
 
         // Add If-None-Match for ETag
         $etag = $cached->getETag();
+
         if ($etag !== null) {
             $options['headers']['If-None-Match'] = $etag;
         }
 
         // Add If-Modified-Since for Last-Modified
         $lastModified = $cached->getLastModified();
+
         if ($lastModified !== null) {
             $options['headers']['If-Modified-Since'] = $lastModified;
         }
@@ -337,6 +345,7 @@ final class CacheManager
         // Update headers from the 304 response (except content-related ones)
         foreach ($notModifiedResponse->getHeaders() as $name => $values) {
             $lower = strtolower($name);
+
             if (in_array($lower, ['content-length', 'content-encoding', 'transfer-encoding'], true)) {
                 continue;
             }
@@ -346,7 +355,7 @@ final class CacheManager
         $response = new Response(
             $cached->getStatusCode(),
             $headers,
-            $cached->getBody()
+            $cached->getBody(),
         );
 
         return $response->withHeader('X-Cache-Status', 'REVALIDATED');
@@ -364,6 +373,7 @@ final class CacheManager
         }
 
         $staleIfError = $this->options['stale_if_error'] ?? 0;
+
         if ($staleIfError <= 0) {
             return null;
         }
@@ -398,6 +408,7 @@ final class CacheManager
     {
         // Check for custom cache key
         $cacheConfig = $options['cache'] ?? [];
+
         if (is_array($cacheConfig) && isset($cacheConfig['key'])) {
             return $this->keyGenerator->generateCustom($cacheConfig['key']);
         }
@@ -493,6 +504,7 @@ final class CacheManager
     ): int {
         // Check for per-request TTL
         $cacheConfig = $requestOptions['cache'] ?? [];
+
         if (is_array($cacheConfig) && isset($cacheConfig['ttl'])) {
             return (int) $cacheConfig['ttl'];
         }
@@ -501,6 +513,7 @@ final class CacheManager
         if ($this->options['respect_cache_headers'] ?? true) {
             $isSharedCache = $this->options['is_shared_cache'] ?? false;
             $headerTtl = $cacheControl->getTtl($response, $isSharedCache);
+
             if ($headerTtl !== null) {
                 return $headerTtl;
             }
@@ -518,7 +531,7 @@ final class CacheManager
         return new Response(
             $cached->getStatusCode(),
             $cached->getHeaders(),
-            $cached->getBody()
+            $cached->getBody(),
         );
     }
 

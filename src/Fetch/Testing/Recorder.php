@@ -175,7 +175,7 @@ class Recorder
             ];
         }
 
-        return json_encode($exportData, JSON_PRETTY_PRINT);
+        return json_encode($exportData, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
     }
 
     /**

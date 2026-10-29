@@ -37,7 +37,7 @@ class FileCache implements CacheInterface
     public function __construct(
         string $directory = '/tmp/fetch-cache',
         int $defaultTtl = 3600,
-        int $maxSize = 104857600
+        int $maxSize = 104857600,
     ) {
         $this->directory = rtrim($directory, DIRECTORY_SEPARATOR);
         $this->defaultTtl = $defaultTtl;
@@ -56,11 +56,13 @@ class FileCache implements CacheInterface
         // Directly attempt to read the file - file_get_contents returns false if file doesn't exist
         // This avoids a race condition where file could be deleted between exists check and read
         $contents = @file_get_contents($path);
+
         if ($contents === false) {
             return null;
         }
 
         $data = json_decode($contents, true);
+
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             // Invalid cache file, delete it
             @unlink($path);
@@ -70,6 +72,7 @@ class FileCache implements CacheInterface
 
         // Reconstruct the cached response
         $response = CachedResponse::fromArray($data);
+
         if ($response === null) {
             @unlink($path);
 
@@ -109,8 +112,9 @@ class FileCache implements CacheInterface
                 $updatedResponse = CachedResponse::fromArray(
                     array_merge($response->toArray(), [
                         'expires_at' => null,
-                    ])
+                    ]),
                 );
+
                 if ($updatedResponse !== null) {
                     $response = $updatedResponse;
                 }
@@ -118,8 +122,9 @@ class FileCache implements CacheInterface
                 $updatedResponse = CachedResponse::fromArray(
                     array_merge($response->toArray(), [
                         'expires_at' => time() + $ttl,
-                    ])
+                    ]),
                 );
+
                 if ($updatedResponse !== null) {
                     $response = $updatedResponse;
                 }
@@ -128,14 +133,16 @@ class FileCache implements CacheInterface
             $updatedResponse = CachedResponse::fromArray(
                 array_merge($response->toArray(), [
                     'expires_at' => time() + $this->defaultTtl,
-                ])
+                ]),
             );
+
             if ($updatedResponse !== null) {
                 $response = $updatedResponse;
             }
         }
 
         $encoded = json_encode($response->toArray());
+
         if ($encoded === false) {
             throw new RuntimeException('Failed to encode cache data as JSON');
         }
@@ -200,6 +207,7 @@ class FileCache implements CacheInterface
 
         foreach ($files as $file) {
             $contents = @file_get_contents($file);
+
             if ($contents === false) {
                 @unlink($file);
                 $count++;
@@ -208,6 +216,7 @@ class FileCache implements CacheInterface
             }
 
             $data = @json_decode($contents, true);
+
             if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
                 @unlink($file);
                 $count++;
@@ -216,6 +225,7 @@ class FileCache implements CacheInterface
             }
 
             $response = CachedResponse::fromArray($data);
+
             if ($response === null || $response->isExpired()) {
                 @unlink($file);
                 $count++;
@@ -294,6 +304,7 @@ class FileCache implements CacheInterface
 
         foreach ($files as $file) {
             $fileSize = @filesize($file);
+
             if ($fileSize !== false) {
                 $size += $fileSize;
             }
