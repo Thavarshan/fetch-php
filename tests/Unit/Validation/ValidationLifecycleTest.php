@@ -138,6 +138,49 @@ final class ValidationLifecycleTest extends TestCase
         self::assertSame(204, $response->getStatusCode());
     }
 
+    public function test_request_validation_uses_materialized_raw_json_after_middleware_reads_it(): void
+    {
+        $mock = new MockHandler([new Psr7Response(204)]);
+        $handler = $this->handler($mock);
+        $handler->withRequestSchema($this->userSchema());
+        $handler->addMiddleware(static function (RequestInterface $request, callable $next): mixed {
+            $request->getBody()->getContents();
+
+            return $next($request);
+        });
+
+        $response = $handler->request(
+            'POST',
+            'https://example.test/users',
+            '{"name":"Ada"}',
+            ContentType::JSON,
+        );
+
+        self::assertSame(204, $response->getStatusCode());
+    }
+
+    public function test_request_validation_uses_in_place_middleware_body_edits(): void
+    {
+        $mock = new MockHandler([new Psr7Response(204)]);
+        $handler = $this->handler($mock);
+        $handler->withRequestSchema($this->userSchema());
+        $handler->addMiddleware(static function (RequestInterface $request, callable $next): mixed {
+            $request->getBody()->write('{"name":"Grace"}');
+
+            return $next($request);
+        });
+
+        $response = $handler->request(
+            'POST',
+            'https://example.test/users',
+            '{"name":"Ada"}',
+            ContentType::JSON,
+        );
+
+        self::assertSame(204, $response->getStatusCode());
+        self::assertSame('{"name":"Grace"}', (string) $mock->getLastRequest()?->getBody());
+    }
+
     public function test_openapi_request_validation_accepts_multipart_body_and_preserves_its_boundary(): void
     {
         $mock = new MockHandler([new Psr7Response(204)]);

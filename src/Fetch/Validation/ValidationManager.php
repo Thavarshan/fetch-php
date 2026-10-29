@@ -95,6 +95,14 @@ final class ValidationManager
         }
 
         if (str_contains(strtolower($request->getHeaderLine('Content-Type')), 'json')) {
+            $body = $options['body'] ?? null;
+            if (is_string($body)) {
+                return $this->decodeJson($body, 'request');
+            }
+            if ($body instanceof StreamInterface) {
+                return $this->decodeJson($this->readRequestBody($body), 'request');
+            }
+
             return $this->decodeJson($this->readRequestBody($request->getBody()), 'request');
         }
 

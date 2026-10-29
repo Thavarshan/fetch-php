@@ -52,6 +52,22 @@ final class OpenApiContractValidatorTest extends TestCase
         });
     }
 
+    public function test_json_openapi_document_preserves_empty_schema_objects(): void
+    {
+        $spec = <<<'JSON'
+{"openapi":"3.0.3","info":{"title":"Labels API","version":"1.0.0"},"paths":{"/labels":{"post":{"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","additionalProperties":{}}}}},"responses":{"204":{"description":"Accepted"}}}}}}
+JSON;
+
+        $this->withSpec($spec, function (string $path): void {
+            $operation = (new OpenApiContractValidator)->validateRequest(
+                new Request('POST', 'https://example.test/labels', ['Content-Type' => 'application/json'], '{"label":"accepted"}'),
+                $path,
+            );
+
+            self::assertSame('post', $operation->method());
+        });
+    }
+
     public function test_it_rejects_contract_mismatches_without_echoing_payloads(): void
     {
         $this->withSpec($this->spec(), function (string $path): void {

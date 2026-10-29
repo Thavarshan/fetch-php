@@ -55,6 +55,8 @@ The Opis adapter supports JSON Schema draft 2020-12. Results expose immutable `V
 
 JSON payload decoding preserves the distinction between objects (`{}`) and arrays (`[]`), including empty objects and objects with sequential numeric property names. When request validation is enabled, JSON request bodies supplied as a resource or PSR-7 stream are read from their current position; seekable positions are restored, and non-seekable bodies are made replayable for transport dispatch. With request validation disabled, stream-backed uploads pass through without being pre-read.
 
+Raw JSON string bodies are validated from the same materialized value the transport will send, even when middleware has already read its PSR-7 request body. OpenAPI JSON parsing also preserves empty objects inside schemas and the rest of the specification.
+
 Invalid outgoing data raises `RequestValidationException` before transport dispatch. Invalid response data raises `ResponseValidationException`. The exceptions contain structured results and do not include the request or response payload in their message.
 
 ## OpenAPI 3.0.x

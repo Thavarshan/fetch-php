@@ -91,11 +91,16 @@ final class OpenApiContractValidator
         }
 
         $document = $this->parseDocument($contents, $specPath);
-        if (! is_array($document) || ! isset($document['openapi']) || ! is_string($document['openapi'])) {
+        $version = match (true) {
+            is_object($document) => $document->openapi ?? null,
+            is_array($document) => $document['openapi'] ?? null,
+            default => null,
+        };
+        if (! is_string($version)) {
             throw new ValidationConfigurationException('The OpenAPI document must declare an openapi version.');
         }
 
-        if (preg_match('/^3\.0\.\d+$/', $document['openapi']) !== 1) {
+        if (preg_match('/^3\.0\.\d+$/', $version) !== 1) {
             throw new ValidationConfigurationException('Only OpenAPI 3.0.x specifications are supported.');
         }
 
@@ -115,12 +120,12 @@ final class OpenApiContractValidator
         $this->loadedSpec = $specPath;
     }
 
-    /** @return array<string, mixed> */
-    private function parseDocument(string $contents, string $path): array
+    /** @return array<mixed>|object */
+    private function parseDocument(string $contents, string $path): array|object
     {
         try {
-            $document = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-            if (is_array($document)) {
+            $document = json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
+            if (is_array($document) || is_object($document)) {
                 return $document;
             }
         } catch (\JsonException) {
@@ -130,7 +135,7 @@ final class OpenApiContractValidator
         try {
             if (class_exists(Yaml::class)) {
                 /** @var mixed $document */
-                $document = Yaml::parse($contents);
+                $document = Yaml::parse($contents, Yaml::PARSE_OBJECT_FOR_MAP);
             } elseif (function_exists('yaml_parse')) {
                 /** @var mixed $document */
                 $document = yaml_parse($contents);
@@ -145,24 +150,25 @@ final class OpenApiContractValidator
             throw new ValidationConfigurationException('The OpenAPI specification is not valid JSON or YAML.', previous: $exception);
         }
 
-        if (! is_array($document)) {
+        if (! is_array($document) && ! is_object($document)) {
             throw new ValidationConfigurationException('The OpenAPI specification must contain an object document.');
         }
 
         return $document;
     }
 
-    /** @param array<mixed> $value */
-    private function assertInternalReferencesOnly(array $value): void
+    private function assertInternalReferencesOnly(mixed $value): void
     {
-        foreach ($value as $key => $item) {
+        $items = is_object($value) ? get_object_vars($value) : (is_array($value) ? $value : []);
+
+        foreach ($items as $key => $item) {
             if ($key === '$ref' && (! is_string($item) || ! str_starts_with($item, '#'))) {
                 throw new ValidationConfigurationException(
                     'External OpenAPI references are disabled; use references within the specification document.'
                 );
             }
 
-            if (is_array($item)) {
+            if (is_array($item) || is_object($item)) {
                 $this->assertInternalReferencesOnly($item);
             }
         }
