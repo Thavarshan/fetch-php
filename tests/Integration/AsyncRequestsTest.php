@@ -208,10 +208,10 @@ class AsyncRequestsTest extends TestCase
 
         $mockHandler = new MockHandler([
             // First 2 attempts fail with 503
-            new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
-            new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
+            new Psr7Response(503, [], 'Service Unavailable'),
+            new Psr7Response(503, [], 'Service Unavailable'),
             // Third attempt succeeds
-            new \GuzzleHttp\Psr7\Response(200, [], json_encode(['success' => true, 'attempt' => 3])),
+            new Psr7Response(200, [], json_encode(['success' => true, 'attempt' => 3])),
         ]);
 
         $handlerStack = HandlerStack::create($mockHandler);

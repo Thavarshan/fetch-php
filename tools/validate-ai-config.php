@@ -11,7 +11,6 @@ declare(strict_types=1);
  *
  * Exit code 0 = all checks pass (warnings allowed), 1 = one or more errors.
  */
-
 $root = dirname(__DIR__);
 
 $errors = [];
@@ -285,5 +284,5 @@ if ($errors === []) {
     exit(0);
 }
 
-echo "\n".count($errors)." error(s), ".count($warnings)." warning(s).\n";
+echo "\n".count($errors).' error(s), '.count($warnings)." warning(s).\n";
 exit(1);

@@ -38,6 +38,8 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\RequestOptions;
 use InvalidArgumentException;
 use LogicException;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use React\Promise\PromiseInterface;
@@ -851,7 +853,7 @@ class ClientHandler implements ClientHandlerInterface, LoggerAwareHandler
                 recordProfilingEvent: fn (?string $requestId, string $event) => $this->recordProfilingEvent($requestId, $event),
                 endProfiling: fn (?string $requestId, ?int $statusCode) => $this->endProfiling($requestId, $statusCode),
                 connectionStats: fn (): array => $this->getConnectionDebugStats(),
-                captureDebugSnapshot: fn (string $method, string $uri, array $options, ?\Psr\Http\Message\ResponseInterface $response, float $startTime, int $startMemory, array $connectionStats) => $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats),
+                captureDebugSnapshot: fn (string $method, string $uri, array $options, ?ResponseInterface $response, float $startTime, int $startMemory, array $connectionStats) => $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats),
                 logRequest: fn (string $method, string $uri, array $options) => $this->logRequest($method, $uri, $options),
                 logResponse: function (ResponseContract $response, float $duration): void {
                     if ($response instanceof Response) {
@@ -859,11 +861,11 @@ class ClientHandler implements ClientHandlerInterface, LoggerAwareHandler
                     }
                 },
                 eventRequest: fn (string $method, string $uri, array $headers) => $this->eventRequest($method, $uri, $headers),
-                emitRequestEvent: fn (\Psr\Http\Message\RequestInterface $request, RequestContext $requestContext, float $timestamp) => $this->emitRequestEvent($request, $requestContext, $timestamp),
-                emitResponseEvent: fn (\Psr\Http\Message\RequestInterface $request, \Psr\Http\Message\ResponseInterface $response, RequestContext $requestContext, float $startTime) => $this->emitResponseEvent($request, $response, $requestContext, $startTime),
-                emitErrorEvent: fn (\Psr\Http\Message\RequestInterface $request, \Throwable $exception, RequestContext $requestContext, float $startTime) => $this->emitErrorEvent($request, $exception, $requestContext, $startTime),
+                emitRequestEvent: fn (RequestInterface $request, RequestContext $requestContext, float $timestamp) => $this->emitRequestEvent($request, $requestContext, $timestamp),
+                emitResponseEvent: fn (RequestInterface $request, ResponseInterface $response, RequestContext $requestContext, float $startTime) => $this->emitResponseEvent($request, $response, $requestContext, $startTime),
+                emitErrorEvent: fn (RequestInterface $request, \Throwable $exception, RequestContext $requestContext, float $startTime) => $this->emitErrorEvent($request, $exception, $requestContext, $startTime),
                 hasRedirectListeners: fn (): bool => $this->hasEventListeners(RedirectEvent::NAME),
-                attachRedirectListener: fn (array $options, \Psr\Http\Message\RequestInterface $request, RequestContext $requestContext): array => $this->attachRedirectListener($options, $request, $requestContext),
+                attachRedirectListener: fn (array $options, RequestInterface $request, RequestContext $requestContext): array => $this->attachRedirectListener($options, $request, $requestContext),
                 notifyRetry: fn (int $attempt, int $maxAttempts, \Throwable $exception, int $delay, ?RequestContext $requestContext) => $this->notifyRetry($attempt, $maxAttempts, $exception, $delay, $requestContext),
                 withErrorContext: fn (\Throwable $exception, string $method, string $uri): \Throwable => $this->withErrorContext($exception, $method, $uri),
                 logAsyncFailure: function (string $method, string $uri, \Throwable $exception): void {

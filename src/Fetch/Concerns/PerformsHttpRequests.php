@@ -17,6 +17,7 @@ use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions;
 use Fetch\Validation\ValidationConfigurationException;
 use Fetch\Validation\ValidationException;
+use Matrix\Exceptions\CancellationException;
 use Psr\Http\Message\RequestInterface;
 use React\Promise\PromiseInterface;
 use RuntimeException;
@@ -473,7 +474,7 @@ trait PerformsHttpRequests
      */
     protected function withErrorContext(\Throwable $e, string $method, string $uri): \Throwable
     {
-        if ($e instanceof AsyncTransportException || $e instanceof ValidationException || $e instanceof \Matrix\Exceptions\CancellationException) {
+        if ($e instanceof AsyncTransportException || $e instanceof ValidationException || $e instanceof CancellationException) {
             return $e;
         }
 

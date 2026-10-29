@@ -29,7 +29,7 @@ class RequestBuilderTest extends TestCase
     {
         $builder = new RequestBuilder;
         $request = new Request('POST', 'https://example.test/users', [], '{"name":"Ada"}');
-        $request = $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor('{"name":"Grace"}'));
+        $request = $request->withBody(Utils::streamFor('{"name":"Grace"}'));
 
         $options = $builder->mergeMiddlewareRequest(
             $request,

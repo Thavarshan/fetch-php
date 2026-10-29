@@ -310,7 +310,7 @@ class ManagesPromisesTest extends TestCase
     {
         $results = await($this->handler->map(
             ['first' => 'Ada', 7 => 'Grace'],
-            static fn (string $value, int|string $key): PromiseInterface => resolve($key . ':' . $value),
+            static fn (string $value, int|string $key): PromiseInterface => resolve($key.':'.$value),
             1,
         ));
 

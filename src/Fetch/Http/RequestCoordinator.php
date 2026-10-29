@@ -13,6 +13,7 @@ use Fetch\Support\RetryStrategy;
 use Fetch\Validation\ValidationException;
 use Fetch\Validation\ValidationManager;
 use Fetch\Validation\ValidationPolicy;
+use GuzzleHttp\ClientInterface;
 use Matrix\Exceptions\AsyncException;
 use Matrix\Exceptions\CancellationException;
 use Psr\Http\Message\RequestInterface;
@@ -32,7 +33,7 @@ final class RequestCoordinator
         private readonly RequestBuilder $requestBuilder,
         private readonly ValidationManager $validationManager,
         private readonly ValidationPolicy $validationPolicy,
-        private readonly \GuzzleHttp\ClientInterface $httpClient,
+        private readonly ClientInterface $httpClient,
         private readonly AsyncTransport $asyncTransport,
         private readonly RetryStrategy $retryStrategy,
         private readonly ?CacheManager $cacheManager,

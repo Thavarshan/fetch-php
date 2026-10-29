@@ -20,6 +20,7 @@ use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
+use React\Promise\PromiseInterface;
 
 use function Matrix\Support\await;
 
@@ -79,7 +80,7 @@ class EventsTest extends TestCase
 
             $handler->async($async);
             $request = $handler->get('https://example.com/short-circuit');
-            $response = $request instanceof \React\Promise\PromiseInterface ? await($request) : $request;
+            $response = $request instanceof PromiseInterface ? await($request) : $request;
 
             $this->assertSame('short-circuit', (string) $response->getBody());
             $this->assertInstanceOf(RequestEvent::class, $requestEvent);

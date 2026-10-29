@@ -7,6 +7,7 @@ namespace Tests\Unit\Validation;
 use Fetch\Cache\MemoryCache;
 use Fetch\Enum\ContentType;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use Fetch\Interfaces\AsyncTransport;
 use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
@@ -16,6 +17,7 @@ use Fetch\Validation\ValidationConfigurationException;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response as Psr7Response;
 use GuzzleHttp\Psr7\Utils;
 use Matrix\Exceptions\CancellationException;
@@ -230,7 +232,7 @@ final class ValidationLifecycleTest extends TestCase
         $stack = HandlerStack::create(new MockHandler([
             new Psr7Response(200, ['Content-Type' => 'application/json'], '{"name":"Ada"}'),
         ]));
-        $stack->push(\GuzzleHttp\Middleware::history($history));
+        $stack->push(Middleware::history($history));
         $handler = ClientHandler::createWithClient(new GuzzleClient([
             'handler' => $stack,
             'http_errors' => false,
@@ -348,7 +350,7 @@ final class ValidationLifecycleTest extends TestCase
             'http_errors' => false,
         ]);
 
-        return ClientHandler::createWithClient($client, new \Fetch\Http\GuzzleAsyncTransport($client, supportsQueueOnlyHandlers: true));
+        return ClientHandler::createWithClient($client, new GuzzleAsyncTransport($client, supportsQueueOnlyHandlers: true));
     }
 
     /** @return array<string, mixed> */

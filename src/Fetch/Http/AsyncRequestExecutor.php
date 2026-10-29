@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fetch\Http;
 
 use Fetch\Interfaces\AsyncTransport;
+use Fetch\Interfaces\Response;
 use Fetch\Support\RetryStrategy;
 use GuzzleHttp\Exception\GuzzleException;
 use React\Promise\PromiseInterface;
@@ -16,7 +17,7 @@ final class AsyncRequestExecutor
 
     /**
      * @param  array<string, mixed>  $options
-     * @return PromiseInterface<\Fetch\Interfaces\Response>
+     * @return PromiseInterface<Response>
      */
     public function execute(
         string $method,
