@@ -7,6 +7,8 @@ description: Learn how to work with promises in the Fetch HTTP package
 
 This guide covers how to work with promises in the Fetch HTTP package. The package implements a Promise-based API similar to JavaScript promises, allowing for sophisticated asynchronous programming patterns.
 
+Async helpers come from Matrix 4 (`jerome/matrix ^4.0`). Cancelling a pending Matrix promise rejects it with `Matrix\Exceptions\CancellationException`; attach a rejection handler when cancelling. Fetch's handler `map()` schedules work lazily and accepts concurrency values from 1 through 200.
+
 ## Basic Promise Concepts
 
 Promises represent values that may not be available yet. They're used for asynchronous operations like HTTP requests. In the Fetch HTTP package, promises are represented by the `PromiseInterface` from React's Promise library.

@@ -4,7 +4,9 @@ namespace Tests\Unit;
 
 use Fetch\Enum\ContentType;
 use Fetch\Http\Client;
-use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\RequestOptions;
+use Fetch\Testing\MockResponse;
+use Fetch\Testing\MockServer;
 use PHPUnit\Framework\TestCase;
 
 class HelperFunctionsTest extends TestCase
@@ -13,6 +15,14 @@ class HelperFunctionsTest extends TestCase
     {
         // Reset the fetch client to avoid state between tests
         fetch_client(null, true);
+        MockServer::resetInstance();
+    }
+
+    protected function tearDown(): void
+    {
+        MockServer::resetInstance();
+        fetch_client(null, true);
+        parent::tearDown();
     }
 
     public function test_fetch_client_returns_client_instance(): void
@@ -69,28 +79,90 @@ class HelperFunctionsTest extends TestCase
 
         $this->assertEquals('raw content', $body);
         $this->assertEquals('text/plain', $contentType->value);
+
+        [$body, $contentType] = extract_body_and_content_type([
+            'body' => 'raw header body',
+            'headers' => ['Content-Type' => ['text/plain']],
+        ]);
+        $this->assertSame('raw header body', $body);
+        $this->assertSame(ContentType::TEXT, $contentType);
+
+        [$body, $contentType] = extract_body_and_content_type([
+            'json' => ['winner' => true],
+            'form' => ['ignored' => true],
+            'body' => 'ignored',
+        ]);
+        $this->assertSame(['winner' => true], $body);
+        $this->assertSame(ContentType::JSON, $contentType);
+
+        [$body, $contentType] = extract_body_and_content_type([
+            'body' => ['data' => ['type' => 'users']],
+            'content_type' => ContentType::VND_API_JSON,
+        ]);
+        $this->assertSame(['data' => ['type' => 'users']], $body);
+        $this->assertSame(ContentType::VND_API_JSON, $contentType);
+
+        $normalized = process_request_options([
+            'body' => ['data' => ['type' => 'users']],
+            'content_type' => ContentType::VND_API_JSON,
+        ]);
+        $this->assertSame(ContentType::VND_API_JSON->value, $normalized['headers']['Content-Type']);
+    }
+
+    public function test_base_uri_preserves_form_and_multipart_array_bodies(): void
+    {
+        MockServer::fake([
+            'https://example.com/submit' => MockResponse::ok(),
+        ]);
+
+        $formData = ['name' => 'Ada Lovelace'];
+        $multipartData = [['name' => 'field', 'contents' => 'multipart value']];
+
+        $this->assertSame(
+            $formData,
+            RequestOptions::normalizeBodyOptions([
+                'body' => $formData,
+                'content_type' => ContentType::FORM_URLENCODED,
+            ])['form_params']
+        );
+        $this->assertSame(
+            $multipartData,
+            RequestOptions::normalizeBodyOptions([
+                'body' => $multipartData,
+                'content_type' => ContentType::MULTIPART,
+            ])['multipart']
+        );
+
+        fetch('/submit', [
+            'base_uri' => 'https://example.com',
+            'method' => 'POST',
+            'body' => ['name' => 'Ada Lovelace'],
+            'content_type' => ContentType::FORM_URLENCODED,
+        ]);
+
+        MockServer::assertSent(function ($request): bool {
+            return (string) $request->getBody() === 'name=Ada+Lovelace'
+                && $request->getHeaderLine('Content-Type') === ContentType::FORM_URLENCODED->value;
+        });
+
+        fetch('/submit', [
+            'base_uri' => 'https://example.com',
+            'method' => 'POST',
+            'body' => [['name' => 'field', 'contents' => 'multipart value']],
+            'content_type' => ContentType::MULTIPART,
+        ]);
+
+        MockServer::assertSent('POST https://example.com/submit', 2);
     }
 
     public function test_request_method(): void
     {
-        // Create a mock for the ResponseInterface
-        $mockResponse = $this->createMock(ResponseInterface::class);
+        MockServer::fake([
+            'https://example.com/users*' => MockResponse::json(['users' => []]),
+        ]);
 
-        // Set up the global fetch function (using Closure::bind or similar technique)
-        // This is complex and depends on how your codebase is structured
-        // You might need to use PHP's runkit extension or other methods
+        $response = request_method('GET', 'https://example.com/users', ['page' => 1], [], true);
 
-        // Here's a conceptual example - actual implementation will vary:
-        /*
-        $this->setFetchCallback(function($url, $options) use ($mockResponse) {
-            $this->assertEquals('https://example.com', $url);
-            $this->assertEquals('GET', $options['method']);
-            $this->assertEquals(['page' => 1], $options['query']);
-            return $mockResponse;
-        });
-
-        $result = request_method('GET', 'https://example.com', ['page' => 1], [], true);
-        $this->assertSame($mockResponse, $result);
-        */
+        $this->assertSame(['users' => []], $response->json());
     }
 }

@@ -10,7 +10,7 @@ class HttpException extends RuntimeException
     /**
      * The HTTP response that caused the exception.
      *
-     * @var \Psr\Http\Message\ResponseInterface
+     * @var ResponseInterface
      */
     protected $response;
 

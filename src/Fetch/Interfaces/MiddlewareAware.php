@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
+use Psr\Http\Message\RequestInterface;
+
 interface MiddlewareAware
 {
     /**
@@ -12,7 +14,7 @@ interface MiddlewareAware
      * Higher-priority middleware run first (outermost). Middleware with equal
      * priority run in the order they were added.
      *
-     * @param  Middleware|callable(\Psr\Http\Message\RequestInterface, callable): mixed  $middleware
+     * @param  Middleware|callable(RequestInterface, callable): mixed  $middleware
      */
     public function addMiddleware(Middleware|callable $middleware, int $priority = 0): self;
 

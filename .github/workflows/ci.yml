@@ -162,11 +162,14 @@ jobs:
         env:
           NO_NETWORK: 1
 
+      - name: Enforce minimum line coverage
+        run: php tools/assert-coverage.php coverage/index.xml 80
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         if: github.event_name != 'schedule'
         with:
-          file: ./coverage.xml
+          file: ./coverage/clover.xml
           fail_ci_if_error: false
           verbose: true
         env:
@@ -196,5 +199,4 @@ jobs:
         run: npm run build
 
       - name: Check for broken links
-        run: npm run check-links || true
-        continue-on-error: true
+        run: npm run check-links

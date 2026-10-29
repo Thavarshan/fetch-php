@@ -37,6 +37,7 @@ class CacheControl
 
         foreach (explode(',', $cacheControl) as $directive) {
             $directive = trim($directive);
+
             if ($directive === '') {
                 continue;
             }
@@ -193,6 +194,7 @@ class CacheControl
         // For shared caches, s-maxage takes precedence
         if ($isSharedCache) {
             $sMaxAge = $this->getSharedMaxAge();
+
             if ($sMaxAge !== null) {
                 return $sMaxAge;
             }
@@ -200,14 +202,17 @@ class CacheControl
 
         // Check max-age directive
         $maxAge = $this->getMaxAge();
+
         if ($maxAge !== null) {
             return $maxAge;
         }
 
         // Fall back to Expires header
         $expires = $response->getHeaderLine('Expires');
+
         if ($expires !== '') {
             $expiresTime = strtotime($expires);
+
             if ($expiresTime !== false) {
                 return max(0, $expiresTime - time());
             }
@@ -238,6 +243,7 @@ class CacheControl
     public function getInt(string $directive): ?int
     {
         $value = $this->get($directive);
+
         if ($value === null) {
             return null;
         }

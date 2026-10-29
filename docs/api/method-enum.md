@@ -25,6 +25,8 @@ enum Method: string
     case DELETE = 'DELETE';
     case HEAD = 'HEAD';
     case OPTIONS = 'OPTIONS';
+    case TRACE = 'TRACE';
+    case CONNECT = 'CONNECT';
 
     /**
      * Get the method from a string.
@@ -63,6 +65,8 @@ enum Method: string
 | `Method::DELETE`  | `"DELETE"`  | The DELETE method deletes the specified resource.                                              |
 | `Method::HEAD`    | `"HEAD"`    | The HEAD method asks for a response identical to a GET request, but without the response body. |
 | `Method::OPTIONS` | `"OPTIONS"` | The OPTIONS method describes the communication options for the target resource.                |
+| `Method::TRACE`   | `"TRACE"`   | The TRACE method requests a loop-back of the request for diagnostics.                             |
+| `Method::CONNECT` | `"CONNECT"` | The CONNECT method establishes a tunnel, commonly through an HTTP proxy.                         |
 
 ## Methods
 

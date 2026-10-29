@@ -169,9 +169,13 @@ class RequestOptions
         } elseif (isset($options['body'])) {
             $options = self::stripBodyOptionsExcept($options, ['body']);
             if (is_array($options['body'])) {
+                $explicitContentType = $contentTypeOverride instanceof ContentType
+                    ? $contentTypeOverride->value
+                    : strtolower((string) $contentTypeOverride);
+
                 // Check if explicit content type requests JSON or no content type specified
                 $isJsonContentType = $contentTypeOverride === null
-                    || (is_string($contentTypeOverride) && str_contains($contentTypeOverride, 'json'))
+                    || str_contains($explicitContentType, 'json')
                     || ($contentTypeOverride instanceof ContentType && $contentTypeOverride === ContentType::JSON);
 
                 if ($isJsonContentType) {
@@ -179,6 +183,16 @@ class RequestOptions
                     $options['json'] = $options['body'];
                     unset($options['body']);
                     $setContentType(ContentType::JSON);
+                } elseif (str_starts_with($explicitContentType, ContentType::FORM_URLENCODED->value)) {
+                    $body = $options['body'];
+                    $options = self::stripBodyOptionsExcept($options, ['form_params']);
+                    $options['form_params'] = $body;
+                    $setContentType(ContentType::FORM_URLENCODED);
+                } elseif (str_starts_with($explicitContentType, ContentType::MULTIPART->value)) {
+                    $body = $options['body'];
+                    $options = self::stripBodyOptionsExcept($options, ['multipart']);
+                    $options['multipart'] = self::normalizeMultipart($body);
+                    unset($headers['Content-Type']);
                 } else {
                     // Array body with non-JSON content type - encode to string but keep user's content type
                     // This preserves backward compatibility for withBody($array, 'text/plain') etc.

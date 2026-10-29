@@ -12,6 +12,7 @@ use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
 use Fetch\Testing\Recorder;
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
@@ -136,7 +137,7 @@ class DebugFlowTest extends TestCase
                 parent::__construct();
             }
 
-            public function getHttpClient(): \GuzzleHttp\ClientInterface
+            public function getHttpClient(): ClientInterface
             {
                 if ($this->httpClient === null) {
                     $mock = new MockHandler($this->mockResponses);

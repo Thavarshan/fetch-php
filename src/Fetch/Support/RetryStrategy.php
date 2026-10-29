@@ -325,7 +325,7 @@ final class RetryStrategy
         // Check Guzzle-style exceptions
         if (method_exists($e, 'getResponse')) {
             $response = $e->getResponse();
-            if ($response !== null && method_exists($response, 'getStatusCode')) {
+            if ($response instanceof \Psr\Http\Message\ResponseInterface) {
                 return $response->getStatusCode();
             }
         }

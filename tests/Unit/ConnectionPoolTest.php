@@ -8,6 +8,7 @@ use Fetch\Pool\DnsCache;
 use Fetch\Pool\HostConnectionPool;
 use Fetch\Pool\Http2Configuration;
 use Fetch\Pool\PoolConfiguration;
+use GuzzleHttp\ClientInterface;
 use PHPUnit\Framework\TestCase;
 
 class ConnectionPoolTest extends TestCase
@@ -125,7 +126,7 @@ class ConnectionPoolTest extends TestCase
     public function test_connection_close(): void
     {
         $connection = new Connection('example.com', 80, false);
-        $mockClient = $this->createMock(\GuzzleHttp\ClientInterface::class);
+        $mockClient = $this->createMock(ClientInterface::class);
         $connection->setClient($mockClient);
 
         $this->assertTrue($connection->isAlive());

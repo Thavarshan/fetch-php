@@ -34,6 +34,10 @@ class ContentTypeTest extends TestCase
     public function test_is_json(): void
     {
         $this->assertTrue(ContentType::JSON->isJson());
+        $this->assertTrue(ContentType::VND_API_JSON->isJson());
+        $this->assertTrue(ContentType::LD_JSON->isJson());
+        $this->assertTrue(ContentType::GEO_JSON->isJson());
+        $this->assertTrue(ContentType::PROBLEM_JSON->isJson());
         $this->assertFalse(ContentType::TEXT->isJson());
     }
 

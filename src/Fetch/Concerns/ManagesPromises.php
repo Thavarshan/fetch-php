@@ -15,6 +15,7 @@ use function Matrix\Support\all;
 use function Matrix\Support\any;
 use function Matrix\Support\async;
 use function Matrix\Support\await;
+use function Matrix\Support\map as matrixMap;
 use function Matrix\Support\race;
 use function Matrix\Support\reject;
 use function Matrix\Support\resolve;
@@ -22,6 +23,8 @@ use function Matrix\Support\timeout;
 
 trait ManagesPromises
 {
+    private const MAX_MAP_CONCURRENCY = 200;
+
     /**
      * Whether the request should be asynchronous or not.
      */
@@ -220,24 +223,19 @@ trait ManagesPromises
      */
     public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
     {
-        if (empty($items)) {
-            return resolve([]);
-        }
-
         if ($concurrency <= 0) {
             throw new InvalidArgumentException('Concurrency must be greater than 0');
         }
 
-        // If concurrency is unlimited or greater than the number of items,
-        // we can process all at once
-        if ($concurrency >= count($items)) {
-            $promises = array_map($callback, $items);
-
-            return $this->all($promises);
+        if ($concurrency > self::MAX_MAP_CONCURRENCY) {
+            throw new InvalidArgumentException(sprintf(
+                'Concurrency value %d exceeds the maximum allowed (%d).',
+                $concurrency,
+                self::MAX_MAP_CONCURRENCY
+            ));
         }
 
-        // Process in batches for controlled concurrency
-        return $this->mapBatched($items, $callback, $concurrency);
+        return matrixMap($items, $callback, $concurrency);
     }
 
     /**

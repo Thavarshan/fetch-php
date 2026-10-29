@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit backupGlobals="false"
     bootstrap="vendor/autoload.php"
-    beStrictAboutTestsThatDoNotTestAnything="false"
+    beStrictAboutTestsThatDoNotTestAnything="true"
     colors="true"
     processIsolation="false"
     stopOnError="false"
     stopOnFailure="false"
     stopOnSkipped="false"
     failOnSkipped="false"
-    failOnWarning="false"
+    failOnWarning="true"
     failOnRisky="false"
     cacheDirectory=".phpunit.cache"
     backupStaticProperties="false">
@@ -31,8 +31,5 @@
         <include>
             <directory suffix=".php">src</directory>
         </include>
-        <exclude>
-            <directory>src/Fetch/Support</directory>
-        </exclude>
     </source>
 </phpunit>

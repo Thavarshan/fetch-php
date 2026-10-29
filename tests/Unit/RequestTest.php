@@ -86,6 +86,24 @@ class RequestTest extends TestCase
         $this->assertStringContainsString('file contents', $body);
     }
 
+    public function test_multipart_body_preserves_binary_contents(): void
+    {
+        $contents = "before\0middle\xffafter";
+        $request = Request::multipart(Method::POST, 'https://api.example.com/upload', [
+            ['name' => 'upload', 'filename' => 'binary.dat', 'contents' => $contents],
+        ]);
+
+        $this->assertStringContainsString($contents, $request->getBodyAsString());
+    }
+
+    public function test_multipart_rejects_parts_without_a_name(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Multipart part at index 0 is missing a required 'name' field");
+
+        Request::multipart(Method::POST, 'https://api.example.com/upload', [['contents' => 'value']]);
+    }
+
     public function test_create_get_request(): void
     {
         $request = Request::get('https://api.example.com/users');

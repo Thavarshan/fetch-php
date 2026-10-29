@@ -34,13 +34,13 @@ trait PerformsHttpRequests
      * @param  string  $method  The HTTP method to use
      * @param  string  $uri  The URI to request
      * @param  array<string, mixed>  $options  Additional options for the request
-     * @return Response|PromiseInterface Response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or promise
      */
     public static function handle(
         string $method,
         string $uri,
         array $options = [],
-    ): Response|PromiseInterface {
+    ): ResponseInterface|PromiseInterface {
         $handler = static::create();
         $handler->withOptions($options);
 
@@ -290,7 +290,7 @@ trait PerformsHttpRequests
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
      * @param  array<string, mixed>  $options  Additional request options
-     * @return Response|PromiseInterface Response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or promise
      */
     public function request(
         string|Method $method,
@@ -298,7 +298,7 @@ trait PerformsHttpRequests
         mixed $body = null,
         string|ContentType $contentType = ContentType::JSON,
         array $options = [],
-    ): Response|PromiseInterface {
+    ): ResponseInterface|PromiseInterface {
         $mergedOptions = RequestOptions::merge($this->options, $options);
 
         if ($body !== null) {

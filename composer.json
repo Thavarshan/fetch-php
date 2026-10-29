@@ -27,7 +27,7 @@
         "ext-pcntl": "*",
         "guzzlehttp/guzzle": "^7.9",
         "guzzlehttp/psr7": "^2.7",
-        "jerome/matrix": "^3.4",
+        "jerome/matrix": "^4.0",
         "psr/http-message": "^1.0|^2.0",
         "psr/log": "^1.0|^2.0|^3.0",
         "react/event-loop": "^1.5",
@@ -54,7 +54,7 @@
         "test": "phpunit --no-coverage",
         "test:unit": "phpunit --no-coverage tests/Unit",
         "test:integration": "phpunit --no-coverage tests/Integration",
-        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage",
+        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage --coverage-clover=coverage/clover.xml",
         "analyse": "phpstan analyse",
         "ai:validate": "php tools/validate-ai-config.php",
         "check": [
