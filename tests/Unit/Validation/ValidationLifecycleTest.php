@@ -183,6 +183,119 @@ YAML;
         });
     }
 
+    public function test_openapi_request_validation_includes_guzzle_basic_auth_options(): void
+    {
+        $mock = new MockHandler([new Psr7Response(200)]);
+        $spec = <<<'YAML'
+openapi: 3.0.3
+info:
+  title: Secure API
+  version: 1.0.0
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+paths:
+  /secure:
+    get:
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Secure response
+YAML;
+
+        $this->withOpenApiSpec($spec, function (string $path) use ($mock): void {
+            $handler = $this->handler($mock);
+            $handler->withOpenApiSpec($path)->validateContracts();
+
+            $response = $handler->sendRequest(
+                'GET',
+                'https://example.test/secure',
+                ['auth' => ['fixture-user', 'fixture-password']],
+            );
+
+            self::assertSame(200, $response->getStatusCode());
+            self::assertSame(
+                'Basic '.base64_encode('fixture-user:fixture-password'),
+                $mock->getLastRequest()?->getHeaderLine('Authorization'),
+            );
+        });
+    }
+
+    public function test_openapi_request_validation_uses_the_replaced_query_option(): void
+    {
+        $mock = new MockHandler([new Psr7Response(204)]);
+        $spec = <<<'YAML'
+openapi: 3.0.3
+info:
+  title: Query API
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      parameters:
+        - name: required
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Empty response
+YAML;
+
+        $this->withOpenApiSpec($spec, function (string $path) use ($mock): void {
+            $handler = $this->handler($mock);
+            $handler->withOpenApiSpec($path)->validateContracts();
+
+            try {
+                $handler->sendRequest(
+                    'GET',
+                    'https://example.test/items?required=yes',
+                    ['query' => ['page' => 1]],
+                );
+                self::fail('A query parameter replaced by Guzzle should not satisfy the original contract parameter.');
+            } catch (RequestValidationException) {
+                self::assertCount(1, $mock, 'Invalid query options must fail before transport dispatch.');
+            }
+        });
+    }
+
+    public function test_openapi_validation_and_transport_use_the_same_query_option(): void
+    {
+        $mock = new MockHandler([new Psr7Response(204)]);
+        $spec = <<<'YAML'
+openapi: 3.0.3
+info:
+  title: Query API
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      parameters:
+        - name: search
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Empty response
+YAML;
+
+        $this->withOpenApiSpec($spec, function (string $path) use ($mock): void {
+            $handler = $this->handler($mock);
+            $handler->withOpenApiSpec($path)->validateContracts();
+
+            $response = $handler->get('https://example.test/items?old=yes', ['search' => 'two words']);
+
+            self::assertSame(204, $response->getStatusCode());
+            self::assertSame('search=two%20words', $mock->getLastRequest()?->getUri()->getQuery());
+        });
+    }
+
     public function test_unvalidated_stream_upload_is_not_buffered_before_dispatch(): void
     {
         $reads = 0;

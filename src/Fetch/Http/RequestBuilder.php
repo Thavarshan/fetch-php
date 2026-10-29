@@ -118,13 +118,36 @@ final class RequestBuilder
             return $request;
         }
 
-        $query = is_array($options['query']) ? http_build_query($options['query']) : (string) $options['query'];
-        $existing = $request->getUri()->getQuery();
-        if ($existing !== '') {
-            $query = $existing.($query === '' ? '' : '&'.$query);
-        }
+        $query = is_array($options['query'])
+            ? http_build_query($options['query'], '', '&', PHP_QUERY_RFC3986)
+            : (string) $options['query'];
 
         return $request->withUri($request->getUri()->withQuery($query));
+    }
+
+    /**
+     * Apply request options that Guzzle materializes after middleware before validation and dispatch.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function prepareValidationRequest(RequestInterface $request, array $options): RequestInterface
+    {
+        $request = $this->withQueryOptions($request, $options);
+        $auth = $options['auth'] ?? null;
+
+        if (! is_array($auth)
+            || ! isset($auth[0], $auth[1])
+            || ! is_string($auth[0])
+            || ! is_string($auth[1])) {
+            return $request;
+        }
+
+        $authType = isset($auth[2]) && is_string($auth[2]) ? strtolower($auth[2]) : 'basic';
+        if ($authType !== 'basic') {
+            return $request;
+        }
+
+        return $request->withHeader('Authorization', 'Basic '.base64_encode($auth[0].':'.$auth[1]));
     }
 
     /** @param array<string, mixed> $options */

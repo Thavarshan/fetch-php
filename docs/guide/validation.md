@@ -70,6 +70,8 @@ $response = ClientHandler::createWithBaseUri('https://api.example.com')
 
 The adapter resolves the operation using the outgoing HTTP method and path, then checks applicable parameters, request content, response status, headers, media type, and body schema. JSON and YAML files are supported. Only OpenAPI 3.0.x is accepted; 3.1 documents fail with a configuration exception rather than being interpreted as 3.0. External `$ref` URLs are rejected to prevent implicit network retrieval; references within the local document are supported.
 
+Contract checks account for Guzzle's Basic `auth => [$username, $password]` option and its `query` option replacing any query already in the URI. The resolved query is sent as part of the request URI after validation.
+
 Multipart requests are constructed with their generated boundary before contract checks. Because validating multipart content reads the serialized body before dispatch, enable this for uploads only when the buffering cost fits the expected payload size.
 
 ## Lifecycle and streaming

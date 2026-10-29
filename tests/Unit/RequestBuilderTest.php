@@ -104,14 +104,37 @@ class RequestBuilderTest extends TestCase
         fclose($body);
     }
 
-    public function test_query_options_merge_with_the_existing_request_query(): void
+    public function test_query_options_replace_existing_query_like_guzzle(): void
     {
         $builder = new RequestBuilder;
         $request = new Request('GET', 'https://example.test/users?existing=1');
 
         $withQuery = $builder->withQueryOptions($request, ['query' => ['page' => 2]]);
 
-        self::assertSame('existing=1&page=2', $withQuery->getUri()->getQuery());
+        self::assertSame('page=2', $withQuery->getUri()->getQuery());
+    }
+
+    public function test_query_options_use_guzzles_rfc3986_encoding(): void
+    {
+        $builder = new RequestBuilder;
+        $request = new Request('GET', 'https://example.test/users?old=yes');
+
+        $withQuery = $builder->withQueryOptions($request, ['query' => ['search' => 'two words']]);
+
+        self::assertSame('search=two%20words', $withQuery->getUri()->getQuery());
+    }
+
+    public function test_basic_auth_options_are_materialized_for_validation(): void
+    {
+        $builder = new RequestBuilder;
+        $request = new Request('GET', 'https://example.test/secure');
+
+        $withAuth = $builder->prepareValidationRequest($request, ['auth' => ['fixture-user', 'fixture-password']]);
+
+        self::assertSame(
+            'Basic '.base64_encode('fixture-user:fixture-password'),
+            $withAuth->getHeaderLine('Authorization'),
+        );
     }
 
     public function test_prepares_only_supported_guzzle_options_from_request_context(): void

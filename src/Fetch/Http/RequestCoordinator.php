@@ -68,8 +68,9 @@ final class RequestCoordinator
                     [$request, $mergedOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $mergedOptions);
                 }
 
-                $validationRequest = $this->requestBuilder->withQueryOptions($request, $mergedOptions);
-                $operation = $this->validationManager->validateRequest($validationRequest, $mergedOptions, $this->validationPolicy);
+                $request = $this->requestBuilder->prepareValidationRequest($request, $mergedOptions);
+                unset($mergedOptions['query']);
+                $operation = $this->validationManager->validateRequest($request, $mergedOptions, $this->validationPolicy);
             } catch (Throwable $exception) {
                 if ($context->isAsync()) {
                     return reject($exception);
@@ -178,8 +179,9 @@ final class RequestCoordinator
                 [$request, $shortCircuitOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $shortCircuitOptions);
             }
 
-            $validationRequest = $this->requestBuilder->withQueryOptions($request, $shortCircuitOptions);
-            $operation = $this->validationManager->validateRequest($validationRequest, $shortCircuitOptions, $this->validationPolicy);
+            $request = $this->requestBuilder->prepareValidationRequest($request, $shortCircuitOptions);
+            unset($shortCircuitOptions['query']);
+            $operation = $this->validationManager->validateRequest($request, $shortCircuitOptions, $this->validationPolicy);
         } catch (Throwable $exception) {
             if ($context->isAsync()) {
                 return reject($exception);
@@ -190,7 +192,7 @@ final class RequestCoordinator
 
         $method = $request->getMethod();
         $uri = (string) $request->getUri();
-        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $request->getHeaders());
+        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $shortCircuitOptions['headers'] ?? []);
         ($this->hooks->emitRequestEvent)($eventRequest, $context, $startTime);
 
         $complete = function (mixed $response) use ($method, $uri, $shortCircuitOptions, $context, $operation, $eventRequest, $startTime, $startMemory, $requestId): FetchResponseInterface {
@@ -246,12 +248,13 @@ final class RequestCoordinator
             [$request, $shortCircuitOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $shortCircuitOptions);
         }
 
-        $validationRequest = $this->requestBuilder->withQueryOptions($request, $shortCircuitOptions);
-        $this->validationManager->validateRequest($validationRequest, $shortCircuitOptions, $this->validationPolicy);
+        $request = $this->requestBuilder->prepareValidationRequest($request, $shortCircuitOptions);
+        unset($shortCircuitOptions['query']);
+        $this->validationManager->validateRequest($request, $shortCircuitOptions, $this->validationPolicy);
 
         $method = $request->getMethod();
         $uri = (string) $request->getUri();
-        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $request->getHeaders());
+        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $shortCircuitOptions['headers'] ?? []);
         ($this->hooks->emitRequestEvent)($eventRequest, $context, $startTime);
         ($this->hooks->endProfiling)($requestId, null);
         ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);

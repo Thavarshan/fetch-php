@@ -28,6 +28,7 @@
 - Wait for asynchronous middleware to settle before deciding whether it dispatched the core request; use the latest transformed request for short-circuit validation and lifecycle events.
 - Preserve middleware-rewritten request streams during validation, including replaying non-seekable bodies to the transport after their opt-in validation read.
 - Preserve in-place middleware edits to materialized bodies and validate multipart OpenAPI requests with a matching generated boundary.
+- Match OpenAPI request checks to Guzzle's generated Basic Authorization header and query-option replacement behavior, and send the same resolved query that was validated.
 
 ### Compatibility
 
