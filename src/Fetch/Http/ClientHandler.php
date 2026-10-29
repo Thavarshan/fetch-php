@@ -48,7 +48,7 @@ class ClientHandler implements ClientHandlerInterface
     use PerformsHttpRequests;
 
     /**
-     * Default options for the request (legacy).
+     * Legacy compatibility storage. Runtime defaults are owned by GlobalServices.
      *
      * @var array<string, mixed>
      *
@@ -215,10 +215,6 @@ class ClientHandler implements ClientHandlerInterface
      */
     public static function setDefaultOptions(array $options): void
     {
-        // Update legacy static property for backward compatibility
-        self::$defaultOptions = array_merge(self::$defaultOptions, $options);
-
-        // Update GlobalServices for new architecture
         GlobalServices::setDefaultOptions($options);
     }
 
