@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "vitepress dev docs",
         "build": "vitepress build docs",
+        "check-links": "node tools/check-markdown-links.mjs",
         "preview": "vitepress preview docs",
         "prepare": "husky"
     },

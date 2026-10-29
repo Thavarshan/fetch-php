@@ -4,7 +4,8 @@ namespace Tests\Unit;
 
 use Fetch\Enum\ContentType;
 use Fetch\Http\Client;
-use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Testing\MockResponse;
+use Fetch\Testing\MockServer;
 use PHPUnit\Framework\TestCase;
 
 class HelperFunctionsTest extends TestCase
@@ -13,6 +14,14 @@ class HelperFunctionsTest extends TestCase
     {
         // Reset the fetch client to avoid state between tests
         fetch_client(null, true);
+        MockServer::resetInstance();
+    }
+
+    protected function tearDown(): void
+    {
+        MockServer::resetInstance();
+        fetch_client(null, true);
+        parent::tearDown();
     }
 
     public function test_fetch_client_returns_client_instance(): void
@@ -69,28 +78,24 @@ class HelperFunctionsTest extends TestCase
 
         $this->assertEquals('raw content', $body);
         $this->assertEquals('text/plain', $contentType->value);
+
+        [$body, $contentType] = extract_body_and_content_type([
+            'json' => ['winner' => true],
+            'form' => ['ignored' => true],
+            'body' => 'ignored',
+        ]);
+        $this->assertSame(['winner' => true], $body);
+        $this->assertSame(ContentType::JSON, $contentType);
     }
 
     public function test_request_method(): void
     {
-        // Create a mock for the ResponseInterface
-        $mockResponse = $this->createMock(ResponseInterface::class);
+        MockServer::fake([
+            'https://example.com/users*' => MockResponse::json(['users' => []]),
+        ]);
 
-        // Set up the global fetch function (using Closure::bind or similar technique)
-        // This is complex and depends on how your codebase is structured
-        // You might need to use PHP's runkit extension or other methods
+        $response = request_method('GET', 'https://example.com/users', ['page' => 1], [], true);
 
-        // Here's a conceptual example - actual implementation will vary:
-        /*
-        $this->setFetchCallback(function($url, $options) use ($mockResponse) {
-            $this->assertEquals('https://example.com', $url);
-            $this->assertEquals('GET', $options['method']);
-            $this->assertEquals(['page' => 1], $options['query']);
-            return $mockResponse;
-        });
-
-        $result = request_method('GET', 'https://example.com', ['page' => 1], [], true);
-        $this->assertSame($mockResponse, $result);
-        */
+        $this->assertSame(['users' => []], $response->json());
     }
 }

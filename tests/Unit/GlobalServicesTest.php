@@ -9,6 +9,12 @@ use PHPUnit\Framework\TestCase;
 
 class GlobalServicesTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        GlobalServices::reset();
+        parent::setUp();
+    }
+
     protected function tearDown(): void
     {
         GlobalServices::reset();
