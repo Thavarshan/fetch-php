@@ -167,7 +167,7 @@ class ClientHandler implements ClientHandlerInterface
      * @param  string  $baseUri  Base URI for all requests
      * @return static New client handler instance
      *
-     * @throws \InvalidArgumentException If the base URI is invalid
+     * @throws InvalidArgumentException If the base URI is invalid
      */
     public static function createWithBaseUri(string $baseUri): static
     {
@@ -250,7 +250,7 @@ class ClientHandler implements ClientHandlerInterface
         string $version = '1.1',
         ?string $reason = null,
     ): Response {
-        return new Response($statusCode, $headers, $body, $version, $reason);
+        return new Response($statusCode, $headers, $body ?? '', $version, $reason);
     }
 
     /**
@@ -266,7 +266,7 @@ class ClientHandler implements ClientHandlerInterface
         int $statusCode = 200,
         array $headers = [],
     ): Response {
-        $jsonData = json_encode($data, JSON_PRETTY_PRINT);
+        $jsonData = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
 
         $headers = array_merge(
             ['Content-Type' => ContentType::JSON->value],

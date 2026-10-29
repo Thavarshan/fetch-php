@@ -7,6 +7,7 @@ namespace Fetch\Http;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Traits\RequestImmutabilityTrait;
+use GuzzleHttp\Psr7\MultipartStream;
 use GuzzleHttp\Psr7\Request as BaseRequest;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\Utils;
@@ -126,44 +127,25 @@ class Request extends BaseRequest implements RequestInterface
         // Normalize the method
         $methodValue = $method instanceof Method ? $method->value : strtoupper($method);
 
-        // Generate a boundary
-        $boundary = uniqid('', true);
-
-        // Build the multipart body
-        $body = '';
-        foreach ($multipart as $part) {
-            $body .= "--{$boundary}\r\n";
-
-            // Add part headers
-            if (isset($part['headers']) && is_array($part['headers'])) {
-                foreach ($part['headers'] as $name => $value) {
-                    $body .= "{$name}: {$value}\r\n";
-                }
+        foreach ($multipart as $index => $part) {
+            if (! is_array($part) || ! isset($part['name']) || trim((string) $part['name']) === '') {
+                throw new InvalidArgumentException(
+                    sprintf("Multipart part at index %s is missing a required 'name' field.", (string) $index)
+                );
             }
-
-            // Add Content-Disposition
-            $body .= 'Content-Disposition: form-data; name="'.$part['name'].'"';
-
-            // Add filename if present
-            if (isset($part['filename'])) {
-                $body .= '; filename="'.$part['filename'].'"';
-            }
-
-            $body .= "\r\n\r\n";
-
-            // Add contents
-            $body .= $part['contents']."\r\n";
         }
 
-        // Add the final boundary
-        $body .= "--{$boundary}--\r\n";
+        $body = new MultipartStream($multipart);
 
         // Set the Content-Type header with the boundary
-        $headers['Content-Type'] = ContentType::MULTIPART->value.'; boundary='.$boundary;
+        $headers['Content-Type'] = ContentType::MULTIPART->value.'; boundary='.$body->getBoundary();
 
         // Add Content-Length if not already set
         if (! isset($headers['Content-Length'])) {
-            $headers['Content-Length'] = (string) strlen($body);
+            $size = $body->getSize();
+            if ($size !== null) {
+                $headers['Content-Length'] = (string) $size;
+            }
         }
 
         return new static($methodValue, $uri, $headers, $body);
@@ -412,6 +394,9 @@ class Request extends BaseRequest implements RequestInterface
      */
     public function getBodyAsJson(bool $assoc = true, int $depth = 512, int $options = 0): mixed
     {
+        if ($depth < 1) {
+            throw new InvalidArgumentException('JSON decode depth must be greater than 0.');
+        }
         $body = $this->getBodyAsString();
 
         if (empty($body)) {
@@ -430,7 +415,7 @@ class Request extends BaseRequest implements RequestInterface
     /**
      * Get the request body as form parameters.
      *
-     * @return array<string, mixed>
+     * @return array<int|string, mixed>
      */
     public function getBodyAsFormParams(): array
     {

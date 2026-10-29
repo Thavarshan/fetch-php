@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use Fetch\Http\Response;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
+use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SimpleXMLElement;
@@ -72,6 +73,26 @@ class ResponseTest extends TestCase
         $object = $response->object();
         $this->assertIsObject($object);
         $this->assertEquals('Test', $object->name);
+    }
+
+    public function test_json_api_content_type_is_recognized_as_json(): void
+    {
+        $response = new Response(200, ['Content-Type' => 'application/vnd.api+json; charset=utf-8'], '{"data":[]}');
+
+        $this->assertTrue($response->hasJsonContent());
+        $this->assertSame(['data' => []], $response->json());
+    }
+
+    public function test_array_access_reuses_decoded_json_and_new_body_gets_fresh_cache(): void
+    {
+        $response = new Response(200, ['Content-Type' => 'application/json'], '{"first":1}');
+        $this->assertSame(['first' => 1], $response->array());
+        $this->assertSame(1, $response['first']);
+
+        $changed = $response->withBody(Utils::streamFor('{"second":2}'));
+
+        $this->assertSame(2, $changed['second']);
+        $this->assertArrayNotHasKey('first', $changed->array());
     }
 
     public function test_json_decoding_exception(): void

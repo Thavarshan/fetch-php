@@ -7,6 +7,8 @@ use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
+use Fetch\Testing\MockServer;
+use Fetch\Testing\Recorder;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use PHPUnit\Framework\TestCase;
@@ -22,8 +24,8 @@ class ClientHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        \Fetch\Testing\MockServer::resetInstance();
-        \Fetch\Testing\Recorder::resetInstance();
+        MockServer::resetInstance();
+        Recorder::resetInstance();
         $this->mockClient = $this->createMock(Client::class);
         $this->handler = new ClientHandler($this->mockClient);
     }

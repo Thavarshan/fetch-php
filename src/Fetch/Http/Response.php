@@ -11,6 +11,7 @@ use Fetch\Interfaces\Response as ResponseInterface;
 use Fetch\Support\DebugInfo;
 use Fetch\Traits\ResponseImmutabilityTrait;
 use GuzzleHttp\Psr7\Response as BaseResponse;
+use InvalidArgumentException;
 use JsonException;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use RuntimeException;
@@ -34,6 +35,9 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      * This is stored per-response to avoid race conditions in concurrent usage.
      */
     protected ?DebugInfo $debugInfo = null;
+
+    /** @var array<string|int, mixed>|null */
+    private ?array $parsedBody = null;
 
     /**
      * Create new response instance.
@@ -130,10 +134,13 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Get the body as a JSON-decoded array or object.
      *
-     * @throws \RuntimeException When JSON cannot be decoded and $throwOnError is true
+     * @throws RuntimeException When JSON cannot be decoded and $throwOnError is true
      */
     public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed
     {
+        if ($depth < 1) {
+            throw new InvalidArgumentException('JSON decode depth must be greater than 0.');
+        }
         try {
             return json_decode(
                 $this->bodyContents,
@@ -163,7 +170,14 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function array(bool $throwOnError = true): array
     {
-        return $this->json(true, $throwOnError) ?: [];
+        if ($this->parsedBody !== null) {
+            return $this->parsedBody;
+        }
+
+        $decoded = $this->json(true, $throwOnError);
+        $this->parsedBody = is_array($decoded) ? $decoded : [];
+
+        return $this->parsedBody;
     }
 
     /**
@@ -345,7 +359,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function hasJsonContent(): bool
     {
-        return $this->contentTypeEnum() === ContentType::JSON;
+        return $this->contentTypeEnum()?->isJson() ?? false;
     }
 
     /**
@@ -395,7 +409,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Parse the body as XML.
      *
-     * @throws \RuntimeException When XML cannot be parsed and $throwOnError is true
+     * @throws RuntimeException When XML cannot be parsed and $throwOnError is true
      */
     public function xml(int $options = 0, bool $throwOnError = true): ?SimpleXMLElement
     {
@@ -442,7 +456,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Set the value at the given offset in the JSON response (unsupported).
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     public function offsetSet($offset, $value): void
     {
@@ -452,7 +466,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Unset the value at the given offset from the JSON response (unsupported).
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     public function offsetUnset($offset): void
     {
