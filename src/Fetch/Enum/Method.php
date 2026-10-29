@@ -13,6 +13,8 @@ enum Method: string
     case DELETE = 'DELETE';
     case HEAD = 'HEAD';
     case OPTIONS = 'OPTIONS';
+    case TRACE = 'TRACE';
+    case CONNECT = 'CONNECT';
 
     /**
      * Get the method from a string.
@@ -35,6 +37,8 @@ enum Method: string
      */
     public function supportsRequestBody(): bool
     {
+        // CONNECT request bodies are intentionally not enabled by default; HTTP
+        // clients normally use this method only to establish a proxy tunnel.
         return in_array($this, [self::POST, self::PUT, self::PATCH, self::DELETE]);
     }
 }

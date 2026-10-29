@@ -5,7 +5,9 @@ namespace Tests\Unit;
 use Fetch\Exceptions\RequestException;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
+use Fetch\Support\RequestContext;
 use GuzzleHttp\Exception\ConnectException;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -49,6 +51,14 @@ class ManagesRetriesTest extends TestCase
         $this->handler->retryStatusCodes($statusCodes);
 
         $this->assertEquals($statusCodes, $this->handler->getRetryableStatusCodes());
+    }
+
+    public function test_retry_status_codes_reject_out_of_range_values(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Status codes must be in the range 100-599');
+
+        $this->handler->retryStatusCodes([503, 600]);
     }
 
     public function test_retry_exceptions(): void
@@ -108,7 +118,7 @@ class ManagesRetriesTest extends TestCase
         $handler = new class extends ClientHandler
         {
             // Override isRetryableError to always return true for the test
-            protected function isRetryableError(\Throwable $e, ?\Fetch\Support\RequestContext $context = null): bool
+            protected function isRetryableError(\Throwable $e, ?RequestContext $context = null): bool
             {
                 return true;
             }
@@ -155,7 +165,7 @@ class ManagesRetriesTest extends TestCase
     public function test_request_context_retry_configuration_overrides_handler_defaults(): void
     {
         // Create a context with custom retry config that differs from handler defaults
-        $context = \Fetch\Support\RequestContext::create()
+        $context = RequestContext::create()
             ->withRetry(5, 500) // 5 retries, 500ms delay
             ->withRetryableStatusCodes([400, 401, 403]) // Custom status codes
             ->withRetryableExceptions([\RuntimeException::class]); // Custom exceptions
@@ -184,7 +194,7 @@ class ManagesRetriesTest extends TestCase
             'retry_exceptions' => [ConnectException::class, \RuntimeException::class],
         ];
 
-        $context = \Fetch\Support\RequestContext::fromOptions($options);
+        $context = RequestContext::fromOptions($options);
 
         $this->assertEquals(3, $context->getMaxRetries());
         $this->assertEquals(250, $context->getRetryDelay());
@@ -195,9 +205,9 @@ class ManagesRetriesTest extends TestCase
     public function test_request_context_to_array_includes_retry_config(): void
     {
         $customStatusCodes = [418, 500, 502];
-        $customExceptions = [\InvalidArgumentException::class];
+        $customExceptions = [InvalidArgumentException::class];
 
-        $context = \Fetch\Support\RequestContext::create()
+        $context = RequestContext::create()
             ->withRetry(4, 300)
             ->withRetryableStatusCodes($customStatusCodes)
             ->withRetryableExceptions($customExceptions);
@@ -214,9 +224,9 @@ class ManagesRetriesTest extends TestCase
     public function test_request_context_default_retryable_status_codes(): void
     {
         // Default context should have standard retryable status codes
-        $context = \Fetch\Support\RequestContext::create();
+        $context = RequestContext::create();
 
-        $defaultCodes = \Fetch\Support\RequestContext::DEFAULT_RETRYABLE_STATUS_CODES;
+        $defaultCodes = RequestContext::DEFAULT_RETRYABLE_STATUS_CODES;
         $this->assertEquals($defaultCodes, $context->getRetryableStatusCodes());
         $this->assertContains(429, $context->getRetryableStatusCodes()); // Too Many Requests
         $this->assertContains(503, $context->getRetryableStatusCodes()); // Service Unavailable
@@ -225,9 +235,9 @@ class ManagesRetriesTest extends TestCase
     public function test_request_context_default_retryable_exceptions(): void
     {
         // Default context should have standard retryable exceptions
-        $context = \Fetch\Support\RequestContext::create();
+        $context = RequestContext::create();
 
-        $defaultExceptions = \Fetch\Support\RequestContext::DEFAULT_RETRYABLE_EXCEPTIONS;
+        $defaultExceptions = RequestContext::DEFAULT_RETRYABLE_EXCEPTIONS;
         $this->assertEquals($defaultExceptions, $context->getRetryableExceptions());
         $this->assertContains(ConnectException::class, $context->getRetryableExceptions());
     }

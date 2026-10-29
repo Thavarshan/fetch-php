@@ -21,6 +21,10 @@ enum ContentType: string
     case CSS = 'text/css';
     case EVENT_STREAM = 'text/event-stream';
     case NDJSON = 'application/x-ndjson';
+    case VND_API_JSON = 'application/vnd.api+json';
+    case LD_JSON = 'application/ld+json';
+    case GEO_JSON = 'application/geo+json';
+    case PROBLEM_JSON = 'application/problem+json';
 
     /**
      * Get a content type from a string.
@@ -61,7 +65,13 @@ enum ContentType: string
      */
     public function isJson(): bool
     {
-        return $this === self::JSON;
+        return in_array($this, [
+            self::JSON,
+            self::VND_API_JSON,
+            self::LD_JSON,
+            self::GEO_JSON,
+            self::PROBLEM_JSON,
+        ], true);
     }
 
     /**

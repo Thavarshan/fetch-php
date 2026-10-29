@@ -7,6 +7,7 @@ namespace Fetch\Concerns;
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Interfaces\ClientHandler;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\RequestContext;
 use Fetch\Support\RetryDefaults;
 use Fetch\Support\RetryStrategy;
 use InvalidArgumentException;
@@ -45,7 +46,7 @@ trait ManagesRetries
      * @param  int  $delay  Initial delay in milliseconds
      * @return $this
      *
-     * @throws \InvalidArgumentException If the parameters are invalid
+     * @throws InvalidArgumentException If the parameters are invalid
      */
     public function retry(int $retries, int $delay = 100): ClientHandler
     {
@@ -71,7 +72,17 @@ trait ManagesRetries
      */
     public function retryStatusCodes(array $statusCodes): ClientHandler
     {
-        $this->retryableStatusCodes = array_map('intval', $statusCodes);
+        $normalizedStatusCodes = array_map('intval', $statusCodes);
+
+        foreach ($normalizedStatusCodes as $statusCode) {
+            if ($statusCode < 100 || $statusCode > 599) {
+                throw new InvalidArgumentException(
+                    "Invalid HTTP status code: {$statusCode}. Status codes must be in the range 100-599."
+                );
+            }
+        }
+
+        $this->retryableStatusCodes = $normalizedStatusCodes;
 
         return $this;
     }
@@ -137,14 +148,14 @@ trait ManagesRetries
      * All retry settings (maxRetries, retryDelay, retryableStatusCodes, retryableExceptions)
      * are read from the context when provided, falling back to handler state otherwise.
      *
-     * @param  \Fetch\Support\RequestContext|null  $context  The request context (optional)
+     * @param  RequestContext|null  $context  The request context (optional)
      * @param  callable  $request  The request to execute
      * @return ResponseInterface The response after successful execution
      *
      * @throws FetchRequestException If the request fails after all retries
      * @throws \RuntimeException If something unexpected happens
      */
-    protected function retryRequest(?\Fetch\Support\RequestContext $context, callable $request): ResponseInterface
+    protected function retryRequest(?RequestContext $context, callable $request): ResponseInterface
     {
         // Read retry config from context if provided, otherwise fall back to handler state
         $maxRetries = $context?->getMaxRetries() ?? $this->getMaxRetries();
@@ -187,14 +198,14 @@ trait ManagesRetries
      * @param  int  $maxAttempts  Maximum number of attempts
      * @param  \Throwable  $exception  The exception that triggered the retry
      * @param  int  $delayMs  The delay before the next attempt in milliseconds
-     * @param  \Fetch\Support\RequestContext|null  $context  Optional request context for additional info
+     * @param  RequestContext|null  $context  Optional request context for additional info
      */
     protected function logRetryAttempt(
         int $attempt,
         int $maxAttempts,
         \Throwable $exception,
         int $delayMs,
-        ?\Fetch\Support\RequestContext $context = null,
+        ?RequestContext $context = null,
     ): void {
         if (method_exists($this, 'logRetry')) {
             $this->logRetry($attempt, $maxAttempts, $exception);
@@ -223,10 +234,10 @@ trait ManagesRetries
      * Delegates to RetryStrategy for the actual check to avoid duplication.
      *
      * @param  \Throwable  $e  The exception to check
-     * @param  \Fetch\Support\RequestContext|null  $context  Optional context for per-request retry config
+     * @param  RequestContext|null  $context  Optional context for per-request retry config
      * @return bool Whether the error is retryable
      */
-    protected function isRetryableError(\Throwable $e, ?\Fetch\Support\RequestContext $context = null): bool
+    protected function isRetryableError(\Throwable $e, ?RequestContext $context = null): bool
     {
         // Use context values if provided, otherwise fall back to handler state
         $retryableStatusCodes = $context !== null

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fetch\Concerns;
 
+use Fetch\Support\RequestContext;
 use InvalidArgumentException;
 
 trait HandlesUris
@@ -16,12 +17,20 @@ trait HandlesUris
      *
      * @throws InvalidArgumentException If the URI is invalid
      *
-     * @deprecated Use buildFullUriFromContext() instead for stateless URI building
+     * @deprecated since 3.8.2 Use buildFullUriFromContext(); removal is planned for 4.0.
      */
     protected function buildFullUri(string $uri): string
     {
+        trigger_error(
+            'buildFullUri() is deprecated; use buildFullUriFromContext() instead.',
+            E_USER_DEPRECATED
+        );
+
         // Get base URI and query parameters from options
         $baseUri = $this->options['base_uri'] ?? '';
+        if (! is_string($baseUri)) {
+            throw new InvalidArgumentException('Base URI must be a string.');
+        }
         $queryParams = $this->options['query'] ?? [];
 
         // Normalize URIs before processing
@@ -47,30 +56,33 @@ trait HandlesUris
      *
      * This method is stateless and safe for concurrent usage.
      *
-     * @param  \Fetch\Support\RequestContext  $context  The request context
+     * @param  RequestContext  $context  The request context
      * @return string The full URI
      *
      * @throws InvalidArgumentException If the URI is invalid
      */
-    protected function buildFullUriFromContext(\Fetch\Support\RequestContext $context): string
+    protected function buildFullUriFromContext(RequestContext $context): string
     {
         $uri = $context->getUri();
         $baseUri = $context->getOption('base_uri', '');
+        if (! is_string($baseUri)) {
+            throw new InvalidArgumentException('Base URI must be a string.');
+        }
         $queryParams = $context->getOption('query', []);
 
         // Normalize URIs before processing
         $uri = $this->normalizeUri($uri);
         if (! empty($baseUri)) {
-            $baseUri = $this->normalizeUri((string) $baseUri);
+            $baseUri = $this->normalizeUri($baseUri);
         }
 
         // Validate inputs
-        $this->validateUriInputs($uri, (string) $baseUri);
+        $this->validateUriInputs($uri, $baseUri);
 
         // Build the final URI
         $fullUri = $this->isAbsoluteUrl($uri)
             ? $uri
-            : $this->joinUriPaths((string) $baseUri, $uri);
+            : $this->joinUriPaths($baseUri, $uri);
 
         // Add query parameters if any
         return $this->appendQueryParameters($fullUri, is_array($queryParams) ? $queryParams : []);
@@ -87,7 +99,7 @@ trait HandlesUris
     {
         $uri = $this->options['uri'] ?? '';
 
-        return $this->buildFullUri($uri);
+        return $this->buildFullUriFromContext(RequestContext::fromOptions($this->options)->withUri($uri));
     }
 
     /**
@@ -270,6 +282,6 @@ trait HandlesUris
         }
 
         // For non-URLs, just normalize consecutive slashes
-        return preg_replace('~//+~', '/', $uri);
+        return preg_replace('~//+~', '/', $uri) ?? $uri;
     }
 }

@@ -19,6 +19,16 @@ class StatusTest extends TestCase
             $this->assertSame($status->value >= 400 && $status->value < 500, $status->isClientError(), $status->name);
             $this->assertSame($status->value >= 500 && $status->value < 600, $status->isServerError(), $status->name);
             $this->assertSame($status->isClientError() || $status->isServerError(), $status->isError(), $status->name);
+            $this->assertSame(in_array($status, [
+                Status::OK,
+                Status::NON_AUTHORITATIVE_INFORMATION,
+                Status::PARTIAL_CONTENT,
+                Status::MULTIPLE_CHOICES,
+                Status::MOVED_PERMANENTLY,
+                Status::NOT_FOUND,
+                Status::METHOD_NOT_ALLOWED,
+                Status::GONE,
+            ], true), $status->isCacheable(), $status->name);
         }
     }
 
