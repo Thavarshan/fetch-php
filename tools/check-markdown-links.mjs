@@ -26,7 +26,6 @@ for (const entry of roots) await collect(entry);
 
 function slugify(heading) {
   return heading
-    .replace(/<[^>]*>/g, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\s+\{#[^}]+\}\s*$/, '')
