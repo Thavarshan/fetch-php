@@ -94,6 +94,19 @@ class HelperFunctionsTest extends TestCase
         ]);
         $this->assertSame(['winner' => true], $body);
         $this->assertSame(ContentType::JSON, $contentType);
+
+        [$body, $contentType] = extract_body_and_content_type([
+            'body' => ['data' => ['type' => 'users']],
+            'content_type' => ContentType::VND_API_JSON,
+        ]);
+        $this->assertSame(['data' => ['type' => 'users']], $body);
+        $this->assertSame(ContentType::VND_API_JSON, $contentType);
+
+        $normalized = process_request_options([
+            'body' => ['data' => ['type' => 'users']],
+            'content_type' => ContentType::VND_API_JSON,
+        ]);
+        $this->assertSame(ContentType::VND_API_JSON->value, $normalized['headers']['Content-Type']);
     }
 
     public function test_base_uri_preserves_form_and_multipart_array_bodies(): void
