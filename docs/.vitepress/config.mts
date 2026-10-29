@@ -2,46 +2,24 @@ import { defineConfig } from "vitepress";
 import fs from "fs";
 import path from "path";
 
-// https://vitepress.dev/reference/site-config
 export default defineConfig({
     title: "Fetch PHP",
     description:
-        "A modern HTTP client library that brings JavaScript's fetch API experience to PHP with async/await patterns, promise-based API, and powerful retry mechanics.",
-
-    // IMPORTANT: Set canonical URL base to avoid duplicate content issues
+        "Guides and API reference for the Guzzle-based Fetch PHP HTTP client.",
     base: "/",
-
-    // Contributor-facing AI-tooling docs (docs/ai/**) are not part of the
-    // published user documentation site; they link to repo files outside docs/.
     srcExclude: ["ai/**"],
-
     sitemap: {
         hostname: "https://fetch-php.thavarshan.com",
     },
-
-    // Enable lastUpdated for <lastmod> tags in sitemap
     lastUpdated: true,
-
     head: [
-        // Basic meta tags
         ["link", { rel: "icon", href: "/favicon.ico" }],
         ["meta", { name: "author", content: "Jerome Thayananthajothy" }],
         [
             "meta",
             {
-                name: "keywords",
-                content:
-                    "php, http client, fetch api, javascript fetch, guzzle, async php, http requests, promise-based, psr-7, psr-18",
-            },
-        ],
-
-        // Open Graph tags for social sharing
-        ["meta", { property: "og:type", content: "website" }],
-        [
-            "meta",
-            {
                 property: "og:title",
-                content: "Fetch PHP - The JavaScript fetch API for PHP",
+                content: "Fetch PHP documentation",
             },
         ],
         [
@@ -49,93 +27,19 @@ export default defineConfig({
             {
                 property: "og:description",
                 content:
-                    "Modern HTTP client for PHP with JavaScript-like syntax, async/await patterns, and powerful retry mechanics.",
+                    "Reference and guides for the Fetch PHP HTTP client.",
             },
         ],
-        [
-            "meta",
-            {
-                property: "og:image",
-                content: "https://fetch-php.thavarshan.com/og-image.png",
-            },
-        ],
-        [
-            "meta",
-            { property: "og:url", content: "https://fetch-php.thavarshan.com" },
-        ],
-
-        // Twitter Card tags
-        ["meta", { name: "twitter:card", content: "summary_large_image" }],
-        [
-            "meta",
-            {
-                name: "twitter:title",
-                content: "Fetch PHP - The JavaScript fetch API for PHP",
-            },
-        ],
-        [
-            "meta",
-            {
-                name: "twitter:description",
-                content:
-                    "Modern HTTP client for PHP with JavaScript-like syntax, async/await patterns, and powerful retry mechanics.",
-            },
-        ],
-        [
-            "meta",
-            {
-                name: "twitter:image",
-                content: "https://fetch-php.thavarshan.com/og-image.png",
-            },
-        ],
-
-        // Canonical URL to avoid duplicate content issues
         [
             "link",
             { rel: "canonical", href: "https://fetch-php.thavarshan.com" },
         ],
-
-        // Robots tag to ensure indexing
-        ["meta", { name: "robots", content: "index, follow" }],
-
-        // Preload critical assets
-        ["link", { rel: "preload", href: "/logo.png", as: "image" }],
-
-        // Structured data for rich results (JSON-LD)
-        [
-            "script",
-            { type: "application/ld+json" },
-            `{
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            "name": "Fetch PHP",
-            "applicationCategory": "DeveloperApplication",
-            "operatingSystem": "PHP 8.3+",
-            "offers": {
-                "@type": "Offer",
-                "price": "0.00",
-                "priceCurrency": "USD"
-            },
-            "description": "A modern HTTP client library that brings JavaScript's fetch API experience to PHP with async/await patterns, promise-based API, and powerful retry mechanics.",
-            "author": {
-                "@type": "Person",
-                "name": "Jerome Thayananthajothy"
-            }
-        }`,
-        ],
     ],
-
-    // Customize title format for SEO
-    titleTemplate: ":title | Fetch PHP - Modern HTTP Client",
-
-    // Use clean URLs (no .html extension)
+    titleTemplate: ":title | Fetch PHP",
     cleanUrls: true,
-
     themeConfig: {
         logo: "/logo.png",
         siteTitle: "Fetch PHP",
-
-        // Improve navigation (keeping your existing structure)
         nav: [
             { text: "Home", link: "/" },
             { text: "Guide", link: "/guide/" },
@@ -143,15 +47,13 @@ export default defineConfig({
             { text: "Examples", link: "/examples/" },
             {
                 text: "Changelog",
-                link: "https://github.com/jerome/fetch-php/blob/main/CHANGELOG.md",
+                link: "https://github.com/Thavarshan/fetch-php/blob/main/CHANGELOG.md",
             },
         ],
-
-        // Keep your existing sidebar structure
         sidebar: {
             "/guide/": [
                 {
-                    text: "Introduction",
+                    text: "Getting started",
                     items: [
                         { text: "Overview", link: "/guide/" },
                         { text: "Installation", link: "/guide/installation" },
@@ -159,106 +61,64 @@ export default defineConfig({
                     ],
                 },
                 {
-                    text: "Core Concepts",
+                    text: "Core usage",
                     items: [
-                        {
-                            text: "Making Requests",
-                            link: "/guide/making-requests",
-                        },
-                        {
-                            text: "Working with Enums",
-                            link: "/guide/working-with-enums",
-                        },
-                        {
-                            text: "Helper Functions",
-                            link: "/guide/helper-functions",
-                        },
-                        {
-                            text: "Working with Responses",
-                            link: "/guide/working-with-responses",
-                        },
-                        {
-                            text: "Authentication",
-                            link: "/guide/authentication",
-                        },
-                        {
-                            text: "Error Handling",
-                            link: "/guide/error-handling",
-                        },
-                        { text: "Logging", link: "/guide/logging" },
+                        { text: "Making requests", link: "/guide/making-requests" },
+                        { text: "Helper functions", link: "/guide/helper-functions" },
+                        { text: "Responses", link: "/guide/working-with-responses" },
+                        { text: "Enums", link: "/guide/working-with-enums" },
+                        { text: "Authentication", link: "/guide/authentication" },
+                        { text: "Error handling", link: "/guide/error-handling" },
                     ],
                 },
                 {
-                    text: "Advanced Usage",
+                    text: "Advanced usage",
                     items: [
-                        {
-                            text: "Asynchronous Requests",
-                            link: "/guide/async-requests",
-                        },
-                        {
-                            text: "Promise Operations",
-                            link: "/guide/promise-operations",
-                        },
-                        {
-                            text: "Retry Handling",
-                            link: "/guide/retry-handling",
-                        },
-                        {
-                            text: "HTTP Caching",
-                            link: "/guide/http-caching",
-                        },
-                        {
-                            text: "Connection Pooling & HTTP/2",
-                            link: "/guide/connection-pooling",
-                        },
-                        {
-                            text: "Streaming & Server-Sent Events",
-                            link: "/guide/streaming",
-                        },
-                        {
-                            text: "Middleware & Interceptors",
-                            link: "/guide/middleware",
-                        },
-                        {
-                            text: "Events & Hooks",
-                            link: "/guide/events",
-                        },
-                        { text: "File Uploads", link: "/guide/file-uploads" },
-                        {
-                            text: "Custom Clients",
-                            link: "/guide/custom-clients",
-                        },
-                        {
-                            text: "Debugging & Profiling",
-                            link: "/guide/debugging-and-profiling",
-                        },
-                        { text: "Testing with Mocks", link: "/guide/testing" },
+                        { text: "Async and Matrix", link: "/guide/async-requests" },
+                        { text: "Promise operations", link: "/guide/promise-operations" },
+                        { text: "Retries", link: "/guide/retry-handling" },
+                        { text: "HTTP caching", link: "/guide/http-caching" },
+                        { text: "Middleware", link: "/guide/middleware" },
+                        { text: "Lifecycle events", link: "/guide/events" },
+                        { text: "Streaming and SSE", link: "/guide/streaming" },
+                        { text: "File uploads", link: "/guide/file-uploads" },
+                        { text: "Connection pool and HTTP/2", link: "/guide/connection-pooling" },
+                        { text: "Logging", link: "/guide/logging" },
+                        { text: "Debugging and profiling", link: "/guide/debugging-and-profiling" },
+                        { text: "Custom clients", link: "/guide/custom-clients" },
+                        { text: "Testing", link: "/guide/testing" },
+                        { text: "Architecture", link: "/guide/architecture" },
+                        { text: "Troubleshooting", link: "/guide/troubleshooting" },
+                        { text: "Upgrading", link: "/guide/upgrading" },
                     ],
                 },
             ],
             "/api/": [
                 {
-                    text: "API Reference",
-                    items: [{ text: "Overview", link: "/api/" }],
-                },
-                {
-                    text: "Helper Functions",
+                    text: "Reference",
                     items: [
-                        { text: "fetch()", link: "/api/fetch" },
+                        { text: "Overview", link: "/api/" },
+                        { text: "Global functions", link: "/api/fetch" },
                         { text: "fetch_client()", link: "/api/fetch-client" },
-                        {
-                            text: "HTTP Method Helpers",
-                            link: "/api/http-method-helpers",
-                        },
+                        { text: "HTTP method helpers", link: "/api/http-method-helpers" },
                     ],
                 },
                 {
-                    text: "Core Classes",
+                    text: "Clients and messages",
                     items: [
                         { text: "Client", link: "/api/client" },
                         { text: "ClientHandler", link: "/api/client-handler" },
                         { text: "Request", link: "/api/request" },
                         { text: "Response", link: "/api/response" },
+                        { text: "Streams and events", link: "/api/streams" },
+                    ],
+                },
+                {
+                    text: "Contracts and support",
+                    items: [
+                        { text: "Middleware and events", link: "/api/middleware-events" },
+                        { text: "Exceptions", link: "/api/exceptions" },
+                        { text: "Testing utilities", link: "/api/testing" },
                     ],
                 },
                 {
@@ -269,98 +129,51 @@ export default defineConfig({
                         { text: "Status", link: "/api/status-enum" },
                     ],
                 },
-                {
-                    text: "Testing",
-                    items: [
-                        { text: "Testing Utilities", link: "/api/testing" },
-                    ],
-                },
             ],
             "/examples/": [
                 {
                     text: "Examples",
                     items: [
-                        { text: "Basic Requests", link: "/examples/" },
-                        {
-                            text: "Working with APIs",
-                            link: "/examples/api-integration",
-                        },
-                        {
-                            text: "Async Request Patterns",
-                            link: "/examples/async-patterns",
-                        },
-                        {
-                            text: "Error Handling",
-                            link: "/examples/error-handling",
-                        },
-                        {
-                            text: "File Handling",
-                            link: "/examples/file-handling",
-                        },
-                        {
-                            text: "Authentication",
-                            link: "/examples/authentication",
-                        },
+                        { text: "Overview", link: "/examples/" },
+                        { text: "API integration", link: "/examples/api-integration" },
+                        { text: "Async patterns", link: "/examples/async-patterns" },
+                        { text: "Error handling", link: "/examples/error-handling" },
+                        { text: "File handling", link: "/examples/file-handling" },
+                        { text: "Authentication", link: "/examples/authentication" },
                     ],
                 },
             ],
         },
-
-        // Social links (keeping your GitHub link)
         socialLinks: [
             { icon: "github", link: "https://github.com/Thavarshan/fetch-php" },
         ],
-
-        // Footer content with additional keywords naturally included
         footer: {
-            message:
-                "Released under the MIT License. A modern HTTP client for PHP developers.",
+            message: "Released under the MIT License.",
             copyright: "Copyright © 2024-present Jerome Thayananthajothy",
         },
-
-        // Improved search configuration
         search: {
             provider: "local",
-            options: {
-                detailedView: true,
-                // Add common misspellings and related terms here if supported in the future
-            },
         },
-
-        // Configuration for showing the last updated time (freshness signal)
         lastUpdated: {
             text: "Updated at",
             formatOptions: {
                 dateStyle: "medium",
-                timeStyle: "short",
             },
         },
-
-        // Add edit link to encourage contributions (helps with engagement metrics)
         editLink: {
             pattern: "https://github.com/Thavarshan/fetch-php/edit/main/docs/:path",
             text: "Edit this page on GitHub",
         },
-
-        // Add carbon ads if you want to monetize your documentation
-        // carbonAds: {
-        //   code: 'your-carbon-code',
-        //   placement: 'your-carbon-placement'
-        // }
     },
     buildEnd: async ({ outDir }) => {
-        const robotsTxt = `User-agent: *
-Allow: /
-Sitemap: https://fetch-php.thavarshan.com/sitemap.xml`;
+        const robotsTxt =
+            "User-agent: *\nAllow: /\nSitemap: https://fetch-php.thavarshan.com/sitemap.xml";
 
         fs.writeFileSync(path.join(outDir, "robots.txt"), robotsTxt);
-        console.log("✓ robots.txt generated");
     },
-
-    // Performance optimizations
     vite: {
         build: {
-            minify: true, // Use the default minifier
+            minify: true,
             cssMinify: true,
         },
         server: {

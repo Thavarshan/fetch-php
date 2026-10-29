@@ -1,24 +1,29 @@
 ---
-layout: page
-
-# SEO-optimized title and description
-title: Fetch PHP - Modern JavaScript-like HTTP Client for PHP
-description: A modern HTTP client library that brings JavaScript's fetch API experience to PHP with async/await patterns, promise-based API, and powerful retry mechanics.
-
-# SEO-optimized meta tags (these extend what's in config.js)
-head:
-  - - meta
-    - name: keywords
-      content: fetch php, javascript fetch in php, async await php, http client php, promise based http, php http, guzzle alternative
-  - - meta
-    - property: og:title
-      content: Fetch PHP - JavaScript's fetch API for PHP
-  - - meta
-    - property: og:description
-      content: Write HTTP requests just like you would in JavaScript with PHP's Fetch API. Modern, simple HTTP client with a familiar API.
-  - - link
-    - rel: canonical
-      href: https://fetch-php.thavarshan.com/
+title: Fetch PHP
+description: Guides and API reference for the Fetch PHP HTTP client.
 ---
 
-<HomePage />
+# Fetch PHP
+
+Fetch PHP is a Guzzle-based HTTP client for PHP 8.3+. This site explains its helper functions, client and handler APIs, request and response behavior, and optional facilities such as retries, caching, middleware, streaming, and Matrix promises.
+
+> Fetch's Matrix promise integration currently wraps synchronous Guzzle requests. It does not provide nonblocking HTTP I/O. See [Asynchronous requests](/guide/async-requests) before using it in an event-loop application.
+
+## Start here
+
+- [Install the package](/guide/installation)
+- [Make your first request](/guide/quickstart)
+- [Choose a client entry point](/guide/making-requests)
+- [Read and inspect responses](/guide/working-with-responses)
+
+## Guides
+
+- [Requests and options](/guide/making-requests)
+- [Authentication](/guide/authentication)
+- [Errors and status codes](/guide/error-handling)
+- [Retry behavior](/guide/retry-handling)
+- [Promises and Matrix](/guide/async-requests)
+- [Streaming and Server-Sent Events](/guide/streaming)
+- [Testing offline](/guide/testing)
+
+Browse the [complete guide index](/guide/) or the [API reference](/api/).

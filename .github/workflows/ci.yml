@@ -34,6 +34,10 @@ jobs:
               - 'pint.json'
             docs:
               - 'docs/**'
+              - 'tools/check-doc-examples.php'
+              - 'tools/check-markdown-links.mjs'
+              - 'composer.json'
+              - '.github/workflows/ci.yml'
               - 'README.md'
               - '*.md'
 
@@ -186,6 +190,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -197,6 +212,12 @@ jobs:
 
       - name: Build documentation
         run: npm run build
+
+      - name: Check documentation PHP examples
+        run: composer docs:examples
+
+      - name: Analyse documentation PHP examples
+        run: ./vendor/bin/phpstan analyse --no-progress --configuration=phpstan.neon docs/examples/snippets
 
       - name: Check for broken links
         run: npm run check-links

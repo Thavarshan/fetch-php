@@ -13,6 +13,16 @@
 - Remove `buildFullUri()` from internal URI resolution; mark external uses deprecated with a Fetch 4.0 removal target.
 - Raise PHPStan to level 8 and tighten internal return and interface annotations to keep the stricter analysis clean.
 
+### Documentation
+
+- Rewrite the README and VitePress guides/API reference to match the current implementation; add offline runnable examples, PHP snippet analysis, and local Markdown fragment checking.
+- Document the blocking nature of Fetch's Matrix promise bridge and the fact that the configured connection pool/DNS cache is not wired into request execution.
+
+### Fixed
+
+- Isolate per-request `Client::fetch()` and global `fetch()` base-URI options in the immutable request context so options do not leak into later requests.
+- Append request query parameters once when building buffered and streamed request URIs.
+
 ### Compatibility
 
 - Matrix 4 rejects cancelled operations with `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch promises should handle this exception when cancelling pending work.

@@ -9,7 +9,7 @@ This reference captures the concrete public surface of the FetchPHP library as i
 - `fetch(string|RequestInterface|null $resource = null, ?array $options = [])`
   - `RequestInterface` ➜ forwarded to the global client with no option merging.
   - `null` ➜ returns the singleton `Fetch\Http\Client` handler for chaining.
-  - String URL ➜ runs through `process_request_options()`, handles `base_uri` delegation, and returns either `Fetch\Http\Response` or a promise when the handler is in async mode.
+  - String URL ➜ runs through `process_request_options()`, handles `base_uri` per request, and returns either `Fetch\Http\Response` or a promise when the handler is in async mode.
   - Supported options mirror `RequestOptions::normalizeBodyOptions()` (method, headers, body/json/form/multipart, query, timeout, connect_timeout, retries, retry_delay, auth, token, proxy, cookies, allow_redirects, cert, ssl_key, stream, progress, debug, cache, profiler configuration, etc.).
 - `fetch_client(?array $options = null, bool $reset = false): Fetch\Http\Client`
   - Maintains a static `Client` instance; `reset=true` recreates it.
@@ -22,7 +22,7 @@ This reference captures the concrete public surface of the FetchPHP library as i
 - Internal helpers:
   - `process_request_options(array $options)` normalizes method enums/strings, headers, body precedence (`json` > `form` > `multipart` > `body`) and high-level flags.
   - `extract_body_and_content_type()` returns the paired body + `ContentType`.
-  - `handle_request_with_base_uri()` wires `base_uri` by configuring the handler before invoking `sendRequest`.
+  - `handle_request_with_base_uri()` adds `base_uri` to the per-request options passed to `sendRequest()`; it does not mutate the shared handler.
 
 ---
 
@@ -38,7 +38,7 @@ This reference captures the concrete public surface of the FetchPHP library as i
   - Wraps `ConnectException`, `Guzzle\RequestException`, and generic throwables into Fetch exceptions (`NetworkException`, `RequestException`, `ClientException`).
 - `fetch(?string $url = null, ?array $options = [])`
   - When `$url` is null returns the handler for fluent chaining.
-  - Normalizes HTTP method via `Fetch\Enum\Method`, infers `ContentType`, applies `base_uri` support, and delegates to `ClientHandler::withOptions()->sendRequest()`.
+  - Normalizes HTTP method via `Fetch\Enum\Method`, infers `ContentType`, and delegates request overrides (including `base_uri`) to `RequestExecutor::request()` without mutating the shared handler.
   - Catches `Guzzle\RequestException` to surface error responses even when exceptions are thrown.
 - Verb conveniences: `get`, `post`, `put`, `patch`, `delete`, `head`, `options` call `methodRequest()` which pushes normalized method + body settings through `fetch()`.
 - `getHttpClient()` exposes the underlying `GuzzleHttp\ClientInterface`.
@@ -70,10 +70,14 @@ Implementation relies on traits in `src/Fetch/Concerns/`:
 Key runtime behaviors:
 
 - Builds an immutable `RequestContext` per call by merging factory defaults → global defaults → handler options → request overrides.
-- Supports synchronous and asynchronous execution. Async requests always bypass caching and use `React\Promise` via Matrix's helpers.
-- Integrates caching through `CacheManager` automatically when `withCache()` was called or a `cache` option is present.
+- The default buffered path is synchronous. Async mode wraps synchronous Guzzle request execution in a Matrix/React promise; it does not make network I/O nonblocking or concurrent. Async requests bypass the cache.
+- Caching runs only when a `CacheManager` has been attached with `withCache()`. A request `cache` option configures an attached manager; it does not initialize one.
 - Supports `MockServer` fakes before network IO, `Recorder` integration when recording is enabled.
 - Logging sanitizes sensitive headers and auth credentials.
+
+Streaming uses a separate direct Guzzle path and bypasses the normal MockServer, middleware, retry, and cache pipeline. It is synchronous; SSE parses the response but does not automatically reconnect.
+
+`ClientHandler` exposes connection-pool and DNS-cache configuration APIs, but the request execution path does not call `ConnectionPool` to obtain a transport client or use `DnsCache` to resolve request hosts. Do not assume Fetch-managed connection reuse or DNS caching.
 
 ---
 
@@ -171,7 +175,7 @@ Key runtime behaviors:
 - `Fetch\Support\GlobalServices`
   - Centralizes shared instances: `ConnectionPool`, `DnsCache`, and merged default options.
   - Provides `initialize()`, `configurePool()`, `setDefaultOptions()`, `reset()`, `closeAllConnections()`, `clearDnsCache()`, `getStats()`.
-  - Used implicitly by `ClientHandler::create*()` to ensure pooling infrastructure exists.
+  - Initialized by handler construction for shared configuration and exposed services. The request transport currently does not consume the configured `ConnectionPool` or `DnsCache` for outgoing requests.
 
 ---
 
@@ -194,6 +198,8 @@ Key runtime behaviors:
 
 ## Connection Pool & DNS (`src/Fetch/Pool`)
 
+These are standalone pool/DNS components with configuration APIs exposed by handlers. They are not currently wired into `PerformsHttpRequests`' Guzzle request path, so their presence does not mean normal Fetch requests reuse pooled connections or resolve through the DNS cache.
+
 - `PoolConfiguration` – toggles pooling, max connections, max per host/idle, keep-alive timeout, connection timeout, strategy, warmup counts, DNS cache TTL.
 - `ConnectionPool`
   - Manages `HostConnectionPool` instances per host:port:scheme key.
@@ -215,9 +221,9 @@ Key runtime behaviors:
 - `ManagesPromises` trait exposes:
   - `async(?bool $async = true)`, `isAsync()`.
   - `wrapAsync(callable $cb)`, `awaitPromise(PromiseInterface $promise, ?float $timeout)`, `all()`, `race()`, `any()`, `sequence()`.
-  - `then`, `catch`, `finally` automatically toggle async mode and call `sendAsync()`.
-  - `map(array $items, callable $cb, int $concurrency)` uses `mapBatched()` for controlled concurrency.
-  - Internally delegates to Matrix helpers (e.g., `Matrix\Support\async`, `await`, `timeout`) and rethrows timeouts as `RuntimeException`.
+  - Promise helpers delegate to Matrix 4 / ReactPHP.
+  - `PerformsHttpRequests::executeAsyncRequest()` wraps the synchronous request executor in a Matrix `async()` callback. This is promise-shaped but blocks the event loop while Guzzle I/O is in progress.
+  - Matrix scheduling/concurrency limits apply to queued callbacks; they do not make the synchronous Fetch HTTP transport concurrent or interrupt an in-flight request.
 
 ---
 
