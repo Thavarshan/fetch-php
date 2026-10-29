@@ -49,12 +49,15 @@
         }
     },
     "scripts": {
-        "lint": "duster lint src",
+        "lint": [
+            "duster lint src",
+            "php tools/check-line-length.php"
+        ],
         "fix": "duster fix src",
         "test": "phpunit --no-coverage",
         "test:unit": "phpunit --no-coverage tests/Unit",
         "test:integration": "phpunit --no-coverage tests/Integration",
-        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage --coverage-clover=coverage/clover.xml",
+        "test:coverage": "sh tools/test-coverage.sh",
         "analyse": "phpstan analyse",
         "docs:examples": "php tools/check-doc-examples.php",
         "ai:validate": "php tools/validate-ai-config.php",

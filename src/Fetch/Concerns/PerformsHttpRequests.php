@@ -33,8 +33,10 @@ trait PerformsHttpRequests
      *
      * @param  string  $method  The HTTP method to use
      * @param  string  $uri  The URI to request
-     * @param  array<string, mixed>  $options  Additional options for the request
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or promise
+     * @param  array<string, mixed>  $options  Additional options for the
+     *                                         request
+     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or
+     *                                                               promise
      */
     public static function handle(
         string $method,
@@ -65,8 +67,10 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $queryParams  Optional query parameters
      * @return ResponseInterface|PromiseInterface The response or promise
      */
-    public function get(string $uri, array $queryParams = []): ResponseInterface|PromiseInterface
-    {
+    public function get(
+        string $uri,
+        array $queryParams = [],
+    ): ResponseInterface|PromiseInterface {
         $options = [];
         if (! empty($queryParams)) {
             $options['query'] = $queryParams;
@@ -88,7 +92,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::POST, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::POST,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -104,7 +113,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::PUT, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::PUT,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -120,7 +134,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::PATCH, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::PATCH,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -136,7 +155,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::DELETE, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::DELETE,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -204,9 +228,12 @@ trait PerformsHttpRequests
     /**
      * Send an HTTP request.
      *
-     * This method is now stateless per-request: it builds an immutable RequestContext
-     * from merged options and passes it through the execution stack without mutating
-     * the handler's shared state. This makes the handler safe for concurrent usage.
+     * This method is now stateless per-request: it builds an immutable
+     *     RequestContext
+     * from merged options and passes it through the execution stack without
+     *     mutating
+     * the handler's shared state. This makes the handler safe for concurrent
+     *     usage.
      *
      * @param  Method|string  $method  The HTTP method
      * @param  string  $uri  The URI to request
@@ -222,9 +249,11 @@ trait PerformsHttpRequests
         $startMemory = memory_get_usage(true);
 
         // Normalize method to string
-        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodStr =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
-        // Build immutable request context from handler defaults + per-request options
+        // Build immutable request context from handler defaults + per-request
+        // options
         $requestOptions = RequestOptions::merge(
             $this->options,
             ['async' => $this->isAsync],
@@ -237,7 +266,10 @@ trait PerformsHttpRequests
         // Tag the request with a correlation ID so every lifecycle event fired
         // for it can be tied together. Kept in the context option bag, which is
         // threaded everywhere and never leaked to Guzzle.
-        $requestOptions['__correlation_id'] = method_exists($this, 'generateCorrelationId')
+        $requestOptions['__correlation_id'] = method_exists(
+            $this,
+            'generateCorrelationId',
+        )
             ? $this->generateCorrelationId()
             : '';
 
@@ -264,13 +296,36 @@ trait PerformsHttpRequests
             : [];
 
         if ($resolvedMiddleware === []) {
-            return $this->executeCore($methodStr, $fullUri, $guzzleOptions, $context, $startTime, $startMemory, $requestId);
+            return $this->executeCore(
+                $methodStr,
+                $fullUri,
+                $guzzleOptions,
+                $context,
+                $startTime,
+                $startMemory,
+                $requestId,
+            );
         }
 
-        [$psrRequest, $seedBody] = $this->buildMiddlewareRequest($methodStr, $fullUri, $guzzleOptions);
+        [$psrRequest, $seedBody] = $this->buildMiddlewareRequest(
+            $methodStr,
+            $fullUri,
+            $guzzleOptions,
+        );
 
-        $core = function (RequestInterface $request) use ($guzzleOptions, $seedBody, $context, $startTime, $startMemory, $requestId): ResponseInterface|PromiseInterface {
-            $mergedOptions = $this->mergeRequestIntoOptions($request, $guzzleOptions, $seedBody);
+        $core = function (RequestInterface $request) use (
+            $guzzleOptions,
+            $seedBody,
+            $context,
+            $startTime,
+            $startMemory,
+            $requestId,
+        ): ResponseInterface|PromiseInterface {
+            $mergedOptions = $this->mergeRequestIntoOptions(
+                $request,
+                $guzzleOptions,
+                $seedBody,
+            );
 
             return $this->executeCore(
                 $request->getMethod(),
@@ -283,7 +338,9 @@ trait PerformsHttpRequests
             );
         };
 
-        return $this->coerceMiddlewareResult($this->runThroughMiddleware($psrRequest, $core));
+        return $this->coerceMiddlewareResult(
+            $this->runThroughMiddleware($psrRequest, $core),
+        );
     }
 
     /**
@@ -294,7 +351,8 @@ trait PerformsHttpRequests
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
      * @param  array<string, mixed>  $options  Additional request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or
+     *                                                               promise
      */
     public function request(
         string|Method $method,
@@ -306,7 +364,11 @@ trait PerformsHttpRequests
         $mergedOptions = RequestOptions::merge($this->options, $options);
 
         if ($body !== null) {
-            $mergedOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
+            $mergedOptions = $this->applyBodyOptions(
+                $mergedOptions,
+                $body,
+                $contentType,
+            );
         }
 
         return $this->sendRequest($method, $uri, $mergedOptions);
@@ -315,9 +377,11 @@ trait PerformsHttpRequests
     /**
      * Get the effective timeout for the request.
      *
-     * Supports per-request timeout via RequestContext, with handler defaults as fallback.
+     * Supports per-request timeout via RequestContext, with handler defaults as
+     *     fallback.
      *
-     * @param  RequestContext|null  $context  Optional request context for per-request override
+     * @param  RequestContext|null  $context  Optional request context for
+     *                                        per-request override
      * @return int The timeout in seconds
      */
     public function getEffectiveTimeout(?RequestContext $context = null): int
@@ -328,7 +392,10 @@ trait PerformsHttpRequests
         }
 
         // Next check options array
-        if (isset($this->options['timeout']) && is_int($this->options['timeout'])) {
+        if (
+            isset($this->options['timeout']) &&
+            is_int($this->options['timeout'])
+        ) {
             return $this->options['timeout'];
         }
 
@@ -344,14 +411,18 @@ trait PerformsHttpRequests
     /**
      * Normalize whatever the middleware pipeline returns into a Fetch response.
      *
-     * Middleware may short-circuit with any PSR-7 response; those are wrapped in
+     * Middleware may short-circuit with any PSR-7 response; those are wrapped
+     *     in
      * a buffered {@see Response} so the public contract always yields a Fetch
      * response (or a promise of one).
      */
-    protected function coerceMiddlewareResult(\Psr\Http\Message\ResponseInterface|PromiseInterface $result): ResponseInterface|PromiseInterface
-    {
+    protected function coerceMiddlewareResult(
+        \Psr\Http\Message\ResponseInterface|PromiseInterface $result,
+    ): ResponseInterface|PromiseInterface {
         if ($result instanceof PromiseInterface) {
-            return $result->then(fn ($response) => $this->coerceResponseValue($response));
+            return $result->then(
+                fn ($response) => $this->coerceResponseValue($response),
+            );
         }
 
         return $this->coerceResponseValue($result);
@@ -394,7 +465,11 @@ trait PerformsHttpRequests
         // Set up lifecycle events (if the ManagesEvents trait is present).
         $eventsEnabled = method_exists($this, 'emitRequestEvent');
         $eventRequest = $eventsEnabled
-            ? $this->eventRequest($methodStr, $fullUri, $guzzleOptions['headers'] ?? [])
+            ? $this->eventRequest(
+                $methodStr,
+                $fullUri,
+                $guzzleOptions['headers'] ?? [],
+            )
             : null;
 
         if ($eventsEnabled && $eventRequest !== null) {
@@ -402,22 +477,41 @@ trait PerformsHttpRequests
 
             // Observe redirects through Guzzle's on_redirect hook.
             if ($this->hasEventListeners(RedirectEvent::NAME)) {
-                $guzzleOptions = $this->attachRedirectListener($guzzleOptions, $eventRequest, $context);
+                $guzzleOptions = $this->attachRedirectListener(
+                    $guzzleOptions,
+                    $eventRequest,
+                    $context,
+                );
             }
         }
 
         // Check for mock response first (if HandlesMocking trait is available)
         if (method_exists($this, 'handleMockRequest')) {
-            $mockResponse = $this->handleMockRequest($methodStr, $fullUri, $guzzleOptions);
+            $mockResponse = $this->handleMockRequest(
+                $methodStr,
+                $fullUri,
+                $guzzleOptions,
+            );
             if ($mockResponse !== null) {
                 $this->recordProfilingEvent($requestId, 'response_start');
                 $this->endProfiling($requestId, $mockResponse->getStatusCode());
 
-                $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                $connectionStats = method_exists(
+                    $this,
+                    'getConnectionDebugStats',
+                )
                     ? $this->getConnectionDebugStats()
                     : [];
 
-                $debugInfo = $this->captureDebugSnapshot($methodStr, $fullUri, $guzzleOptions, $mockResponse, $startTime, $startMemory, $connectionStats);
+                $debugInfo = $this->captureDebugSnapshot(
+                    $methodStr,
+                    $fullUri,
+                    $guzzleOptions,
+                    $mockResponse,
+                    $startTime,
+                    $startMemory,
+                    $connectionStats,
+                );
 
                 // Attach debug info to response if available
                 if ($debugInfo !== null && $mockResponse instanceof Response) {
@@ -425,7 +519,12 @@ trait PerformsHttpRequests
                 }
 
                 if ($eventsEnabled && $eventRequest !== null) {
-                    $this->emitResponseEvent($eventRequest, $mockResponse, $context, $startTime);
+                    $this->emitResponseEvent(
+                        $eventRequest,
+                        $mockResponse,
+                        $context,
+                        $startTime,
+                    );
                 }
 
                 return $mockResponse;
@@ -435,27 +534,55 @@ trait PerformsHttpRequests
         // Check for cached response via CacheManager if available
         $cachedResult = null;
         $cacheManager = $this->getCacheManagerFromHandler($this);
-        $requestOptionsWithAsync = array_merge($context->toArray(), ['async' => $context->isAsync()]);
+        $requestOptionsWithAsync = array_merge($context->toArray(), [
+            'async' => $context->isAsync(),
+        ]);
 
         if ($cacheManager !== null) {
-            $cachedResult = $cacheManager->getCachedResponse($methodStr, $fullUri, $requestOptionsWithAsync);
+            $cachedResult = $cacheManager->getCachedResponse(
+                $methodStr,
+                $fullUri,
+                $requestOptionsWithAsync,
+            );
             if ($cachedResult['response'] !== null) {
                 $this->recordProfilingEvent($requestId, 'response_start');
-                $this->endProfiling($requestId, $cachedResult['response']->getStatusCode());
+                $this->endProfiling(
+                    $requestId,
+                    $cachedResult['response']->getStatusCode(),
+                );
 
-                $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                $connectionStats = method_exists(
+                    $this,
+                    'getConnectionDebugStats',
+                )
                     ? $this->getConnectionDebugStats()
                     : [];
 
-                $debugInfo = $this->captureDebugSnapshot($methodStr, $fullUri, $guzzleOptions, $cachedResult['response'], $startTime, $startMemory, $connectionStats);
+                $debugInfo = $this->captureDebugSnapshot(
+                    $methodStr,
+                    $fullUri,
+                    $guzzleOptions,
+                    $cachedResult['response'],
+                    $startTime,
+                    $startMemory,
+                    $connectionStats,
+                );
 
                 // Attach debug info to cached response if available
-                if ($debugInfo !== null && $cachedResult['response'] instanceof Response) {
+                if (
+                    $debugInfo !== null &&
+                    $cachedResult['response'] instanceof Response
+                ) {
                     $cachedResult['response']->withDebugInfo($debugInfo);
                 }
 
                 if ($eventsEnabled && $eventRequest !== null) {
-                    $this->emitResponseEvent($eventRequest, $cachedResult['response'], $context, $startTime);
+                    $this->emitResponseEvent(
+                        $eventRequest,
+                        $cachedResult['response'],
+                        $context,
+                        $startTime,
+                    );
                 }
 
                 return $cachedResult['response'];
@@ -463,7 +590,10 @@ trait PerformsHttpRequests
 
             // Add conditional headers if we have a stale cache entry
             if ($cachedResult['cached'] !== null) {
-                $guzzleOptions = $cacheManager->addConditionalHeaders($guzzleOptions, $cachedResult['cached']);
+                $guzzleOptions = $cacheManager->addConditionalHeaders(
+                    $guzzleOptions,
+                    $cachedResult['cached'],
+                );
             }
         }
 
@@ -481,20 +611,46 @@ trait PerformsHttpRequests
                 $startTime,
                 $startMemory,
                 $requestId,
-                $context
+                $context,
             );
 
             return $promise
-                ->then(function ($response) use ($eventsEnabled, $eventRequest, $context, $startTime) {
-                    if ($eventsEnabled && $eventRequest !== null && $response instanceof \Psr\Http\Message\ResponseInterface) {
-                        $this->emitResponseEvent($eventRequest, $response, $context, $startTime);
+                ->then(function ($response) use (
+                    $eventsEnabled,
+                    $eventRequest,
+                    $context,
+                    $startTime,
+                ) {
+                    if (
+                        $eventsEnabled &&
+                        $eventRequest !== null &&
+                        $response instanceof \Psr\Http\Message\ResponseInterface
+                    ) {
+                        $this->emitResponseEvent(
+                            $eventRequest,
+                            $response,
+                            $context,
+                            $startTime,
+                        );
                     }
 
                     return $response;
                 })
-                ->otherwise(function (\Throwable $e) use ($methodStr, $fullUri, $eventsEnabled, $eventRequest, $context, $startTime) {
+                ->otherwise(function (\Throwable $e) use (
+                    $methodStr,
+                    $fullUri,
+                    $eventsEnabled,
+                    $eventRequest,
+                    $context,
+                    $startTime,
+                ) {
                     if ($eventsEnabled && $eventRequest !== null) {
-                        $this->emitErrorEvent($eventRequest, $e, $context, $startTime);
+                        $this->emitErrorEvent(
+                            $eventRequest,
+                            $e,
+                            $context,
+                            $startTime,
+                        );
                     }
 
                     throw $this->withErrorContext($e, $methodStr, $fullUri);
@@ -511,11 +667,16 @@ trait PerformsHttpRequests
                 $startMemory,
                 $cachedResult,
                 $requestId,
-                $context
+                $context,
             );
 
             if ($eventsEnabled && $eventRequest !== null) {
-                $this->emitResponseEvent($eventRequest, $response, $context, $startTime);
+                $this->emitResponseEvent(
+                    $eventRequest,
+                    $response,
+                    $context,
+                    $startTime,
+                );
             }
 
             return $response;
@@ -539,8 +700,11 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $guzzleOptions
      * @return array{0: RequestInterface, 1: string|null}
      */
-    protected function buildMiddlewareRequest(string $method, string $uri, array $guzzleOptions): array
-    {
+    protected function buildMiddlewareRequest(
+        string $method,
+        string $uri,
+        array $guzzleOptions,
+    ): array {
         $headers = $guzzleOptions['headers'] ?? [];
         $seedBody = $this->encodeSeedBody($guzzleOptions);
 
@@ -559,7 +723,10 @@ trait PerformsHttpRequests
      */
     protected function encodeSeedBody(array $guzzleOptions): ?string
     {
-        if (array_key_exists('body', $guzzleOptions) && is_string($guzzleOptions['body'])) {
+        if (
+            array_key_exists('body', $guzzleOptions) &&
+            is_string($guzzleOptions['body'])
+        ) {
             return $guzzleOptions['body'];
         }
 
@@ -571,7 +738,10 @@ trait PerformsHttpRequests
             }
         }
 
-        if (isset($guzzleOptions['form_params']) && is_array($guzzleOptions['form_params'])) {
+        if (
+            isset($guzzleOptions['form_params']) &&
+            is_array($guzzleOptions['form_params'])
+        ) {
             return http_build_query($guzzleOptions['form_params'], '', '&');
         }
 
@@ -588,8 +758,11 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $guzzleOptions
      * @return array<string, mixed>
      */
-    protected function mergeRequestIntoOptions(RequestInterface $request, array $guzzleOptions, ?string $seedBody): array
-    {
+    protected function mergeRequestIntoOptions(
+        RequestInterface $request,
+        array $guzzleOptions,
+        ?string $seedBody,
+    ): array {
         $headers = [];
         foreach ($request->getHeaders() as $name => $values) {
             $headers[$name] = count($values) === 1 ? $values[0] : $values;
@@ -606,12 +779,19 @@ trait PerformsHttpRequests
 
         if ($seedBody !== null && $body !== $seedBody) {
             // A middleware rewrote the body: send it raw.
-            unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);
+            unset(
+                $guzzleOptions['json'],
+                $guzzleOptions['form_params'],
+                $guzzleOptions['multipart'],
+            );
             $guzzleOptions['body'] = $body;
-        } elseif ($seedBody === null && $body !== ''
-            && ! isset($guzzleOptions['multipart'])
-            && ! isset($guzzleOptions['form_params'])
-            && ! isset($guzzleOptions['json'])) {
+        } elseif (
+            $seedBody === null &&
+            $body !== '' &&
+            ! isset($guzzleOptions['multipart']) &&
+            ! isset($guzzleOptions['form_params']) &&
+            ! isset($guzzleOptions['json'])
+        ) {
             // No structured body existed, but a middleware added one.
             $guzzleOptions['body'] = $body;
         }
@@ -629,14 +809,16 @@ trait PerformsHttpRequests
         string $uri,
         array $options = [],
     ): StreamedResponseInterface {
-        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodStr =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
         // Streaming is inherently synchronous: force async off for this path.
-        $requestOptions = RequestOptions::merge(
-            $this->options,
-            $options,
-            ['method' => $methodStr, 'uri' => $uri, 'async' => false, 'stream' => true],
-        );
+        $requestOptions = RequestOptions::merge($this->options, $options, [
+            'method' => $methodStr,
+            'uri' => $uri,
+            'async' => false,
+            'stream' => true,
+        ]);
 
         RequestOptions::validate($requestOptions);
 
@@ -655,7 +837,11 @@ trait PerformsHttpRequests
         try {
             $this->recordProfilingEvent($requestId, 'request_sent');
 
-            $psrResponse = $this->getHttpClient()->request($methodStr, $fullUri, $guzzleOptions);
+            $psrResponse = $this->getHttpClient()->request(
+                $methodStr,
+                $fullUri,
+                $guzzleOptions,
+            );
 
             $this->recordProfilingEvent($requestId, 'response_start');
             $this->endProfiling($requestId, $psrResponse->getStatusCode());
@@ -678,17 +864,21 @@ trait PerformsHttpRequests
      * @param  ContentType|string  $contentType  The content type
      * @return array<string, mixed> New options array with body applied
      */
-    protected function applyBodyOptions(array $options, mixed $body, ContentType|string $contentType): array
-    {
+    protected function applyBodyOptions(
+        array $options,
+        mixed $body,
+        ContentType|string $contentType,
+    ): array {
         if ($body === null) {
             return $options;
         }
 
         // Normalize content type
         $contentTypeEnum = ContentType::normalizeContentType($contentType);
-        $contentTypeValue = $contentTypeEnum instanceof ContentType
-            ? $contentTypeEnum->value
-            : (string) $contentTypeEnum;
+        $contentTypeValue =
+            $contentTypeEnum instanceof ContentType
+                ? $contentTypeEnum->value
+                : (string) $contentTypeEnum;
 
         // Initialize headers if not set
         if (! isset($options['headers'])) {
@@ -696,14 +886,29 @@ trait PerformsHttpRequests
         }
 
         // Clear any existing body options to prevent conflicts
-        unset($options['body'], $options['json'], $options['form_params'], $options['multipart']);
+        unset(
+            $options['body'],
+            $options['json'],
+            $options['form_params'],
+            $options['multipart'],
+        );
 
         if (is_array($body)) {
             $options = match ($contentTypeEnum) {
                 ContentType::JSON => $this->applyJsonBodyPure($options, $body),
-                ContentType::FORM_URLENCODED => $this->applyFormParamsPure($options, $body),
-                ContentType::MULTIPART => $this->applyMultipartPure($options, $body),
-                default => $this->applyGenericArrayBodyPure($options, $body, $contentTypeValue),
+                ContentType::FORM_URLENCODED => $this->applyFormParamsPure(
+                    $options,
+                    $body,
+                ),
+                ContentType::MULTIPART => $this->applyMultipartPure(
+                    $options,
+                    $body,
+                ),
+                default => $this->applyGenericArrayBodyPure(
+                    $options,
+                    $body,
+                    $contentTypeValue,
+                ),
             };
         } else {
             // String body
@@ -719,14 +924,17 @@ trait PerformsHttpRequests
     /**
      * Get the CacheManager from a handler instance if available.
      *
-     * Uses the CacheableHandler interface getter to properly encapsulate access.
-     * Note: Cloning a handler shares the CacheManager instance (intentional - it's stateless per-request).
+     * Uses the CacheableHandler interface getter to properly encapsulate
+     *     access.
+     * Note: Cloning a handler shares the CacheManager instance (intentional -
+     *     it's stateless per-request).
      *
      * @param  object  $handler  The handler instance to check
      * @return CacheManager|null The cache manager or null if not available
      */
-    protected function getCacheManagerFromHandler(object $handler): ?CacheManager
-    {
+    protected function getCacheManagerFromHandler(
+        object $handler,
+    ): ?CacheManager {
         if (method_exists($handler, 'getCacheManager')) {
             return $handler->getCacheManager();
         }
@@ -740,7 +948,8 @@ trait PerformsHttpRequests
      * @param  string  $method  The HTTP method
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The Guzzle options
-     * @param  array<string, mixed>  $requestOptions  The request options with async flag
+     * @param  array<string, mixed>  $requestOptions  The request options with
+     *                                                async flag
      * @param  float  $startTime  The request start time
      * @param  int  $startMemory  The starting memory usage
      * @param  array<string, mixed>|null  $cachedResult  The cached result data
@@ -762,23 +971,52 @@ trait PerformsHttpRequests
         $cacheManager = $this->getCacheManagerFromHandler($this);
 
         try {
-            $response = $this->executeSyncRequest($method, $uri, $options, $startTime, $startMemory, $requestId, $context);
+            $response = $this->executeSyncRequest(
+                $method,
+                $uri,
+                $options,
+                $startTime,
+                $startMemory,
+                $requestId,
+                $context,
+            );
 
             // Handle 304 Not Modified response
-            if ($response->getStatusCode() === 304 && $cachedResult !== null && isset($cachedResult['cached']) && $cacheManager !== null) {
-                $response = $cacheManager->handleNotModified($cachedResult['cached'], $response);
+            if (
+                $response->getStatusCode() === 304 &&
+                $cachedResult !== null &&
+                isset($cachedResult['cached']) &&
+                $cacheManager !== null
+            ) {
+                $response = $cacheManager->handleNotModified(
+                    $cachedResult['cached'],
+                    $response,
+                );
             }
 
             // Cache the response if caching is enabled
             if ($cacheManager !== null) {
-                $cacheManager->cacheResponse($method, $uri, $response, $requestOptions);
+                $cacheManager->cacheResponse(
+                    $method,
+                    $uri,
+                    $response,
+                    $requestOptions,
+                );
             }
 
             $connectionStats = method_exists($this, 'getConnectionDebugStats')
                 ? $this->getConnectionDebugStats()
                 : [];
 
-            $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats);
+            $debugInfo = $this->captureDebugSnapshot(
+                $method,
+                $uri,
+                $options,
+                $response,
+                $startTime,
+                $startMemory,
+                $connectionStats,
+            );
 
             // Attach debug info to response if available
             if ($debugInfo !== null && $response instanceof Response) {
@@ -792,20 +1030,45 @@ trait PerformsHttpRequests
             return $response;
         } catch (\Throwable $e) {
             // Handle stale-if-error: serve stale response on error
-            if ($cachedResult !== null && isset($cachedResult['cached']) && $cacheManager !== null) {
-                $staleResponse = $cacheManager->handleStaleIfError($cachedResult['cached'], $method, $uri);
+            if (
+                $cachedResult !== null &&
+                isset($cachedResult['cached']) &&
+                $cacheManager !== null
+            ) {
+                $staleResponse = $cacheManager->handleStaleIfError(
+                    $cachedResult['cached'],
+                    $method,
+                    $uri,
+                );
                 if ($staleResponse !== null) {
                     $this->recordProfilingEvent($requestId, 'response_start');
-                    $this->endProfiling($requestId, $staleResponse->getStatusCode());
+                    $this->endProfiling(
+                        $requestId,
+                        $staleResponse->getStatusCode(),
+                    );
 
-                    $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                    $connectionStats = method_exists(
+                        $this,
+                        'getConnectionDebugStats',
+                    )
                         ? $this->getConnectionDebugStats()
                         : [];
 
-                    $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $staleResponse, $startTime, $startMemory, $connectionStats);
+                    $debugInfo = $this->captureDebugSnapshot(
+                        $method,
+                        $uri,
+                        $options,
+                        $staleResponse,
+                        $startTime,
+                        $startMemory,
+                        $connectionStats,
+                    );
 
                     // Attach debug info to stale response if available
-                    if ($debugInfo !== null && $staleResponse instanceof Response) {
+                    if (
+                        $debugInfo !== null &&
+                        $staleResponse instanceof Response
+                    ) {
                         $staleResponse->withDebugInfo($debugInfo);
                     }
 
@@ -840,7 +1103,11 @@ trait PerformsHttpRequests
         }
 
         $mergedOptions = RequestOptions::merge($this->options, $options);
-        $bodyOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
+        $bodyOptions = $this->applyBodyOptions(
+            $mergedOptions,
+            $body,
+            $contentType,
+        );
 
         return $this->sendRequest($method, $uri, $bodyOptions);
     }
@@ -848,15 +1115,19 @@ trait PerformsHttpRequests
     /**
      * Prepare options for Guzzle using the request context.
      *
-     * This method now prefers the explicit RequestContext parameter for stateless
-     * operation. When context is not provided, it falls back to building a context
+     * This method now prefers the explicit RequestContext parameter for
+     *     stateless
+     * operation. When context is not provided, it falls back to building a
+     *     context
      * from handler options (for backwards compatibility).
      *
-     * @param  RequestContext|null  $context  Optional explicit context (preferred)
+     * @param  RequestContext|null  $context  Optional explicit context
+     *                                        (preferred)
      * @return array<string, mixed>
      */
-    protected function prepareGuzzleOptions(?RequestContext $context = null): array
-    {
+    protected function prepareGuzzleOptions(
+        ?RequestContext $context = null,
+    ): array {
         // Prefer explicit context over handler state
         $context = $context ?? RequestContext::fromOptions($this->options);
 
@@ -889,18 +1160,36 @@ trait PerformsHttpRequests
             $requestId = $this->startProfiling($method, $uri);
         }
 
-        return $this->retryRequest($context, function () use ($method, $uri, $options, $startTime, $requestId, $startMemory, $context): ResponseInterface {
+        return $this->retryRequest($context, function () use (
+            $method,
+            $uri,
+            $options,
+            $startTime,
+            $requestId,
+            $startMemory,
+            $context,
+        ): ResponseInterface {
             try {
                 // Record request sent event for profiling
-                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
+                if (
+                    $requestId !== null &&
+                    method_exists($this, 'recordProfilingEvent')
+                ) {
                     $this->recordProfilingEvent($requestId, 'request_sent');
                 }
 
                 // Send the request to Guzzle
-                $psrResponse = $this->getHttpClient()->request($method, $uri, $options);
+                $psrResponse = $this->getHttpClient()->request(
+                    $method,
+                    $uri,
+                    $options,
+                );
 
                 // Record response received event for profiling
-                if ($requestId !== null && method_exists($this, 'recordProfilingEvent')) {
+                if (
+                    $requestId !== null &&
+                    method_exists($this, 'recordProfilingEvent')
+                ) {
                     $this->recordProfilingEvent($requestId, 'response_start');
                 }
 
@@ -911,15 +1200,29 @@ trait PerformsHttpRequests
                 $response = Response::createFromBase($psrResponse);
 
                 // End profiling
-                if ($requestId !== null && method_exists($this, 'endProfiling')) {
+                if (
+                    $requestId !== null &&
+                    method_exists($this, 'endProfiling')
+                ) {
                     $this->endProfiling($requestId, $response->getStatusCode());
                 }
 
-                $connectionStats = method_exists($this, 'getConnectionDebugStats')
+                $connectionStats = method_exists(
+                    $this,
+                    'getConnectionDebugStats',
+                )
                     ? $this->getConnectionDebugStats()
                     : [];
 
-                $debugInfo = $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats);
+                $debugInfo = $this->captureDebugSnapshot(
+                    $method,
+                    $uri,
+                    $options,
+                    $response,
+                    $startTime,
+                    $startMemory,
+                    $connectionStats,
+                );
 
                 // Attach debug info to response if available
                 if ($debugInfo !== null) {
@@ -927,15 +1230,32 @@ trait PerformsHttpRequests
                 }
 
                 // Trigger retry on configured retryable status codes
-                // IMPORTANT: Check context first for per-request retry status codes, fall back to handler state
-                $retryableStatusCodes = $context !== null && $context->getRetryableStatusCodes() !== []
-                    ? $context->getRetryableStatusCodes()
-                    : $this->getRetryableStatusCodes();
+                // IMPORTANT: Check context first for per-request retry status
+                // codes, fall back to handler state
+                $retryableStatusCodes =
+                    $context !== null &&
+                    $context->getRetryableStatusCodes() !== []
+                        ? $context->getRetryableStatusCodes()
+                        : $this->getRetryableStatusCodes();
 
-                if (in_array($response->getStatusCode(), $retryableStatusCodes, true)) {
-                    $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
+                if (
+                    in_array(
+                        $response->getStatusCode(),
+                        $retryableStatusCodes,
+                        true,
+                    )
+                ) {
+                    $psrRequest = new GuzzleRequest(
+                        $method,
+                        $uri,
+                        $options['headers'] ?? [],
+                    );
 
-                    throw new FetchRequestException('Retryable status: '.$response->getStatusCode(), $psrRequest, $psrResponse);
+                    throw new FetchRequestException(
+                        'Retryable status: '.$response->getStatusCode(),
+                        $psrRequest,
+                        $psrResponse,
+                    );
                 }
 
                 // Log response if method exists
@@ -946,22 +1266,51 @@ trait PerformsHttpRequests
                 return $response;
             } catch (GuzzleException $e) {
                 // End profiling with error
-                if ($requestId !== null && method_exists($this, 'endProfiling')) {
+                if (
+                    $requestId !== null &&
+                    method_exists($this, 'endProfiling')
+                ) {
                     $this->endProfiling($requestId, null);
                 }
 
-                // Normalize to Fetch RequestException to participate in retry logic
+                // Normalize to Fetch RequestException to participate in retry
+                // logic
                 if ($e instanceof GuzzleRequestException) {
                     $req = $e->getRequest();
                     $res = $e->getResponse();
 
-                    throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $req, $res, $e);
+                    throw new FetchRequestException(
+                        sprintf(
+                            'Request %s %s failed: %s',
+                            $method,
+                            $uri,
+                            $e->getMessage(),
+                        ),
+                        $req,
+                        $res,
+                        $e,
+                    );
                 }
 
-                // Fallback when we don't get a Guzzle RequestException (no request available)
-                $psrRequest = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
+                // Fallback when we don't get a Guzzle RequestException (no
+                // request available)
+                $psrRequest = new GuzzleRequest(
+                    $method,
+                    $uri,
+                    $options['headers'] ?? [],
+                );
 
-                throw new FetchRequestException(sprintf('Request %s %s failed: %s', $method, $uri, $e->getMessage()), $psrRequest, null, $e);
+                throw new FetchRequestException(
+                    sprintf(
+                        'Request %s %s failed: %s',
+                        $method,
+                        $uri,
+                        $e->getMessage(),
+                    ),
+                    $psrRequest,
+                    null,
+                    $e,
+                );
             }
         });
     }
@@ -988,12 +1337,30 @@ trait PerformsHttpRequests
         ?RequestContext $context = null,
     ): PromiseInterface {
         // Capture context in closure to ensure per-request retry config is used
-        return async(function () use ($method, $uri, $options, $startTime, $startMemory, $requestId, $context): ResponseInterface {
-            // Since this is in an async context, we can use try-catch for proper promise rejection
+        return async(function () use (
+            $method,
+            $uri,
+            $options,
+            $startTime,
+            $startMemory,
+            $requestId,
+            $context,
+        ): ResponseInterface {
+            // Since this is in an async context, we can use try-catch for
+            // proper promise rejection
             try {
                 // Execute the synchronous request inside the async function
-                // IMPORTANT: Pass context to ensure per-request retry configuration is respected
-                $response = $this->executeSyncRequest($method, $uri, $options, $startTime, $startMemory, $requestId, $context);
+                // IMPORTANT: Pass context to ensure per-request retry
+                // configuration is respected
+                $response = $this->executeSyncRequest(
+                    $method,
+                    $uri,
+                    $options,
+                    $startTime,
+                    $startMemory,
+                    $requestId,
+                    $context,
+                );
 
                 return $response;
             } catch (\Throwable $e) {
@@ -1009,8 +1376,13 @@ trait PerformsHttpRequests
 
                 $wrapped = $this->withErrorContext($e, $method, $uri);
 
-                // Throw the exception - in the async context, this will properly reject the promise
-                throw new AsyncException($wrapped->getMessage(), $wrapped->getCode(), $wrapped /* Preserve the original exception as previous */);
+                // Throw the exception - in the async context, this will
+                // properly reject the promise
+                throw new AsyncException(
+                    $wrapped->getMessage(),
+                    $wrapped->getCode(),
+                    $wrapped /* Preserve the original exception as previous */,
+                );
             }
         });
     }
@@ -1018,16 +1390,27 @@ trait PerformsHttpRequests
     /**
      * Add request context to exceptions while preserving the original chain.
      */
-    protected function withErrorContext(\Throwable $e, string $method, string $uri): \Throwable
-    {
-        $contextMessage = sprintf('Request %s %s failed', strtoupper($method), $uri);
+    protected function withErrorContext(
+        \Throwable $e,
+        string $method,
+        string $uri,
+    ): \Throwable {
+        $contextMessage = sprintf(
+            'Request %s %s failed',
+            strtoupper($method),
+            $uri,
+        );
 
         // Avoid double-wrapping if the exception already contains context
         if (str_contains($e->getMessage(), $contextMessage)) {
             return $e;
         }
 
-        return new RuntimeException($contextMessage.': '.$e->getMessage(), (int) $e->getCode(), $e);
+        return new RuntimeException(
+            $contextMessage.': '.$e->getMessage(),
+            (int) $e->getCode(),
+            $e,
+        );
     }
 
     /**
@@ -1058,7 +1441,8 @@ trait PerformsHttpRequests
     {
         $options['form_params'] = $body;
         if (! isset($options['headers']['Content-Type'])) {
-            $options['headers']['Content-Type'] = ContentType::FORM_URLENCODED->value;
+            $options['headers']['Content-Type'] =
+                ContentType::FORM_URLENCODED->value;
         }
 
         return $options;
@@ -1089,8 +1473,11 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
-    private function applyGenericArrayBodyPure(array $options, array $body, string $contentType): array
-    {
+    private function applyGenericArrayBodyPure(
+        array $options,
+        array $body,
+        string $contentType,
+    ): array {
         $options['body'] = json_encode($body);
         if (! isset($options['headers']['Content-Type'])) {
             $options['headers']['Content-Type'] = $contentType;

@@ -1,6 +1,9 @@
 ---
 name: php-library-maintainer
-description: Implements a scoped feature or bug fix in Fetch PHP end to end — code, tests, docs, and local gates — while preserving public-API compatibility. Use to carry out a well-defined change under src/Fetch.
+description:
+    Implements a scoped feature or bug fix in Fetch PHP end to end — code,
+    tests, docs, and local gates — while preserving public-API compatibility.
+    Use to carry out a well-defined change under src/Fetch.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: inherit
 ---
@@ -22,8 +25,8 @@ approval.
 
 ## Rules
 
-- New files: `declare(strict_types=1);`; run `composer fix`; keep PHPStan level 6
-  clean without new `ignoreErrors`.
+- New files: `declare(strict_types=1);`; run `composer fix`; keep PHPStan level
+  6 clean without new `ignoreErrors`.
 - Route options through `RequestOptions`/`RequestContext`; reuse existing
   defaults. Tests stay offline and deterministic (`snake_case` methods).
 - If the change touches a public signature, helper, enum, exception, or a

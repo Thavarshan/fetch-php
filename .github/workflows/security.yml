@@ -31,7 +31,8 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run:
+          composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Run security audit
         run: composer audit
@@ -54,7 +55,8 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run:
+          composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Run PHPStan analysis
         run: composer analyse

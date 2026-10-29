@@ -31,11 +31,15 @@ final class ClientRequestOptionIsolationTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_request_query_options_do_not_leak_to_the_next_global_helper_call(): void
+    public function test_query_options_do_not_leak_between_global_calls(): void
     {
         MockServer::fake([
-            'GET https://api.example.test/users*' => MockResponse::json(['users' => []]),
-            'POST https://api.example.test/users' => MockResponse::created(['id' => 7]),
+            'GET https://api.example.test/users*' => MockResponse::json([
+                'users' => [],
+            ]),
+            'POST https://api.example.test/users' => MockResponse::created([
+                'id' => 7,
+            ]),
         ]);
         MockServer::preventStrayRequests();
 
@@ -50,46 +54,75 @@ final class ClientRequestOptionIsolationTest extends TestCase
     public function test_client_query_options_do_not_leak_between_calls(): void
     {
         MockServer::fake([
-            'GET https://api.example.test/users?active=1' => MockResponse::json(['active' => true]),
-            'GET https://api.example.test/users' => MockResponse::json(['active' => null]),
+            'GET https://api.example.test/users?active=1' => MockResponse::json(
+                ['active' => true],
+            ),
+            'GET https://api.example.test/users' => MockResponse::json([
+                'active' => null,
+            ]),
         ]);
         MockServer::preventStrayRequests();
 
         $client = new Client;
-        $filtered = $client->get('https://api.example.test/users', ['active' => 1]);
+        $filtered = $client->get('https://api.example.test/users', [
+            'active' => 1,
+        ]);
         $all = $client->get('https://api.example.test/users');
 
         $this->assertSame(['active' => true], $filtered->json());
         $this->assertSame(['active' => null], $all->json());
     }
 
-    public function test_base_uri_passed_to_fetch_does_not_mutate_the_global_handler(): void
+    public function test_fetch_base_uri_does_not_mutate_global_handler(): void
     {
         MockServer::fake([
-            'GET https://api.example.test/users' => MockResponse::json(['users' => []]),
+            'GET https://api.example.test/users' => MockResponse::json([
+                'users' => [],
+            ]),
         ]);
         MockServer::preventStrayRequests();
 
         $response = fetch('/users', ['base_uri' => 'https://api.example.test']);
 
         $this->assertSame(['users' => []], $response->json());
-        $this->assertArrayNotHasKey('base_uri', fetch_client()->getHandler()->getOptions());
+        $this->assertArrayNotHasKey(
+            'base_uri',
+            fetch_client()->getHandler()->getOptions(),
+        );
     }
 
     public function test_streaming_query_parameters_are_appended_once(): void
     {
         $history = [];
-        $stack = HandlerStack::create(new MockHandler([
-            new GuzzleResponse(200, ['Content-Type' => 'text/plain'], "ready\n"),
-        ]));
+        $stack = HandlerStack::create(
+            new MockHandler([
+                new GuzzleResponse(
+                    200,
+                    ['Content-Type' => 'text/plain'],
+                    "ready\n",
+                ),
+            ]),
+        );
         $stack->push(Middleware::history($history));
-        $handler = ClientHandler::createWithClient(new GuzzleClient(['handler' => $stack]));
+        $handler = ClientHandler::createWithClient(
+            new GuzzleClient(['handler' => $stack]),
+        );
 
-        $stream = $handler->stream(Method::GET, 'https://api.example.test/logs', [
-            'query' => ['cursor' => 'next'],
-        ]);
+        $stream = $handler->stream(
+            Method::GET,
+            'https://api.example.test/logs',
+            [
+                'query' => ['cursor' => 'next'],
+            ],
+        );
 
-        $this->assertSame('cursor=next', $history[0]['request']->getUri()->getQuery());
-        $this->assertSame(['ready'], iterator_to_array($stream->lines(), false));
+        $this->assertSame(
+            'cursor=next',
+            $history[0]['request']->getUri()->getQuery(),
+        );
+        $this->assertSame(
+            ['ready'],
+            iterator_to_array($stream->lines(), false),
+        );
     }
 }

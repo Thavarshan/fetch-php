@@ -1,6 +1,10 @@
 ---
 name: fetch-php-code-review
-description: Review a Fetch PHP change for correctness, regression risk, public-API/PSR compatibility, static-analysis correctness, test quality, and documentation impact. Use when reviewing a diff, branch, or PR touching src/Fetch, or before opening a PR.
+description:
+    Review a Fetch PHP change for correctness, regression risk, public-API/PSR
+    compatibility, static-analysis correctness, test quality, and documentation
+    impact. Use when reviewing a diff, branch, or PR touching src/Fetch, or
+    before opening a PR.
 ---
 
 # Fetch PHP code review
@@ -20,8 +24,8 @@ git diff --stat main...HEAD
 git diff main...HEAD
 ```
 
-Identify which subsystems changed (Http, Cache, Pool, Events, Middleware,
-async) and pull the matching specialist skill for those.
+Identify which subsystems changed (Http, Cache, Pool, Events, Middleware, async)
+and pull the matching specialist skill for those.
 
 ## Review checklist
 
@@ -32,14 +36,16 @@ async) and pull the matching specialist skill for those.
    `ClientHandler` pipeline in a way that affects unrelated call paths?
 3. **Public API / PSR compat** — any change to a public class, interface,
    signature, helper, enum case, exception, or default triggers
-   `fetch-php-public-api-review`. Confirm PSR-7/PSR-18/PSR-3 contracts still hold.
+   `fetch-php-public-api-review`. Confirm PSR-7/PSR-18/PSR-3 contracts still
+   hold.
 4. **Static analysis** — PHPStan level 6 clean; no new `ignoreErrors` masking a
    real type issue; `declare(strict_types=1)` present in new files.
 5. **Test quality** — new behavior covered; bug fixes have a regression test;
    tests are offline, deterministic, and `snake_case`; failure/cancellation
    paths exercised, not just the happy path.
 6. **Security & secrets** — no credentials/tokens in code, tests, fixtures, or
-   logs; auth/cookie values stay redacted (see `fetch-php-http-security-review`).
+   logs; auth/cookie values stay redacted (see
+   `fetch-php-http-security-review`).
 7. **Docs & changelog** — behavior/API changes reflected in `docs/`, `README`,
    and `CHANGELOG.md`; examples match the real API.
 8. **Scope hygiene** — no unrelated dependency bumps, reformatting, or config

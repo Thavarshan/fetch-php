@@ -1,6 +1,11 @@
 ---
 name: fetch-php-public-api-review
-description: Assess the semantic-versioning and backward-compatibility impact of a Fetch PHP change — public classes/interfaces/method signatures, global helpers, enum cases, exception behavior, PSR contracts, and default values. Use before changing any public surface or default, and to classify a release as patch/minor/major.
+description:
+    Assess the semantic-versioning and backward-compatibility impact of a Fetch
+    PHP change — public classes/interfaces/method signatures, global helpers,
+    enum cases, exception behavior, PSR contracts, and default values. Use
+    before changing any public surface or default, and to classify a release as
+    patch/minor/major.
 ---
 
 # Fetch PHP public-API & semver review
@@ -58,6 +63,7 @@ parameters (or an options array) over changing existing signatures.
 
 ## Red flags — stop
 
-- A signature/default/enum/exception change slipped in as a "fix" with no BC note.
+- A signature/default/enum/exception change slipped in as a "fix" with no BC
+  note.
 - Minimum PHP or a dependency constraint changed without justification.
 - A PSR-7/18/3 method's contract weakened.

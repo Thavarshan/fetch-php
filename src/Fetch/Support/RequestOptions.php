@@ -33,7 +33,13 @@ class RequestOptions
      *
      * @var array<int, string>
      */
-    private const BODY_OPTIONS = ['body', 'json', 'form', 'form_params', 'multipart'];
+    private const BODY_OPTIONS = [
+        'body',
+        'json',
+        'form',
+        'form_params',
+        'multipart',
+    ];
 
     /**
      * Standard Guzzle options that are passed through.
@@ -41,10 +47,29 @@ class RequestOptions
      * @var array<int, string>
      */
     private const GUZZLE_OPTIONS = [
-        'headers', 'json', 'form_params', 'multipart', 'body',
-        'query', 'auth', 'verify', 'proxy', 'cookies', 'allow_redirects',
-        'cert', 'ssl_key', 'stream', 'connect_timeout', 'read_timeout',
-        'debug', 'sink', 'version', 'decode_content', 'curl', 'timeout', 'progress',
+        'headers',
+        'json',
+        'form_params',
+        'multipart',
+        'body',
+        'query',
+        'auth',
+        'verify',
+        'proxy',
+        'cookies',
+        'allow_redirects',
+        'cert',
+        'ssl_key',
+        'stream',
+        'connect_timeout',
+        'read_timeout',
+        'debug',
+        'sink',
+        'version',
+        'decode_content',
+        'curl',
+        'timeout',
+        'progress',
     ];
 
     /**
@@ -53,9 +78,19 @@ class RequestOptions
      * @var array<int, string>
      */
     private const FETCH_OPTIONS = [
-        'method', 'uri', 'base_uri', 'async', 'retries', 'max_retries',
-        'retry_delay', 'retry_status_codes', 'retry_exceptions',
-        'cache', 'profiler', 'content_type', 'token',
+        'method',
+        'uri',
+        'base_uri',
+        'async',
+        'retries',
+        'max_retries',
+        'retry_delay',
+        'retry_status_codes',
+        'retry_exceptions',
+        'cache',
+        'profiler',
+        'content_type',
+        'token',
     ];
 
     /**
@@ -79,17 +114,31 @@ class RequestOptions
 
             // Deep merge headers
             if (isset($options['headers']) && isset($result['headers'])) {
-                $options['headers'] = array_merge($result['headers'], $options['headers']);
+                $options['headers'] = array_merge(
+                    $result['headers'],
+                    $options['headers'],
+                );
             }
 
             // Deep merge query parameters
             if (isset($options['query']) && isset($result['query'])) {
-                $options['query'] = array_merge($result['query'], $options['query']);
+                $options['query'] = array_merge(
+                    $result['query'],
+                    $options['query'],
+                );
             }
 
             // Deep merge cache options
-            if (isset($options['cache']) && is_array($options['cache']) && isset($result['cache']) && is_array($result['cache'])) {
-                $options['cache'] = array_merge($result['cache'], $options['cache']);
+            if (
+                isset($options['cache']) &&
+                is_array($options['cache']) &&
+                isset($result['cache']) &&
+                is_array($result['cache'])
+            ) {
+                $options['cache'] = array_merge(
+                    $result['cache'],
+                    $options['cache'],
+                );
             }
 
             $result = array_merge($result, $options);
@@ -101,7 +150,8 @@ class RequestOptions
     /**
      * Normalize option keys to canonical names.
      *
-     * This method standardizes option keys while maintaining backward compatibility:
+     * This method standardizes option keys while maintaining backward
+     *     compatibility:
      * - 'retries' → kept as canonical form (more concise)
      * - 'max_retries' → normalized to 'retries'
      *
@@ -139,17 +189,24 @@ class RequestOptions
         $headers = $options['headers'] ?? [];
         $contentTypeOverride = $options['content_type'] ?? null;
 
-        $setContentType = static function (ContentType|string $type) use (&$headers, $contentTypeOverride): void {
+        $setContentType = static function (ContentType|string $type) use (
+            &$headers,
+            $contentTypeOverride,
+        ): void {
             if ($contentTypeOverride !== null) {
-                $headers['Content-Type'] = $contentTypeOverride instanceof ContentType
-                    ? $contentTypeOverride->value
-                    : (string) $contentTypeOverride;
+                $headers['Content-Type'] =
+                    $contentTypeOverride instanceof ContentType
+                        ? $contentTypeOverride->value
+                        : (string) $contentTypeOverride;
 
                 return;
             }
 
             if (! isset($headers['Content-Type'])) {
-                $headers['Content-Type'] = $type instanceof ContentType ? $type->value : (string) $type;
+                $headers['Content-Type'] =
+                    $type instanceof ContentType
+                        ? $type->value
+                        : (string) $type;
             }
         };
 
@@ -164,38 +221,59 @@ class RequestOptions
             $setContentType(ContentType::FORM_URLENCODED);
         } elseif (isset($options['multipart'])) {
             $options = self::stripBodyOptionsExcept($options, ['multipart']);
-            // multipart sets its own content type; ensure header is removed to avoid conflicts
+            // multipart sets its own content type; ensure header is removed to
+            // avoid conflicts
             unset($headers['Content-Type']);
         } elseif (isset($options['body'])) {
             $options = self::stripBodyOptionsExcept($options, ['body']);
             if (is_array($options['body'])) {
-                $explicitContentType = $contentTypeOverride instanceof ContentType
-                    ? $contentTypeOverride->value
-                    : strtolower((string) $contentTypeOverride);
+                $explicitContentType =
+                    $contentTypeOverride instanceof ContentType
+                        ? $contentTypeOverride->value
+                        : strtolower((string) $contentTypeOverride);
 
-                // Check if explicit content type requests JSON or no content type specified
-                $isJsonContentType = $contentTypeOverride === null
-                    || str_contains($explicitContentType, 'json')
-                    || ($contentTypeOverride instanceof ContentType && $contentTypeOverride === ContentType::JSON);
+                // Check if explicit content type requests JSON or no content
+                // type specified
+                $isJsonContentType =
+                    $contentTypeOverride === null ||
+                    str_contains($explicitContentType, 'json') ||
+                    ($contentTypeOverride instanceof ContentType &&
+                        $contentTypeOverride === ContentType::JSON);
 
                 if ($isJsonContentType) {
                     // Convert array body to json option for Guzzle
                     $options['json'] = $options['body'];
                     unset($options['body']);
                     $setContentType(ContentType::JSON);
-                } elseif (str_starts_with($explicitContentType, ContentType::FORM_URLENCODED->value)) {
+                } elseif (
+                    str_starts_with(
+                        $explicitContentType,
+                        ContentType::FORM_URLENCODED->value,
+                    )
+                ) {
                     $body = $options['body'];
-                    $options = self::stripBodyOptionsExcept($options, ['form_params']);
+                    $options = self::stripBodyOptionsExcept($options, [
+                        'form_params',
+                    ]);
                     $options['form_params'] = $body;
                     $setContentType(ContentType::FORM_URLENCODED);
-                } elseif (str_starts_with($explicitContentType, ContentType::MULTIPART->value)) {
+                } elseif (
+                    str_starts_with(
+                        $explicitContentType,
+                        ContentType::MULTIPART->value,
+                    )
+                ) {
                     $body = $options['body'];
-                    $options = self::stripBodyOptionsExcept($options, ['multipart']);
+                    $options = self::stripBodyOptionsExcept($options, [
+                        'multipart',
+                    ]);
                     $options['multipart'] = self::normalizeMultipart($body);
                     unset($headers['Content-Type']);
                 } else {
-                    // Array body with non-JSON content type - encode to string but keep user's content type
-                    // This preserves backward compatibility for withBody($array, 'text/plain') etc.
+                    // Array body with non-JSON content type - encode to string
+                    // but keep user's content type
+                    // This preserves backward compatibility for
+                    // withBody($array, 'text/plain') etc.
                     $options['body'] = json_encode($options['body']);
                     $setContentType($contentTypeOverride);
                 }
@@ -226,35 +304,51 @@ class RequestOptions
         // Validate method
         if (isset($options['method'])) {
             $method = $options['method'];
-            if (! is_string($method) && ! $method instanceof Method) {
-                throw new InvalidArgumentException('Method must be a string or Method enum');
+            if (! is_string($method) && ! ($method instanceof Method)) {
+                throw new InvalidArgumentException(
+                    'Method must be a string or Method enum',
+                );
             }
         }
 
         // Validate timeout
         if (isset($options['timeout'])) {
             if (! is_int($options['timeout']) || $options['timeout'] < 0) {
-                throw new InvalidArgumentException('Timeout must be a non-negative integer');
+                throw new InvalidArgumentException(
+                    'Timeout must be a non-negative integer',
+                );
             }
         }
 
         // Validate retries
         if (isset($options['retries'])) {
             if (! is_int($options['retries']) || $options['retries'] < 0) {
-                throw new InvalidArgumentException('Retries must be a non-negative integer');
+                throw new InvalidArgumentException(
+                    'Retries must be a non-negative integer',
+                );
             }
         }
 
         // Validate retry_delay
         if (isset($options['retry_delay'])) {
-            if (! is_int($options['retry_delay']) || $options['retry_delay'] < 0) {
-                throw new InvalidArgumentException('Retry delay must be a non-negative integer');
+            if (
+                ! is_int($options['retry_delay']) ||
+                $options['retry_delay'] < 0
+            ) {
+                throw new InvalidArgumentException(
+                    'Retry delay must be a non-negative integer',
+                );
             }
         }
 
         // Validate base_uri format
-        if (isset($options['base_uri']) && ! filter_var($options['base_uri'], FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException("Invalid base URI: {$options['base_uri']}");
+        if (
+            isset($options['base_uri']) &&
+            ! filter_var($options['base_uri'], FILTER_VALIDATE_URL)
+        ) {
+            throw new InvalidArgumentException(
+                "Invalid base URI: {$options['base_uri']}",
+            );
         }
     }
 
@@ -304,8 +398,11 @@ class RequestOptions
      * @param  mixed  $credentials  Auth credentials
      * @return array<string, mixed>
      */
-    public static function withAuth(array $options, string $type, mixed $credentials): array
-    {
+    public static function withAuth(
+        array $options,
+        string $type,
+        mixed $credentials,
+    ): array {
         switch (strtolower($type)) {
             case 'basic':
                 if (is_array($credentials) && count($credentials) === 2) {
@@ -373,8 +470,11 @@ class RequestOptions
      *
      * @param  array<string, mixed>  $options
      */
-    public static function get(array $options, string $key, mixed $default = null): mixed
-    {
+    public static function get(
+        array $options,
+        string $key,
+        mixed $default = null,
+    ): mixed {
         return $options[$key] ?? $default;
     }
 
@@ -393,11 +493,15 @@ class RequestOptions
      *
      * @param  array<string, mixed>  $options
      */
-    public static function getMethod(array $options, string $default = 'GET'): string
-    {
+    public static function getMethod(
+        array $options,
+        string $default = 'GET',
+    ): string {
         $method = $options['method'] ?? $default;
 
-        return $method instanceof Method ? $method->value : strtoupper((string) $method);
+        return $method instanceof Method
+            ? $method->value
+            : strtoupper((string) $method);
     }
 
     /**
@@ -413,17 +517,32 @@ class RequestOptions
     /**
      * Normalize multipart array to the expected shape for Guzzle.
      *
-     * Handles both list-style multipart arrays and single-part associative arrays,
+     * Handles both list-style multipart arrays and single-part associative
+     *     arrays,
      * converting them to the standard Guzzle multipart format.
      *
-     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>|array<string, mixed>  $multipart
-     * @return array<int, array{name: string, contents: mixed, headers?: array<string, string>}>
+     * @param  array<int, array{
+     *     name: string,
+     *     contents: mixed,
+     *     headers?: array<string, string>
+     * }>|array<string, mixed>  $multipart
+     * @return array<int, array{
+     *     name: string,
+     *     contents: mixed,
+     *     headers?: array<string, string>
+     * }>
      */
     public static function normalizeMultipart(array $multipart): array
     {
         // Empty array or already a list - return as-is
         if ($multipart === [] || array_is_list($multipart)) {
-            /** @var array<int, array{name: string, contents: mixed, headers?: array<string, string>}> $multipart */
+            /**
+             * @var array<int, array{
+             *     name: string,
+             *     contents: mixed,
+             *     headers?: array<string, string>
+             * }> $multipart
+             */
             return $multipart;
         }
 
@@ -434,7 +553,10 @@ class RequestOptions
         ];
 
         if (isset($multipart['headers']) && is_array($multipart['headers'])) {
-            $part['headers'] = array_map(static fn ($v): string => (string) $v, $multipart['headers']);
+            $part['headers'] = array_map(
+                static fn ($v): string => (string) $v,
+                $multipart['headers'],
+            );
         }
 
         return [$part];
@@ -447,8 +569,10 @@ class RequestOptions
      * @param  array<int, string>  $allowed
      * @return array<string, mixed>
      */
-    protected static function stripBodyOptionsExcept(array $options, array $allowed): array
-    {
+    protected static function stripBodyOptionsExcept(
+        array $options,
+        array $allowed,
+    ): array {
         foreach (self::BODY_OPTIONS as $key) {
             if (! in_array($key, $allowed, true)) {
                 unset($options[$key]);

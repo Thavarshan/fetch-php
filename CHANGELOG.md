@@ -4,31 +4,55 @@
 
 ### Changed
 
-- Upgrade `jerome/matrix` to `^4.0`. Fetch's promise mapper now uses Matrix 4's lazy, keyed scheduler, which bounds work per event-loop tick, preserves input keys, stops queued tasks after failure, and forwards cancellation to active tasks. Mapper concurrency is limited to 200 to protect workers from unsafe caller-supplied limits.
-- Re-export the Matrix 4 helpers from the global Fetch helper file when those global names are available, including `any()` and timeout-aware `await()`; retry delay integers remain milliseconds at the Fetch bridge.
-- Add TRACE and CONNECT request methods; recognize JSON:API, JSON-LD, GeoJSON, and Problem Details media types as JSON.
-- Validate retry status codes and multipart field names. Build multipart requests with Guzzle's binary-safe `MultipartStream`.
-- Route handler-wide defaults through `GlobalServices`, cache decoded response arrays, and map Guzzle transport failures to Fetch's PSR client exceptions.
-- Include `Fetch/Support` in coverage, enforce an 80% line-coverage floor in CI, make assertion-free tests risky, and check local Markdown links during documentation CI.
-- Remove `buildFullUri()` from internal URI resolution; mark external uses deprecated with a Fetch 4.0 removal target.
-- Raise PHPStan to level 8 and tighten internal return and interface annotations to keep the stricter analysis clean.
+- Upgrade `jerome/matrix` to `^4.0`. Fetch's promise mapper now uses Matrix 4's
+  lazy, keyed scheduler, which bounds work per event-loop tick, preserves input
+  keys, stops queued tasks after failure, and forwards cancellation to active
+  tasks. Mapper concurrency is limited to 200 to protect workers from unsafe
+  caller-supplied limits.
+- Re-export the Matrix 4 helpers from the global Fetch helper file when those
+  global names are available, including `any()` and timeout-aware `await()`;
+  retry delay integers remain milliseconds at the Fetch bridge.
+- Add TRACE and CONNECT request methods; recognize JSON:API, JSON-LD, GeoJSON,
+  and Problem Details media types as JSON.
+- Validate retry status codes and multipart field names. Build multipart
+  requests with Guzzle's binary-safe `MultipartStream`.
+- Route handler-wide defaults through `GlobalServices`, cache decoded response
+  arrays, and map Guzzle transport failures to Fetch's PSR client exceptions.
+- Include `Fetch/Support` in coverage, enforce an 80% line-coverage floor in CI,
+  make assertion-free tests risky, and check local Markdown links during
+  documentation CI.
+- Remove `buildFullUri()` from internal URI resolution; mark external uses
+  deprecated with a Fetch 4.0 removal target.
+- Raise PHPStan to level 8 and tighten internal return and interface annotations
+  to keep the stricter analysis clean.
 
 ### Documentation
 
-- Rewrite the README and VitePress guides/API reference to match the current implementation; add offline runnable examples, PHP snippet analysis, and local Markdown fragment checking.
-- Document the blocking nature of Fetch's Matrix promise bridge and the fact that the configured connection pool/DNS cache is not wired into request execution.
+- Rewrite the README and VitePress guides/API reference to match the current
+  implementation; add offline runnable examples, PHP snippet analysis, and local
+  Markdown fragment checking.
+- Document the blocking nature of Fetch's Matrix promise bridge and the fact
+  that the configured connection pool/DNS cache is not wired into request
+  execution.
 
 ### Fixed
 
-- Isolate per-request `Client::fetch()` and global `fetch()` base-URI options in the immutable request context so options do not leak into later requests.
-- Append request query parameters once when building buffered and streamed request URIs.
+- Isolate per-request `Client::fetch()` and global `fetch()` base-URI options in
+  the immutable request context so options do not leak into later requests.
+- Append request query parameters once when building buffered and streamed
+  request URIs.
 
 ### Compatibility
 
-- Matrix 4 rejects cancelled operations with `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch promises should handle this exception when cancelling pending work.
-- `Client::fetch()` and verb helpers now declare `PromiseInterface` in their return unions when called with async request options. Synchronous calls still return a response; callers enabling async mode should await or chain the returned promise.
+- Matrix 4 rejects cancelled operations with
+  `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch
+  promises should handle this exception when cancelling pending work.
+- `Client::fetch()` and verb helpers now declare `PromiseInterface` in their
+  return unions when called with async request options. Synchronous calls still
+  return a response; callers enabling async mode should await or chain the
+  returned promise.
 
-## [v3.8.1](https://github.com/Thavarshan/fetch-php/compare/3.8.0...3.8.1) - 2026-07-23
+## [v3.8.1] - 2026-07-23
 
 Development-tooling and documentation release. **No runtime library changes** —
 the public API, behavior, and dependencies are unchanged.
@@ -36,11 +60,12 @@ the public API, behavior, and dependencies are unchanged.
 ### Added
 
 - **Cross-agent AI development configuration** targeting Claude Code and OpenAI
-  Codex while staying compatible with the `AGENTS.md` / Agent Skills standard:
-  a canonical `AGENTS.md`, a `CLAUDE.md` that imports it, 10 task/review skills,
-  6 specialist subagents, 7 path-scoped rules, conservative `.claude/settings.json`
-  permissions with a destructive-command guard hook, a `docs/ai/` guide with
-  license-verified sources, and a dependency-free validator (`composer ai:validate`).
+  Codex while staying compatible with the `AGENTS.md` / Agent Skills standard: a
+  canonical `AGENTS.md`, a `CLAUDE.md` that imports it, 10 task/review skills, 6
+  specialist subagents, 7 path-scoped rules, conservative
+  `.claude/settings.json` permissions with a destructive-command guard hook, a
+  `docs/ai/` guide with license-verified sources, and a dependency-free
+  validator (`composer ai:validate`).
 
 ### Changed
 
@@ -50,143 +75,216 @@ the public API, behavior, and dependencies are unchanged.
   PHP 8.3/8.4/8.5 CI matrix, aligned the `jerome/matrix ^3.4` constraint, and
   clarified `NO_NETWORK=1` semantics.
 
-## [v3.8.0](https://github.com/Thavarshan/fetch-php/compare/3.7.0...3.8.0) - 2026-07-21
+## [v3.8.0] - 2026-07-21
 
 ### Added
 
-- **Request/Response Hooks & Events system** ([#41](https://github.com/Thavarshan/fetch-php/issues/41)) for observing the request lifecycle:
-  - Six lifecycle events under `Fetch\Events`: `RequestEvent` (`request.sending`), `ResponseEvent` (`response.received`), `ErrorEvent` (`error.occurred`), `RetryEvent` (`request.retrying`), `TimeoutEvent` (`request.timeout`), and `RedirectEvent` (`request.redirecting`), all extending `FetchEvent`.
-  - `Fetch\Events\EventDispatcher` (with `Fetch\Interfaces\EventDispatcher`) — a priority-aware dispatcher where a throwing listener is isolated and logged rather than breaking the request.
-  - Fluent registration on `ClientHandler` and `Client`: `on()`, `onRequest()`, `onResponse()`, `onError()`, `onRetry()`, `onTimeout()`, `onRedirect()`, and `hooks([...])` with friendly aliases (`before_send`, `after_response`, `on_error`, `on_retry`, `on_timeout`, `on_redirect`).
-  - A correlation ID generated per request and shared across every event for that request.
-  - Events fire in both synchronous and asynchronous modes and for cache/mock hits; redirects are observed through a Guzzle `on_redirect` hook wired only when a redirect listener is registered. Dispatch is lazy — with no listeners registered the overhead is a single array check.
+- **Request/Response Hooks & Events system**
+  ([#41](https://github.com/Thavarshan/fetch-php/issues/41)) for observing the
+  request lifecycle:
+    - Six lifecycle events under `Fetch\Events`: `RequestEvent`
+      (`request.sending`), `ResponseEvent` (`response.received`), `ErrorEvent`
+      (`error.occurred`), `RetryEvent` (`request.retrying`), `TimeoutEvent`
+      (`request.timeout`), and `RedirectEvent` (`request.redirecting`), all
+      extending `FetchEvent`.
+    - `Fetch\Events\EventDispatcher` (with `Fetch\Interfaces\EventDispatcher`) —
+      a priority-aware dispatcher where a throwing listener is isolated and
+      logged rather than breaking the request.
+    - Fluent registration on `ClientHandler` and `Client`: `on()`,
+      `onRequest()`, `onResponse()`, `onError()`, `onRetry()`, `onTimeout()`,
+      `onRedirect()`, and `hooks([...])` with friendly aliases (`before_send`,
+      `after_response`, `on_error`, `on_retry`, `on_timeout`, `on_redirect`).
+    - A correlation ID generated per request and shared across every event for
+      that request.
+    - Events fire in both synchronous and asynchronous modes and for cache/mock
+      hits; redirects are observed through a Guzzle `on_redirect` hook wired
+      only when a redirect listener is registered. Dispatch is lazy — with no
+      listeners registered the overhead is a single array check.
 
 ### Fixed
 
-- Retry logging no longer throws `InvalidArgumentException: URI cannot be empty` for statelessly dispatched requests; `ClientHandler::logRetry()` now reads the raw URI option instead of resolving handler-state URIs.
+- Retry logging no longer throws `InvalidArgumentException: URI cannot be empty`
+  for statelessly dispatched requests; `ClientHandler::logRetry()` now reads the
+  raw URI option instead of resolving handler-state URIs.
 
-## [v3.7.0](https://github.com/Thavarshan/fetch-php/compare/3.6.0...3.7.0) - 2026-07-21
-
-### Added
-
-- **Middleware/Interceptor system** ([#39](https://github.com/Thavarshan/fetch-php/issues/39)) for wrapping the request/response lifecycle with cross-cutting concerns:
-  - `Fetch\Interfaces\Middleware` — `handle(RequestInterface $request, callable $next)` contract; plain callables with the same signature are accepted anywhere a middleware is.
-  - `Fetch\Http\MiddlewarePipeline` — composes an ordered, outermost-first stack into a single onion around the core request handler; transport-agnostic across sync responses and async promises.
-  - `Fetch\Concerns\ManagesMiddleware` — `addMiddleware()`, `middleware()`, `withoutMiddleware()`, and `getMiddleware()` on `ClientHandler` and `Client`, with priority ordering (highest runs first, stable on ties).
-  - Conditional configuration via `when()` / `unless()`.
-  - Middleware can modify the request, short-circuit with any PSR-7 response (coerced into a buffered `Response`), inspect/modify the response, and run in both synchronous and asynchronous modes. They sit outside the built-in mocking, caching, and retry logic.
-  - Built-in middleware: `Fetch\Middleware\AddHeadersMiddleware` and `Fetch\Middleware\LoggingMiddleware`.
-
-## [v3.6.0](https://github.com/Thavarshan/fetch-php/compare/3.5.1...3.6.0) - 2026-07-21
+## [v3.7.0] - 2026-07-21
 
 ### Added
 
-- **Streaming responses and Server-Sent Events** for consuming response bodies incrementally instead of buffering them into memory:
-  - `Fetch\Http\StreamedResponse` — an unbuffered response returned by the new `stream()` methods; pull raw chunks via `stream()`, newline-delimited lines via `lines()`, iterate the object directly, or fall back to a buffered `Response` with `buffer()`.
-  - `Fetch\Http\EventSource` — a WHATWG-compliant `text/event-stream` parser that lazily yields events and tracks `lastEventId()`/`reconnectionTime()`.
-  - `Fetch\Http\ServerSentEvent` — an immutable event value object with `data`, `type`, `id`, and `retry` fields plus `json()` and `isDone()` helpers.
-  - `stream()` and `sse()` methods on `ClientHandler` and `Client`, exposed through the `RequestExecutor` interface.
-  - `fetch_stream()` and `fetch_sse()` global helper functions mirroring the existing `fetch()`/`get()` style.
-  - `ContentType::EVENT_STREAM` and `ContentType::NDJSON` cases with `isEventStream()`/`isStreamable()` helpers.
+- **Middleware/Interceptor system**
+  ([#39](https://github.com/Thavarshan/fetch-php/issues/39)) for wrapping the
+  request/response lifecycle with cross-cutting concerns:
+    - `Fetch\Interfaces\Middleware` —
+      `handle(RequestInterface $request, callable $next)` contract; plain
+      callables with the same signature are accepted anywhere a middleware is.
+    - `Fetch\Http\MiddlewarePipeline` — composes an ordered, outermost-first
+      stack into a single onion around the core request handler;
+      transport-agnostic across sync responses and async promises.
+    - `Fetch\Concerns\ManagesMiddleware` — `addMiddleware()`, `middleware()`,
+      `withoutMiddleware()`, and `getMiddleware()` on `ClientHandler` and
+      `Client`, with priority ordering (highest runs first, stable on ties).
+    - Conditional configuration via `when()` / `unless()`.
+    - Middleware can modify the request, short-circuit with any PSR-7 response
+      (coerced into a buffered `Response`), inspect/modify the response, and run
+      in both synchronous and asynchronous modes. They sit outside the built-in
+      mocking, caching, and retry logic.
+    - Built-in middleware: `Fetch\Middleware\AddHeadersMiddleware` and
+      `Fetch\Middleware\LoggingMiddleware`.
+
+## [v3.6.0] - 2026-07-21
+
+### Added
+
+- **Streaming responses and Server-Sent Events** for consuming response bodies
+  incrementally instead of buffering them into memory:
+    - `Fetch\Http\StreamedResponse` — an unbuffered response returned by the new
+      `stream()` methods; pull raw chunks via `stream()`, newline-delimited
+      lines via `lines()`, iterate the object directly, or fall back to a
+      buffered `Response` with `buffer()`.
+    - `Fetch\Http\EventSource` — a WHATWG-compliant `text/event-stream` parser
+      that lazily yields events and tracks `lastEventId()`/`reconnectionTime()`.
+    - `Fetch\Http\ServerSentEvent` — an immutable event value object with
+      `data`, `type`, `id`, and `retry` fields plus `json()` and `isDone()`
+      helpers.
+    - `stream()` and `sse()` methods on `ClientHandler` and `Client`, exposed
+      through the `RequestExecutor` interface.
+    - `fetch_stream()` and `fetch_sse()` global helper functions mirroring the
+      existing `fetch()`/`get()` style.
+    - `ContentType::EVENT_STREAM` and `ContentType::NDJSON` cases with
+      `isEventStream()`/`isStreamable()` helpers.
 - Added PHP 8.5 to the CI test matrix across Ubuntu, Windows, and macOS.
 
 ### Changed
 
-- Streaming requests are synchronous and intentionally bypass the response cache, consistent with the library's existing sync-only caching behaviour.
+- Streaming requests are synchronous and intentionally bypass the response
+  cache, consistent with the library's existing sync-only caching behaviour.
 
-## [v3.5.1](https://github.com/Thavarshan/fetch-php/compare/3.5.0...3.5.1) - 2026-06-06
+## [v3.5.1] - 2026-06-06
 
 ### Changed
 
-- Pinned Duster to the known-compatible 3.3.0 release so tag builds do not drift onto stricter formatter rules without an intentional style migration.
+- Pinned Duster to the known-compatible 3.3.0 release so tag builds do not drift
+  onto stricter formatter rules without an intentional style migration.
 
-## [v3.5.0](https://github.com/Thavarshan/fetch-php/compare/3.4.1...3.5.0) - 2026-06-06
+## [v3.5.0] - 2026-06-06
 
 ### Added
 
-- Introduced a custom VitePress home page and shared docs theme components for a clearer first-run documentation experience.
-- Added lucide-powered feature icons and refreshed documentation examples around the JavaScript-style Fetch PHP API.
+- Introduced a custom VitePress home page and shared docs theme components for a
+  clearer first-run documentation experience.
+- Added lucide-powered feature icons and refreshed documentation examples around
+  the JavaScript-style Fetch PHP API.
 
 ### Changed
 
-- Updated Matrix helper imports throughout the README and documentation to consistently use the `Matrix\Support` namespace.
-- Refined homepage copy and feature descriptions to better explain Fetch PHP's JavaScript-like request flow, async helpers, caching, retries, debugging, and testing utilities.
-- Hardened the tag release workflow now that package versions are derived from Git tags instead of a `version` field in `composer.json`.
-- Expanded the tag release workflow setup to match package extension requirements and run the release test suite with `NO_NETWORK=1`.
+- Updated Matrix helper imports throughout the README and documentation to
+  consistently use the `Matrix\Support` namespace.
+- Refined homepage copy and feature descriptions to better explain Fetch PHP's
+  JavaScript-like request flow, async helpers, caching, retries, debugging, and
+  testing utilities.
+- Hardened the tag release workflow now that package versions are derived from
+  Git tags instead of a `version` field in `composer.json`.
+- Expanded the tag release workflow setup to match package extension
+  requirements and run the release test suite with `NO_NETWORK=1`.
 
 ### Fixed
 
-- Corrected stale GitHub/support links in the installation guide and repository support metadata.
-- Removed a stale cache comment that referenced the old `ManagesCache` trait name.
+- Corrected stale GitHub/support links in the installation guide and repository
+  support metadata.
+- Removed a stale cache comment that referenced the old `ManagesCache` trait
+  name.
 
-## [v3.4.1](https://github.com/Thavarshan/fetch-php/compare/v3.4.0...v3.4.1) - 2025-12-14
+## [v3.4.1] - 2025-12-14
 
 ### Added
 
-- Introduced `CODE_MAP.md` as an internal reference of every public helper, trait, interface, and subsystem so docs/tests can stay aligned with the codebase.
-- Added a FetchWatch-style “health monitor” example demonstrating retries, pooling, caching, async batching, and debug snapshots in `docs/examples/api-integration.md`.
+- Introduced `CODE_MAP.md` as an internal reference of every public helper,
+  trait, interface, and subsystem so docs/tests can stay aligned with the
+  codebase.
+- Added a FetchWatch-style “health monitor” example demonstrating retries,
+  pooling, caching, async batching, and debug snapshots in
+  `docs/examples/api-integration.md`.
 
 ### Changed
 
-- Expanded the API docs for `fetch()`, `ClientHandler`, and `Response` to cover the full option surface (cache/debug/profiler/async) and newly exposed helpers (debug snapshots, pooling controls, cache methods).
-- Clarified retry monitoring guidance to rely on PSR-3 logs or explicit counters instead of the `debug()` array, and documented sync-only caching behaviour for async requests.
+- Expanded the API docs for `fetch()`, `ClientHandler`, and `Response` to cover
+  the full option surface (cache/debug/profiler/async) and newly exposed helpers
+  (debug snapshots, pooling controls, cache methods).
+- Clarified retry monitoring guidance to rely on PSR-3 logs or explicit counters
+  instead of the `debug()` array, and documented sync-only caching behaviour for
+  async requests.
 
 ### Fixed
 
-- Removed references to the non-existent `Fetch\Exceptions\TimeoutException` across guides and examples, explaining how timeouts bubble up via `NetworkException` or Matrix’s `TimeoutException`.
-- Updated error-handling documentation to disambiguate timeout handling and ensure users catch the correct exception classes.
+- Removed references to the non-existent `Fetch\Exceptions\TimeoutException`
+  across guides and examples, explaining how timeouts bubble up via
+  `NetworkException` or Matrix’s `TimeoutException`.
+- Updated error-handling documentation to disambiguate timeout handling and
+  ensure users catch the correct exception classes.
 
-## [v3.4.0](https://github.com/Thavarshan/fetch-php/compare/v3.3.0...v3.4.0) - 2025-12-07
+## [v3.4.0] - 2025-12-07
 
 ### Added
 
 - **RFC 7234 HTTP Caching Support** with intelligent cache control:
-  - `MemoryCache` for fast in-memory caching
-  - `FileCache` for persistent disk-based caching with TTL support
-  - `CacheControl` parser for RFC 7234 compliant cache directive handling
-  - `CacheKeyGenerator` with collision-resistant SHA-256 hashing
-  - `CachedResponse` wrapper with metadata and validation support
-  - `ManagesCache` trait integrated into `ClientHandler` for transparent caching
-  - Automatic cache revalidation with `If-None-Match` and `If-Modified-Since` headers
-  - Support for `Cache-Control`, `ETag`, `Last-Modified`, `Expires`, `Age`, and `Vary` headers
-  - Configurable cache TTL, stale responses, and revalidation strategies
-  - 802 new test assertions for caching functionality
+    - `MemoryCache` for fast in-memory caching
+    - `FileCache` for persistent disk-based caching with TTL support
+    - `CacheControl` parser for RFC 7234 compliant cache directive handling
+    - `CacheKeyGenerator` with collision-resistant SHA-256 hashing
+    - `CachedResponse` wrapper with metadata and validation support
+    - `ManagesCache` trait integrated into `ClientHandler` for transparent
+      caching
+    - Automatic cache revalidation with `If-None-Match` and `If-Modified-Since`
+      headers
+    - Support for `Cache-Control`, `ETag`, `Last-Modified`, `Expires`, `Age`,
+      and `Vary` headers
+    - Configurable cache TTL, stale responses, and revalidation strategies
+    - 802 new test assertions for caching functionality
 
 - **Connection Pooling & HTTP/2 Support** for improved performance:
-  - `ConnectionPool` for managing persistent connections across hosts
-  - `HostConnectionPool` for per-host connection management with limits
-  - `DnsCache` for caching DNS lookups to reduce resolution overhead
-  - `Connection` class for tracking connection state and reuse
-  - `PoolConfiguration` for customizable pool settings (max connections, idle timeout, TTL)
-  - `Http2Configuration` for HTTP/2 multiplexing and push support
-  - `ManagesConnectionPool` trait with connection pool lifecycle management
-  - Automatic connection recycling and health monitoring
-  - 558 new test assertions for connection pooling
+    - `ConnectionPool` for managing persistent connections across hosts
+    - `HostConnectionPool` for per-host connection management with limits
+    - `DnsCache` for caching DNS lookups to reduce resolution overhead
+    - `Connection` class for tracking connection state and reuse
+    - `PoolConfiguration` for customizable pool settings (max connections, idle
+      timeout, TTL)
+    - `Http2Configuration` for HTTP/2 multiplexing and push support
+    - `ManagesConnectionPool` trait with connection pool lifecycle management
+    - Automatic connection recycling and health monitoring
+    - 558 new test assertions for connection pooling
 
 - **Debugging & Profiling Tools** for request analysis:
-  - `DebugInfo` class capturing detailed request/response information
-  - `FetchProfiler` for comprehensive performance metrics and bottleneck detection
-  - `ManagesDebugAndProfiling` trait for debug mode support
-  - Sensitive header redaction and sanitization methods (Authorization, API keys, tokens)
-  - Timing breakdown: DNS lookup, connection, TLS handshake, TTFB, transfer times
-  - Memory usage tracking and cURL transfer statistics
-  - Debug mode with detailed logging and inspection capabilities
-  - 570 new test assertions for debugging/profiling features
+    - `DebugInfo` class capturing detailed request/response information
+    - `FetchProfiler` for comprehensive performance metrics and bottleneck
+      detection
+    - `ManagesDebugAndProfiling` trait for debug mode support
+    - Sensitive header redaction and sanitization methods (Authorization, API
+      keys, tokens)
+    - Timing breakdown: DNS lookup, connection, TLS handshake, TTFB, transfer
+      times
+    - Memory usage tracking and cURL transfer statistics
+    - Debug mode with detailed logging and inspection capabilities
+    - 570 new test assertions for debugging/profiling features
 
 - New interfaces for extensibility:
-  - `CacheableHandler` for cache manager access
-  - `CacheableRequestHandler` for cache operations
-  - `DebuggableHandler` for debug/profiling support
-  - `PoolAwareHandler` for connection pool management
+    - `CacheableHandler` for cache manager access
+    - `CacheableRequestHandler` for cache operations
+    - `DebuggableHandler` for debug/profiling support
+    - `PoolAwareHandler` for connection pool management
 
 ### Changed
 
-- Refactored `ClientHandler` interface to extend multiple focused interfaces for better separation of concerns
+- Refactored `ClientHandler` interface to extend multiple focused interfaces for
+  better separation of concerns
 - Enhanced `PerformsHttpRequests` trait with integrated caching support
-- Improved PHPDoc comments with detailed parameter types for better IDE support and static analysis
-- Updated method signatures in `RequestConfigurator` to return specific types instead of `self`
-- Streamlined pre-commit script to use Composer commands instead of shell commands
-- Enhanced type hints across `CacheManager`, `ManagesDebugAndProfiling`, `ManagesRetries`, and `PerformsHttpRequests` traits
+- Improved PHPDoc comments with detailed parameter types for better IDE support
+  and static analysis
+- Updated method signatures in `RequestConfigurator` to return specific types
+  instead of `self`
+- Streamlined pre-commit script to use Composer commands instead of shell
+  commands
+- Enhanced type hints across `CacheManager`, `ManagesDebugAndProfiling`,
+  `ManagesRetries`, and `PerformsHttpRequests` traits
 
 ### Fixed
 
@@ -197,23 +295,29 @@ the public API, behavior, and dependencies are unchanged.
 - Fixed status code handling consistency across caching layer
 - Improved URI handling in connection pool exceptions
 - Corrected time-to-first-byte calculation in profiling metrics
-- Enhanced code style consistency: proper namespace imports, class element ordering, and PHPDoc cleanup
+- Enhanced code style consistency: proper namespace imports, class element
+  ordering, and PHPDoc cleanup
 
-**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/v3.3.0...v3.4.0>
+**Full Changelog**:
+<https://github.com/Thavarshan/fetch-php/compare/v3.3.0...v3.4.0>
 
-## [v3.3.0](https://github.com/Thavarshan/fetch-php/compare/v3.2.3...v3.3.0) - 2025-01-17
+## [v3.3.0] - 2025-01-17
 
 ### Added
 
 - **Comprehensive Testing Utilities** inspired by Laravel's HTTP client testing:
-  - `MockServer` with URL pattern matching (wildcards, method-specific, callbacks)
-  - `MockResponse` fluent builder with convenience methods for all HTTP status codes
-  - `MockResponseSequence` for testing retry logic and flaky endpoints
-  - `Recorder` for capturing and replaying request/response pairs
-  - Comprehensive assertion helpers (`assertSent()`, `assertNotSent()`, `assertSentCount()`, `assertNothingSent()`)
-  - Request recording with JSON export/import for test fixtures
-  - Stray request prevention with allowlist support
-- `HandlesMocking` trait integrated into `ClientHandler` for request interception
+    - `MockServer` with URL pattern matching (wildcards, method-specific,
+      callbacks)
+    - `MockResponse` fluent builder with convenience methods for all HTTP status
+      codes
+    - `MockResponseSequence` for testing retry logic and flaky endpoints
+    - `Recorder` for capturing and replaying request/response pairs
+    - Comprehensive assertion helpers (`assertSent()`, `assertNotSent()`,
+      `assertSentCount()`, `assertNothingSent()`)
+    - Request recording with JSON export/import for test fixtures
+    - Stray request prevention with allowlist support
+- `HandlesMocking` trait integrated into `ClientHandler` for request
+  interception
 - `Request::createFromBase()` method for PSR-7 request conversion
 - 117 new tests with 288 assertions for testing utilities
 - Comprehensive testing documentation in `docs/guide/testing.md` (617 lines)
@@ -227,10 +331,12 @@ the public API, behavior, and dependencies are unchanged.
 
 ### Fixed
 
-- Fixed async helper function imports to use correct `Matrix\Support\*` namespace:
-  - Updated imports in `ManagesPromises` trait (`async`, `await`, `all`, `any`, `race`, `reject`, `resolve`, `timeout`)
-  - Updated imports in `PerformsHttpRequests` trait (`async`)
-  - Updated imports in `ManagesPromisesTest` and `AsyncRequestsTest`
+- Fixed async helper function imports to use correct `Matrix\Support\*`
+  namespace:
+    - Updated imports in `ManagesPromises` trait (`async`, `await`, `all`,
+      `any`, `race`, `reject`, `resolve`, `timeout`)
+    - Updated imports in `PerformsHttpRequests` trait (`async`)
+    - Updated imports in `ManagesPromisesTest` and `AsyncRequestsTest`
 - All 282 tests now passing with 841 assertions
 
 ### Removed
@@ -238,109 +344,158 @@ the public API, behavior, and dependencies are unchanged.
 - Removed Dependabot configuration (`dependabot.yml`)
 - Removed Dependabot auto-merge workflow
 
-**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/v3.2.3...v3.3.0>
+**Full Changelog**:
+<https://github.com/Thavarshan/fetch-php/compare/v3.2.3...v3.3.0>
 
-## [v3.2.3](https://github.com/Thavarshan/fetch-php/compare/v3.2.2...v3.2.3) - 2025-05-24
+## [v3.2.3] - 2025-05-24
 
 ### Added
 
-- Comprehensive test coverage for array body handling in `ConfiguresRequestsTest`
+- Comprehensive test coverage for array body handling in
+  `ConfiguresRequestsTest`
 - Explicit option conflict prevention in request body configuration
 - Better error prevention for Guzzle HTTP client integration
 
 ### Changed
 
-- `ConfiguresRequests::withBody()` method now ensures mutual exclusivity of body-related options
-- Request option handling now explicitly removes conflicting options (`json`, `body`, `form_params`, `multipart`)
+- `ConfiguresRequests::withBody()` method now ensures mutual exclusivity of
+  body-related options
+- Request option handling now explicitly removes conflicting options (`json`,
+  `body`, `form_params`, `multipart`)
 - Improved reliability of JSON array requests by preventing option conflicts
 
 ### Fixed
 
-- **BREAKING FIX**: Resolved Guzzle `InvalidArgumentException` when sending POST requests with array bodies
-- Fixed issue where both `json` and `body` options were set simultaneously, causing Guzzle to reject requests
-- Eliminated "Passing in the 'body' request option as an array to send a request is not supported" error
-- Restored ability to send structured JSON data using PHP arrays in request bodies
-- Fixed helper functions (`post()`, `put()`, `patch()`, etc.) failing with array payloads
+- **BREAKING FIX**: Resolved Guzzle `InvalidArgumentException` when sending POST
+  requests with array bodies
+- Fixed issue where both `json` and `body` options were set simultaneously,
+  causing Guzzle to reject requests
+- Eliminated "Passing in the 'body' request option as an array to send a request
+  is not supported" error
+- Restored ability to send structured JSON data using PHP arrays in request
+  bodies
+- Fixed helper functions (`post()`, `put()`, `patch()`, etc.) failing with array
+  payloads
 
-**Full Changelog**: <https://github.com/Thavarshan/fetch-php/compare/3.2.2...3.2.3>
+**Full Changelog**:
+<https://github.com/Thavarshan/fetch-php/compare/3.2.2...3.2.3>
 
-## [v3.2.2](https://github.com/Thavarshan/fetch-php/compare/v3.2.1...v3.2.2) - 2025-05-19
+## [v3.2.2] - 2025-05-19
 
 ### Fixed
 
-- "Fatal error: Uncaught Error: Interface `Psr\Log\LoggerAwareInterface` not found" closes #21
+- "Fatal error: Uncaught Error: Interface `Psr\Log\LoggerAwareInterface` not
+  found" closes #21
 
-## [v3.2.1](https://github.com/Thavarshan/fetch-php/compare/v3.2.0...v3.2.1) - 2025-05-17
+## [v3.2.1] - 2025-05-17
 
 ### Changed
 
 - Updated documentation
 - Updated dependencies
 
-## [v3.2.0](https://github.com/Thavarshan/fetch-php/compare/v3.1.1...v3.2.0) - 2025-05-16
+## [v3.2.0] - 2025-05-16
 
 ### Added
 
-- Added tests for various HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS) with appropriate assertions.
+- Added tests for various HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS)
+  with appropriate assertions.
 
 ### Changed
 
-- Simplified **`ManagesRetriesTest`** by using a mock class for retry-logic testing.
-- Consolidated tests for retryable status codes and exceptions into a single method.
-- Updated **`PerformsHttpRequestsTest`** to use `GuzzleHttp` client mocks for more accurate request simulation.
-- Enhanced exception-handling tests to verify error messages and retry behaviour.
+- Simplified **`ManagesRetriesTest`** by using a mock class for retry-logic
+  testing.
+- Consolidated tests for retryable status codes and exceptions into a single
+  method.
+- Updated **`PerformsHttpRequestsTest`** to use `GuzzleHttp` client mocks for
+  more accurate request simulation.
+- Enhanced exception-handling tests to verify error messages and retry
+  behaviour.
 - Removed unnecessary reflection methods and streamlined test setup.
 
 ### Fixed
 
 - Improved back-off delay calculations in retry tests to ensure correct timing.
 
-**Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/3.1.1...3.2.0](https://github.com/Thavarshan/fetch-php/compare/3.1.1...3.2.0)
+**Full Changelog**:
+[Full changelog][v3.2.0]
 
-## [v3.1.1](https://github.com/Thavarshan/fetch-php/compare/v3.1.0...v3.1.1) - 2025-05-16
+## [v3.1.1] - 2025-05-16
 
 ### Added
 
-- Implemented the missing `finalizeRequest()` method in the `PerformsHttpRequests` trait. This method centralizes request finalization logic, enabling internal shortcut methods like `get()`, `post()`, etc., to function correctly.
+- Implemented the missing `finalizeRequest()` method in the
+  `PerformsHttpRequests` trait. This method centralizes request finalization
+  logic, enabling internal shortcut methods like `get()`, `post()`, etc., to
+  function correctly.
 
 ### Changed
 
-- Internal shortcut HTTP methods (`get()`, `post()`, `put()`, etc.) in `PerformsHttpRequests` now route through the newly added `finalizeRequest()` method for consistent request handling.
+- Internal shortcut HTTP methods (`get()`, `post()`, `put()`, etc.) in
+  `PerformsHttpRequests` now route through the newly added `finalizeRequest()`
+  method for consistent request handling.
 
 ### Fixed
 
-- Fixed a fatal error caused by calling an undefined `finalizeRequest()` method in `ClientHandler`. The missing method has now been properly defined and implemented.
+- Fixed a fatal error caused by calling an undefined `finalizeRequest()` method
+  in `ClientHandler`. The missing method has now been properly defined and
+  implemented.
 
-## [v3.1.0](https://github.com/Thavarshan/fetch-php/compare/v3.0.0...v3.1.0) - 2025-05-10
+## [v3.1.0] - 2025-05-10
 
 ### Added
 
-- **PSR-18 Client**: `Fetch\Http\Client` now implements `Psr\Http\Client\ClientInterface` for drop-in interoperability.
+- **PSR-18 Client**: `Fetch\Http\Client` now implements
+  `Psr\Http\Client\ClientInterface` for drop-in interoperability.
 
-- **Fluent Request Builder**: Chainable helpers on `ClientHandler` for headers, query params, JSON/form/multipart bodies, bearer token, basic auth, timeouts, redirects, cookies, proxy, certificates.
+- **Fluent Request Builder**: Chainable helpers on `ClientHandler` for headers,
+  query params, JSON/form/multipart bodies, bearer token, basic auth, timeouts,
+  redirects, cookies, proxy, certificates.
 
-- **Async/Promise Support**: Built-in ReactPHP-style promises (`async()`, `await()`, `all()`, `race()`, `any()`, `sequence()`), with `->async()` toggle and `wrapAsync()`/`awaitPromise()` helpers.
+- **Async/Promise Support**: Built-in ReactPHP-style promises (`async()`,
+  `await()`, `all()`, `race()`, `any()`, `sequence()`), with `->async()` toggle
+  and `wrapAsync()`/`awaitPromise()` helpers.
 
-- **Automatic Retries**: Configurable max retries, retry delay, exponential backoff with jitter, and retry-on-status (408, 429, 5xx) or exceptions (`ConnectException`).
+- **Automatic Retries**: Configurable max retries, retry delay, exponential
+  backoff with jitter, and retry-on-status (408, 429, 5xx) or exceptions
+  (`ConnectException`).
 
-- **PSR-3 Logging**: Optional `LoggerInterface` injection on `Client` and `ClientHandler` with info/debug/error logs and sensitive-data masking for retries, requests, and responses.
+- **PSR-3 Logging**: Optional `LoggerInterface` injection on `Client` and
+  `ClientHandler` with info/debug/error logs and sensitive-data masking for
+  retries, requests, and responses.
 
 - **Immutable PSR-7 Extensions**:
 
-  - `Fetch\Http\Request` extends Guzzle’s PSR-7 `Request` with immutability traits and JSON/form/multipart constructors.
-  - `Fetch\Http\Response` extends Guzzle’s PSR-7 `Response` with buffered body, array-access to JSON payloads, and helpers: `->json()`, `->text()`, `->xml()`, `->blob()`, `->arrayBuffer()`, status inspectors, etc.
+    - `Fetch\Http\Request` extends Guzzle’s PSR-7 `Request` with immutability
+      traits and JSON/form/multipart constructors.
+    - `Fetch\Http\Response` extends Guzzle’s PSR-7 `Response` with buffered
+      body, array-access to JSON payloads, and helpers: `->json()`, `->text()`,
+      `->xml()`, `->blob()`, `->arrayBuffer()`, status inspectors, etc.
 
-- **Enums for Safety**: `Fetch\Enum\Method`, `ContentType`, and `Status` enums for validating methods, content types, and status codes.
+- **Enums for Safety**: `Fetch\Enum\Method`, `ContentType`, and `Status` enums
+  for validating methods, content types, and status codes.
 
-- **Test Helpers**: `ClientHandler::createMockResponse()` and `createJsonResponse()` to easily stub HTTP responses in unit tests.
+- **Test Helpers**: `ClientHandler::createMockResponse()` and
+  `createJsonResponse()` to easily stub HTTP responses in unit tests.
 
 ### Changed
 
-- **Consolidated Handler Traits**: Core behavior refactored into six concerns (`ConfiguresRequests`, `HandlesUris`, `ManagesPromises`, `ManagesRetries`, `PerformsHttpRequests`, `SendsRequests`) for clearer separation of URI handling, retries, promises, and request dispatch.
-- **Unified Fetch API**: `Client::fetch()` now returns either a `ResponseInterface` or the handler for method chaining, replacing older ad-hoc patterns.
-- **Error-handling Alignment**: Top-level `Client::sendRequest()` now throws standardized `NetworkException`, `RequestException`, or `ClientException` instead of raw `RuntimeException`.
-- **Default Options Management**: Moved default method, headers, and timeout into `ClientHandler::$defaultOptions` with new `getDefaultOptions()` and `setDefaultOptions()`.
-- **Guzzle Configuration**: `ClientHandler` now reuses a single Guzzle client instance with `RequestOptions::HTTP_ERRORS` disabled (handling errors internally) and `CONNECT_TIMEOUT` mapped from handler timeout.
+- **Consolidated Handler Traits**: Core behavior refactored into six concerns
+  (`ConfiguresRequests`, `HandlesUris`, `ManagesPromises`, `ManagesRetries`,
+  `PerformsHttpRequests`, `SendsRequests`) for clearer separation of URI
+  handling, retries, promises, and request dispatch.
+- **Unified Fetch API**: `Client::fetch()` now returns either a
+  `ResponseInterface` or the handler for method chaining, replacing older ad-hoc
+  patterns.
+- **Error-handling Alignment**: Top-level `Client::sendRequest()` now throws
+  standardized `NetworkException`, `RequestException`, or `ClientException`
+  instead of raw `RuntimeException`.
+- **Default Options Management**: Moved default method, headers, and timeout
+  into `ClientHandler::$defaultOptions` with new `getDefaultOptions()` and
+  `setDefaultOptions()`.
+- **Guzzle Configuration**: `ClientHandler` now reuses a single Guzzle client
+  instance with `RequestOptions::HTTP_ERRORS` disabled (handling errors
+  internally) and `CONNECT_TIMEOUT` mapped from handler timeout.
 
 ### Removed
 
@@ -348,90 +503,119 @@ the public API, behavior, and dependencies are unchanged.
 
 ---
 
-## [v3.0.0](https://github.com/Thavarshan/fetch-php/compare/v2.0.6...v3.0.0) - 2025-05-04
+## [v3.0.0] - 2025-05-04
 
 ### Added
 
-- **True Asynchronous Support**: Completely reimplemented asynchronous functionality using Matrix’s PHP Fiber-based library.
+- **True Asynchronous Support**: Completely reimplemented asynchronous
+  functionality using Matrix’s PHP Fiber-based library.
 
-- **JavaScript-like Syntax**: Added support for JavaScript-like async/await patterns with `async()` and `await()` functions.
+- **JavaScript-like Syntax**: Added support for JavaScript-like async/await
+  patterns with `async()` and `await()` functions.
 
-- **Promise-based API**: Introduced a clean Promise interface with `then()`, `catch()`, and `finally()` methods.
+- **Promise-based API**: Introduced a clean Promise interface with `then()`,
+  `catch()`, and `finally()` methods.
 
-- **Concurrent Request Helpers**: Added support for managing multiple concurrent requests with `all()`, `race()`, and `any()` functions.
+- **Concurrent Request Helpers**: Added support for managing multiple concurrent
+  requests with `all()`, `race()`, and `any()` functions.
 
-- **Task Lifecycle Management**: Implemented proper task lifecycle control (start, pause, resume, cancel, retry).
+- **Task Lifecycle Management**: Implemented proper task lifecycle control
+  (start, pause, resume, cancel, retry).
 
-- **Enhanced Error Handling**: Added improved error handling with customizable error handlers.
+- **Enhanced Error Handling**: Added improved error handling with customizable
+  error handlers.
 
 - **New Helper Methods**:
 
-  - `wrapAsync()`: For wrapping callables in async functions
-  - `awaitPromise()`: For awaiting promise resolution
+    - `wrapAsync()`: For wrapping callables in async functions
+    - `awaitPromise()`: For awaiting promise resolution
 
 ### Changed
 
-- **New Matrix Integration**: Migrated from legacy `AsyncHelper` to the new Matrix Fiber-based promises.
-- **Return Type Changes**: Updated method signatures to use union types (`ResponseInterface|PromiseInterface`).
-- **Simplified API**: Streamlined the API to match JavaScript’s fetch pattern more closely.
-- **Improved Retry Logic**: Enhanced retry mechanisms for both synchronous and asynchronous requests.
-- **Updated Documentation**: Completely revised documentation to reflect the new async patterns.
+- **New Matrix Integration**: Migrated from legacy `AsyncHelper` to the new
+  Matrix Fiber-based promises.
+- **Return Type Changes**: Updated method signatures to use union types
+  (`ResponseInterface|PromiseInterface`).
+- **Simplified API**: Streamlined the API to match JavaScript’s fetch pattern
+  more closely.
+- **Improved Retry Logic**: Enhanced retry mechanisms for both synchronous and
+  asynchronous requests.
+- **Updated Documentation**: Completely revised documentation to reflect the new
+  async patterns.
 
 ### Removed
 
-- **AsyncHelper Class**: Removed the legacy `AsyncHelper` class in favor of direct Matrix integration.
+- **AsyncHelper Class**: Removed the legacy `AsyncHelper` class in favor of
+  direct Matrix integration.
 
 ### Fixed
 
-- **Promise Handling**: Fixed various issues with Promise resolution and rejection.
-- **Retry Mechanism**: Fixed retry logic to properly handle both network and server errors.
-- **Error Propagation**: Improved how errors are propagated through Promise chains.
-- **Event Loop Management**: Fixed event loop management for proper async task execution.
+- **Promise Handling**: Fixed various issues with Promise resolution and
+  rejection.
+- **Retry Mechanism**: Fixed retry logic to properly handle both network and
+  server errors.
+- **Error Propagation**: Improved how errors are propagated through Promise
+  chains.
+- **Event Loop Management**: Fixed event loop management for proper async task
+  execution.
 
 ---
 
-## [v2.0.6](https://github.com/Thavarshan/fetch-php/compare/v2.0.5...v2.0.6) - 2025-05-03
+## [v2.0.6] - 2025-05-03
 
 ### Added
 
 - Added `withQueryParameter()` method for adding a single query parameter.
 - Added `withJson()` method as a convenient way to set JSON request bodies.
-- Added `withFormParams()` and `withMultipart()` helper methods for form submissions.
-- Added `configurePostableRequest()` helper method to standardize request body handling.
+- Added `withFormParams()` and `withMultipart()` helper methods for form
+  submissions.
+- Added `configurePostableRequest()` helper method to standardize request body
+  handling.
 
 ### Changed
 
-- Enhanced `withBody()` method to support multiple content types (JSON, form-encoded, multipart).
-- Improved `post()` and `put()` methods to properly handle different content types.
-- Improved retry mechanism with exponential backoff and jitter for better reliability.
-- Enhanced error handling to be more selective about which errors trigger retries.
+- Enhanced `withBody()` method to support multiple content types (JSON,
+  form-encoded, multipart).
+- Improved `post()` and `put()` methods to properly handle different content
+  types.
+- Improved retry mechanism with exponential backoff and jitter for better
+  reliability.
+- Enhanced error handling to be more selective about which errors trigger
+  retries.
 
 ### Fixed
 
-- Fixed query parameter handling to properly merge with existing parameters instead of overwriting.
+- Fixed query parameter handling to properly merge with existing parameters
+  instead of overwriting.
 - Fixed URL construction in `getFullUri()` to correctly append query parameters.
-- Fixed retry logic to perform exactly the specified number of retries (not one extra).
+- Fixed retry logic to perform exactly the specified number of retries (not one
+  extra).
 - Fixed duplicate implementation of `isRetryableError()` method.
 - Fixed retry failure detection to properly identify the last retry attempt.
 
 ---
 
-## [v2.0.5](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5) - 2025-03-30
+## [v2.0.5] - 2025-03-30
 
 ### Added
 
-- `getOptions()`, `getHeaders()`, `hasHeader(string $header)`, and `hasOption(string $option)` methods on `ClientHandler`.
+- `getOptions()`, `getHeaders()`, `hasHeader(string $header)`, and
+  `hasOption(string $option)` methods on `ClientHandler`.
 
-**Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5](https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5)
+**Full Changelog**:
+[Full changelog][v2.0.5]
 
 ---
 
-## [v2.0.4](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4) - 2025-03-30
+## [v2.0.4] - 2025-03-30
 
 ### Added
 
-- Support for setting a single request header via `withHeader()` in `ClientHandler`.
-- `withToken(string $token): self`, `withAuth(string $username, string $password): self`, and `withHeader(string $header, mixed $value): self` methods on `ClientHandler`.
+- Support for setting a single request header via `withHeader()` in
+  `ClientHandler`.
+- `withToken(string $token): self`,
+  `withAuth(string $username, string $password): self`, and
+  `withHeader(string $header, mixed $value): self` methods on `ClientHandler`.
 - Added `laravel/pint` as a dev dependency.
 
 ### Changed
@@ -446,13 +630,15 @@ the public API, behavior, and dependencies are unchanged.
 
 ### New Contributors
 
-- @tresbach in [https://github.com/Thavarshan/fetch-php/pull/14](https://github.com/Thavarshan/fetch-php/pull/14)
+- @tresbach in
+  [Pull request #14][pr-14]
 
-**Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4](https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4)
+**Full Changelog**:
+[Full changelog][v2.0.4]
 
 ---
 
-## [v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3) - 2024-12-06
+## [v2.0.3] - 2024-12-06
 
 ### Added
 
@@ -462,11 +648,12 @@ the public API, behavior, and dependencies are unchanged.
 
 - Updated dependencies and dev-dependencies.
 
-**Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3](https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3)
+**Full Changelog**:
+[Full changelog][v2.0.3]
 
 ---
 
-## [v2.0.2](https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2) - 2024-10-19
+## [v2.0.2] - 2024-10-19
 
 ### Added
 
@@ -479,22 +666,25 @@ the public API, behavior, and dependencies are unchanged.
 
 #### New Contributors
 
-- @patinthehat in [https://github.com/Thavarshan/fetch-php/pull/8](https://github.com/Thavarshan/fetch-php/pull/8)
+- @patinthehat in
+  [Pull request #8][pr-8]
 
-**Full Changelog**: [https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2](https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2)
+**Full Changelog**:
+[Full changelog][v2.0.2]
 
 ---
 
-## [v2.0.1](https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1) - 2024-10-03
+## [v2.0.1] - 2024-10-03
 
 ### Changed
 
-- Refactored `withBody()` in `ClientHandler` to accept only arrays and JSON-encode them.
+- Refactored `withBody()` in `ClientHandler` to accept only arrays and
+  JSON-encode them.
 - Documentation and typo fixes.
 
 ---
 
-## [v2.0.0](https://github.com/Thavarshan/fetch-php/compare/v1.2.0...v2.0.0) - 2024-09-30
+## [v2.0.0] - 2024-09-30
 
 ### Added
 
@@ -524,7 +714,7 @@ the public API, behavior, and dependencies are unchanged.
 
 ---
 
-## [v1.2.0](https://github.com/Thavarshan/fetch-php/compare/v1.1.1...v1.2.0) - 2024-09-27
+## [v1.2.0] - 2024-09-27
 
 ### Added
 
@@ -546,7 +736,7 @@ the public API, behavior, and dependencies are unchanged.
 
 ---
 
-## [v1.1.1](https://github.com/Thavarshan/fetch-php/compare/v1.1.0...v1.1.1) - 2024-09-25
+## [v1.1.1] - 2024-09-25
 
 ### Changed
 
@@ -559,7 +749,7 @@ the public API, behavior, and dependencies are unchanged.
 
 ---
 
-## [v1.1.0](https://github.com/Thavarshan/fetch-php/compare/v1.0.0...v1.1.0) - 2024-09-24
+## [v1.1.0] - 2024-09-24
 
 ### Changed
 
@@ -576,3 +766,32 @@ the public API, behavior, and dependencies are unchanged.
 ## v1.0.0 - 2024-09-14
 
 Initial release.
+
+[v3.8.1]: https://github.com/Thavarshan/fetch-php/compare/3.8.0...3.8.1
+[v3.8.0]: https://github.com/Thavarshan/fetch-php/compare/3.7.0...3.8.0
+[v3.7.0]: https://github.com/Thavarshan/fetch-php/compare/3.6.0...3.7.0
+[v3.6.0]: https://github.com/Thavarshan/fetch-php/compare/3.5.1...3.6.0
+[v3.5.1]: https://github.com/Thavarshan/fetch-php/compare/3.5.0...3.5.1
+[v3.5.0]: https://github.com/Thavarshan/fetch-php/compare/3.4.1...3.5.0
+[v3.4.1]: https://github.com/Thavarshan/fetch-php/compare/v3.4.0...v3.4.1
+[v3.4.0]: https://github.com/Thavarshan/fetch-php/compare/v3.3.0...v3.4.0
+[v3.3.0]: https://github.com/Thavarshan/fetch-php/compare/v3.2.3...v3.3.0
+[v3.2.3]: https://github.com/Thavarshan/fetch-php/compare/v3.2.2...v3.2.3
+[v3.2.2]: https://github.com/Thavarshan/fetch-php/compare/v3.2.1...v3.2.2
+[v3.2.1]: https://github.com/Thavarshan/fetch-php/compare/v3.2.0...v3.2.1
+[v3.2.0]: https://github.com/Thavarshan/fetch-php/compare/v3.1.1...v3.2.0
+[v3.1.1]: https://github.com/Thavarshan/fetch-php/compare/v3.1.0...v3.1.1
+[v3.1.0]: https://github.com/Thavarshan/fetch-php/compare/v3.0.0...v3.1.0
+[v3.0.0]: https://github.com/Thavarshan/fetch-php/compare/v2.0.6...v3.0.0
+[v2.0.6]: https://github.com/Thavarshan/fetch-php/compare/v2.0.5...v2.0.6
+[v2.0.5]: https://github.com/Thavarshan/fetch-php/compare/v2.0.4...v2.0.5
+[v2.0.4]: https://github.com/Thavarshan/fetch-php/compare/v2.0.3...v2.0.4
+[v2.0.3]: https://github.com/Thavarshan/fetch-php/compare/v2.0.2...v2.0.3
+[v2.0.2]: https://github.com/Thavarshan/fetch-php/compare/v2.0.1...v2.0.2
+[v2.0.1]: https://github.com/Thavarshan/fetch-php/compare/v2.0.0...v2.0.1
+[v2.0.0]: https://github.com/Thavarshan/fetch-php/compare/v1.2.0...v2.0.0
+[v1.2.0]: https://github.com/Thavarshan/fetch-php/compare/v1.1.1...v1.2.0
+[v1.1.1]: https://github.com/Thavarshan/fetch-php/compare/v1.1.0...v1.1.1
+[v1.1.0]: https://github.com/Thavarshan/fetch-php/compare/v1.0.0...v1.1.0
+[pr-14]: https://github.com/Thavarshan/fetch-php/pull/14
+[pr-8]: https://github.com/Thavarshan/fetch-php/pull/8

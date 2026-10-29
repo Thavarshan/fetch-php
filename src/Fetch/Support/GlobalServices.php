@@ -18,18 +18,22 @@ use Fetch\Pool\PoolConfiguration;
  * reuse and consistent default configurations.
  *
  * **Why Global State Exists:**
- * - ConnectionPool: Connection reuse across handlers reduces latency and resource usage
+ * - ConnectionPool: Connection reuse across handlers reduces latency and
+ *     resource usage
  * - DnsCache: DNS resolution caching improves performance for repeated requests
  * - DefaultOptions: Consistent configuration baseline for all handlers
  *
  * **Thread Safety:**
- * This class is designed for single-threaded PHP environments. In multi-threaded
- * or async environments with parallel execution, external synchronization may be needed.
+ * This class is designed for single-threaded PHP environments. In
+ *     multi-threaded
+ * or async environments with parallel execution, external synchronization may
+ *     be needed.
  *
  * **Testing:**
  * Always call `GlobalServices::reset()` between tests to ensure isolation.
  *
- * @internal This class is for internal use. Users should interact with ClientHandler methods.
+ * @internal This class is for internal use. Users should interact with
+ *     ClientHandler methods.
  */
 final class GlobalServices
 {
@@ -83,7 +87,7 @@ final class GlobalServices
 
         self::$defaultOptions = array_merge(
             self::getFactoryDefaults(),
-            $defaultOptions
+            $defaultOptions,
         );
 
         self::$initialized = true;
@@ -174,7 +178,8 @@ final class GlobalServices
     /**
      * Configure the connection pool.
      *
-     * @param  PoolConfiguration|array<string, mixed>  $config  Pool configuration
+     * @param  PoolConfiguration|array<string, mixed>  $config  Pool
+     *                                                          configuration
      */
     public static function configurePool(PoolConfiguration|array $config): void
     {
@@ -240,7 +245,8 @@ final class GlobalServices
 
         if (! $preserveDefaults) {
             self::$defaultOptions = [];
-            // Reset ClientHandler's legacy static defaults only when defaults are not preserved
+            // Reset ClientHandler's legacy static defaults only when defaults
+            // are not preserved
             ClientHandler::resetDefaultOptions();
         }
     }
@@ -262,10 +268,15 @@ final class GlobalServices
     {
         return [
             'initialized' => self::$initialized,
-            'connection_pool' => self::$connectionPool?->getStats() ?? ['enabled' => false],
+            'connection_pool' => self::$connectionPool?->getStats() ?? [
+                'enabled' => false,
+            ],
             'dns_cache' => self::$dnsCache !== null
-                ? array_merge(['enabled' => true], self::$dnsCache->getStats())
-                : ['enabled' => false],
+                    ? array_merge(
+                        ['enabled' => true],
+                        self::$dnsCache->getStats(),
+                    )
+                    : ['enabled' => false],
             'default_options_customized' => ! empty(self::$defaultOptions),
         ];
     }
@@ -283,7 +294,8 @@ final class GlobalServices
     /**
      * Clear the DNS cache.
      *
-     * @param  string|null  $hostname  Specific hostname to clear, or null for all
+     * @param  string|null  $hostname  Specific hostname to clear, or null for
+     *                                 all
      */
     public static function clearDnsCache(?string $hostname = null): void
     {

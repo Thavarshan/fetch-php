@@ -31,8 +31,7 @@ class PerformsHttpRequestsTest extends TestCase
     {
         // Create a mock client that will return a predefined response
         $mockClient = $this->createMock(Client::class);
-        $mockClient->method('request')
-            ->willReturn(new GuzzleResponse(200));
+        $mockClient->method('request')->willReturn(new GuzzleResponse(200));
 
         // Inject mock client via factory hook
         TestableClientHandler::setMockClient($mockClient);
@@ -48,9 +47,12 @@ class PerformsHttpRequestsTest extends TestCase
     public function test_head_method(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json']);
+        $mockResponse = new GuzzleResponse(200, [
+            'Content-Type' => 'application/json',
+        ]);
 
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with('HEAD', 'https://example.com/test', $this->anything())
             ->willReturn($mockResponse);
@@ -69,15 +71,21 @@ class PerformsHttpRequestsTest extends TestCase
     public function test_get_method_with_query_params(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":["item1","item2"]}');
+        $mockResponse = new GuzzleResponse(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"data":["item1","item2"]}',
+        );
 
-        // Expect request without inspecting the exact URL format - just verify query params are included somehow
-        $this->mockClient->expects($this->once())
+        // Expect request without inspecting the exact URL format - just verify
+        // query params are included somehow
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with(
                 $this->equalTo('GET'),
-                $this->stringContains('users'),  // Less strict assertion
-                $this->anything()
+                $this->stringContains('users'), // Less strict assertion
+                $this->anything(),
             )
             ->willReturn($mockResponse);
 
@@ -90,26 +98,34 @@ class PerformsHttpRequestsTest extends TestCase
         // Assertions
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('{"data":["item1","item2"]}', $response->getBody()->getContents());
+        $this->assertEquals(
+            '{"data":["item1","item2"]}',
+            $response->getBody()->getContents(),
+        );
     }
 
     public function test_post_method_with_json_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(201, ['Content-Type' => 'application/json'], '{"id":123,"success":true}');
+        $mockResponse = new GuzzleResponse(
+            201,
+            ['Content-Type' => 'application/json'],
+            '{"id":123,"success":true}',
+        );
 
         $data = ['name' => 'John Doe', 'email' => 'john@example.com'];
 
         // Expect that the request will include JSON body
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with(
                 'POST',
                 'https://example.com/users',
                 $this->callback(function ($options) use ($data) {
-                    return isset($options['json'])
-                           && $options['json'] === $data;
-                })
+                    return isset($options['json']) &&
+                        $options['json'] === $data;
+                }),
             )
             ->willReturn($mockResponse);
 
@@ -122,26 +138,37 @@ class PerformsHttpRequestsTest extends TestCase
         // Assertions
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(201, $response->getStatusCode());
-        $this->assertEquals('{"id":123,"success":true}', $response->getBody()->getContents());
+        $this->assertEquals(
+            '{"id":123,"success":true}',
+            $response->getBody()->getContents(),
+        );
     }
 
     public function test_put_method_with_json_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"id":123,"updated":true}');
+        $mockResponse = new GuzzleResponse(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"id":123,"updated":true}',
+        );
 
-        $data = ['name' => 'John Updated', 'email' => 'john.updated@example.com'];
+        $data = [
+            'name' => 'John Updated',
+            'email' => 'john.updated@example.com',
+        ];
 
         // Expect that the request will include JSON body
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with(
                 'PUT',
                 'https://example.com/users/123',
                 $this->callback(function ($options) use ($data) {
-                    return isset($options['json'])
-                           && $options['json'] === $data;
-                })
+                    return isset($options['json']) &&
+                        $options['json'] === $data;
+                }),
             )
             ->willReturn($mockResponse);
 
@@ -154,26 +181,34 @@ class PerformsHttpRequestsTest extends TestCase
         // Assertions
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('{"id":123,"updated":true}', $response->getBody()->getContents());
+        $this->assertEquals(
+            '{"id":123,"updated":true}',
+            $response->getBody()->getContents(),
+        );
     }
 
     public function test_patch_method_with_json_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"id":123,"patched":true}');
+        $mockResponse = new GuzzleResponse(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"id":123,"patched":true}',
+        );
 
         $data = ['name' => 'John Patched'];
 
         // Expect that the request will include JSON body
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with(
                 'PATCH',
                 'https://example.com/users/123',
                 $this->callback(function ($options) use ($data) {
-                    return isset($options['json'])
-                           && $options['json'] === $data;
-                })
+                    return isset($options['json']) &&
+                        $options['json'] === $data;
+                }),
             )
             ->willReturn($mockResponse);
 
@@ -186,7 +221,10 @@ class PerformsHttpRequestsTest extends TestCase
         // Assertions
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('{"id":123,"patched":true}', $response->getBody()->getContents());
+        $this->assertEquals(
+            '{"id":123,"patched":true}',
+            $response->getBody()->getContents(),
+        );
     }
 
     public function test_delete_method(): void
@@ -195,7 +233,8 @@ class PerformsHttpRequestsTest extends TestCase
         $mockResponse = new GuzzleResponse(204);
 
         // Expect DELETE request
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with('DELETE', 'https://example.com/users/123', $this->anything())
             ->willReturn($mockResponse);
@@ -214,20 +253,25 @@ class PerformsHttpRequestsTest extends TestCase
     public function test_delete_method_with_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"deleted":true}');
+        $mockResponse = new GuzzleResponse(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"deleted":true}',
+        );
 
         $data = ['reason' => 'User requested account deletion'];
 
         // Expect DELETE request with JSON body
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with(
                 'DELETE',
                 'https://example.com/users/123',
                 $this->callback(function ($options) use ($data) {
-                    return isset($options['json'])
-                           && $options['json'] === $data;
-                })
+                    return isset($options['json']) &&
+                        $options['json'] === $data;
+                }),
             )
             ->willReturn($mockResponse);
 
@@ -240,24 +284,26 @@ class PerformsHttpRequestsTest extends TestCase
         // Assertions
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('{"deleted":true}', $response->getBody()->getContents());
+        $this->assertEquals(
+            '{"deleted":true}',
+            $response->getBody()->getContents(),
+        );
     }
 
     public function test_options_method(): void
     {
-        // Mock the client's request method to return a GuzzleResponse with CORS headers
-        $mockResponse = new GuzzleResponse(
-            200,
-            [
-                'Allow' => 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Origin' => '*',
-                'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers' => 'Content-Type, Authorization',
-            ]
-        );
+        // Mock the client's request method to return a GuzzleResponse with CORS
+        // headers
+        $mockResponse = new GuzzleResponse(200, [
+            'Allow' => 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers' => 'Content-Type, Authorization',
+        ]);
 
         // Expect OPTIONS request
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with('OPTIONS', 'https://example.com/api', $this->anything())
             ->willReturn($mockResponse);
@@ -271,26 +317,34 @@ class PerformsHttpRequestsTest extends TestCase
         // Assertions
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('GET, POST, PUT, DELETE, OPTIONS', $response->getHeaderLine('Allow'));
+        $this->assertEquals(
+            'GET, POST, PUT, DELETE, OPTIONS',
+            $response->getHeaderLine('Allow'),
+        );
     }
 
     public function test_request_with_custom_method_and_body(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"success":true}');
+        $mockResponse = new GuzzleResponse(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"success":true}',
+        );
 
         $data = ['custom' => 'data'];
 
         // Expect custom method request with JSON body
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with(
                 'REPORT',
                 'https://example.com/custom-endpoint',
                 $this->callback(function ($options) use ($data) {
-                    return isset($options['json'])
-                           && $options['json'] === $data;
-                })
+                    return isset($options['json']) &&
+                        $options['json'] === $data;
+                }),
             )
             ->willReturn($mockResponse);
 
@@ -298,7 +352,11 @@ class PerformsHttpRequestsTest extends TestCase
         $this->handler->baseUri('https://example.com');
 
         // Call request method with custom HTTP method
-        $response = $this->handler->request('REPORT', '/custom-endpoint', $data);
+        $response = $this->handler->request(
+            'REPORT',
+            '/custom-endpoint',
+            $data,
+        );
 
         // Assertions
         $this->assertInstanceOf(Response::class, $response);
@@ -308,20 +366,25 @@ class PerformsHttpRequestsTest extends TestCase
     public function test_request_with_form_content_type(): void
     {
         // Mock the client's request method to return a GuzzleResponse
-        $mockResponse = new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"success":true}');
+        $mockResponse = new GuzzleResponse(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"success":true}',
+        );
 
         $formData = ['username' => 'johndoe', 'password' => 'secret'];
 
         // Expect POST request with form data
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
             ->with(
                 'POST',
                 'https://example.com/login',
                 $this->callback(function ($options) use ($formData) {
-                    return isset($options['form_params'])
-                           && $options['form_params'] === $formData;
-                })
+                    return isset($options['form_params']) &&
+                        $options['form_params'] === $formData;
+                }),
             )
             ->willReturn($mockResponse);
 
@@ -333,7 +396,7 @@ class PerformsHttpRequestsTest extends TestCase
             Method::POST,
             '/login',
             $formData,
-            ContentType::FORM_URLENCODED
+            ContentType::FORM_URLENCODED,
         );
 
         // Assertions
@@ -347,18 +410,24 @@ class PerformsHttpRequestsTest extends TestCase
         $request = new GuzzleRequest('GET', 'https://example.com/');
 
         // Mock the client to throw an exception
-        $this->mockClient->expects($this->once())
+        $this->mockClient
+            ->expects($this->once())
             ->method('request')
-            ->willThrowException(new RequestException('Connection error', $request));
+            ->willThrowException(
+                new RequestException('Connection error', $request),
+            );
 
         $this->handler->baseUri('https://example.com');
 
-        // Configure the handler for minimal retries - use options instead of reflection
+        // Configure the handler for minimal retries - use options instead of
+        // reflection
         $this->handler->withOptions(['retries' => 0]); // Set retries to 0
 
         // Expect our normalized Fetch RequestException
         $this->expectException(FetchRequestException::class);
-        $this->expectExceptionMessage('Request GET https://example.com/ failed: Connection error');
+        $this->expectExceptionMessage(
+            'Request GET https://example.com/ failed: Connection error',
+        );
 
         // Call method that should throw
         $this->handler->get('');
@@ -367,12 +436,13 @@ class PerformsHttpRequestsTest extends TestCase
     public function test_status_based_retry_then_success(): void
     {
         // First response is 503, then 200
-        $this->mockClient->expects($this->exactly(2))
+        $this->mockClient
+            ->expects($this->exactly(2))
             ->method('request')
             ->with('GET', 'https://example.com/unstable', $this->anything())
             ->willReturnOnConsecutiveCalls(
                 new GuzzleResponse(503),
-                new GuzzleResponse(200)
+                new GuzzleResponse(200),
             );
 
         $this->handler->baseUri('https://example.com');
@@ -390,7 +460,8 @@ class PerformsHttpRequestsTest extends TestCase
         $connectException = new ConnectException('Connection failed', $request);
 
         $call = 0;
-        $this->mockClient->expects($this->exactly(2))
+        $this->mockClient
+            ->expects($this->exactly(2))
             ->method('request')
             ->with('GET', 'https://example.com/flaky', $this->anything())
             ->willReturnCallback(function () use (&$call, $connectException) {

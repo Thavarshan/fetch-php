@@ -49,7 +49,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
         array $headers = [],
         string $body = '',
         string $version = '1.1',
-        ?string $reason = null
+        ?string $reason = null,
     ) {
         // Convert Status enum to its value if provided
         $statusCode = $status instanceof Status ? $status->value : $status;
@@ -72,7 +72,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
             $response->getHeaders(),
             (string) $response->getBody(),
             $response->getProtocolVersion(),
-            $response->getReasonPhrase()
+            $response->getReasonPhrase(),
         );
     }
 
@@ -83,7 +83,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
         mixed $data,
         int|Status $status = Status::OK,
         array $headers = [],
-        int $options = 0
+        int $options = 0,
     ): self {
         $json = json_encode($data, $options | JSON_THROW_ON_ERROR);
 
@@ -109,7 +109,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     public static function created(
         string $location,
         mixed $data = null,
-        array $headers = []
+        array $headers = [],
     ): self {
         $headers['Location'] = $location;
 
@@ -126,7 +126,7 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     public static function withRedirect(
         string $location,
         int|Status $status = Status::FOUND,
-        array $headers = []
+        array $headers = [],
     ): self {
         $headers['Location'] = $location;
 
@@ -136,27 +136,38 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Get the body as a JSON-decoded array or object.
      *
-     * @throws RuntimeException When JSON cannot be decoded and $throwOnError is true
+     * @throws RuntimeException When JSON cannot be decoded and $throwOnError is
+     *                          true
      */
-    public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed
-    {
+    public function json(
+        bool $assoc = true,
+        bool $throwOnError = true,
+        int $depth = 512,
+        int $options = 0,
+    ): mixed {
         $this->lastJsonDecodeFailed = false;
 
         if ($depth < 1) {
-            throw new InvalidArgumentException('JSON decode depth must be greater than 0.');
+            throw new InvalidArgumentException(
+                'JSON decode depth must be greater than 0.',
+            );
         }
         try {
             return json_decode(
                 $this->bodyContents,
                 $assoc,
                 $depth,
-                $options | JSON_THROW_ON_ERROR
+                $options | JSON_THROW_ON_ERROR,
             );
         } catch (JsonException $e) {
             $this->lastJsonDecodeFailed = true;
 
             if ($throwOnError) {
-                throw new RuntimeException('Failed to decode JSON: '.$e->getMessage(), $e->getCode(), $e);
+                throw new RuntimeException(
+                    'Failed to decode JSON: '.$e->getMessage(),
+                    $e->getCode(),
+                    $e,
+                );
             }
 
             return $assoc ? [] : (object) [];
@@ -417,14 +428,18 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /**
      * Parse the body as XML.
      *
-     * @throws RuntimeException When XML cannot be parsed and $throwOnError is true
+     * @throws RuntimeException When XML cannot be parsed and $throwOnError is
+     *                          true
      */
-    public function xml(int $options = 0, bool $throwOnError = true): ?SimpleXMLElement
-    {
+    public function xml(
+        int $options = 0,
+        bool $throwOnError = true,
+    ): ?SimpleXMLElement {
         $previous = false;
 
         try {
-            // Use libxml_use_internal_errors to capture errors instead of emitting warnings
+            // Use libxml_use_internal_errors to capture errors instead of
+            // emitting warnings
             $previous = libxml_use_internal_errors(true);
 
             $xml = new SimpleXMLElement($this->bodyContents, $options);
@@ -438,7 +453,11 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
             libxml_use_internal_errors($previous);
 
             if ($throwOnError) {
-                throw new RuntimeException('Failed to parse XML: '.$e->getMessage(), $e->getCode(), $e);
+                throw new RuntimeException(
+                    'Failed to parse XML: '.$e->getMessage(),
+                    $e->getCode(),
+                    $e,
+                );
             }
 
             return null;
@@ -468,7 +487,9 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function offsetSet($offset, $value): void
     {
-        throw new RuntimeException('Response data cannot be modified using array access.');
+        throw new RuntimeException(
+            'Response data cannot be modified using array access.',
+        );
     }
 
     /**
@@ -478,7 +499,9 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function offsetUnset($offset): void
     {
-        throw new RuntimeException('Response data cannot be modified using array access.');
+        throw new RuntimeException(
+            'Response data cannot be modified using array access.',
+        );
     }
 
     /**

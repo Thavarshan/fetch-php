@@ -1,6 +1,6 @@
 ---
 paths:
-  - "tests/**/*.php"
+    - 'tests/**/*.php'
 ---
 
 # Test rules (`tests/**`)

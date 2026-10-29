@@ -67,7 +67,10 @@ class ManagesConnectionPoolTest extends TestCase
         $this->assertTrue($config->isEnabled());
         // Custom version should remain since user set it explicitly
         $this->assertSame(1.1, $handler->getOptions()['version']);
-        $this->assertArrayHasKey(CURLOPT_HTTP_VERSION, $handler->getOptions()['curl']);
+        $this->assertArrayHasKey(
+            CURLOPT_HTTP_VERSION,
+            $handler->getOptions()['curl'],
+        );
     }
 
     public function test_with_http2_config(): void
@@ -86,7 +89,10 @@ class ManagesConnectionPoolTest extends TestCase
         $this->assertEquals(200, $config->getMaxConcurrentStreams());
         $this->assertTrue($config->isServerPushEnabled());
         $this->assertSame(2.0, $handler->getOptions()['version']);
-        $this->assertArrayHasKey(CURLOPT_HTTP_VERSION, $handler->getOptions()['curl']);
+        $this->assertArrayHasKey(
+            CURLOPT_HTTP_VERSION,
+            $handler->getOptions()['curl'],
+        );
     }
 
     public function test_with_http2_disabled(): void
@@ -193,7 +199,10 @@ class ManagesConnectionPoolTest extends TestCase
 
         $this->assertArrayHasKey('curl', $options);
         $this->assertArrayHasKey(CURLOPT_HTTP_VERSION, $options['curl']);
-        $this->assertEquals(CURL_HTTP_VERSION_2_0, $options['curl'][CURLOPT_HTTP_VERSION]);
+        $this->assertEquals(
+            CURL_HTTP_VERSION_2_0,
+            $options['curl'][CURLOPT_HTTP_VERSION],
+        );
         $this->assertEquals(2.0, $options['version']);
     }
 
@@ -212,14 +221,23 @@ class ManagesConnectionPoolTest extends TestCase
         $this->assertTrue($handler->isPoolingEnabled());
         $this->assertTrue($handler->isHttp2Enabled());
 
-        $this->assertEquals(100, $handler->getConnectionPool()->getConfig()->getMaxConnections());
-        $this->assertEquals(50, $handler->getHttp2Config()->getMaxConcurrentStreams());
+        $this->assertEquals(
+            100,
+            $handler->getConnectionPool()->getConfig()->getMaxConnections(),
+        );
+        $this->assertEquals(
+            50,
+            $handler->getHttp2Config()->getMaxConcurrentStreams(),
+        );
     }
 
     public function test_dns_cache_stats_reflect_entries(): void
     {
         $handler = ClientHandler::create();
-        $handler->withConnectionPool(['enabled' => true, 'dns_cache_ttl' => 10]);
+        $handler->withConnectionPool([
+            'enabled' => true,
+            'dns_cache_ttl' => 10,
+        ]);
 
         $dnsCache = $handler->getDnsCache();
         $this->assertNotNull($dnsCache);
@@ -228,7 +246,10 @@ class ManagesConnectionPoolTest extends TestCase
         $prop = $ref->getProperty('cache');
         $prop->setAccessible(true);
         $prop->setValue($dnsCache, [
-            'example.com' => ['addresses' => ['127.0.0.1'], 'expires_at' => time() + 10],
+            'example.com' => [
+                'addresses' => ['127.0.0.1'],
+                'expires_at' => time() + 10,
+            ],
         ]);
 
         $stats = $handler->getDnsCacheStats();

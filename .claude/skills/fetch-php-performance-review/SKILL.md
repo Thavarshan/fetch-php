@@ -1,6 +1,11 @@
 ---
 name: fetch-php-performance-review
-description: Review Fetch PHP for resource and performance safety — connection reuse/pooling, buffering vs streaming, memory use, retry amplification, promise lifecycle, listener/stream/connection leaks, and event-loop blocking. Use when changing Pool, streaming, retries, async/promises, events, or caching.
+description:
+    Review Fetch PHP for resource and performance safety — connection
+    reuse/pooling, buffering vs streaming, memory use, retry amplification,
+    promise lifecycle, listener/stream/connection leaks, and event-loop
+    blocking. Use when changing Pool, streaming, retries, async/promises,
+    events, or caching.
 ---
 
 # Fetch PHP performance & resource review
@@ -10,8 +15,9 @@ Read-only review focused on resource lifetimes and throughput, not micro-opts.
 ## When to use
 
 Changes to `Pool/` (`ConnectionPool`, `HostConnectionPool`, `Connection`,
-`DnsCache`, `Http2Configuration`), streaming (`StreamedResponse`, `EventSource`),
-`ManagesRetries`/`RetryStrategy`, `ManagesPromises`, `ManagesEvents`, or caching.
+`DnsCache`, `Http2Configuration`), streaming (`StreamedResponse`,
+`EventSource`), `ManagesRetries`/`RetryStrategy`, `ManagesPromises`,
+`ManagesEvents`, or caching.
 
 ## What to check
 
@@ -43,7 +49,7 @@ Changes to `Pool/` (`ConnectionPool`, `HostConnectionPool`, `Connection`,
 ## Verification
 
 - For pooling/stream/promise changes, point to where the resource is released/
-  closed on *every* path (success, exception, timeout, cancellation).
+  closed on _every_ path (success, exception, timeout, cancellation).
 - Add or identify a test proving bounded behavior (e.g. capped retries, released
   connections) where feasible; keep it deterministic.
 

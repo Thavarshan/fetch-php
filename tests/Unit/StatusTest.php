@@ -9,26 +9,58 @@ use PHPUnit\Framework\TestCase;
 
 class StatusTest extends TestCase
 {
-    public function test_every_status_has_a_reason_phrase_and_matching_category(): void
+    public function test_statuses_have_matching_phrases_and_categories(): void
     {
         foreach (Status::cases() as $status) {
             $this->assertNotSame('', trim($status->phrase()), $status->name);
-            $this->assertSame($status->value >= 100 && $status->value < 200, $status->isInformational(), $status->name);
-            $this->assertSame($status->value >= 200 && $status->value < 300, $status->isSuccess(), $status->name);
-            $this->assertSame($status->value >= 300 && $status->value < 400, $status->isRedirection(), $status->name);
-            $this->assertSame($status->value >= 400 && $status->value < 500, $status->isClientError(), $status->name);
-            $this->assertSame($status->value >= 500 && $status->value < 600, $status->isServerError(), $status->name);
-            $this->assertSame($status->isClientError() || $status->isServerError(), $status->isError(), $status->name);
-            $this->assertSame(in_array($status, [
-                Status::OK,
-                Status::NON_AUTHORITATIVE_INFORMATION,
-                Status::PARTIAL_CONTENT,
-                Status::MULTIPLE_CHOICES,
-                Status::MOVED_PERMANENTLY,
-                Status::NOT_FOUND,
-                Status::METHOD_NOT_ALLOWED,
-                Status::GONE,
-            ], true), $status->isCacheable(), $status->name);
+            $this->assertSame(
+                $status->value >= 100 && $status->value < 200,
+                $status->isInformational(),
+                $status->name,
+            );
+            $this->assertSame(
+                $status->value >= 200 && $status->value < 300,
+                $status->isSuccess(),
+                $status->name,
+            );
+            $this->assertSame(
+                $status->value >= 300 && $status->value < 400,
+                $status->isRedirection(),
+                $status->name,
+            );
+            $this->assertSame(
+                $status->value >= 400 && $status->value < 500,
+                $status->isClientError(),
+                $status->name,
+            );
+            $this->assertSame(
+                $status->value >= 500 && $status->value < 600,
+                $status->isServerError(),
+                $status->name,
+            );
+            $this->assertSame(
+                $status->isClientError() || $status->isServerError(),
+                $status->isError(),
+                $status->name,
+            );
+            $this->assertSame(
+                in_array(
+                    $status,
+                    [
+                        Status::OK,
+                        Status::NON_AUTHORITATIVE_INFORMATION,
+                        Status::PARTIAL_CONTENT,
+                        Status::MULTIPLE_CHOICES,
+                        Status::MOVED_PERMANENTLY,
+                        Status::NOT_FOUND,
+                        Status::METHOD_NOT_ALLOWED,
+                        Status::GONE,
+                    ],
+                    true,
+                ),
+                $status->isCacheable(),
+                $status->name,
+            );
         }
     }
 

@@ -27,8 +27,10 @@ enum Method: string
     /**
      * Try to get the method from a string, or return default.
      */
-    public static function tryFromString(string $method, ?self $default = null): ?self
-    {
+    public static function tryFromString(
+        string $method,
+        ?self $default = null,
+    ): ?self {
         return self::tryFrom(strtoupper($method)) ?? $default;
     }
 
@@ -39,6 +41,11 @@ enum Method: string
     {
         // CONNECT request bodies are intentionally not enabled by default; HTTP
         // clients normally use this method only to establish a proxy tunnel.
-        return in_array($this, [self::POST, self::PUT, self::PATCH, self::DELETE]);
+        return in_array($this, [
+            self::POST,
+            self::PUT,
+            self::PATCH,
+            self::DELETE,
+        ]);
     }
 }

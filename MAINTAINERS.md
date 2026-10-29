@@ -14,7 +14,8 @@
 
 ## Decision Making
 
-Strive for consensus via discussions. In absence of consensus, the Lead Maintainer has final say while remaining open to community input.
+Strive for consensus via discussions. In absence of consensus, the Lead
+Maintainer has final say while remaining open to community input.
 
 ## Adding New Maintainers
 
@@ -25,4 +26,5 @@ Strive for consensus via discussions. In absence of consensus, the Lead Maintain
 
 ## Inactivity
 
-Maintainers inactive for 6+ months may be moved to Emeritus section. Open a discussion to reinstate active status.
+Maintainers inactive for 6+ months may be moved to Emeritus section. Open a
+discussion to reinstate active status.

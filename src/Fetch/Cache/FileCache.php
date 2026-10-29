@@ -53,8 +53,10 @@ class FileCache implements CacheInterface
     {
         $path = $this->getPath($key);
 
-        // Directly attempt to read the file - file_get_contents returns false if file doesn't exist
-        // This avoids a race condition where file could be deleted between exists check and read
+        // Directly attempt to read the file - file_get_contents returns false
+        // if file doesn't exist
+        // This avoids a race condition where file could be deleted between
+        // exists check and read
         $contents = @file_get_contents($path);
 
         if ($contents === false) {
@@ -92,19 +94,25 @@ class FileCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    public function set(string $key, CachedResponse $response, ?int $ttl = null): bool
-    {
+    public function set(
+        string $key,
+        CachedResponse $response,
+        ?int $ttl = null,
+    ): bool {
         $this->ensureDirectoryExists();
 
-        // Probabilistically check cache size and prune if necessary (1 in 20 chance)
+        // Probabilistically check cache size and prune if necessary (1 in 20
+        // chance)
         if (random_int(1, 20) === 1 && $this->getCacheSize() > $this->maxSize) {
             $this->prune();
         }
 
         $path = $this->getPath($key);
 
-        // If TTL is provided, update the cached response with the correct expiration
-        // TTL=0 means no expiration (expires_at=null), TTL>0 sets specific expiration
+        // If TTL is provided, update the cached response with the correct
+        // expiration
+        // TTL=0 means no expiration (expires_at=null), TTL>0 sets specific
+        // expiration
         // TTL<0 means already expired, TTL=null means use default
         if ($ttl !== null) {
             if ($ttl === 0) {
@@ -182,7 +190,9 @@ class FileCache implements CacheInterface
      */
     public function clear(): void
     {
-        $files = glob($this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION);
+        $files = glob(
+            $this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION,
+        );
 
         if ($files === false) {
             return;
@@ -199,7 +209,9 @@ class FileCache implements CacheInterface
     public function prune(): int
     {
         $count = 0;
-        $files = glob($this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION);
+        $files = glob(
+            $this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION,
+        );
 
         if ($files === false) {
             return 0;
@@ -238,11 +250,14 @@ class FileCache implements CacheInterface
     /**
      * Get cache statistics.
      *
-     * @return array{directory: string, items: int, size: int, max_size: int, default_ttl: int}
+     * @return array{directory: string, items: int, size: int, max_size: int,
+     *     default_ttl: int}
      */
     public function getStats(): array
     {
-        $files = glob($this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION);
+        $files = glob(
+            $this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION,
+        );
 
         return [
             'directory' => $this->directory,
@@ -281,12 +296,16 @@ class FileCache implements CacheInterface
     {
         if (! is_dir($this->directory)) {
             if (! @mkdir($this->directory, 0755, true)) {
-                throw new RuntimeException("Failed to create cache directory: {$this->directory}");
+                throw new RuntimeException(
+                    "Failed to create cache directory: {$this->directory}",
+                );
             }
         }
 
         if (! is_writable($this->directory)) {
-            throw new RuntimeException("Cache directory is not writable: {$this->directory}");
+            throw new RuntimeException(
+                "Cache directory is not writable: {$this->directory}",
+            );
         }
     }
 
@@ -296,7 +315,9 @@ class FileCache implements CacheInterface
     private function getCacheSize(): int
     {
         $size = 0;
-        $files = glob($this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION);
+        $files = glob(
+            $this->directory.DIRECTORY_SEPARATOR.'*'.self::FILE_EXTENSION,
+        );
 
         if ($files === false) {
             return 0;

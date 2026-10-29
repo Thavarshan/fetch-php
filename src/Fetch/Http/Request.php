@@ -33,16 +33,23 @@ class Request extends BaseRequest implements RequestInterface
         array $headers = [],
         $body = null,
         string $version = '1.1',
-        ?string $requestTarget = null
+        ?string $requestTarget = null,
     ) {
         // Normalize the method
-        $methodValue = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodValue =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
         // Convert string URI to UriInterface if needed
         $uriObject = is_string($uri) ? new Uri($uri) : $uri;
 
         // Initialize with parent constructor
-        parent::__construct($methodValue, $uriObject, $headers, $body, $version);
+        parent::__construct(
+            $methodValue,
+            $uriObject,
+            $headers,
+            $body,
+            $version,
+        );
 
         // Store custom request target if provided
         if ($requestTarget !== null) {
@@ -60,16 +67,22 @@ class Request extends BaseRequest implements RequestInterface
         string|Method $method,
         string|UriInterface $uri,
         array $data,
-        array $headers = []
+        array $headers = [],
     ): static {
         // Normalize the method
-        $methodValue = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodValue =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
         // Prepare the JSON body
-        $body = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $body = json_encode(
+            $data,
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+        );
 
         if ($body === false) {
-            throw new InvalidArgumentException('Unable to encode data to JSON: '.json_last_error_msg());
+            throw new InvalidArgumentException(
+                'Unable to encode data to JSON: '.json_last_error_msg(),
+            );
         }
 
         // Add the Content-Type header if not already present
@@ -93,10 +106,11 @@ class Request extends BaseRequest implements RequestInterface
         string|Method $method,
         string|UriInterface $uri,
         array $formParams,
-        array $headers = []
+        array $headers = [],
     ): static {
         // Normalize the method
-        $methodValue = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodValue =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
         // Prepare the form body
         $body = http_build_query($formParams);
@@ -115,22 +129,36 @@ class Request extends BaseRequest implements RequestInterface
     /**
      * Create a new Request instance with multipart form data.
      *
-     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>, filename?: string}>  $multipart
+     * @param  array<int, array{
+     *     name: string,
+     *     contents: mixed,
+     *     headers?: array<string, string>,
+     *     filename?: string
+     * }>  $multipart
      * @param  array<string, string|array<int, string>>  $headers
      */
     public static function multipart(
         string|Method $method,
         string|UriInterface $uri,
         array $multipart,
-        array $headers = []
+        array $headers = [],
     ): static {
         // Normalize the method
-        $methodValue = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodValue =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
         foreach ($multipart as $index => $part) {
-            if (! is_array($part) || ! isset($part['name']) || trim((string) $part['name']) === '') {
+            if (
+                ! is_array($part) ||
+                ! isset($part['name']) ||
+                trim((string) $part['name']) === ''
+            ) {
                 throw new InvalidArgumentException(
-                    sprintf("Multipart part at index %s is missing a required 'name' field.", (string) $index)
+                    sprintf(
+                        'Multipart part at index %s is missing a required '
+                            ."'name' field.",
+                        (string) $index,
+                    ),
                 );
             }
         }
@@ -138,7 +166,10 @@ class Request extends BaseRequest implements RequestInterface
         $body = new MultipartStream($multipart);
 
         // Set the Content-Type header with the boundary
-        $headers['Content-Type'] = ContentType::MULTIPART->value.'; boundary='.$body->getBoundary();
+        $headers['Content-Type'] =
+            ContentType::MULTIPART->value.
+            '; boundary='.
+            $body->getBoundary();
 
         // Add Content-Length if not already set
         if (! isset($headers['Content-Length'])) {
@@ -156,8 +187,10 @@ class Request extends BaseRequest implements RequestInterface
      *
      * @param  array<string, string|array<int, string>>  $headers
      */
-    public static function get(string|UriInterface $uri, array $headers = []): static
-    {
+    public static function get(
+        string|UriInterface $uri,
+        array $headers = [],
+    ): static {
         return new static(Method::GET->value, $uri, $headers);
     }
 
@@ -170,10 +203,13 @@ class Request extends BaseRequest implements RequestInterface
         string|UriInterface $uri,
         mixed $body = null,
         array $headers = [],
-        ContentType|string|null $contentType = null
+        ContentType|string|null $contentType = null,
     ): static {
         if ($contentType) {
-            $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
+            $contentTypeValue =
+                $contentType instanceof ContentType
+                    ? $contentType->value
+                    : $contentType;
             $headers['Content-Type'] = $contentTypeValue;
         }
 
@@ -189,10 +225,13 @@ class Request extends BaseRequest implements RequestInterface
         string|UriInterface $uri,
         mixed $body = null,
         array $headers = [],
-        ContentType|string|null $contentType = null
+        ContentType|string|null $contentType = null,
     ): static {
         if ($contentType) {
-            $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
+            $contentTypeValue =
+                $contentType instanceof ContentType
+                    ? $contentType->value
+                    : $contentType;
             $headers['Content-Type'] = $contentTypeValue;
         }
 
@@ -208,10 +247,13 @@ class Request extends BaseRequest implements RequestInterface
         string|UriInterface $uri,
         mixed $body = null,
         array $headers = [],
-        ContentType|string|null $contentType = null
+        ContentType|string|null $contentType = null,
     ): static {
         if ($contentType) {
-            $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
+            $contentTypeValue =
+                $contentType instanceof ContentType
+                    ? $contentType->value
+                    : $contentType;
             $headers['Content-Type'] = $contentTypeValue;
         }
 
@@ -227,10 +269,13 @@ class Request extends BaseRequest implements RequestInterface
         string|UriInterface $uri,
         mixed $body = null,
         array $headers = [],
-        ContentType|string|null $contentType = null
+        ContentType|string|null $contentType = null,
     ): static {
         if ($contentType) {
-            $contentTypeValue = $contentType instanceof ContentType ? $contentType->value : $contentType;
+            $contentTypeValue =
+                $contentType instanceof ContentType
+                    ? $contentType->value
+                    : $contentType;
             $headers['Content-Type'] = $contentTypeValue;
         }
 
@@ -242,8 +287,10 @@ class Request extends BaseRequest implements RequestInterface
      *
      * @param  array<string, string|array<int, string>>  $headers
      */
-    public static function head(string|UriInterface $uri, array $headers = []): static
-    {
+    public static function head(
+        string|UriInterface $uri,
+        array $headers = [],
+    ): static {
         return new static(Method::HEAD->value, $uri, $headers);
     }
 
@@ -252,8 +299,10 @@ class Request extends BaseRequest implements RequestInterface
      *
      * @param  array<string, string|array<int, string>>  $headers
      */
-    public static function options(string|UriInterface $uri, array $headers = []): static
-    {
+    public static function options(
+        string|UriInterface $uri,
+        array $headers = [],
+    ): static {
         return new static(Method::OPTIONS->value, $uri, $headers);
     }
 
@@ -267,7 +316,7 @@ class Request extends BaseRequest implements RequestInterface
             $request->getUri(),
             $request->getHeaders(),
             $request->getBody(),
-            $request->getProtocolVersion()
+            $request->getProtocolVersion(),
         );
     }
 
@@ -392,10 +441,15 @@ class Request extends BaseRequest implements RequestInterface
      *
      * @throws InvalidArgumentException If the body is not valid JSON
      */
-    public function getBodyAsJson(bool $assoc = true, int $depth = 512, int $options = 0): mixed
-    {
+    public function getBodyAsJson(
+        bool $assoc = true,
+        int $depth = 512,
+        int $options = 0,
+    ): mixed {
         if ($depth < 1) {
-            throw new InvalidArgumentException('JSON decode depth must be greater than 0.');
+            throw new InvalidArgumentException(
+                'JSON decode depth must be greater than 0.',
+            );
         }
         $body = $this->getBodyAsString();
 
@@ -406,7 +460,9 @@ class Request extends BaseRequest implements RequestInterface
         $data = json_decode($body, $assoc, $depth, $options);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new InvalidArgumentException('Invalid JSON: '.json_last_error_msg());
+            throw new InvalidArgumentException(
+                'Invalid JSON: '.json_last_error_msg(),
+            );
         }
 
         return $data;
@@ -448,7 +504,10 @@ class Request extends BaseRequest implements RequestInterface
      */
     public function withContentType(ContentType|string $contentType): static
     {
-        $value = $contentType instanceof ContentType ? $contentType->value : $contentType;
+        $value =
+            $contentType instanceof ContentType
+                ? $contentType->value
+                : $contentType;
 
         return $this->withHeader('Content-Type', $value);
     }
@@ -456,8 +515,10 @@ class Request extends BaseRequest implements RequestInterface
     /**
      * Set a query parameter on the request URI.
      */
-    public function withQueryParam(string $name, string|int|float|bool|null $value): static
-    {
+    public function withQueryParam(
+        string $name,
+        string|int|float|bool|null $value,
+    ): static {
         $uri = $this->getUri();
         $query = $uri->getQuery();
 
@@ -537,7 +598,9 @@ class Request extends BaseRequest implements RequestInterface
         $json = json_encode($data, $options);
 
         if ($json === false) {
-            throw new InvalidArgumentException('Unable to encode data to JSON: '.json_last_error_msg());
+            throw new InvalidArgumentException(
+                'Unable to encode data to JSON: '.json_last_error_msg(),
+            );
         }
 
         $request = $this->withBody(Utils::streamFor($json));

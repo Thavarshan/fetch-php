@@ -31,7 +31,7 @@ class EventsTest extends TestCase
         return (new ClientHandler)->setHttpClient($guzzle);
     }
 
-    public function test_request_and_response_events_fire_with_shared_correlation_id(): void
+    public function test_events_share_a_correlation_id(): void
     {
         $handler = $this->handler([new PsrResponse(200, [], 'ok')]);
 
@@ -56,15 +56,22 @@ class EventsTest extends TestCase
 
         // Both events share the request's correlation id.
         $this->assertNotSame('', $requestEvent->getCorrelationId());
-        $this->assertSame($requestEvent->getCorrelationId(), $responseEvent->getCorrelationId());
+        $this->assertSame(
+            $requestEvent->getCorrelationId(),
+            $responseEvent->getCorrelationId(),
+        );
     }
 
     public function test_error_and_timeout_events_fire_on_failure(): void
     {
         $handler = $this->handler([
-            new ConnectException('cURL error 28: Operation timed out', new PsrRequest('GET', 'https://example.com')),
+            new ConnectException(
+                'cURL error 28: Operation timed out',
+                new PsrRequest('GET', 'https://example.com'),
+            ),
         ]);
-        // Disable retries at the option level so the connect failure surfaces on
+        // Disable retries at the option level so the connect failure surfaces
+        // on
         // the first attempt rather than being retried into an empty mock queue.
         $handler->withOptions(['retries' => 0]);
 
@@ -127,7 +134,10 @@ class EventsTest extends TestCase
 
         $this->assertSame(200, $response->status());
         $this->assertInstanceOf(RedirectEvent::class, $redirectEvent);
-        $this->assertSame('https://example.com/new', $redirectEvent->getLocation());
+        $this->assertSame(
+            'https://example.com/new',
+            $redirectEvent->getLocation(),
+        );
         $this->assertSame(1, $redirectEvent->getRedirectCount());
     }
 

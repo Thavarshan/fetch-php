@@ -14,30 +14,27 @@ AGENTS.md. If the two ever disagree, AGENTS.md wins; fix the drift.
 ## Plan first for risky work
 
 Enter **plan mode** before you edit when a task is likely to touch the public
-API or defaults (`src/Fetch/Interfaces/`, `Http/Client.php`, `Http/Response.php`,
-`Enum/`, `Support/helpers.php`, `Support/RequestOptions.php`, `Support/Defaults.php`,
+API or defaults (`src/Fetch/Interfaces/`, `Http/Client.php`,
+`Http/Response.php`, `Enum/`, `Support/helpers.php`,
+`Support/RequestOptions.php`, `Support/Defaults.php`,
 `Support/RetryDefaults.php`), spans multiple subsystems, or changes async,
 caching, streaming, pooling, retry, or security behavior. Trivial, localized
 fixes don't need a plan.
 
 ## Skills — invoke the right one
 
-These project skills (`.claude/skills/`) encode the real workflows. Prefer them
-over improvising; they also drive Codex and other AGENTS.md-aware tools.
-
-| Work | Skill |
-| --- | --- |
-| Add a feature / fix a bug in `src/Fetch` | `fetch-php-implement-change` |
-| Write or fix PHPUnit tests | `fetch-php-test-development` |
-| A test or behavior is failing | `fetch-php-debug-failure` |
-| Review a diff / branch / PR | `fetch-php-code-review` |
-| URL/auth/redirect/TLS/logging/cache change | `fetch-php-http-security-review` |
-| Pool/stream/retry/async/event change | `fetch-php-performance-review` |
-| Any public surface or default change | `fetch-php-public-api-review` |
-| GitHub Actions is red | `fetch-php-ci-triage` |
-| Docs/README/examples need updating | `fetch-php-documentation-sync` |
-| Cut or recover a release (maintainer-approved) | `fetch-php-release` |
-
+- Feature or bug fix in `src/Fetch`: `fetch-php-implement-change`.
+- PHPUnit tests: `fetch-php-test-development`.
+- Diagnose a failing test or behavior: `fetch-php-debug-failure`.
+- Review a diff, branch, or PR: `fetch-php-code-review`.
+- URL, auth, redirects, TLS, logging, or cache:
+  `fetch-php-http-security-review`.
+- Pool, streaming, retries, async, or events:
+  `fetch-php-performance-review`.
+- Public API or default changes: `fetch-php-public-api-review`.
+- GitHub Actions failures: `fetch-php-ci-triage`.
+- Docs, README, or examples: `fetch-php-documentation-sync`.
+- Maintainer-approved release work: `fetch-php-release`.
 Path-scoped `.claude/rules/` load automatically when you open matching files
 (PHP source, tests, docs, workflows, public-API files) — you don't invoke them.
 

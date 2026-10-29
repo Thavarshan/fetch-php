@@ -6,7 +6,11 @@ const { site } = useData();
 
 <template>
     <a class="brand-header" :href="withBase('/')">
-        <img class="brand-logo" :src="withBase('/logo.png')" alt="Fetch PHP logo" />
+        <img
+            class="brand-logo"
+            :src="withBase('/logo.png')"
+            alt="Fetch PHP logo"
+        />
         <span class="brand-text">
             <span class="brand-name">{{ site.title }}</span>
             <span class="brand-subtitle">fetch() for PHP</span>

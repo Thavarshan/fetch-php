@@ -49,7 +49,10 @@ trait ConfiguresRequests
             $this->maxRetries = max(0, (int) $options['retries']);
         }
 
-        if (isset($options['retry_delay']) && is_numeric($options['retry_delay'])) {
+        if (
+            isset($options['retry_delay']) &&
+            is_numeric($options['retry_delay'])
+        ) {
             $this->retryDelay = max(0, (int) $options['retry_delay']);
         }
 
@@ -82,7 +85,10 @@ trait ConfiguresRequests
 
         // Set the content type header for form params
         if (! $this->hasHeader('Content-Type')) {
-            $this->withHeader('Content-Type', ContentType::FORM_URLENCODED->value);
+            $this->withHeader(
+                'Content-Type',
+                ContentType::FORM_URLENCODED->value,
+            );
         }
 
         return $this;
@@ -91,15 +97,24 @@ trait ConfiguresRequests
     /**
      * Set the multipart data for the request.
      *
-     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>  $multipart  Multipart data
+     * @param  array<int, array{
+     *     name: string,
+     *     contents: mixed,
+     *     headers?: array<string, string>
+     * }>  $multipart
      * @return $this
      */
     public function withMultipart(array $multipart): ClientHandler
     {
         $this->options['multipart'] = $multipart;
 
-        // Remove any content type headers as they're automatically set by the multipart boundary
-        if ($this->hasHeader('Content-Type') && isset($this->options['headers']) && is_array($this->options['headers'])) {
+        // Remove any content type headers as they're automatically set by the
+        // multipart boundary
+        if (
+            $this->hasHeader('Content-Type') &&
+            isset($this->options['headers']) &&
+            is_array($this->options['headers'])
+        ) {
             unset($this->options['headers']['Content-Type']);
         }
 
@@ -148,7 +163,7 @@ trait ConfiguresRequests
 
         $this->options['headers'] = array_merge(
             $this->options['headers'],
-            $headers
+            $headers,
         );
 
         return $this;
@@ -180,21 +195,29 @@ trait ConfiguresRequests
      * @param  string|ContentType  $contentType  Content type
      * @return $this
      */
-    public function withBody(array|string $body, string|ContentType $contentType = ContentType::JSON): ClientHandler
-    {
+    public function withBody(
+        array|string $body,
+        string|ContentType $contentType = ContentType::JSON,
+    ): ClientHandler {
         // Convert string content type to enum if necessary
         $contentTypeEnum = ContentType::normalizeContentType($contentType);
-        $contentTypeValue = $contentTypeEnum instanceof ContentType
-            ? $contentTypeEnum->value
-            : $contentTypeEnum;
+        $contentTypeValue =
+            $contentTypeEnum instanceof ContentType
+                ? $contentTypeEnum->value
+                : $contentTypeEnum;
 
         if (is_array($body)) {
             if ($contentTypeEnum === ContentType::JSON) {
                 // Use Guzzle's json option for proper JSON handling
                 $this->options['json'] = $body;
 
-                // IMPORTANT: Remove any existing conflicting options to prevent conflicts
-                $this->unsetConflictingOptions(['body', 'form_params', 'multipart']);
+                // IMPORTANT: Remove any existing conflicting options to prevent
+                // conflicts
+                $this->unsetConflictingOptions([
+                    'body',
+                    'form_params',
+                    'multipart',
+                ]);
 
                 // Set JSON content type header if not already set
                 if (! $this->hasHeader('Content-Type')) {
@@ -209,10 +232,15 @@ trait ConfiguresRequests
                 // Ensure no conflicting body option
                 $this->unsetConflictingOptions(['body', 'json', 'form_params']);
             } else {
-                // For any other content type, serialize the array to JSON in body
+                // For any other content type, serialize the array to JSON in
+                // body
                 $this->options['body'] = json_encode($body);
                 // Remove conflicting options to prevent conflicts
-                $this->unsetConflictingOptions(['json', 'form_params', 'multipart']);
+                $this->unsetConflictingOptions([
+                    'json',
+                    'form_params',
+                    'multipart',
+                ]);
                 if (! $this->hasHeader('Content-Type')) {
                     $this->withHeader('Content-Type', $contentTypeValue);
                 }
@@ -221,7 +249,11 @@ trait ConfiguresRequests
             // For string bodies, use body option
             $this->options['body'] = $body;
             // Remove body-related options to prevent conflicts
-            $this->unsetConflictingOptions(['json', 'form_params', 'multipart']);
+            $this->unsetConflictingOptions([
+                'json',
+                'form_params',
+                'multipart',
+            ]);
             if (! $this->hasHeader('Content-Type')) {
                 $this->withHeader('Content-Type', $contentTypeValue);
             }
@@ -265,7 +297,7 @@ trait ConfiguresRequests
 
         $this->options['query'] = array_merge(
             $this->options['query'],
-            $queryParams
+            $queryParams,
         );
 
         return $this;
@@ -278,8 +310,10 @@ trait ConfiguresRequests
      * @param  mixed  $value  Parameter value
      * @return $this
      */
-    public function withQueryParameter(string $name, mixed $value): ClientHandler
-    {
+    public function withQueryParameter(
+        string $name,
+        mixed $value,
+    ): ClientHandler {
         // Initialize query array if not set
         if (! isset($this->options['query'])) {
             $this->options['query'] = [];
@@ -404,8 +438,10 @@ trait ConfiguresRequests
      * @param  mixed  $body  The request body
      * @param  string|ContentType  $contentType  The content type of the request
      */
-    protected function configureRequestBody(mixed $body = null, string|ContentType $contentType = ContentType::JSON): void
-    {
+    protected function configureRequestBody(
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+    ): void {
         if (is_null($body)) {
             return;
         }
@@ -417,8 +453,10 @@ trait ConfiguresRequests
             match ($contentTypeEnum) {
                 ContentType::JSON => $this->withJson($body),
                 ContentType::FORM_URLENCODED => $this->withFormParams($body),
-                ContentType::MULTIPART => $this->withMultipart($this->normalizeMultipart($body)),
-                default => $this->withBody($body, $contentType)
+                ContentType::MULTIPART => $this->withMultipart(
+                    $this->normalizeMultipart($body),
+                ),
+                default => $this->withBody($body, $contentType),
             };
 
             return;
@@ -442,8 +480,16 @@ trait ConfiguresRequests
     /**
      * Normalize multipart array to the expected shape for analysis and runtime.
      *
-     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>|array<string, mixed>  $multipart
-     * @return array<int, array{name: string, contents: mixed, headers?: array<string, string>}>
+     * @param  array<int, array{
+     *     name: string,
+     *     contents: mixed,
+     *     headers?: array<string, string>
+     * }>|array<string, mixed>  $multipart
+     * @return array<int, array{
+     *     name: string,
+     *     contents: mixed,
+     *     headers?: array<string, string>
+     * }>
      */
     protected function normalizeMultipart(array $multipart): array
     {

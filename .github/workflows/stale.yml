@@ -22,7 +22,12 @@ jobs:
           days-before-pr-close: 21
           stale-issue-label: 'stale'
           stale-pr-label: 'stale'
-          exempt-issue-labels: 'security,help wanted,good first issue,breaking-change'
+          exempt-issue-labels:
+            'security,help wanted,good first issue,breaking-change'
           exempt-pr-labels: 'security,breaking-change'
-          stale-issue-message: 'This issue has been automatically marked as stale due to inactivity.'
-          stale-pr-message: 'This pull request has been automatically marked as stale due to inactivity.'
+          stale-issue-message:
+            'This issue has been automatically marked as stale due to
+            inactivity.'
+          stale-pr-message:
+            'This pull request has been automatically marked as stale due to
+            inactivity.'

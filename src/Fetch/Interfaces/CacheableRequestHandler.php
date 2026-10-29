@@ -11,7 +11,10 @@ interface CacheableRequestHandler extends CacheableHandler
     /**
      * @param  array<string, mixed>  $options
      */
-    public function withCache(?CacheInterface $cache = null, array $options = []): self;
+    public function withCache(
+        ?CacheInterface $cache = null,
+        array $options = [],
+    ): self;
 
     public function withoutCache(): self;
 

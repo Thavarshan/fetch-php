@@ -42,14 +42,19 @@ class ClientTest extends TestCase
         $options = ['timeout' => 30];
         $mockResponse = $this->createMock(Response::class);
 
-        $this->mockHandler->expects($this->once())
+        $this->mockHandler
+            ->expects($this->once())
             ->method('request')
             ->with(
                 Method::GET,
                 $url,
                 null,
                 ContentType::JSON,
-                $this->callback(static fn (array $requestOptions): bool => $requestOptions['timeout'] === 30)
+                $this->callback(
+                    static fn (array $requestOptions): bool => $requestOptions[
+                        'timeout'
+                    ] === 30,
+                ),
             )
             ->willReturn($mockResponse);
 
@@ -68,14 +73,19 @@ class ClientTest extends TestCase
         ];
         $mockResponse = $this->createMock(Response::class);
 
-        $this->mockHandler->expects($this->once())
+        $this->mockHandler
+            ->expects($this->once())
             ->method('request')
             ->with(
                 Method::POST,
                 $url,
                 $body,
                 ContentType::JSON,
-                $this->callback(static fn (array $requestOptions): bool => $requestOptions['json'] === $body)
+                $this->callback(
+                    static fn (array $requestOptions): bool => $requestOptions[
+                        'json'
+                    ] === $body,
+                ),
             )
             ->willReturn($mockResponse);
 
@@ -91,14 +101,19 @@ class ClientTest extends TestCase
         $options = ['timeout' => 30];
         $mockResponse = $this->createMock(Response::class);
 
-        $this->mockHandler->expects($this->once())
+        $this->mockHandler
+            ->expects($this->once())
             ->method('request')
             ->with(
                 Method::GET,
                 $url,
                 null,
                 ContentType::JSON,
-                $this->callback(static fn (array $requestOptions): bool => $requestOptions['query'] === $queryParams)
+                $this->callback(
+                    static fn (array $requestOptions): bool => $requestOptions[
+                        'query'
+                    ] === $queryParams,
+                ),
             )
             ->willReturn($mockResponse);
 
@@ -115,14 +130,19 @@ class ClientTest extends TestCase
         $options = ['timeout' => 30];
         $mockResponse = $this->createMock(Response::class);
 
-        $this->mockHandler->expects($this->once())
+        $this->mockHandler
+            ->expects($this->once())
             ->method('request')
             ->with(
                 Method::POST,
                 $url,
                 $body,
                 $contentType,
-                $this->callback(static fn (array $requestOptions): bool => $requestOptions['timeout'] === 30)
+                $this->callback(
+                    static fn (array $requestOptions): bool => $requestOptions[
+                        'timeout'
+                    ] === 30,
+                ),
             )
             ->willReturn($mockResponse);
 
@@ -148,7 +168,8 @@ class ClientTest extends TestCase
 
         $mockResponse = $this->createMock(Response::class);
 
-        $this->mockHandler->expects($this->once())
+        $this->mockHandler
+            ->expects($this->once())
             ->method('sendRequest')
             ->willReturn($mockResponse);
 
@@ -157,20 +178,35 @@ class ClientTest extends TestCase
         $this->assertSame($mockResponse, $result);
     }
 
-    public function test_fetch_wraps_connection_failures_in_network_exception(): void
+    public function test_fetch_wraps_connection_failure_as_network_error(): void
     {
         $request = new Request('GET', 'https://example.com');
-        $this->mockHandler->expects($this->once())
+        $this->mockHandler
+            ->expects($this->once())
             ->method('request')
-            ->with(Method::GET, 'https://example.com', null, ContentType::JSON, $this->anything())
-            ->willThrowException(new ConnectException('Connection refused', $request));
+            ->with(
+                Method::GET,
+                'https://example.com',
+                null,
+                ContentType::JSON,
+                $this->anything(),
+            )
+            ->willThrowException(
+                new ConnectException('Connection refused', $request),
+            );
 
         try {
             $this->client->fetch('https://example.com');
             $this->fail('Expected a network exception');
         } catch (NetworkException $exception) {
-            $this->assertSame($request->getUri(), $exception->getRequest()->getUri());
-            $this->assertInstanceOf(ConnectException::class, $exception->getPrevious());
+            $this->assertSame(
+                $request->getUri(),
+                $exception->getRequest()->getUri(),
+            );
+            $this->assertInstanceOf(
+                ConnectException::class,
+                $exception->getPrevious(),
+            );
         }
     }
 }

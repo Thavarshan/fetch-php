@@ -25,7 +25,9 @@ jobs:
           numOfAssignee: 1
 
       - name: Auto-assign PR
-        if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'Thavarshan'
+        if:
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.user.login == 'Thavarshan'
         uses: pozil/auto-assign-issue@v2
         with:
           assignees: Thavarshan

@@ -1,4 +1,6 @@
 interface:
-  display_name: "Fetch PHP Release"
-  short_description: "Release Fetch PHP safely through GitHub and Packagist."
-  default_prompt: "Use this skill to prepare, tag, verify, and publish a Fetch PHP release without violating Packagist version immutability."
+  display_name: 'Fetch PHP Release'
+  short_description: 'Release Fetch PHP safely through GitHub and Packagist.'
+  default_prompt:
+    'Use this skill to prepare, tag, verify, and publish a Fetch PHP release
+    without violating Packagist version immutability.'

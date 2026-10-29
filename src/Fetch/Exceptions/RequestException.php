@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Fetch\Exceptions;
 
-use Psr\Http\Client\RequestExceptionInterface;
+use Psr\Http\Client\RequestExceptionInterface as RequestContract;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
-class RequestException extends ClientException implements RequestExceptionInterface
+class RequestException extends ClientException implements RequestContract
 {
     /**
      * The request.
@@ -33,7 +33,7 @@ class RequestException extends ClientException implements RequestExceptionInterf
         string $message,
         RequestInterface $request,
         ?ResponseInterface $response = null,
-        ?Throwable $previous = null
+        ?Throwable $previous = null,
     ) {
         parent::__construct($message, 0, $previous);
         $this->request = $request;

@@ -1,6 +1,10 @@
 ---
 name: ci-investigator
-description: Read-only triage of failing Fetch PHP GitHub Actions runs — locate the failing job/matrix cell (OS × PHP 8.3/8.4/8.5, prefer-lowest, lint/PHPStan, coverage, docs) with gh, classify the cause, and give safe local reproduction steps. Use when CI is red.
+description:
+    Read-only triage of failing Fetch PHP GitHub Actions runs — locate the
+    failing job/matrix cell (OS × PHP 8.3/8.4/8.5, prefer-lowest, lint/PHPStan,
+    coverage, docs) with gh, classify the cause, and give safe local
+    reproduction steps. Use when CI is red.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---

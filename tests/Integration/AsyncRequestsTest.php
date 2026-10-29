@@ -36,26 +36,38 @@ class AsyncRequestsTest extends TestCase
             /**
              * Override sendRequest with compatible signature.
              */
-            public function sendRequest(Method|string $method, string $uri, array $options = []): ResponseInterface|PromiseInterface
-            {
+            public function sendRequest(
+                Method|string $method,
+                string $uri,
+                array $options = [],
+            ): ResponseInterface|PromiseInterface {
                 // Convert string method to Method enum if needed
-                $methodStr = $method instanceof Method ? $method->value : $method;
+                $methodStr =
+                    $method instanceof Method ? $method->value : $method;
 
                 if ($this->isAsync) {
                     return async(function () use ($methodStr, $uri) {
-                        return new Response(200, ['Content-Type' => 'application/json'], json_encode([
-                            'method' => $methodStr,
-                            'uri' => $uri,
-                            'async' => true,
-                        ]));
+                        return new Response(
+                            200,
+                            ['Content-Type' => 'application/json'],
+                            json_encode([
+                                'method' => $methodStr,
+                                'uri' => $uri,
+                                'async' => true,
+                            ]),
+                        );
                     });
                 }
 
-                return new Response(200, ['Content-Type' => 'application/json'], json_encode([
-                    'method' => $methodStr,
-                    'uri' => $uri,
-                    'async' => false,
-                ]));
+                return new Response(
+                    200,
+                    ['Content-Type' => 'application/json'],
+                    json_encode([
+                        'method' => $methodStr,
+                        'uri' => $uri,
+                        'async' => false,
+                    ]),
+                );
             }
         };
 
@@ -115,7 +127,9 @@ class AsyncRequestsTest extends TestCase
     public function test_mock_server_respected_in_async_mode(): void
     {
         MockServer::fake([
-            'https://api.example.com/mock-async' => MockResponse::json(['mocked' => true]),
+            'https://api.example.com/mock-async' => MockResponse::json([
+                'mocked' => true,
+            ]),
         ]);
 
         $handler = new ClientHandler;
@@ -150,7 +164,8 @@ class AsyncRequestsTest extends TestCase
         // Silence expected unhandled rejection output from React Promise
         $previousHandler = \React\Promise\set_rejection_handler(fn () => null);
 
-        $promise = $handler->get('https://example.com/fail')
+        $promise = $handler
+            ->get('https://example.com/fail')
             ->then(null, fn ($e) => $e);
 
         $result = await($promise);
@@ -159,9 +174,18 @@ class AsyncRequestsTest extends TestCase
         \React\Promise\set_rejection_handler($previousHandler);
 
         $this->assertInstanceOf(AsyncException::class, $result);
-        $this->assertStringContainsString('Request GET https://example.com/fail failed', $result->getMessage());
-        $this->assertInstanceOf(\RuntimeException::class, $result->getPrevious());
-        $this->assertStringContainsString('simulated failure', $result->getPrevious()->getMessage());
+        $this->assertStringContainsString(
+            'Request GET https://example.com/fail failed',
+            $result->getMessage(),
+        );
+        $this->assertInstanceOf(
+            \RuntimeException::class,
+            $result->getPrevious(),
+        );
+        $this->assertStringContainsString(
+            'simulated failure',
+            $result->getPrevious()->getMessage(),
+        );
     }
 
     public function test_concurrency_helpers_all_and_race(): void
@@ -202,8 +226,10 @@ class AsyncRequestsTest extends TestCase
 
     public function test_async_request_respects_per_request_retry_config(): void
     {
-        // This test verifies that async requests respect per-request retry configuration
-        // The ConcurrentRequestsTest::test_retries_are_isolated_per_request covers the sync case
+        // This test verifies that async requests respect per-request retry
+        // configuration
+        // The ConcurrentRequestsTest::test_retries_are_isolated_per_request
+        // covers the sync case
         // Here we test that the config flows properly through the async path
 
         $mockHandler = new MockHandler([
@@ -211,7 +237,11 @@ class AsyncRequestsTest extends TestCase
             new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
             new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
             // Third attempt succeeds
-            new \GuzzleHttp\Psr7\Response(200, [], json_encode(['success' => true, 'attempt' => 3])),
+            new \GuzzleHttp\Psr7\Response(
+                200,
+                [],
+                json_encode(['success' => true, 'attempt' => 3]),
+            ),
         ]);
 
         $handlerStack = HandlerStack::create($mockHandler);
@@ -234,7 +264,8 @@ class AsyncRequestsTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
         $data = $response->json();
         $this->assertTrue($data['success']);
-        // Guzzle mock processes all 3 requests, so we expect success on the "3rd attempt"
+        // Guzzle mock processes all 3 requests, so we expect success on the
+        // "3rd attempt"
         $this->assertEquals(3, $data['attempt']);
     }
 
@@ -260,7 +291,11 @@ class AsyncRequestsTest extends TestCase
                     $this->capturedTimeout = $context->getTimeout();
                 }
 
-                return new Response(200, [], json_encode(['timeout_captured' => $this->capturedTimeout]));
+                return new Response(
+                    200,
+                    [],
+                    json_encode(['timeout_captured' => $this->capturedTimeout]),
+                );
             }
         };
 
@@ -269,9 +304,13 @@ class AsyncRequestsTest extends TestCase
         $handler->async();
 
         // Make async request with per-request timeout override
-        $promise = $handler->sendRequest('GET', 'https://example.com/timeout-test', [
-            'timeout' => 99,
-        ]);
+        $promise = $handler->sendRequest(
+            'GET',
+            'https://example.com/timeout-test',
+            [
+                'timeout' => 99,
+            ],
+        );
 
         $response = await($promise);
         $data = $response->json();

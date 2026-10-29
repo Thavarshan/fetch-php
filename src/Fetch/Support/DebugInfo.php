@@ -10,7 +10,8 @@ use Psr\Http\Message\ResponseInterface;
  * DebugInfo provides detailed information about HTTP request/response cycles.
  *
  * This class captures and formats debug information including request/response
- * headers and bodies, timing information, connection statistics, and memory usage.
+ * headers and bodies, timing information, connection statistics, and memory
+ *     usage.
  */
 class DebugInfo
 {
@@ -23,7 +24,8 @@ class DebugInfo
         'request_headers' => true,
         'request_body' => true,
         'response_headers' => true,
-        'response_body' => 1024, // First 1KB by default, false to disable, true for all
+        // First 1KB by default, false to disable, true for all.
+        'response_body' => 1024,
         'timing' => true,
         'memory' => true,
         'dns_resolution' => false,
@@ -48,9 +50,11 @@ class DebugInfo
     /**
      * Create a new DebugInfo instance.
      *
-     * @param  array<string, mixed>  $requestData  Request data (method, uri, headers, body)
+     * @param  array<string, mixed>  $requestData  Request data (method, uri,
+     *                                             headers, body)
      * @param  ResponseInterface|null  $response  The HTTP response
-     * @param  array<string, float>  $timings  Timing information for the request
+     * @param  array<string, float>  $timings  Timing information for the
+     *                                         request
      * @param  array<string, mixed>  $connectionStats  Connection statistics
      * @param  int  $memoryUsage  Memory usage in bytes
      */
@@ -67,7 +71,8 @@ class DebugInfo
      *
      * @param  string  $method  HTTP method
      * @param  string  $uri  Request URI
-     * @param  array<string, mixed>  $options  Request options including headers and body
+     * @param  array<string, mixed>  $options  Request options including headers
+     *                                         and body
      * @param  ResponseInterface|null  $response  The HTTP response
      * @param  array<string, float>  $timings  Timing information
      * @param  array<string, mixed>  $connectionStats  Connection statistics
@@ -89,10 +94,17 @@ class DebugInfo
             'method' => strtoupper($method),
             'uri' => $uri,
             'headers' => $sanitizedOptions['headers'] ?? [],
-            'body' => $sanitizedOptions['body'] ?? ($sanitizedOptions['json'] ?? null),
+            'body' => $sanitizedOptions['body'] ??
+                ($sanitizedOptions['json'] ?? null),
         ];
 
-        return new static($requestData, $response, $timings, $connectionStats, $memoryUsage);
+        return new static(
+            $requestData,
+            $response,
+            $timings,
+            $connectionStats,
+            $memoryUsage,
+        );
     }
 
     /**
@@ -126,8 +138,13 @@ class DebugInfo
         $sanitizedOptions = $options;
 
         // Mask sensitive headers (case-insensitive)
-        if (isset($sanitizedOptions['headers']) && is_array($sanitizedOptions['headers'])) {
-            $sanitizedOptions['headers'] = self::sanitizeHeaders($sanitizedOptions['headers']);
+        if (
+            isset($sanitizedOptions['headers']) &&
+            is_array($sanitizedOptions['headers'])
+        ) {
+            $sanitizedOptions['headers'] = self::sanitizeHeaders(
+                $sanitizedOptions['headers'],
+            );
         }
 
         // Mask auth credentials
@@ -149,9 +166,19 @@ class DebugInfo
         $sanitizedHeaders = $headers;
 
         foreach ($sanitizedHeaders as $key => $value) {
-            if (in_array(strtolower((string) $key), self::SENSITIVE_HEADERS, true)) {
+            if (
+                in_array(
+                    strtolower((string) $key),
+                    self::SENSITIVE_HEADERS,
+                    true,
+                )
+            ) {
                 if (is_array($value)) {
-                    $sanitizedHeaders[$key] = array_fill(0, count($value), '[REDACTED]');
+                    $sanitizedHeaders[$key] = array_fill(
+                        0,
+                        count($value),
+                        '[REDACTED]',
+                    );
                 } else {
                     $sanitizedHeaders[$key] = '[REDACTED]';
                 }
@@ -228,7 +255,10 @@ class DebugInfo
         if ($options['request_body']) {
             $body = $this->requestData['body'] ?? null;
             if ($body !== null) {
-                $formatted['body'] = $this->formatBody($body, $options['request_body']);
+                $formatted['body'] = $this->formatBody(
+                    $body,
+                    $options['request_body'],
+                );
             }
         }
 
@@ -254,13 +284,18 @@ class DebugInfo
         ];
 
         if ($options['response_headers']) {
-            $formatted['headers'] = self::sanitizeHeaders($this->response->getHeaders());
+            $formatted['headers'] = self::sanitizeHeaders(
+                $this->response->getHeaders(),
+            );
         }
 
         if ($options['response_body'] !== false) {
             $body = (string) $this->response->getBody();
             $this->response->getBody()->rewind();
-            $formatted['body'] = $this->formatBody($body, $options['response_body']);
+            $formatted['body'] = $this->formatBody(
+                $body,
+                $options['response_body'],
+            );
         }
 
         return $formatted;
@@ -315,7 +350,8 @@ class DebugInfo
      * Format a body for output, optionally truncating.
      *
      * @param  mixed  $body  The body content
-     * @param  bool|int  $option  True for full body, int for max bytes, false to disable
+     * @param  bool|int  $option  True for full body, int for max bytes, false
+     *                            to disable
      */
     protected function formatBody(mixed $body, bool|int $option): mixed
     {

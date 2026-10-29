@@ -28,8 +28,11 @@ final class EventDispatcher implements EventDispatcherInterface
         private readonly ?LoggerInterface $logger = null,
     ) {}
 
-    public function addListener(string $eventName, callable $listener, int $priority = 0): void
-    {
+    public function addListener(
+        string $eventName,
+        callable $listener,
+        int $priority = 0,
+    ): void {
         $this->listeners[$eventName][$priority][] = $listener;
 
         // Keep priorities ordered high-to-low so dispatch can iterate directly.

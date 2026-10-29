@@ -24,7 +24,10 @@ class MiddlewarePipelineTest extends TestCase
     {
         $pipeline = new MiddlewarePipeline([]);
 
-        $response = $pipeline->handle($this->request(), fn () => new Response(200));
+        $response = $pipeline->handle(
+            $this->request(),
+            fn () => new Response(200),
+        );
 
         $this->assertSame(200, $response->getStatusCode());
     }
@@ -34,7 +37,10 @@ class MiddlewarePipelineTest extends TestCase
         $order = [];
 
         $make = function (string $tag) use (&$order) {
-            return function (RequestInterface $request, callable $next) use (&$order, $tag): ResponseInterface {
+            return function (RequestInterface $request, callable $next) use (
+                &$order,
+                $tag,
+            ): ResponseInterface {
                 $order[] = "before:$tag";
                 $response = $next($request);
                 $order[] = "after:$tag";
@@ -59,11 +65,15 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_middleware_can_modify_request(): void
     {
-        $add = fn (RequestInterface $request, callable $next) => $next($request->withHeader('X-Test', 'yes'));
+        $add = fn (RequestInterface $request, callable $next) => $next(
+            $request->withHeader('X-Test', 'yes'),
+        );
 
         $pipeline = new MiddlewarePipeline([$add]);
 
-        $pipeline->handle($this->request(), function (RequestInterface $request) {
+        $pipeline->handle($this->request(), function (
+            RequestInterface $request,
+        ) {
             $this->assertSame('yes', $request->getHeaderLine('X-Test'));
 
             return new Response(200);
@@ -74,11 +84,16 @@ class MiddlewarePipelineTest extends TestCase
     {
         $coreCalled = false;
 
-        $shortCircuit = fn (RequestInterface $request, callable $next) => new Response(418, [], 'teapot');
+        $shortCircuit = fn (
+            RequestInterface $request,
+            callable $next,
+        ) => new Response(418, [], 'teapot');
 
         $pipeline = new MiddlewarePipeline([$shortCircuit]);
 
-        $response = $pipeline->handle($this->request(), function () use (&$coreCalled) {
+        $response = $pipeline->handle($this->request(), function () use (
+            &$coreCalled,
+        ) {
             $coreCalled = true;
 
             return new Response(200);
@@ -92,15 +107,19 @@ class MiddlewarePipelineTest extends TestCase
     {
         $middleware = new class implements Middleware
         {
-            public function handle(RequestInterface $request, callable $next): ResponseInterface
-            {
+            public function handle(
+                RequestInterface $request,
+                callable $next,
+            ): ResponseInterface {
                 return $next($request->withHeader('X-Object', 'ok'));
             }
         };
 
         $pipeline = new MiddlewarePipeline([$middleware]);
 
-        $pipeline->handle($this->request(), function (RequestInterface $request) {
+        $pipeline->handle($this->request(), function (
+            RequestInterface $request,
+        ) {
             $this->assertSame('ok', $request->getHeaderLine('X-Object'));
 
             return new Response(200);
@@ -111,8 +130,14 @@ class MiddlewarePipelineTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        $bad = fn (RequestInterface $request, callable $next) => 'not a response';
+        $bad = fn (
+            RequestInterface $request,
+            callable $next,
+        ) => 'not a response';
 
-        (new MiddlewarePipeline([$bad]))->handle($this->request(), fn () => new Response(200));
+        (new MiddlewarePipeline([$bad]))->handle(
+            $this->request(),
+            fn () => new Response(200),
+        );
     }
 }

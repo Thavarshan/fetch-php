@@ -29,7 +29,9 @@ class MockServerTest extends TestCase
     {
         MockServer::fake();
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
         $response = MockServer::getInstance()->handleRequest($request);
 
         $this->assertNotNull($response);
@@ -39,10 +41,14 @@ class MockServerTest extends TestCase
     public function test_fakes_specific_url_pattern(): void
     {
         MockServer::fake([
-            'https://api.example.com/users' => MockResponse::json(['users' => []]),
+            'https://api.example.com/users' => MockResponse::json([
+                'users' => [],
+            ]),
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         $response = MockServer::getInstance()->handleRequest($request);
 
         $this->assertNotNull($response);
@@ -52,14 +58,20 @@ class MockServerTest extends TestCase
     public function test_fakes_with_method_and_url(): void
     {
         MockServer::fake([
-            'GET https://api.example.com/users' => MockResponse::json(['users' => []]),
+            'GET https://api.example.com/users' => MockResponse::json([
+                'users' => [],
+            ]),
             'POST https://api.example.com/users' => MockResponse::created(),
         ]);
 
-        $getRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $getRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         $getResponse = MockServer::getInstance()->handleRequest($getRequest);
 
-        $postRequest = Request::createFromBase(new GuzzleRequest('POST', 'https://api.example.com/users'));
+        $postRequest = Request::createFromBase(
+            new GuzzleRequest('POST', 'https://api.example.com/users'),
+        );
         $postResponse = MockServer::getInstance()->handleRequest($postRequest);
 
         $this->assertSame(200, $getResponse->status());
@@ -69,10 +81,14 @@ class MockServerTest extends TestCase
     public function test_fakes_with_wildcard_pattern(): void
     {
         MockServer::fake([
-            'https://api.example.com/users/*' => MockResponse::json(['id' => 1]),
+            'https://api.example.com/users/*' => MockResponse::json([
+                'id' => 1,
+            ]),
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users/123'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users/123'),
+        );
         $response = MockServer::getInstance()->handleRequest($request);
 
         $this->assertNotNull($response);
@@ -89,11 +105,19 @@ class MockServerTest extends TestCase
             return MockResponse::json(['type' => 'other']);
         });
 
-        $usersRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
-        $usersResponse = MockServer::getInstance()->handleRequest($usersRequest);
+        $usersRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
+        $usersResponse = MockServer::getInstance()->handleRequest(
+            $usersRequest,
+        );
 
-        $otherRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/posts'));
-        $otherResponse = MockServer::getInstance()->handleRequest($otherRequest);
+        $otherRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/posts'),
+        );
+        $otherResponse = MockServer::getInstance()->handleRequest(
+            $otherRequest,
+        );
 
         $this->assertSame('users', $usersResponse->json()['type']);
         $this->assertSame('other', $otherResponse->json()['type']);
@@ -109,7 +133,9 @@ class MockServerTest extends TestCase
             'https://api.example.com/flaky' => $sequence,
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/flaky'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/flaky'),
+        );
 
         $firstResponse = MockServer::getInstance()->handleRequest($request);
         $this->assertSame(500, $firstResponse->status());
@@ -127,14 +153,20 @@ class MockServerTest extends TestCase
         ]);
         MockServer::preventStrayRequests();
 
-        $allowedRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://allowed.com/path'));
-        $allowedResponse = MockServer::getInstance()->handleRequest($allowedRequest);
+        $allowedRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://allowed.com/path'),
+        );
+        $allowedResponse = MockServer::getInstance()->handleRequest(
+            $allowedRequest,
+        );
         $this->assertNotNull($allowedResponse);
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('No fake response registered');
 
-        $strayRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://other.com/path'));
+        $strayRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://other.com/path'),
+        );
         MockServer::getInstance()->handleRequest($strayRequest);
     }
 
@@ -145,12 +177,18 @@ class MockServerTest extends TestCase
         ]);
         MockServer::allowStrayRequests(['https://localhost/*']);
 
-        $apiRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $apiRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         $apiResponse = MockServer::getInstance()->handleRequest($apiRequest);
         $this->assertNotNull($apiResponse);
 
-        $localhostRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://localhost/test'));
-        $localhostResponse = MockServer::getInstance()->handleRequest($localhostRequest);
+        $localhostRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://localhost/test'),
+        );
+        $localhostResponse = MockServer::getInstance()->handleRequest(
+            $localhostRequest,
+        );
         $this->assertNull($localhostResponse); // Allowed to go through
     }
 
@@ -160,7 +198,9 @@ class MockServerTest extends TestCase
             'https://api.example.com/*' => MockResponse::ok('Success'),
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         MockServer::getInstance()->handleRequest($request);
 
         $recorded = MockServer::recorded();
@@ -178,13 +218,19 @@ class MockServerTest extends TestCase
             '*' => MockResponse::ok(),
         ]);
 
-        $getRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
-        $postRequest = Request::createFromBase(new GuzzleRequest('POST', 'https://api.example.com/users'));
+        $getRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
+        $postRequest = Request::createFromBase(
+            new GuzzleRequest('POST', 'https://api.example.com/users'),
+        );
 
         MockServer::getInstance()->handleRequest($getRequest);
         MockServer::getInstance()->handleRequest($postRequest);
 
-        $recorded = MockServer::recorded(fn ($record) => $record['request']->getMethod() === 'POST');
+        $recorded = MockServer::recorded(
+            fn ($record) => $record['request']->getMethod() === 'POST',
+        );
 
         $this->assertCount(1, $recorded);
     }
@@ -195,7 +241,9 @@ class MockServerTest extends TestCase
             '*' => MockResponse::ok(),
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('POST', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('POST', 'https://api.example.com/users'),
+        );
         MockServer::getInstance()->handleRequest($request);
 
         MockServer::assertSent('POST https://api.example.com/users');
@@ -209,7 +257,11 @@ class MockServerTest extends TestCase
             '*' => MockResponse::ok(),
         ]);
 
-        $psrRequest = new GuzzleRequest('POST', 'https://api.example.com/users', ['Authorization' => 'Bearer token']);
+        $psrRequest = new GuzzleRequest(
+            'POST',
+            'https://api.example.com/users',
+            ['Authorization' => 'Bearer token'],
+        );
         $request = Request::createFromBase($psrRequest);
         MockServer::getInstance()->handleRequest($request);
 
@@ -224,7 +276,9 @@ class MockServerTest extends TestCase
             '*' => MockResponse::ok(),
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         MockServer::getInstance()->handleRequest($request);
         MockServer::getInstance()->handleRequest($request);
 
@@ -237,7 +291,9 @@ class MockServerTest extends TestCase
             '*' => MockResponse::ok(),
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         MockServer::getInstance()->handleRequest($request);
 
         MockServer::assertNotSent('https://api.example.com/posts');
@@ -249,8 +305,12 @@ class MockServerTest extends TestCase
             '*' => MockResponse::ok(),
         ]);
 
-        $request1 = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
-        $request2 = Request::createFromBase(new GuzzleRequest('POST', 'https://api.example.com/posts'));
+        $request1 = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
+        $request2 = Request::createFromBase(
+            new GuzzleRequest('POST', 'https://api.example.com/posts'),
+        );
 
         MockServer::getInstance()->handleRequest($request1);
         MockServer::getInstance()->handleRequest($request2);
@@ -271,7 +331,9 @@ class MockServerTest extends TestCase
             'https://api.example.com/*' => MockResponse::ok(),
         ]);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         MockServer::getInstance()->handleRequest($request);
 
         $this->assertCount(1, MockServer::recorded());
@@ -285,7 +347,9 @@ class MockServerTest extends TestCase
     {
         MockServer::fake(fn () => ['data' => 'value']);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
         $response = MockServer::getInstance()->handleRequest($request);
 
         $this->assertSame(['data' => 'value'], $response->json());
@@ -297,12 +361,30 @@ class MockServerTest extends TestCase
             'https://api.example.com/*' => MockResponse::ok('Matched'),
         ]);
 
-        $request1 = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
-        $request2 = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/posts/123'));
-        $request3 = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/deeply/nested/path'));
+        $request1 = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
+        $request2 = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/posts/123'),
+        );
+        $request3 = Request::createFromBase(
+            new GuzzleRequest(
+                'GET',
+                'https://api.example.com/deeply/nested/path',
+            ),
+        );
 
-        $this->assertSame('Matched', MockServer::getInstance()->handleRequest($request1)->body());
-        $this->assertSame('Matched', MockServer::getInstance()->handleRequest($request2)->body());
-        $this->assertSame('Matched', MockServer::getInstance()->handleRequest($request3)->body());
+        $this->assertSame(
+            'Matched',
+            MockServer::getInstance()->handleRequest($request1)->body(),
+        );
+        $this->assertSame(
+            'Matched',
+            MockServer::getInstance()->handleRequest($request2)->body(),
+        );
+        $this->assertSame(
+            'Matched',
+            MockServer::getInstance()->handleRequest($request3)->body(),
+        );
     }
 }

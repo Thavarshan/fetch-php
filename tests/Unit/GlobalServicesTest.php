@@ -33,16 +33,23 @@ class GlobalServicesTest extends TestCase
 
     public function test_custom_defaults_merge_and_reset(): void
     {
-        GlobalServices::setDefaultOptions(['timeout' => 8, 'headers' => ['X-Test' => 'yes']]);
+        GlobalServices::setDefaultOptions([
+            'timeout' => 8,
+            'headers' => ['X-Test' => 'yes'],
+        ]);
 
         $options = GlobalServices::getDefaultOptions();
         $this->assertSame(8, $options['timeout']);
         $this->assertSame(['X-Test' => 'yes'], $options['headers']);
-        $this->assertTrue(GlobalServices::getStats()['default_options_customized']);
+        $this->assertTrue(
+            GlobalServices::getStats()['default_options_customized'],
+        );
 
         GlobalServices::reset();
 
-        $this->assertFalse(GlobalServices::getStats()['default_options_customized']);
+        $this->assertFalse(
+            GlobalServices::getStats()['default_options_customized'],
+        );
         $this->assertFalse(GlobalServices::isInitialized());
     }
 

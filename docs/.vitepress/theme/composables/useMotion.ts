@@ -7,7 +7,9 @@ export function useMotion(): void {
     let observer: IntersectionObserver | null = null;
 
     onMounted(() => {
-        const elements = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
+        const elements = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-reveal]'),
+        );
         if (!elements.length) {
             return;
         }
@@ -26,7 +28,7 @@ export function useMotion(): void {
                     }
                 });
             },
-            { threshold: 0.2, rootMargin: '0px 0px -10% 0px' }
+            { threshold: 0.2, rootMargin: '0px 0px -10% 0px' },
         );
 
         elements.forEach((el) => observer?.observe(el));

@@ -11,9 +11,10 @@ the same change.
 
 Fetch PHP (`jerome/fetch-php`) is a modern PHP HTTP client that brings the
 JavaScript `fetch` experience to PHP, built on top of Guzzle. It provides a
-`fetch()`-style API plus verb helpers, async/await via ReactPHP + `jerome/matrix`,
-streaming and Server-Sent Events, RFC 7234 HTTP caching, connection pooling,
-middleware, lifecycle events, retries, and full PSR-7/PSR-18/PSR-3 compliance.
+`fetch()`-style API plus verb helpers, async/await via ReactPHP +
+`jerome/matrix`, streaming and Server-Sent Events, RFC 7234 HTTP caching,
+connection pooling, middleware, lifecycle events, retries, and full
+PSR-7/PSR-18/PSR-3 compliance.
 
 The public GitHub repository is `Thavarshan/fetch-php`; the Packagist package is
 `jerome/fetch-php`.
@@ -40,8 +41,8 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 - `Exceptions/` — `ClientException`, `NetworkException`, `RequestException`,
   `HttpException`.
 - `Support/` — `RequestOptions`, `RequestContext`, `Defaults`, `RetryDefaults`,
-  `RetryStrategy`, `GlobalServices`, profiling/debug helpers, and
-  `helpers.php` (global functions).
+  `RetryStrategy`, `GlobalServices`, profiling/debug helpers, and `helpers.php`
+  (global functions).
 - `Testing/` — `MockServer`, `MockResponse`, `MockResponseSequence`, `Recorder`.
 - `Interfaces/` — contracts; `Traits/` — immutability traits.
 
@@ -58,33 +59,34 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 
 ## Commands (authoritative — from `composer.json` / `package.json`)
 
-| Task | Command | Actually runs |
-| --- | --- | --- |
-| Install | `composer install` | — |
-| Style check | `composer lint` | `duster lint src` |
-| Auto-fix style | `composer fix` | `duster fix src` |
-| Static analysis | `composer analyse` | `phpstan analyse` (`phpstan.neon`, level 6) |
-| All tests | `composer test` | `phpunit --no-coverage` |
-| Unit only | `composer test:unit` | `phpunit --no-coverage tests/Unit` |
-| Integration only | `composer test:integration` | `phpunit --no-coverage tests/Integration` |
-| Coverage | `composer test:coverage` | `phpunit` with Xdebug (needs `ext-xdebug`) |
-| Full gate | `composer check` | `analyse`, then `lint`, then `test` |
-| Docs (dev) | `npm run dev` | `vitepress dev docs` |
-| Docs (build) | `npm run build` | `vitepress build docs` |
+- Install: `composer install`.
+- Style check: `composer lint` runs Duster on `src` and the project line check.
+- Auto-fix style: `composer fix` runs `duster fix src`.
+- Static analysis: `composer analyse` runs PHPStan at level 6.
+- All tests: `composer test` runs `phpunit --no-coverage`.
+- Unit only: `composer test:unit`.
+- Integration only: `composer test:integration`.
+- Coverage: `composer test:coverage` (requires Xdebug).
+- Full gate: `composer check` runs analysis, lint, and tests.
+- Docs development: `npm run dev`.
+- Docs build: `npm run build`.
 
-- Focused runs: `./vendor/bin/phpunit --filter=some_method` or
-  `./vendor/bin/phpunit tests/Unit/SomeTest.php`. Passing args through Composer
-  also works: `composer test -- --filter=some_method`.
-- There is **no `bin/` script directory**; invoke the Composer/npm scripts above.
-- `composer lint` does **not** run PHPStan — run `composer analyse` for that.
+Focused runs use `./vendor/bin/phpunit --filter=some_method` or a test path.
+Composer forwards arguments too: `composer test -- --filter=some_method`.
 
+There is no `bin/` script directory. `composer lint` does not run PHPStan;
+use `composer analyse` for that.
 ## Coding conventions
 
 - Declare `declare(strict_types=1);` in every new PHP file.
-- PSR-12 aligned, 4-space indent, single quotes, ordered imports (`const`,
-  `class`, `function`), enforced by **Duster** (Pint + PHP CS Fixer +
-  PHP_CodeSniffer) via `pint.json`. Run `composer fix` before committing.
-- PSR-4 namespaces under `Fetch\...`; one class per file, filename matches class.
+- PSR-12 aligned, 4-space indent, single quotes, and 80-column maximum lines.
+  Duster enforces PHP style via `pint.json`; the `max_line_length` setting
+  there is checked across project text files by `tools/check-line-length.php`
+  as part of `composer lint`. Generated lock files and formatter caches are
+  excluded. Pint itself has no maximum-line-length fixer. Run `composer fix`
+  before committing.
+- PSR-4 namespaces under `Fetch\...`; one class per file, filename matches
+  class.
 - Keep PHPStan level 6 clean (`composer analyse`); prefer real type fixes over
   new entries in `phpstan.neon` `ignoreErrors`.
 - Match the style, naming, and comment density of the surrounding file.
@@ -92,8 +94,8 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 ## Testing
 
 - **PHPUnit 11**; mocks via **Mockery**. Test namespace `Tests\`.
-- Unit tests → `tests/Unit/`, integration tests → `tests/Integration/`,
-  shared fakes → `tests/Mocks/` (excluded from the suite and PHPStan).
+- Unit tests → `tests/Unit/`, integration tests → `tests/Integration/`, shared
+  fakes → `tests/Mocks/` (excluded from the suite and PHPStan).
 - Files end in `*Test.php`; test **methods are `snake_case`** (e.g.
   `test_it_builds_the_uri`) — enforced by `pint.json`.
 - Tests may extend `Tests\TestCase` (resets `GlobalServices` in `tearDown`) to
@@ -116,8 +118,8 @@ signatures, global helpers in `helpers.php`, enum cases, exception types and
 their externally visible behavior, response/stream semantics, and the defaults
 for retries, timeouts, redirects, caching, and PSR-7/PSR-18 behavior.
 
-Changing any of these requires: impact analysis, a BC classification
-(patch / minor / major), tests, docs, and a CHANGELOG entry. Breaking or
+Changing any of these requires: impact analysis, a BC classification (patch /
+minor / major), tests, docs, and a CHANGELOG entry. Breaking or
 release-sensitive changes need explicit maintainer approval — never ship them
 autonomously.
 
@@ -130,10 +132,9 @@ dependencies for AI tooling.
 
 ## Documentation
 
-When behavior or the public API changes, update the VitePress docs under
-`docs/` (and `README.md` where relevant), verify examples against the real API,
-and run `npm run build`. Remove any generated `docs/.vitepress/.temp` before
-committing.
+When behavior or the public API changes, update the VitePress docs under `docs/`
+(and `README.md` where relevant), verify examples against the real API, and run
+`npm run build`. Remove any generated `docs/.vitepress/.temp` before committing.
 
 ## Security boundaries
 
@@ -144,16 +145,16 @@ committing.
   response bodies, multipart uploads, streaming, retries, middleware, and
   events. Keep auth/`Authorization`/`Cookie` values redacted in logging,
   profiling, and debug snapshots.
-- `HandlesUris` validates URI *format* only — it does **not** block private/
+- `HandlesUris` validates URI _format_ only — it does **not** block private/
   internal hosts. SSRF hardening is the caller's responsibility; don't imply
   otherwise in docs, and flag anywhere user input reaches a request URL.
 
 ## Async & resource safety
 
-Watch for leaked/unresolved promises, unhandled rejections, blocked event
-loops, unbounded concurrency, retry storms, duplicate callbacks, listener
-accumulation, and stream/connection leaks. Respect cancellation and timeout
-behavior; ensure exceptions crossing async boundaries are handled.
+Watch for leaked/unresolved promises, unhandled rejections, blocked event loops,
+unbounded concurrency, retry storms, duplicate callbacks, listener accumulation,
+and stream/connection leaks. Respect cancellation and timeout behavior; ensure
+exceptions crossing async boundaries are handled.
 
 ## Git & pull-request boundaries
 
@@ -184,9 +185,9 @@ Use the skill that matches the task:
 - `fetch-php-release` — prepare/recover a release (maintainer-approved only).
 
 Claude Code also ships path-scoped rules (`.claude/rules/`), specialist
-subagents (`.claude/agents/`), conservative permissions, and a destructive-command
-guard hook. See [docs/ai/README.md](docs/ai/README.md) for the full map and how
-to validate the setup (`composer ai:validate`).
+subagents (`.claude/agents/`), conservative permissions, and a
+destructive-command guard hook. See [docs/ai/README.md](docs/ai/README.md) for
+the full map and how to validate the setup (`composer ai:validate`).
 
 ## Definition of done
 

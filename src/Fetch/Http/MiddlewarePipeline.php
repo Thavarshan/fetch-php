@@ -21,26 +21,40 @@ use React\Promise\PromiseInterface;
  * The pipeline is transport-agnostic: whatever the core handler returns (a
  * {@see ResponseInterface} synchronously, or a {@see PromiseInterface} in async
  * mode) flows back out through the middleware unchanged.
+ *
+ * @phpstan-type CoreHandler callable(
+ *     RequestInterface
+ * ): (ResponseInterface|PromiseInterface)
  */
 final class MiddlewarePipeline
 {
     /**
-     * @param  array<int, Middleware|callable>  $middleware  Ordered outermost-first.
+     * @param  array<int, Middleware|callable>  $middleware  Ordered
+     *                                                       outermost-first.
      */
-    public function __construct(
-        private readonly array $middleware,
-    ) {}
+    public function __construct(private readonly array $middleware) {}
 
     /**
      * Run the request through the middleware stack and core handler.
      *
-     * @param  callable(RequestInterface): (ResponseInterface|PromiseInterface)  $core
+     * @param  CoreHandler  $core
      */
-    public function handle(RequestInterface $request, callable $core): ResponseInterface|PromiseInterface
-    {
+    public function handle(
+        RequestInterface $request,
+        callable $core,
+    ): ResponseInterface|PromiseInterface {
         $pipeline = array_reduce(
             array_reverse($this->middleware),
-            fn (callable $next, Middleware|callable $middleware): callable => fn (RequestInterface $req): ResponseInterface|PromiseInterface => $this->call($middleware, $req, $next),
+            fn (
+                callable $next,
+                Middleware|callable $middleware
+            ): callable => fn (
+                RequestInterface $req,
+            ): ResponseInterface|PromiseInterface => $this->call(
+                $middleware,
+                $req,
+                $next,
+            ),
             $core,
         );
 
@@ -50,23 +64,31 @@ final class MiddlewarePipeline
     /**
      * Invoke a single middleware entry.
      *
-     * @param  callable(RequestInterface): (ResponseInterface|PromiseInterface)  $next
+     * @param  CoreHandler  $next
      */
-    private function call(Middleware|callable $middleware, RequestInterface $request, callable $next): ResponseInterface|PromiseInterface
-    {
+    private function call(
+        Middleware|callable $middleware,
+        RequestInterface $request,
+        callable $next,
+    ): ResponseInterface|PromiseInterface {
         if ($middleware instanceof Middleware) {
             return $middleware->handle($request, $next);
         }
 
         $result = $middleware($request, $next);
 
-        if (! $result instanceof ResponseInterface && ! $result instanceof PromiseInterface) {
-            throw new InvalidArgumentException(sprintf(
-                'Callable middleware must return a %s or %s, got %s.',
-                ResponseInterface::class,
-                PromiseInterface::class,
-                get_debug_type($result),
-            ));
+        if (
+            ! ($result instanceof ResponseInterface) &&
+            ! ($result instanceof PromiseInterface)
+        ) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Callable middleware must return a %s or %s, got %s.',
+                    ResponseInterface::class,
+                    PromiseInterface::class,
+                    get_debug_type($result),
+                ),
+            );
         }
 
         return $result;

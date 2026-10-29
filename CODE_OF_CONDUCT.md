@@ -2,7 +2,8 @@
 
 ## Our Pledge
 
-We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone.
+We as members, contributors, and leaders pledge to make participation in our
+community a harassment-free experience for everyone.
 
 ## Our Standards
 
@@ -24,15 +25,20 @@ Examples of unacceptable behavior include:
 
 ## Enforcement Responsibilities
 
-Project maintainers are responsible for clarifying and enforcing our standards. They may remove or reject contributions that are not aligned with this Code of Conduct.
+Project maintainers are responsible for clarifying and enforcing our standards.
+They may remove or reject contributions that are not aligned with this Code of
+Conduct.
 
 ## Scope
 
-This Code of Conduct applies within project spaces and in public spaces when an individual is representing the project.
+This Code of Conduct applies within project spaces and in public spaces when an
+individual is representing the project.
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project team at: **tjthavarshan@gmail.com**. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported to the project team at: **tjthavarshan@gmail.com**. All complaints will
+be reviewed and investigated promptly and fairly.
 
 ## Enforcement Guidelines
 
@@ -43,4 +49,5 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 
 ## Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/) version 2.1.
+This Code of Conduct is adapted from the
+[Contributor Covenant](https://www.contributor-covenant.org/) version 2.1.

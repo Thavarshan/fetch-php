@@ -1,11 +1,14 @@
 ---
 title: File Uploads
-description: Send multipart form data and file streams through Guzzle request options.
+description:
+    Send multipart form data and file streams through Guzzle request options.
 ---
 
 # File Uploads
 
-Use Guzzle's `multipart` request option for multipart form submissions. Each part is an associative array; file contents can be supplied as a stream resource.
+Use Guzzle's `multipart` request option for multipart form submissions. Each
+part is an associative array; file contents can be supplied as a stream
+resource.
 
 ```php
 $stream = fopen('/path/to/document.pdf', 'rb');
@@ -30,4 +33,7 @@ try {
 }
 ```
 
-Do not set the multipart `Content-Type` header manually: Guzzle generates the boundary. Validate upload size and type in your application, and avoid logging file contents or sensitive filenames. This illustrative example requires an application endpoint and is not run by the offline docs example suite.
+Do not set the multipart `Content-Type` header manually: Guzzle generates the
+boundary. Validate upload size and type in your application, and avoid logging
+file contents or sensitive filenames. This illustrative example requires an
+application endpoint and is not run by the offline docs example suite.

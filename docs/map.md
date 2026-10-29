@@ -17,6 +17,11 @@ docs/
 └── public/                  # Site assets
 ```
 
-Runnable PHP snippets are under `docs/examples/snippets/`. `composer docs:examples` syntax-checks PHP fences across the README and docs and executes those snippet files offline. `npm run check-links` validates local Markdown paths and fragments; `npm run build` builds the site.
+Runnable PHP snippets are under `docs/examples/snippets/`.
+`composer docs:examples` syntax-checks PHP fences across the README and docs and
+executes those snippet files offline. `npm run check-links` validates local
+Markdown paths and fragments; `npm run build` builds the site.
 
-The source-level class map is maintained in [`CODE_MAP.md`](https://github.com/Thavarshan/fetch-php/blob/main/CODE_MAP.md). The code is authoritative where an older description differs.
+The source-level class map is maintained in
+[`CODE_MAP.md`](https://github.com/Thavarshan/fetch-php/blob/main/CODE_MAP.md).
+The code is authoritative where an older description differs.

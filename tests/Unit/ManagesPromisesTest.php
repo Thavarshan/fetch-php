@@ -108,11 +108,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_all_with_promises(): void
     {
-        $promises = [
-            resolve('first'),
-            resolve('second'),
-            resolve('third'),
-        ];
+        $promises = [resolve('first'), resolve('second'), resolve('third')];
 
         $combinedPromise = $this->handler->all($promises);
         $this->assertInstanceOf(PromiseInterface::class, $combinedPromise);
@@ -123,11 +119,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_all_with_invalid_promises(): void
     {
-        $promises = [
-            resolve('first'),
-            'not a promise',
-            resolve('third'),
-        ];
+        $promises = [resolve('first'), 'not a promise', resolve('third')];
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Item at index 1 is not a promise');
@@ -285,9 +277,13 @@ class ManagesPromisesTest extends TestCase
     public function test_map_with_items_under_concurrency_limit(): void
     {
         $items = [1, 2, 3];
-        $mapPromise = $this->handler->map($items, function ($item) {
-            return resolve($item * 2);
-        }, 5); // Concurrency higher than item count
+        $mapPromise = $this->handler->map(
+            $items,
+            function ($item) {
+                return resolve($item * 2);
+            },
+            5,
+        ); // Concurrency higher than item count
 
         $results = await($mapPromise);
         $this->assertEquals([2, 4, 6], $results);
@@ -300,9 +296,13 @@ class ManagesPromisesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Concurrency must be greater than 0');
 
-        $this->handler->map($items, function ($item) {
-            return resolve($item);
-        }, 0); // Invalid concurrency
+        $this->handler->map(
+            $items,
+            function ($item) {
+                return resolve($item);
+            },
+            0,
+        ); // Invalid concurrency
     }
 
     public function test_map_rejects_concurrency_above_safe_limit(): void
@@ -310,16 +310,26 @@ class ManagesPromisesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('exceeds the maximum allowed (200)');
 
-        $this->handler->map([1], static fn ($item) => resolve($item), PHP_INT_MAX);
+        $this->handler->map(
+            [1],
+            static fn ($item) => resolve($item),
+            PHP_INT_MAX,
+        );
     }
 
-    public function test_matrix_cancellation_reaches_active_mapped_promises(): void
+    public function test_cancellation_reaches_active_mapped_promises(): void
     {
         $sourceCancelled = false;
-        $deferred = new Deferred(static function () use (&$sourceCancelled): void {
+        $deferred = new Deferred(static function () use (
+            &$sourceCancelled,
+        ): void {
             $sourceCancelled = true;
         });
-        $mapped = $this->handler->map([1], static fn () => $deferred->promise(), 1);
+        $mapped = $this->handler->map(
+            [1],
+            static fn () => $deferred->promise(),
+            1,
+        );
         $observed = $mapped->catch(static fn (\Throwable $error) => $error);
 
         Loop::futureTick(static fn () => $mapped->cancel());
@@ -332,10 +342,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_validate_promises(): void
     {
-        $promises = [
-            resolve('first'),
-            resolve('second'),
-        ];
+        $promises = [resolve('first'), resolve('second')];
 
         // Use reflection to access protected method
         $reflection = new ReflectionClass($this->handler);
@@ -351,11 +358,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_validate_promises_with_invalid_item(): void
     {
-        $promises = [
-            resolve('first'),
-            'not a promise',
-            resolve('third'),
-        ];
+        $promises = [resolve('first'), 'not a promise', resolve('third')];
 
         // Use reflection to access protected method
         $reflection = new ReflectionClass($this->handler);

@@ -91,8 +91,10 @@ enum Status: int
     /**
      * Try to get a status code from an integer, or return default.
      */
-    public static function tryFromInt(int $statusCode, ?self $default = null): ?self
-    {
+    public static function tryFromInt(
+        int $statusCode,
+        ?self $default = null,
+    ): ?self {
         return self::tryFrom($statusCode) ?? $default;
     }
 
@@ -109,7 +111,9 @@ enum Status: int
             self::OK => 'OK',
             self::CREATED => 'Created',
             self::ACCEPTED => 'Accepted',
-            self::NON_AUTHORITATIVE_INFORMATION => 'Non-Authoritative Information',
+            self::NON_AUTHORITATIVE_INFORMATION => (
+                'Non-Authoritative Information'
+            ),
             self::NO_CONTENT => 'No Content',
             self::RESET_CONTENT => 'Reset Content',
             self::PARTIAL_CONTENT => 'Partial Content',
@@ -131,7 +135,9 @@ enum Status: int
             self::NOT_FOUND => 'Not Found',
             self::METHOD_NOT_ALLOWED => 'Method Not Allowed',
             self::NOT_ACCEPTABLE => 'Not Acceptable',
-            self::PROXY_AUTHENTICATION_REQUIRED => 'Proxy Authentication Required',
+            self::PROXY_AUTHENTICATION_REQUIRED => (
+                'Proxy Authentication Required'
+            ),
             self::REQUEST_TIMEOUT => 'Request Timeout',
             self::CONFLICT => 'Conflict',
             self::GONE => 'Gone',
@@ -151,8 +157,12 @@ enum Status: int
             self::UPGRADE_REQUIRED => 'Upgrade Required',
             self::PRECONDITION_REQUIRED => 'Precondition Required',
             self::TOO_MANY_REQUESTS => 'Too Many Requests',
-            self::REQUEST_HEADER_FIELDS_TOO_LARGE => 'Request Header Fields Too Large',
-            self::UNAVAILABLE_FOR_LEGAL_REASONS => 'Unavailable For Legal Reasons',
+            self::REQUEST_HEADER_FIELDS_TOO_LARGE => (
+                'Request Header Fields Too Large'
+            ),
+            self::UNAVAILABLE_FOR_LEGAL_REASONS => (
+                'Unavailable For Legal Reasons'
+            ),
             self::INTERNAL_SERVER_ERROR => 'Internal Server Error',
             self::NOT_IMPLEMENTED => 'Not Implemented',
             self::BAD_GATEWAY => 'Bad Gateway',
@@ -163,7 +173,9 @@ enum Status: int
             self::INSUFFICIENT_STORAGE => 'Insufficient Storage',
             self::LOOP_DETECTED => 'Loop Detected',
             self::NOT_EXTENDED => 'Not Extended',
-            self::NETWORK_AUTHENTICATION_REQUIRED => 'Network Authentication Required',
+            self::NETWORK_AUTHENTICATION_REQUIRED => (
+                'Network Authentication Required'
+            ),
         };
     }
 
@@ -221,9 +233,14 @@ enum Status: int
     public function isCacheable(): bool
     {
         return match ($this) {
-            self::OK, self::NON_AUTHORITATIVE_INFORMATION, self::PARTIAL_CONTENT,
-            self::MULTIPLE_CHOICES, self::MOVED_PERMANENTLY, self::NOT_FOUND,
-            self::METHOD_NOT_ALLOWED, self::GONE => true,
+            self::OK,
+            self::NON_AUTHORITATIVE_INFORMATION,
+            self::PARTIAL_CONTENT,
+            self::MULTIPLE_CHOICES,
+            self::MOVED_PERMANENTLY,
+            self::NOT_FOUND,
+            self::METHOD_NOT_ALLOWED,
+            self::GONE => true,
             default => false,
         };
     }
@@ -237,7 +254,8 @@ enum Status: int
     }
 
     /**
-     * Check if the status code indicates that the resource was empty (204, 304).
+     * Check if the status code indicates that the resource was empty (204,
+     *     304).
      */
     public function isEmpty(): bool
     {

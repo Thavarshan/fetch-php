@@ -1,11 +1,13 @@
 ---
 title: Guides
-description: Installation, request, response, configuration, and advanced usage guides.
+description:
+    Installation, request, response, configuration, and advanced usage guides.
 ---
 
 # Guides
 
-Use the guides to learn the library from installation through advanced integrations. The public API is described in the [API reference](/api/).
+Use the guides to learn the library from installation through advanced
+integrations. The public API is described in the [API reference](/api/).
 
 ## Getting started
 
@@ -42,6 +44,8 @@ Use the guides to learn the library from installation through advanced integrati
 
 ## Limitations
 
-- The async API returns promises but executes Guzzle requests synchronously inside Matrix tasks.
-- Streaming is synchronous, consumes the underlying stream, and bypasses the cache and middleware pipeline.
+- The async API returns promises but executes Guzzle requests synchronously
+  inside Matrix tasks.
+- Streaming is synchronous, consumes the underlying stream, and bypasses the
+  cache and middleware pipeline.
 - JSON Schema and OpenAPI validation are not part of the package.

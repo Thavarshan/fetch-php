@@ -21,10 +21,14 @@ use InvalidArgumentException;
 final class ServerSentEvent
 {
     /**
-     * @param  string  $data  The event data payload (multiple `data:` lines joined with "\n").
-     * @param  string  $type  The event type (from the `event:` field), defaulting to "message".
-     * @param  string|null  $id  The last event ID (from the `id:` field), if present.
-     * @param  int|null  $retry  The reconnection time in milliseconds (from the `retry:` field), if present.
+     * @param  string  $data  The event data payload (multiple `data:` lines
+     *                        joined with "\n").
+     * @param  string  $type  The event type (from the `event:` field),
+     *                        defaulting to "message".
+     * @param  string|null  $id  The last event ID (from the `id:` field), if
+     *                           present.
+     * @param  int|null  $retry  The reconnection time in milliseconds (from the
+     *                           `retry:` field), if present.
      */
     public function __construct(
         public readonly string $data = '',
@@ -39,15 +43,27 @@ final class ServerSentEvent
      * Most streaming APIs (LLM completions, live feeds) send a JSON object
      * per event, so this is provided as a convenience over `->data`.
      *
-     * @throws \JsonException When the payload is not valid JSON and $throwOnError is true.
+     * @throws \JsonException When the payload is not valid JSON and
+     *                        $throwOnError is true.
      */
-    public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed
-    {
+    public function json(
+        bool $assoc = true,
+        bool $throwOnError = true,
+        int $depth = 512,
+        int $options = 0,
+    ): mixed {
         if ($depth < 1) {
-            throw new InvalidArgumentException('JSON decode depth must be greater than 0.');
+            throw new InvalidArgumentException(
+                'JSON decode depth must be greater than 0.',
+            );
         }
         try {
-            return json_decode($this->data, $assoc, $depth, $options | JSON_THROW_ON_ERROR);
+            return json_decode(
+                $this->data,
+                $assoc,
+                $depth,
+                $options | JSON_THROW_ON_ERROR,
+            );
         } catch (\JsonException $e) {
             if ($throwOnError) {
                 throw $e;

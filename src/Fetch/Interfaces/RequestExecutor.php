@@ -42,27 +42,46 @@ interface RequestExecutor
      * @param  array<string, mixed>  $queryParams
      * @return Response|PromiseInterface<Response>
      */
-    public function get(string $uri, array $queryParams = []): Response|PromiseInterface;
+    public function get(
+        string $uri,
+        array $queryParams = [],
+    ): Response|PromiseInterface;
 
     /**
      * @return Response|PromiseInterface<Response>
      */
-    public function post(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
+    public function post(
+        string $uri,
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+    ): Response|PromiseInterface;
 
     /**
      * @return Response|PromiseInterface<Response>
      */
-    public function put(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
+    public function put(
+        string $uri,
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+    ): Response|PromiseInterface;
 
     /**
      * @return Response|PromiseInterface<Response>
      */
-    public function patch(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
+    public function patch(
+        string $uri,
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+    ): Response|PromiseInterface;
 
     /**
      * @return Response|PromiseInterface<Response>
      */
-    public function delete(string $uri, mixed $body = null, string|ContentType $contentType = ContentType::JSON): Response|PromiseInterface;
+    public function delete(
+        string $uri,
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+    ): Response|PromiseInterface;
 
     /**
      * @return Response|PromiseInterface<Response>

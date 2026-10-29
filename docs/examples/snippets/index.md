@@ -5,7 +5,9 @@ description: Offline PHP examples checked by the documentation example runner.
 
 # Runnable Snippets
 
-These PHP files run offline through `composer docs:examples`. Each one loads the repository's Composer autoloader and uses a fake or injected Guzzle `MockHandler` response instead of making a real network request.
+These PHP files run offline through `composer docs:examples`. Each one loads the
+repository's Composer autoloader and uses a fake or injected Guzzle
+`MockHandler` response instead of making a real network request.
 
 - `quickstart.php` — a basic fake request
 - `request-options.php` — per-request parameters and a JSON body

@@ -36,7 +36,7 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
             $response->getHeaders(),
             $response->getBody(),
             $response->getProtocolVersion(),
-            $response->getReasonPhrase()
+            $response->getReasonPhrase(),
         );
     }
 
@@ -48,7 +48,9 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
     public function stream(int $chunkSize = 8192): Generator
     {
         if ($chunkSize < 1) {
-            throw new InvalidArgumentException('Chunk size must be a positive integer.');
+            throw new InvalidArgumentException(
+                'Chunk size must be a positive integer.',
+            );
         }
 
         $body = $this->getBody();
@@ -126,7 +128,7 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
             $this->getHeaders(),
             (string) $this->getBody(),
             $this->getProtocolVersion(),
-            $this->getReasonPhrase()
+            $this->getReasonPhrase(),
         );
     }
 
@@ -205,6 +207,8 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
     {
         $contentType = $this->contentType();
 
-        return $contentType !== null ? ContentType::tryFromString($contentType) : null;
+        return $contentType !== null
+            ? ContentType::tryFromString($contentType)
+            : null;
     }
 }

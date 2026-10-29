@@ -6,7 +6,10 @@ $root = dirname(__DIR__);
 $markdownFiles = [$root.'/README.md'];
 
 $iterator = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($root.'/docs', FilesystemIterator::SKIP_DOTS),
+    new RecursiveDirectoryIterator(
+        $root.'/docs',
+        FilesystemIterator::SKIP_DOTS,
+    ),
 );
 
 foreach ($iterator as $file) {
@@ -25,7 +28,9 @@ $run = static function (array $command) use ($root): array {
     );
 
     if (! is_resource($process)) {
-        throw new RuntimeException('Could not start the PHP documentation example check.');
+        throw new RuntimeException(
+            'Could not start the PHP documentation example check.',
+        );
     }
 
     fclose($pipes[0]);
@@ -48,11 +53,15 @@ foreach ($markdownFiles as $file) {
 
     foreach ($matches[1] as $index => $code) {
         $phpBlocks++;
-        $source = str_starts_with(ltrim($code), '<?php') ? $code : "<?php\n".$code;
+        $source = str_starts_with(ltrim($code), '<?php')
+            ? $code
+            : "<?php\n".$code;
         $temporaryFile = tempnam($root, '.doc-example-');
 
         if ($temporaryFile === false) {
-            throw new RuntimeException('Could not create a temporary PHP example file.');
+            throw new RuntimeException(
+                'Could not create a temporary PHP example file.',
+            );
         }
 
         try {
@@ -60,7 +69,14 @@ foreach ($markdownFiles as $file) {
             [$exitCode, $output] = $run([PHP_BINARY, '-l', $temporaryFile]);
 
             if ($exitCode !== 0) {
-                throw new RuntimeException(sprintf("Invalid PHP example in %s (block %d):\n%s", $file, $index + 1, $output));
+                throw new RuntimeException(
+                    sprintf(
+                        "Invalid PHP example in %s (block %d):\n%s",
+                        $file,
+                        $index + 1,
+                        $output,
+                    ),
+                );
             }
         } finally {
             unlink($temporaryFile);
@@ -71,25 +87,32 @@ foreach ($markdownFiles as $file) {
 $exampleFiles = glob($root.'/docs/examples/snippets/*.php') ?: [];
 
 if ($exampleFiles === []) {
-    throw new RuntimeException('No runnable documentation examples were found.');
+    throw new RuntimeException(
+        'No runnable documentation examples were found.',
+    );
 }
 
 foreach ($exampleFiles as $file) {
     [$lintExitCode, $lintOutput] = $run([PHP_BINARY, '-l', $file]);
 
     if ($lintExitCode !== 0) {
-        throw new RuntimeException(sprintf("Invalid PHP example file %s:\n%s", $file, $lintOutput));
+        throw new RuntimeException(
+            sprintf("Invalid PHP example file %s:\n%s", $file, $lintOutput),
+        );
     }
 
     [$runExitCode, $runOutput] = $run([PHP_BINARY, $file]);
 
     if ($runExitCode !== 0) {
-        throw new RuntimeException(sprintf("PHP example failed: %s\n%s", $file, $runOutput));
+        throw new RuntimeException(
+            sprintf("PHP example failed: %s\n%s", $file, $runOutput),
+        );
     }
 }
 
 printf(
-    "Checked syntax for %d Markdown PHP block(s) and executed %d offline PHP example(s).\n",
+    'Checked syntax for %d Markdown PHP block(s) and executed '
+        . "%d offline PHP example(s).\n",
     $phpBlocks,
     count($exampleFiles),
 );

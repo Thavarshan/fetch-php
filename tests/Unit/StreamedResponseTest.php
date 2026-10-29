@@ -15,8 +15,11 @@ use PHPUnit\Framework\TestCase;
 
 class StreamedResponseTest extends TestCase
 {
-    private function make(string $body, array $headers = [], int $status = 200): StreamedResponse
-    {
+    private function make(
+        string $body,
+        array $headers = [],
+        int $status = 200,
+    ): StreamedResponse {
         return new StreamedResponse($status, $headers, Utils::streamFor($body));
     }
 
@@ -49,12 +52,17 @@ class StreamedResponseTest extends TestCase
     {
         $response = $this->make("only\n");
 
-        $this->assertSame(['only'], iterator_to_array($response->lines(), false));
+        $this->assertSame(
+            ['only'],
+            iterator_to_array($response->lines(), false),
+        );
     }
 
     public function test_buffer_returns_full_response(): void
     {
-        $buffered = $this->make('{"ok":true}', ['Content-Type' => 'application/json'])->buffer();
+        $buffered = $this->make('{"ok":true}', [
+            'Content-Type' => 'application/json',
+        ])->buffer();
 
         $this->assertInstanceOf(Response::class, $buffered);
         $this->assertSame(['ok' => true], $buffered->json());
@@ -75,19 +83,30 @@ class StreamedResponseTest extends TestCase
 
     public function test_header_accessors(): void
     {
-        $response = $this->make('', ['Content-Type' => 'text/event-stream; charset=utf-8']);
+        $response = $this->make('', [
+            'Content-Type' => 'text/event-stream; charset=utf-8',
+        ]);
 
-        $this->assertSame('text/event-stream; charset=utf-8', $response->header('Content-Type'));
+        $this->assertSame(
+            'text/event-stream; charset=utf-8',
+            $response->header('Content-Type'),
+        );
         $this->assertNull($response->header('X-Missing'));
         $this->assertSame('text/event-stream', $response->contentType());
-        $this->assertSame(ContentType::EVENT_STREAM, $response->contentTypeEnum());
+        $this->assertSame(
+            ContentType::EVENT_STREAM,
+            $response->contentTypeEnum(),
+        );
     }
 
     public function test_is_iterable_over_chunks(): void
     {
         $response = $this->make('hello world');
 
-        $this->assertSame('hello world', implode('', iterator_to_array($response, false)));
+        $this->assertSame(
+            'hello world',
+            implode('', iterator_to_array($response, false)),
+        );
     }
 
     public function test_sse_returns_event_source(): void
@@ -97,7 +116,13 @@ class StreamedResponseTest extends TestCase
 
     public function test_create_from_base_preserves_metadata(): void
     {
-        $base = new PsrResponse(201, ['X-Test' => 'yes'], 'body', '2', 'Created');
+        $base = new PsrResponse(
+            201,
+            ['X-Test' => 'yes'],
+            'body',
+            '2',
+            'Created',
+        );
 
         $response = StreamedResponse::createFromBase($base);
 

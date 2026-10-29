@@ -30,7 +30,8 @@ use RuntimeException;
  * 3. **Maximum delay cap**: Delays are capped at 30 seconds to prevent
  *    excessively long waits.
  *
- * 4. **Stateless**: This service is stateless and can be shared across requests.
+ * 4. **Stateless**: This service is stateless and can be shared across
+ *     requests.
  */
 final class RetryStrategy
 {
@@ -69,7 +70,7 @@ final class RetryStrategy
      * @param  int  $maxRetries  Maximum retry attempts (0 = no retries)
      * @param  int  $baseDelayMs  Base delay in milliseconds
      * @param  array<int>|null  $retryableStatusCodes  Status codes to retry
-     * @param  array<class-string<\Throwable>>|null  $retryableExceptions  Exceptions to retry
+     * @param  array<class-string<\Throwable>>|null  $retryableExceptions
      * @param  LoggerInterface|null  $logger  Logger for events
      */
     public function __construct(
@@ -81,8 +82,10 @@ final class RetryStrategy
     ) {
         $this->maxRetries = max(0, $maxRetries);
         $this->baseDelayMs = max(0, $baseDelayMs);
-        $this->retryableStatusCodes = $retryableStatusCodes ?? RetryDefaults::STATUS_CODES;
-        $this->retryableExceptions = $retryableExceptions ?? RetryDefaults::EXCEPTIONS;
+        $this->retryableStatusCodes =
+            $retryableStatusCodes ?? RetryDefaults::STATUS_CODES;
+        $this->retryableExceptions =
+            $retryableExceptions ?? RetryDefaults::EXCEPTIONS;
         $this->logger = $logger ?? new NullLogger;
     }
 
@@ -91,14 +94,17 @@ final class RetryStrategy
      *
      * @param  array<string, mixed>  $options
      */
-    public static function fromOptions(array $options, ?LoggerInterface $logger = null): self
-    {
+    public static function fromOptions(
+        array $options,
+        ?LoggerInterface $logger = null,
+    ): self {
         return new self(
-            maxRetries: (int) ($options['retries'] ?? $options['max_retries'] ?? 1),
+            maxRetries: (int) ($options['retries'] ??
+                ($options['max_retries'] ?? 1)),
             baseDelayMs: (int) ($options['retry_delay'] ?? 100),
             retryableStatusCodes: $options['retry_status_codes'] ?? null,
             retryableExceptions: $options['retry_exceptions'] ?? null,
-            logger: $logger
+            logger: $logger,
         );
     }
 
@@ -119,8 +125,10 @@ final class RetryStrategy
      *
      * @throws \Throwable If all retries fail
      */
-    public function execute(callable $request, ?callable $onRetry = null): ResponseInterface
-    {
+    public function execute(
+        callable $request,
+        ?callable $onRetry = null,
+    ): ResponseInterface {
         $exceptions = [];
         $attempts = $this->maxRetries;
 
@@ -155,7 +163,9 @@ final class RetryStrategy
         }
 
         // All retries failed - throw enhanced exception
-        $lastException = end($exceptions) ?: new RuntimeException('Request failed after all retries');
+        $lastException =
+            end($exceptions) ?:
+            new RuntimeException('Request failed after all retries');
 
         return $this->handleFinalFailure($attempts, $lastException);
     }
@@ -214,7 +224,7 @@ final class RetryStrategy
     public function calculateDelay(int $attempt): int
     {
         // Exponential backoff: baseDelay * 2^attempt
-        $exponentialDelay = $this->baseDelayMs * (2 ** $attempt);
+        $exponentialDelay = $this->baseDelayMs * 2 ** $attempt;
 
         // Add jitter: 0-100% of the calculated delay
         $jitter = mt_rand(0, 100) / 100;
@@ -306,8 +316,10 @@ final class RetryStrategy
         return new self(
             maxRetries: $overrides['maxRetries'] ?? $this->maxRetries,
             baseDelayMs: $overrides['baseDelayMs'] ?? $this->baseDelayMs,
-            retryableStatusCodes: $overrides['retryableStatusCodes'] ?? $this->retryableStatusCodes,
-            retryableExceptions: $overrides['retryableExceptions'] ?? $this->retryableExceptions,
+            retryableStatusCodes: $overrides['retryableStatusCodes'] ??
+                $this->retryableStatusCodes,
+            retryableExceptions: $overrides['retryableExceptions'] ??
+                $this->retryableExceptions,
             logger: $overrides['logger'] ?? $this->logger,
         );
     }
@@ -336,8 +348,11 @@ final class RetryStrategy
     /**
      * Log a retry attempt.
      */
-    private function logRetry(int $attempt, int $maxAttempts, \Throwable $e): void
-    {
+    private function logRetry(
+        int $attempt,
+        int $maxAttempts,
+        \Throwable $e,
+    ): void {
         $this->logger->info('Retrying request', [
             'attempt' => $attempt,
             'max_attempts' => $maxAttempts,
@@ -353,11 +368,25 @@ final class RetryStrategy
      *
      * @throws RuntimeException Always throws
      */
-    private function handleFinalFailure(int $attempts, \Throwable $lastException): ResponseInterface
-    {
-        if ($lastException instanceof FetchRequestException && $lastException->getResponse() !== null) {
+    private function handleFinalFailure(
+        int $attempts,
+        \Throwable $lastException,
+    ): ResponseInterface {
+        if (
+            $lastException instanceof FetchRequestException &&
+            $lastException->getResponse() !== null
+        ) {
             $statusCode = $lastException->getResponse()->getStatusCode();
-            throw new RuntimeException(sprintf('Request failed after %d attempts with status code %d: %s', $attempts + 1, $statusCode, $lastException->getMessage()), $statusCode, $lastException);
+            throw new RuntimeException(
+                sprintf(
+                    'Request failed after %d attempts with status code %d: %s',
+                    $attempts + 1,
+                    $statusCode,
+                    $lastException->getMessage(),
+                ),
+                $statusCode,
+                $lastException,
+            );
         }
 
         throw $lastException;

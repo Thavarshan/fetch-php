@@ -12,8 +12,8 @@ parameters:
     reportUnmatchedIgnoredErrors: false
 
     ignoreErrors:
-        # Promise generics: allow missing generic in signatures; documented by PHPDoc where relevant
-        - '#return type with generic interface React\\Promise\\PromiseInterface does not specify its types#'
-        - '#has parameter .* with generic interface React\\Promise\\PromiseInterface#'
+        # Promise generics are documented by PHPDoc where relevant.
+        - '#return type .*React\\Promise\\PromiseInterface.*types#'
+        - '#has parameter .*React\\Promise\\PromiseInterface#'
         # Factories intentionally use late static binding
         - '#Unsafe usage of new static\(\)#'

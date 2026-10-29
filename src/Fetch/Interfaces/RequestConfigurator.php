@@ -23,7 +23,10 @@ interface RequestConfigurator
     /**
      * @param  array<string, mixed>|string  $body
      */
-    public function withBody(array|string $body, string|ContentType $contentType = ContentType::JSON): self;
+    public function withBody(
+        array|string $body,
+        string|ContentType $contentType = ContentType::JSON,
+    ): self;
 
     /**
      * @param  array<string, mixed>  $data
@@ -36,7 +39,11 @@ interface RequestConfigurator
     public function withFormParams(array $params): self;
 
     /**
-     * @param  array<int, array{name: string, contents: mixed, headers?: array<string, string>}>  $multipart
+     * @param  array<int, array{
+     *     name: string,
+     *     contents: mixed,
+     *     headers?: array<string, string>
+     * }>  $multipart
      */
     public function withMultipart(array $multipart): self;
 

@@ -15,15 +15,19 @@ use Psr\Http\Message\RequestInterface;
 trait HandlesMocking
 {
     /**
-     * Check if a request should be mocked and return the mock response if applicable.
+     * Check if a request should be mocked and return the mock response if
+     *     applicable.
      *
      * @param  string  $method  The HTTP method
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The request options
      * @return ResponseInterface|null The mock response or null if not mocked
      */
-    protected function handleMockRequest(string $method, string $uri, array $options): ?ResponseInterface
-    {
+    protected function handleMockRequest(
+        string $method,
+        string $uri,
+        array $options,
+    ): ?ResponseInterface {
         // Create a PSR-7 request for the mock server
         $psrRequest = $this->createPsrRequest($method, $uri, $options);
 
@@ -57,8 +61,11 @@ trait HandlesMocking
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The request options
      */
-    protected function createPsrRequest(string $method, string $uri, array $options): RequestInterface
-    {
+    protected function createPsrRequest(
+        string $method,
+        string $uri,
+        array $options,
+    ): RequestInterface {
         $headers = $options['headers'] ?? [];
         $body = null;
 
@@ -74,7 +81,8 @@ trait HandlesMocking
         } elseif (isset($options['multipart'])) {
             // For multipart, we'll create a simple representation
             // In a real scenario, Guzzle handles the complex multipart encoding
-            $body = Utils::streamFor(''); // Empty for now, as multipart is complex
+            // Empty for now, as multipart is complex.
+            $body = Utils::streamFor('');
         }
 
         // Append query parameters to URI if present

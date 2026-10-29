@@ -69,8 +69,10 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  array<string, mixed>  $options  Default request options
      * @return static New client instance
      */
-    public static function createWithBaseUri(string $baseUri, array $options = []): static
-    {
+    public static function createWithBaseUri(
+        string $baseUri,
+        array $options = [],
+    ): static {
         $handler = ClientHandler::createWithBaseUri($baseUri);
 
         if ($options !== []) {
@@ -111,7 +113,8 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  RequestInterface  $request  PSR-7 request
      * @return PsrResponseInterface PSR-7 response
      *
-     * @throws ClientExceptionInterface If an error happens while processing the request
+     * @throws ClientExceptionInterface If an error happens while processing the
+     *                                  request
      */
     public function sendRequest(RequestInterface $request): PsrResponseInterface
     {
@@ -133,15 +136,22 @@ class Client implements ClientInterface, LoggerAwareInterface
                 return $response;
             }
 
-            // Handle case where a promise was returned (should not happen in sendRequest)
-            throw new RuntimeException('Async operations not supported in sendRequest()');
+            // Handle case where a promise was returned (should not happen in
+            // sendRequest)
+            throw new RuntimeException(
+                'Async operations not supported in sendRequest()',
+            );
         } catch (ConnectException $e) {
             $this->logger->error('Network error', [
                 'message' => $e->getMessage(),
                 'uri' => (string) $request->getUri(),
             ]);
 
-            throw new NetworkException('Network error: '.$e->getMessage(), $request, $e);
+            throw new NetworkException(
+                'Network error: '.$e->getMessage(),
+                $request,
+                $e,
+            );
         } catch (GuzzleRequestException $e) {
             $this->logger->error('Request error', [
                 'message' => $e->getMessage(),
@@ -155,7 +165,12 @@ class Client implements ClientInterface, LoggerAwareInterface
                 return Response::createFromBase($response);
             }
 
-            throw new RequestException('Request error: '.$e->getMessage(), $request, null, $e);
+            throw new RequestException(
+                'Request error: '.$e->getMessage(),
+                $request,
+                null,
+                $e,
+            );
         } catch (\Throwable $e) {
             $this->logger->error('Unexpected error', [
                 'message' => $e->getMessage(),
@@ -163,27 +178,36 @@ class Client implements ClientInterface, LoggerAwareInterface
                 'type' => get_class($e),
             ]);
 
-            throw new ClientException('Unexpected error: '.$e->getMessage(), 0, $e);
+            throw new ClientException(
+                'Unexpected error: '.$e->getMessage(),
+                0,
+                $e,
+            );
         }
     }
 
     /**
      * Create and send an HTTP request.
+     * Returns the response, promise, or handler for chaining.
      *
      * @param  string|null  $url  The URL to fetch
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface>|ClientHandlerInterface Response, promise, or handler for chaining
      *
      * @throws RuntimeException If the request fails
      */
-    public function fetch(?string $url = null, ?array $options = []): ResponseInterface|PromiseInterface|ClientHandlerInterface
-    {
+    public function fetch(
+        ?string $url = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface|ClientHandlerInterface {
         // If no URL is provided, return the handler for method chaining
         if (is_null($url)) {
             return $this->handler;
         }
 
-        $options = array_merge(ClientHandler::getDefaultOptions(), $options ?? []);
+        $options = array_merge(
+            ClientHandler::getDefaultOptions(),
+            $options ?? [],
+        );
 
         // Normalize the HTTP method
         $method = strtoupper($options['method'] ?? Method::GET->value);
@@ -191,7 +215,9 @@ class Client implements ClientInterface, LoggerAwareInterface
         try {
             $methodEnum = Method::fromString($method);
         } catch (\ValueError $e) {
-            throw new InvalidArgumentException("Invalid HTTP method: {$method}");
+            throw new InvalidArgumentException(
+                "Invalid HTTP method: {$method}",
+            );
         }
 
         // Process the request body
@@ -200,7 +226,8 @@ class Client implements ClientInterface, LoggerAwareInterface
 
         if (isset($options['body'])) {
             $body = $options['body'];
-            $contentTypeStr = $options['headers']['Content-Type'] ?? ContentType::JSON->value;
+            $contentTypeStr =
+                $options['headers']['Content-Type'] ?? ContentType::JSON->value;
 
             try {
                 $contentType = ContentType::tryFromString($contentTypeStr);
@@ -222,7 +249,13 @@ class Client implements ClientInterface, LoggerAwareInterface
 
         // Send the request using the new unified approach
         try {
-            return $this->handler->request($methodEnum, $url, $body, $contentType, $options);
+            return $this->handler->request(
+                $methodEnum,
+                $url,
+                $body,
+                $contentType,
+                $options,
+            );
         } catch (GuzzleRequestException $e) {
             $this->logger->error('Request exception', [
                 'message' => $e->getMessage(),
@@ -235,11 +268,20 @@ class Client implements ClientInterface, LoggerAwareInterface
                 return Response::createFromBase($response);
             }
 
-            throw new RequestException($e->getMessage(), $e->getRequest(), null, $e);
+            throw new RequestException(
+                $e->getMessage(),
+                $e->getRequest(),
+                null,
+                $e,
+            );
         } catch (ConnectException $e) {
             throw new NetworkException($e->getMessage(), $e->getRequest(), $e);
         } catch (GuzzleException $e) {
-            throw new ClientException($e->getMessage(), (int) $e->getCode(), $e);
+            throw new ClientException(
+                $e->getMessage(),
+                (int) $e->getCode(),
+                $e,
+            );
         }
     }
 
@@ -249,17 +291,26 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  string  $url  The URL to fetch
      * @param  array<string, mixed>|null  $queryParams  Query parameters
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
-    public function get(string $url, ?array $queryParams = null, ?array $options = []): ResponseInterface|PromiseInterface
-    {
+    public function get(
+        string $url,
+        ?array $queryParams = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
         $options = $options ?? [];
 
         if ($queryParams) {
             $options['query'] = $queryParams;
         }
 
-        return $this->methodRequest(Method::GET, $url, null, ContentType::JSON, $options);
+        return $this->methodRequest(
+            Method::GET,
+            $url,
+            null,
+            ContentType::JSON,
+            $options,
+        );
     }
 
     /**
@@ -269,7 +320,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
     public function post(
         string $url,
@@ -277,7 +328,13 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = [],
     ): ResponseInterface|PromiseInterface {
-        return $this->methodRequest(Method::POST, $url, $body, $contentType, $options);
+        return $this->methodRequest(
+            Method::POST,
+            $url,
+            $body,
+            $contentType,
+            $options,
+        );
     }
 
     /**
@@ -287,7 +344,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
     public function put(
         string $url,
@@ -295,7 +352,13 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = [],
     ): ResponseInterface|PromiseInterface {
-        return $this->methodRequest(Method::PUT, $url, $body, $contentType, $options);
+        return $this->methodRequest(
+            Method::PUT,
+            $url,
+            $body,
+            $contentType,
+            $options,
+        );
     }
 
     /**
@@ -305,7 +368,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
     public function patch(
         string $url,
@@ -313,7 +376,13 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = [],
     ): ResponseInterface|PromiseInterface {
-        return $this->methodRequest(Method::PATCH, $url, $body, $contentType, $options);
+        return $this->methodRequest(
+            Method::PATCH,
+            $url,
+            $body,
+            $contentType,
+            $options,
+        );
     }
 
     /**
@@ -323,7 +392,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
     public function delete(
         string $url,
@@ -331,7 +400,13 @@ class Client implements ClientInterface, LoggerAwareInterface
         string|ContentType $contentType = ContentType::JSON,
         ?array $options = [],
     ): ResponseInterface|PromiseInterface {
-        return $this->methodRequest(Method::DELETE, $url, $body, $contentType, $options);
+        return $this->methodRequest(
+            Method::DELETE,
+            $url,
+            $body,
+            $contentType,
+            $options,
+        );
     }
 
     /**
@@ -339,11 +414,19 @@ class Client implements ClientInterface, LoggerAwareInterface
      *
      * @param  string  $url  The URL to fetch
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
-    public function head(string $url, ?array $options = []): ResponseInterface|PromiseInterface
-    {
-        return $this->methodRequest(Method::HEAD, $url, null, ContentType::JSON, $options);
+    public function head(
+        string $url,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
+        return $this->methodRequest(
+            Method::HEAD,
+            $url,
+            null,
+            ContentType::JSON,
+            $options,
+        );
     }
 
     /**
@@ -351,11 +434,19 @@ class Client implements ClientInterface, LoggerAwareInterface
      *
      * @param  string  $url  The URL to fetch
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
-    public function options(string $url, ?array $options = []): ResponseInterface|PromiseInterface
-    {
-        return $this->methodRequest(Method::OPTIONS, $url, null, ContentType::JSON, $options);
+    public function options(
+        string $url,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
+        return $this->methodRequest(
+            Method::OPTIONS,
+            $url,
+            null,
+            ContentType::JSON,
+            $options,
+        );
     }
 
     /**
@@ -370,7 +461,9 @@ class Client implements ClientInterface, LoggerAwareInterface
         ?array $options = [],
         string|Method $method = Method::GET,
     ): StreamedResponseInterface {
-        return $this->handler->withOptions($options ?? [])->stream($method, $url);
+        return $this->handler
+            ->withOptions($options ?? [])
+            ->stream($method, $url);
     }
 
     /**
@@ -391,11 +484,12 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Append a middleware to the underlying handler's stack.
      *
-     * @param  Middleware|callable(RequestInterface, callable): mixed  $middleware
      * @return $this
      */
-    public function addMiddleware(Middleware|callable $middleware, int $priority = 0): self
-    {
+    public function addMiddleware(
+        Middleware|callable $middleware,
+        int $priority = 0,
+    ): self {
         $this->handler->addMiddleware($middleware, $priority);
 
         return $this;
@@ -404,7 +498,10 @@ class Client implements ClientInterface, LoggerAwareInterface
     /**
      * Replace the underlying handler's middleware stack.
      *
-     * @param  array<int, Middleware|callable|array{0: Middleware|callable, 1?: int}>  $middleware
+     * @param  array<int, Middleware|callable|array{
+     *     0: Middleware|callable,
+     *     1?: int
+     * }>  $middleware
      * @return $this
      */
     public function middleware(array $middleware): self
@@ -444,8 +541,11 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  callable(self, mixed): mixed|null  $default
      * @return $this
      */
-    public function when(mixed $condition, callable $callback, ?callable $default = null): self
-    {
+    public function when(
+        mixed $condition,
+        callable $callback,
+        ?callable $default = null,
+    ): self {
         $value = is_callable($condition) ? $condition($this) : $condition;
 
         if ($value) {
@@ -464,8 +564,11 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  callable(self, mixed): mixed|null  $default
      * @return $this
      */
-    public function unless(mixed $condition, callable $callback, ?callable $default = null): self
-    {
+    public function unless(
+        mixed $condition,
+        callable $callback,
+        ?callable $default = null,
+    ): self {
         $value = is_callable($condition) ? $condition($this) : $condition;
 
         if (! $value) {
@@ -482,8 +585,11 @@ class Client implements ClientInterface, LoggerAwareInterface
      *
      * @return $this
      */
-    public function on(string $eventName, callable $listener, int $priority = 0): self
-    {
+    public function on(
+        string $eventName,
+        callable $listener,
+        int $priority = 0,
+    ): self {
         $this->handler->on($eventName, $listener, $priority);
 
         return $this;
@@ -586,7 +692,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type
      * @param  array<string, mixed>|null  $options  Request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
     protected function methodRequest(
         Method $method,
@@ -602,16 +708,21 @@ class Client implements ClientInterface, LoggerAwareInterface
             $options['body'] = $body;
 
             // Use the global normalize_content_type function
-            $normalizedContentType = ContentType::normalizeContentType($contentType);
+            $normalizedContentType = ContentType::normalizeContentType(
+                $contentType,
+            );
 
             if ($normalizedContentType instanceof ContentType) {
-                $options['headers']['Content-Type'] = $normalizedContentType->value;
+                $options['headers']['Content-Type'] =
+                    $normalizedContentType->value;
             } else {
                 $options['headers']['Content-Type'] = $normalizedContentType;
             }
         }
 
-        /** @var ResponseInterface|PromiseInterface<ResponseInterface> $result */
+        /**
+         * @var ResponseInterface|PromiseInterface<ResponseInterface> $result
+         */
         $result = $this->fetch($url, $options);
 
         return $result;
@@ -623,8 +734,9 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param  RequestInterface  $request  PSR-7 request
      * @return array<string, mixed> Request options
      */
-    protected function extractOptionsFromRequest(RequestInterface $request): array
-    {
+    protected function extractOptionsFromRequest(
+        RequestInterface $request,
+    ): array {
         $options = [];
 
         // Add headers

@@ -43,7 +43,10 @@ class ConfiguresRequestsTest extends TestCase
         $token = 'my-oauth-token';
         $this->handler->withToken($token);
 
-        $this->assertEquals('Bearer '.$token, $this->handler->getHeaders()['Authorization']);
+        $this->assertEquals(
+            'Bearer '.$token,
+            $this->handler->getHeaders()['Authorization'],
+        );
     }
 
     public function test_with_query_parameters(): void
@@ -60,7 +63,10 @@ class ConfiguresRequestsTest extends TestCase
         $this->handler->withJson($data);
 
         $this->assertEquals($data, $this->handler->getOptions()['json']);
-        $this->assertEquals(ContentType::JSON->value, $this->handler->getHeaders()['Content-Type']);
+        $this->assertEquals(
+            ContentType::JSON->value,
+            $this->handler->getHeaders()['Content-Type'],
+        );
     }
 
     public function test_with_options_normalizes_conflicting_body(): void
@@ -78,7 +84,10 @@ class ConfiguresRequestsTest extends TestCase
         $this->assertArrayHasKey('json', $result);
         $this->assertArrayNotHasKey('form', $result);
         $this->assertArrayNotHasKey('body', $result);
-        $this->assertEquals(ContentType::JSON->value, $this->handler->getHeaders()['Content-Type']);
+        $this->assertEquals(
+            ContentType::JSON->value,
+            $this->handler->getHeaders()['Content-Type'],
+        );
     }
 
     public function test_with_form_params(): void
@@ -87,7 +96,10 @@ class ConfiguresRequestsTest extends TestCase
         $this->handler->withFormParams($data);
 
         $this->assertEquals($data, $this->handler->getOptions()['form_params']);
-        $this->assertEquals(ContentType::FORM_URLENCODED->value, $this->handler->getHeaders()['Content-Type']);
+        $this->assertEquals(
+            ContentType::FORM_URLENCODED->value,
+            $this->handler->getHeaders()['Content-Type'],
+        );
     }
 
     public function test_with_timeout(): void
@@ -103,7 +115,10 @@ class ConfiguresRequestsTest extends TestCase
         $password = 'pass';
         $this->handler->withAuth($username, $password);
 
-        $this->assertEquals([$username, $password], $this->handler->getOptions()['auth']);
+        $this->assertEquals(
+            [$username, $password],
+            $this->handler->getOptions()['auth'],
+        );
     }
 
     public function test_with_body_json(): void
@@ -112,7 +127,10 @@ class ConfiguresRequestsTest extends TestCase
         $this->handler->withBody($data, ContentType::JSON);
 
         $this->assertEquals($data, $this->handler->getOptions()['json']);
-        $this->assertEquals(ContentType::JSON->value, $this->handler->getHeaders()['Content-Type']);
+        $this->assertEquals(
+            ContentType::JSON->value,
+            $this->handler->getHeaders()['Content-Type'],
+        );
     }
 
     public function test_with_body_form(): void
@@ -121,7 +139,10 @@ class ConfiguresRequestsTest extends TestCase
         $this->handler->withBody($data, ContentType::FORM_URLENCODED);
 
         $this->assertEquals($data, $this->handler->getOptions()['form_params']);
-        $this->assertEquals(ContentType::FORM_URLENCODED->value, $this->handler->getHeaders()['Content-Type']);
+        $this->assertEquals(
+            ContentType::FORM_URLENCODED->value,
+            $this->handler->getHeaders()['Content-Type'],
+        );
     }
 
     public function test_with_body_string(): void
@@ -130,10 +151,13 @@ class ConfiguresRequestsTest extends TestCase
         $this->handler->withBody($body, ContentType::TEXT);
 
         $this->assertEquals($body, $this->handler->getOptions()['body']);
-        $this->assertEquals(ContentType::TEXT->value, $this->handler->getHeaders()['Content-Type']);
+        $this->assertEquals(
+            ContentType::TEXT->value,
+            $this->handler->getHeaders()['Content-Type'],
+        );
     }
 
-    public function test_with_body_array_sets_json_option_and_removes_body_option(): void
+    public function test_body_array_sets_json_and_removes_body_option(): void
     {
         $data = [
             'key1' => 'value1',
@@ -148,11 +172,12 @@ class ConfiguresRequestsTest extends TestCase
         $this->assertArrayHasKey('json', $options);
         $this->assertEquals($data, $options['json']);
 
-        // Assert that body option is NOT set (critical for Guzzle compatibility)
+        // Assert that body option is NOT set (critical for Guzzle
+        // compatibility)
         $this->assertArrayNotHasKey('body', $options);
     }
 
-    public function test_with_body_string_sets_body_option_and_removes_json_option(): void
+    public function test_body_string_sets_body_and_removes_json_option(): void
     {
         $jsonString = json_encode(['test' => 'data']);
 
@@ -167,7 +192,7 @@ class ConfiguresRequestsTest extends TestCase
         $this->assertArrayNotHasKey('json', $options);
     }
 
-    public function test_with_body_form_params_removes_conflicting_options(): void
+    public function test_form_body_removes_conflicting_options(): void
     {
         $data = ['param1' => 'value1', 'param2' => 'value2'];
 

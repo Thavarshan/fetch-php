@@ -1,6 +1,6 @@
 ---
 paths:
-  - "src/**/*.php"
+    - 'src/**/*.php'
 ---
 
 # PHP source rules (`src/Fetch/**`)
@@ -15,5 +15,6 @@ paths:
 - Route option handling through `Support\RequestOptions` / `RequestContext` and
   defaults through `Support\Defaults` / `RetryDefaults` — don't re-derive them.
 - Any change to a public class/interface/signature/helper/enum/exception or a
-  default is backward-compatibility-sensitive → use `fetch-php-public-api-review`.
+  default is backward-compatibility-sensitive → use
+  `fetch-php-public-api-review`.
 - Match the surrounding file's style and comment density.

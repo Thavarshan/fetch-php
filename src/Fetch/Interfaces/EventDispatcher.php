@@ -13,7 +13,11 @@ interface EventDispatcher
      *
      * @param  callable(FetchEvent): void  $listener
      */
-    public function addListener(string $eventName, callable $listener, int $priority = 0): void;
+    public function addListener(
+        string $eventName,
+        callable $listener,
+        int $priority = 0,
+    ): void;
 
     /**
      * Remove all listeners for an event, or every listener when null.

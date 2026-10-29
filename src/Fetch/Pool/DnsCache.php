@@ -24,9 +24,7 @@ class DnsCache
      *
      * @param  int  $ttl  Time-to-live for cached entries in seconds
      */
-    public function __construct(
-        protected int $ttl = 300,
-    ) {}
+    public function __construct(protected int $ttl = 300) {}
 
     /**
      * Resolve a hostname to IP addresses.
@@ -41,7 +39,10 @@ class DnsCache
         $cacheKey = $hostname;
 
         // Check cache first
-        if (isset($this->cache[$cacheKey]) && ! $this->isExpired($this->cache[$cacheKey])) {
+        if (
+            isset($this->cache[$cacheKey]) &&
+            ! $this->isExpired($this->cache[$cacheKey])
+        ) {
             return $this->cache[$cacheKey]['addresses'];
         }
 
@@ -147,7 +148,8 @@ class DnsCache
     /**
      * Check if a cache entry is expired.
      *
-     * @param  array{addresses: array<string>, expires_at: int}  $entry  Cache entry
+     * @param  array{addresses: array<string>, expires_at: int}  $entry  Cache
+     *                                                                   entry
      * @return bool Whether the entry is expired
      */
     protected function isExpired(array $entry): bool
@@ -197,11 +199,12 @@ class DnsCache
         }
 
         if (empty($addresses)) {
-            // Encode hostname for use in URL (handle IDN and special characters)
+            // Encode hostname for use in URL (handle IDN and special
+            // characters)
             $safeHost = rawurlencode($hostname);
             throw new NetworkException(
                 "Failed to resolve hostname: {$hostname}",
-                new Request('GET', "https://{$safeHost}/")
+                new Request('GET', "https://{$safeHost}/"),
             );
         }
 

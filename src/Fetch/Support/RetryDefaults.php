@@ -49,9 +49,21 @@ final class RetryDefaults
      * @var array<int>
      */
     public const STATUS_CODES = [
-        408, 429, 500, 502, 503,
-        504, 507, 509, 520, 521,
-        522, 523, 525, 527, 530,
+        408,
+        429,
+        500,
+        502,
+        503,
+        504,
+        507,
+        509,
+        520,
+        521,
+        522,
+        523,
+        525,
+        527,
+        530,
     ];
 
     /**
@@ -59,9 +71,7 @@ final class RetryDefaults
      *
      * @var array<class-string<\Throwable>>
      */
-    public const EXCEPTIONS = [
-        ConnectException::class,
-    ];
+    public const EXCEPTIONS = [ConnectException::class];
 
     /**
      * Prevent instantiation of this utility class.

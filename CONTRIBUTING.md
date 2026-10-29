@@ -1,6 +1,7 @@
 # Contributing to fetch-php
 
-Thank you for your interest in contributing to fetch-php! We welcome contributions from the community and are pleased to have you join us.
+Thank you for your interest in contributing to fetch-php! We welcome
+contributions from the community and are pleased to have you join us.
 
 ## Table of Contents
 
@@ -18,23 +19,24 @@ Thank you for your interest in contributing to fetch-php! We welcome contributio
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating in this project, you are expected to uphold our
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting Started
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
 
-   ```bash
-   git clone https://github.com/Thavarshan/fetch-php.git
-   cd fetch-php
-   ```
+    ```bash
+    git clone https://github.com/Thavarshan/fetch-php.git
+    cd fetch-php
+    ```
 
 3. Add the upstream repository:
 
-   ```bash
-   git remote add upstream https://github.com/Thavarshan/fetch-php.git
-   ```
+    ```bash
+    git remote add upstream https://github.com/Thavarshan/fetch-php.git
+    ```
 
 ## Development Setup
 
@@ -48,21 +50,21 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 
 1. Install dependencies:
 
-   ```bash
-   composer install
-   ```
+    ```bash
+    composer install
+    ```
 
 2. Run the test suite to ensure everything is working:
 
-   ```bash
-   composer test
-   ```
+    ```bash
+    composer test
+    ```
 
 3. Run the linter:
 
-   ```bash
-   composer lint
-   ```
+    ```bash
+    composer lint
+    ```
 
 ### Available Scripts
 
@@ -84,7 +86,8 @@ We welcome several types of contributions:
 
 ### Before You Start
 
-1. Check existing [issues](https://github.com/Thavarshan/fetch-php/issues) and [pull requests](https://github.com/Thavarshan/fetch-php/pulls)
+1. Check existing [issues](https://github.com/Thavarshan/fetch-php/issues) and
+   [pull requests](https://github.com/Thavarshan/fetch-php/pulls)
 2. For large changes, create an issue first to discuss the approach
 3. Make sure you understand the library's architecture and goals
 
@@ -168,7 +171,8 @@ Your pull request should:
 
 ## Coding Standards
 
-We follow [PSR-12](https://www.php-fig.org/psr/psr-12/) coding standards with some additional rules:
+We follow [PSR-12](https://www.php-fig.org/psr/psr-12/) coding standards with
+some additional rules:
 
 ### PHP Code Style
 
@@ -307,13 +311,15 @@ For feature requests, describe:
 
 **DO NOT** report security vulnerabilities in public issues.
 
-Instead, please email security concerns to: [tjthavarshan@gmail.com](mailto:tjthavarshan@gmail.com)
+Instead, please email security concerns to:
+[tjthavarshan@gmail.com](mailto:tjthavarshan@gmail.com)
 
 We take security seriously and will respond promptly to security reports.
 
 ## Community
 
-- Join discussions in [GitHub Discussions](https://github.com/Thavarshan/fetch-php/discussions)
+- Join discussions in
+  [GitHub Discussions](https://github.com/Thavarshan/fetch-php/discussions)
 - Follow the project for updates
 - Help others by answering questions
 - Share your use cases and feedback

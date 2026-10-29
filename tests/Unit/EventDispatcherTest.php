@@ -14,7 +14,11 @@ class EventDispatcherTest extends TestCase
 {
     private function event(): RequestEvent
     {
-        return new RequestEvent(new Request('GET', 'https://example.com'), 'corr-1', 123.0);
+        return new RequestEvent(
+            new Request('GET', 'https://example.com'),
+            'corr-1',
+            123.0,
+        );
     }
 
     public function test_dispatches_to_registered_listener(): void
@@ -22,7 +26,9 @@ class EventDispatcherTest extends TestCase
         $dispatcher = new EventDispatcher;
         $received = null;
 
-        $dispatcher->addListener(RequestEvent::NAME, function (RequestEvent $e) use (&$received) {
+        $dispatcher->addListener(RequestEvent::NAME, function (
+            RequestEvent $e,
+        ) use (&$received) {
             $received = $e->getCorrelationId();
         });
 
@@ -45,12 +51,20 @@ class EventDispatcherTest extends TestCase
         $dispatcher = new EventDispatcher;
         $order = [];
 
-        $dispatcher->addListener(RequestEvent::NAME, function () use (&$order) {
-            $order[] = 'low';
-        }, 1);
-        $dispatcher->addListener(RequestEvent::NAME, function () use (&$order) {
-            $order[] = 'high';
-        }, 10);
+        $dispatcher->addListener(
+            RequestEvent::NAME,
+            function () use (&$order) {
+                $order[] = 'low';
+            },
+            1,
+        );
+        $dispatcher->addListener(
+            RequestEvent::NAME,
+            function () use (&$order) {
+                $order[] = 'high';
+            },
+            10,
+        );
 
         $dispatcher->dispatch($this->event());
 
@@ -93,13 +107,18 @@ class EventDispatcherTest extends TestCase
         $dispatcher->addListener(RequestEvent::NAME, function () {
             throw new \RuntimeException('boom');
         });
-        $dispatcher->addListener(RequestEvent::NAME, function () use (&$secondRan) {
+        $dispatcher->addListener(RequestEvent::NAME, function () use (
+            &$secondRan,
+        ) {
             $secondRan = true;
         });
 
         $dispatcher->dispatch($this->event());
 
-        $this->assertTrue($secondRan, 'A throwing listener must not stop the rest.');
+        $this->assertTrue(
+            $secondRan,
+            'A throwing listener must not stop the rest.',
+        );
         $this->assertNotEmpty($logs);
     }
 
@@ -133,6 +152,9 @@ class EventDispatcherTest extends TestCase
         $dispatcher->addListener(RequestEvent::NAME, $a, 1);
         $dispatcher->addListener(RequestEvent::NAME, $b, 10);
 
-        $this->assertSame([$b, $a], $dispatcher->getListeners(RequestEvent::NAME));
+        $this->assertSame(
+            [$b, $a],
+            $dispatcher->getListeners(RequestEvent::NAME),
+        );
     }
 }

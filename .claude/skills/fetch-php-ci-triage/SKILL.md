@@ -1,6 +1,10 @@
 ---
 name: fetch-php-ci-triage
-description: Diagnose Fetch PHP GitHub Actions failures — matrix failures across OS (Ubuntu/Windows/macOS) and PHP (8.3/8.4/8.5), prefer-lowest dependency failures, lint/PHPStan, coverage/Codecov, and the docs build. Use when CI is red and you need to find which job failed and why, then reproduce it safely.
+description:
+    Diagnose Fetch PHP GitHub Actions failures — matrix failures across OS
+    (Ubuntu/Windows/macOS) and PHP (8.3/8.4/8.5), prefer-lowest dependency
+    failures, lint/PHPStan, coverage/Codecov, and the docs build. Use when CI is
+    red and you need to find which job failed and why, then reproduce it safely.
 ---
 
 # Fetch PHP CI triage
@@ -27,30 +31,31 @@ the underlying test/behavior use `fetch-php-debug-failure`.
 
 1. **Find the failing job.**
 
-   ```bash
-   gh run list --repo Thavarshan/fetch-php --limit 10
-   gh run view <run-id> --repo Thavarshan/fetch-php
-   gh run view <run-id> --repo Thavarshan/fetch-php --log-failed
-   ```
+    ```bash
+    gh run list --repo Thavarshan/fetch-php --limit 10
+    gh run view <run-id> --repo Thavarshan/fetch-php
+    gh run view <run-id> --repo Thavarshan/fetch-php --log-failed
+    ```
 
-2. **Classify by matrix cell** — the job name is `PHP <ver> on <os> - <stability>`:
-   - **One PHP version only** → language/feature difference (8.3 vs 8.5). Repro
-     with that `php -v`.
-   - **`prefer-lowest` only** → you rely on behavior newer than the minimum
-     constraint. Reproduce: `composer update --prefer-lowest --prefer-dist` then
-     `NO_NETWORK=1 composer test`. Fix by adjusting code or the version floor in
-     `composer.json` (with justification), not by loosening the test.
-   - **Windows only** → path/EOL, or `pcntl`/`posix` (Windows installs ignore
-     those extensions). Guard platform-specific code.
-   - **macOS only** → usually filesystem case-sensitivity or tmp path.
-   - **All cells** → a genuine code/test bug (`fetch-php-debug-failure`).
-   - **lint job** → `composer fix` then `composer lint`; PHPStan → `composer
-     analyse`.
-   - **coverage/Codecov** → Codecov upload uses `fail_ci_if_error: false`, so a
-     Codecov hiccup shouldn't fail the run; a red coverage job means the tests
-     themselves failed under Xdebug.
-   - **docs** → reproduce with `npm ci && npm run build`. (`check-links` runs
-     with `|| true`; it never fails the job.)
+2. **Classify by matrix cell** — the job name is
+   `PHP <ver> on <os> - <stability>`:
+    - **One PHP version only** → language/feature difference (8.3 vs 8.5). Repro
+      with that `php -v`.
+    - **`prefer-lowest` only** → you rely on behavior newer than the minimum
+      constraint. Reproduce: `composer update --prefer-lowest --prefer-dist`
+      then `NO_NETWORK=1 composer test`. Fix by adjusting code or the version
+      floor in `composer.json` (with justification), not by loosening the test.
+    - **Windows only** → path/EOL, or `pcntl`/`posix` (Windows installs ignore
+      those extensions). Guard platform-specific code.
+    - **macOS only** → usually filesystem case-sensitivity or tmp path.
+    - **All cells** → a genuine code/test bug (`fetch-php-debug-failure`).
+    - **lint job** → `composer fix` then `composer lint`; PHPStan →
+      `composer analyse`.
+    - **coverage/Codecov** → Codecov upload uses `fail_ci_if_error: false`, so a
+      Codecov hiccup shouldn't fail the run; a red coverage job means the tests
+      themselves failed under Xdebug.
+    - **docs** → reproduce with `npm ci && npm run build`. (`check-links` runs
+      with `|| true`; it never fails the job.)
 
 3. **Reproduce locally** with the matching PHP version and stability before
    proposing a fix. Use `NO_NETWORK=1` for test jobs.

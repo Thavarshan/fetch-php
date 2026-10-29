@@ -27,12 +27,17 @@ class ExceptionsTest extends TestCase
         $this->assertSame('Client failure', $exception->getMessage());
     }
 
-    public function test_request_exception_keeps_request_response_and_cause(): void
+    public function test_request_exception_preserves_context_and_cause(): void
     {
         $request = new Request('GET', 'https://example.test');
         $response = new Response(400);
         $cause = new RuntimeException('cause');
-        $exception = new RequestException('Request failed', $request, $response, $cause);
+        $exception = new RequestException(
+            'Request failed',
+            $request,
+            $response,
+            $cause,
+        );
 
         $this->assertInstanceOf(RequestExceptionInterface::class, $exception);
         $this->assertSame($request, $exception->getRequest());
@@ -54,7 +59,9 @@ class ExceptionsTest extends TestCase
     public function test_http_exception_exposes_set_response(): void
     {
         $response = new Response(500);
-        $exception = (new HttpException('HTTP failure'))->setResponse($response);
+        $exception = (new HttpException('HTTP failure'))->setResponse(
+            $response,
+        );
 
         $this->assertSame($response, $exception->getResponse());
         $this->assertSame('HTTP failure', $exception->getMessage());

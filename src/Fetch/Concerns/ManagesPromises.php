@@ -73,8 +73,10 @@ trait ManagesPromises
      *
      * @throws Throwable If the promise is rejected or times out
      */
-    public function awaitPromise(PromiseInterface $promise, ?float $timeout = null): mixed
-    {
+    public function awaitPromise(
+        PromiseInterface $promise,
+        ?float $timeout = null,
+    ): mixed {
         try {
             if ($timeout !== null) {
                 return $this->awaitWithTimeout($promise, $timeout);
@@ -116,7 +118,8 @@ trait ManagesPromises
      * Execute multiple promises concurrently and return the first to succeed.
      *
      * @param  array<PromiseInterface>  $promises  Array of promises
-     * @return PromiseInterface Promise that resolves with the first successful result
+     * @return PromiseInterface Promise that resolves with the first successful
+     *                          result
      */
     public function any(array $promises): PromiseInterface
     {
@@ -128,7 +131,7 @@ trait ManagesPromises
     /**
      * Execute multiple promises in sequence.
      *
-     * @param  array<callable(): PromiseInterface>  $callables  Array of callables that return promises
+     * @param  array<callable(): PromiseInterface>  $callables
      * @return PromiseInterface Promise that resolves with array of results
      */
     public function sequence(array $callables): PromiseInterface
@@ -143,8 +146,10 @@ trait ManagesPromises
      * @param  callable|null  $onRejected  Callback for rejection
      * @return PromiseInterface The promise
      */
-    public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface
-    {
+    public function then(
+        callable $onFulfilled,
+        ?callable $onRejected = null,
+    ): PromiseInterface {
         // Make sure we're in async mode
         $this->async();
 
@@ -210,7 +215,9 @@ trait ManagesPromises
      */
     public function reject(mixed $reason): PromiseInterface
     {
-        return reject(is_string($reason) ? new RuntimeException($reason) : $reason);
+        return reject(
+            is_string($reason) ? new RuntimeException($reason) : $reason,
+        );
     }
 
     /**
@@ -221,18 +228,25 @@ trait ManagesPromises
      * @param  int  $concurrency  Maximum number of concurrent promises
      * @return PromiseInterface Promise that resolves with array of results
      */
-    public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
-    {
+    public function map(
+        array $items,
+        callable $callback,
+        int $concurrency = 5,
+    ): PromiseInterface {
         if ($concurrency <= 0) {
-            throw new InvalidArgumentException('Concurrency must be greater than 0');
+            throw new InvalidArgumentException(
+                'Concurrency must be greater than 0',
+            );
         }
 
         if ($concurrency > self::MAX_MAP_CONCURRENCY) {
-            throw new InvalidArgumentException(sprintf(
-                'Concurrency value %d exceeds the maximum allowed (%d).',
-                $concurrency,
-                self::MAX_MAP_CONCURRENCY
-            ));
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Concurrency value %d exceeds the maximum allowed (%d).',
+                    $concurrency,
+                    self::MAX_MAP_CONCURRENCY,
+                ),
+            );
         }
 
         return matrixMap($items, $callback, $concurrency);
@@ -248,14 +262,20 @@ trait ManagesPromises
      * @throws RuntimeException If the promise times out
      * @throws Throwable If the promise is rejected
      */
-    protected function awaitWithTimeout(PromiseInterface $promise, float $timeout): mixed
-    {
+    protected function awaitWithTimeout(
+        PromiseInterface $promise,
+        float $timeout,
+    ): mixed {
         try {
             // Use Matrix's built-in timeout function
             return await(timeout($promise, $timeout));
         } catch (TimeoutException $e) {
             // Convert to RuntimeException for consistency with your API
-            throw new RuntimeException("Promise timed out after {$timeout} seconds", 0, $e);
+            throw new RuntimeException(
+                "Promise timed out after {$timeout} seconds",
+                0,
+                $e,
+            );
         }
     }
 
@@ -270,19 +290,24 @@ trait ManagesPromises
         return async(function () use ($timeout) {
             $timeoutMicro = (int) ($timeout * 1000000);
             usleep($timeoutMicro);
-            throw new RuntimeException("Promise timed out after {$timeout} seconds");
+            throw new RuntimeException(
+                "Promise timed out after {$timeout} seconds",
+            );
         });
     }
 
     /**
      * Execute promises in sequence recursively.
      *
-     * @param  array<callable(): PromiseInterface>  $callables  Array of callables
+     * @param  array<callable(): PromiseInterface>  $callables  Array of
+     *                                                          callables
      * @param  array<mixed>  $results  Results collected so far
      * @return PromiseInterface Promise that resolves with array of results
      */
-    protected function executeSequence(array $callables, array $results): PromiseInterface
-    {
+    protected function executeSequence(
+        array $callables,
+        array $results,
+    ): PromiseInterface {
         // If no more callables, resolve with the results
         if (empty($callables)) {
             return resolve($results);
@@ -292,13 +317,11 @@ trait ManagesPromises
         $callable = array_shift($callables);
 
         // Execute it and chain the next promises
-        return $callable()->then(
-            function ($result) use ($callables, $results) {
-                $results[] = $result;
+        return $callable()->then(function ($result) use ($callables, $results) {
+            $results[] = $result;
 
-                return $this->executeSequence($callables, $results);
-            }
-        );
+            return $this->executeSequence($callables, $results);
+        });
     }
 
     /**
@@ -311,14 +334,15 @@ trait ManagesPromises
     protected function validatePromises(array $promises): void
     {
         foreach ($promises as $index => $promise) {
-            if (! $promise instanceof PromiseInterface) {
+            if (! ($promise instanceof PromiseInterface)) {
                 throw new InvalidArgumentException(
                     sprintf(
-                        'Item at index %d is not a promise. Expected %s, got %s',
+                        'Item at index %d is not a promise. '
+                            .'Expected %s, got %s',
                         $index,
                         PromiseInterface::class,
-                        get_debug_type($promise)
-                    )
+                        get_debug_type($promise),
+                    ),
                 );
             }
         }
@@ -332,8 +356,11 @@ trait ManagesPromises
      * @param  int  $concurrency  Maximum number of concurrent promises
      * @return PromiseInterface Promise that resolves with array of results
      */
-    protected function mapBatched(array $items, callable $callback, int $concurrency): PromiseInterface
-    {
+    protected function mapBatched(
+        array $items,
+        callable $callback,
+        int $concurrency,
+    ): PromiseInterface {
         $results = [];
         $pendingPromises = [];
         $itemKeys = array_keys($items);
@@ -341,7 +368,17 @@ trait ManagesPromises
         $totalItems = count($items);
 
         // Initial function to start the first batch
-        $startBatch = function () use (&$pendingPromises, &$i, $totalItems, $itemKeys, $items, $callback, &$results, &$startBatch, $concurrency) {
+        $startBatch = function () use (
+            &$pendingPromises,
+            &$i,
+            $totalItems,
+            $itemKeys,
+            $items,
+            $callback,
+            &$results,
+            &$startBatch,
+            $concurrency,
+        ) {
             // Fill up to concurrency
             while (count($pendingPromises) < $concurrency && $i < $totalItems) {
                 $key = $itemKeys[$i];
@@ -349,12 +386,20 @@ trait ManagesPromises
                 $promise = $callback($item, $key);
 
                 if (! ($promise instanceof PromiseInterface)) {
-                    throw new RuntimeException('Callback must return a Promise');
+                    throw new RuntimeException(
+                        'Callback must return a Promise',
+                    );
                 }
 
-                // Add this promise to the pending queue with a handler to process the next item
+                // Add this promise to the pending queue with a handler to
+                // process the next item
                 $pendingPromises[$key] = $promise->then(
-                    function ($result) use ($key, &$results, &$pendingPromises, &$startBatch) {
+                    function ($result) use (
+                        $key,
+                        &$results,
+                        &$pendingPromises,
+                        &$startBatch,
+                    ) {
                         $results[$key] = $result;
                         unset($pendingPromises[$key]);
                         $startBatch(); // Process the next item
@@ -365,13 +410,14 @@ trait ManagesPromises
                         unset($pendingPromises[$key]);
 
                         return reject($reason); // Propagate the rejection
-                    }
+                    },
                 );
 
                 $i++;
             }
 
-            // If we've processed all items and have no more pending promises, resolve
+            // If we've processed all items and have no more pending promises,
+            // resolve
             if ($i >= $totalItems && empty($pendingPromises)) {
                 return resolve($results);
             }

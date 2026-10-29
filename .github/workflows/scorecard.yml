@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: '0 1 * * 1'
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 # Restrict permissions for OpenSSF Scorecard requirements

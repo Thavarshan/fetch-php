@@ -25,16 +25,20 @@ use React\Promise\PromiseInterface;
 final class AddHeadersMiddleware implements Middleware
 {
     /**
-     * @param  array<string, string|string[]>  $headers  Header name => value(s).
-     * @param  bool  $overwrite  Replace existing headers (true) or only add when absent (false).
+     * @param  array<string, string|string[]>  $headers  Header name =>
+     *                                                   value(s).
+     * @param  bool  $overwrite  Replace existing headers (true) or only add
+     *                           when absent (false).
      */
     public function __construct(
         private readonly array $headers,
         private readonly bool $overwrite = true,
     ) {}
 
-    public function handle(RequestInterface $request, callable $next): ResponseInterface|PromiseInterface
-    {
+    public function handle(
+        RequestInterface $request,
+        callable $next,
+    ): ResponseInterface|PromiseInterface {
         foreach ($this->headers as $name => $value) {
             if (! $this->overwrite && $request->hasHeader($name)) {
                 continue;

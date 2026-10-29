@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class RequestOptionsTest extends TestCase
 {
-    public function test_normalize_option_keys_converts_max_retries_to_retries(): void
+    public function test_normalize_max_retries_to_retries(): void
     {
         $options = [
             'max_retries' => 5,
@@ -21,7 +21,7 @@ class RequestOptionsTest extends TestCase
         $this->assertArrayNotHasKey('max_retries', $normalized);
     }
 
-    public function test_normalize_option_keys_keeps_retries_when_present(): void
+    public function test_normalize_keeps_explicit_retries(): void
     {
         $options = [
             'retries' => 3,
@@ -35,7 +35,7 @@ class RequestOptionsTest extends TestCase
         $this->assertArrayNotHasKey('max_retries', $normalized);
     }
 
-    public function test_normalize_option_keys_retries_takes_precedence_over_max_retries(): void
+    public function test_normalize_prefers_retries_over_max_retries(): void
     {
         $options = [
             'retries' => 3,
@@ -46,7 +46,11 @@ class RequestOptionsTest extends TestCase
         $normalized = RequestOptions::normalizeOptionKeys($options);
 
         $this->assertArrayHasKey('retries', $normalized);
-        $this->assertEquals(3, $normalized['retries'], 'retries should take precedence');
+        $this->assertEquals(
+            3,
+            $normalized['retries'],
+            'retries should take precedence',
+        );
         $this->assertArrayNotHasKey('max_retries', $normalized);
     }
 
@@ -86,7 +90,7 @@ class RequestOptionsTest extends TestCase
         $this->assertEquals(20, $merged['timeout']);
     }
 
-    public function test_merge_with_both_retries_and_max_retries_prefers_retries(): void
+    public function test_merge_prefers_retries_over_max_retries(): void
     {
         $options1 = [
             'max_retries' => 5,

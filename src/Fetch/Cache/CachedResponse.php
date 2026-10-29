@@ -18,7 +18,8 @@ class CachedResponse
      * @param  array<string, array<int, string>>  $headers  Response headers
      * @param  string  $body  Response body
      * @param  int  $createdAt  Timestamp when the response was cached
-     * @param  int|null  $expiresAt  Timestamp when the response expires (null = never expires)
+     * @param  int|null  $expiresAt  Timestamp when the response expires (null =
+     *                               never expires)
      * @param  string|null  $etag  ETag value from the response
      * @param  string|null  $lastModified  Last-Modified header value
      * @param  array<string, mixed>  $metadata  Additional metadata
@@ -37,8 +38,10 @@ class CachedResponse
     /**
      * Create a cached response from a PSR-7 response.
      */
-    public static function fromResponse(ResponseInterface $response, ?int $ttl = null): self
-    {
+    public static function fromResponse(
+        ResponseInterface $response,
+        ?int $ttl = null,
+    ): self {
         $now = time();
         $expiresAt = $ttl !== null ? $now + $ttl : null;
 
@@ -70,7 +73,14 @@ class CachedResponse
      */
     public static function fromArray(array $data): ?self
     {
-        if (! isset($data['status_code'], $data['headers'], $data['body'], $data['created_at'])) {
+        if (
+            ! isset(
+                $data['status_code'],
+                $data['headers'],
+                $data['body'],
+                $data['created_at'],
+            )
+        ) {
             return null;
         }
 
@@ -79,7 +89,9 @@ class CachedResponse
             headers: (array) $data['headers'],
             body: (string) $data['body'],
             createdAt: (int) $data['created_at'],
-            expiresAt: isset($data['expires_at']) ? (int) $data['expires_at'] : null,
+            expiresAt: isset($data['expires_at'])
+                ? (int) $data['expires_at']
+                : null,
             etag: $data['etag'] ?? null,
             lastModified: $data['last_modified'] ?? null,
             metadata: $data['metadata'] ?? [],
@@ -244,7 +256,7 @@ class CachedResponse
             return true;
         }
 
-        return time() <= ($this->expiresAt + $maxStale);
+        return time() <= $this->expiresAt + $maxStale;
     }
 
     /**

@@ -10,46 +10,96 @@ AI-assisted contributions section in [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ## Supported tools & what they read
 
-| Tool | Reads | Notes |
-| --- | --- | --- |
-| **Claude Code** | `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, `.claude/settings.json`, hooks | `CLAUDE.md` imports `AGENTS.md` via `@AGENTS.md` |
-| **OpenAI Codex** | `AGENTS.md` (root + nested) | Discovers skills through the list in `AGENTS.md`; optional native `$skill` discovery via `.agents/skills/` (see below) |
-| **Other AGENTS.md tools** | `AGENTS.md` | Vendor-neutral instructions apply |
+- **Tool:** **Claude Code**
+  - **Reads:** `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`,
+               `.claude/agents/`, `.claude/settings.json`, hooks
+  - **Notes:** `CLAUDE.md` imports `AGENTS.md` via `@AGENTS.md`
+
+- **Tool:** **OpenAI Codex**
+  - **Reads:** `AGENTS.md` (root + nested)
+  - **Notes:** Discovers skills through the list in `AGENTS.md`; optional native
+               `$skill` discovery via `.agents/skills/` (see below)
+
+- **Tool:** **Other AGENTS.md tools**
+  - **Reads:** `AGENTS.md`
+  - **Notes:** Vendor-neutral instructions apply
 
 ## File map
 
-| Path | Purpose |
-| --- | --- |
-| `AGENTS.md` | **Canonical, vendor-neutral instructions** — the single source of truth (architecture, commands, conventions, testing, public-API rules, security, Git boundaries, definition of done). |
-| `CLAUDE.md` | Claude-specific, additive guidance. Imports `AGENTS.md`; adds plan-mode, skill routing, subagents, verification behavior. |
-| `CODE_MAP.md` | Concrete public-surface map; the contract docs and tests follow. |
-| `.claude/rules/*.md` | Path-scoped reminders that auto-load when a matching file is opened (`paths:` front matter). |
-| `.claude/skills/<name>/SKILL.md` | Task workflows (canonical copy). |
-| `.claude/agents/*.md` | Specialist subagents. |
-| `.claude/settings.json` | Shared, conservative permissions + the guard hook registration. |
-| `.claude/hooks/guard-destructive.sh` | Blocks destructive Git / catastrophic `rm`. |
-| `.claude/settings.local.json` | **Personal, git-ignored** — your own permission grants. |
-| `docs/ai/SOURCES.md` | External sources & license attribution. |
-| `tools/validate-ai-config.php` | The validator (`composer ai:validate`). |
+- **Path:** `AGENTS.md`
+  - **Purpose:** **Canonical, vendor-neutral instructions** — the single source
+                 of truth (architecture, commands, conventions, testing,
+                 public-API rules, security, Git boundaries, definition of
+                 done).
+
+- **Path:** `CLAUDE.md`
+  - **Purpose:** Claude-specific, additive guidance. Imports `AGENTS.md`; adds
+                 plan-mode, skill routing, subagents, verification behavior.
+
+- **Path:** `CODE_MAP.md`
+  - **Purpose:** Concrete public-surface map; the contract docs and tests
+                 follow.
+
+- **Path:** `.claude/rules/*.md`
+  - **Purpose:** Path-scoped reminders that auto-load when a matching file is
+                 opened (`paths:` front matter).
+
+- **Path:** `.claude/skills/<name>/SKILL.md`
+  - **Purpose:** Task workflows (canonical copy).
+
+- **Path:** `.claude/agents/*.md`
+  - **Purpose:** Specialist subagents.
+
+- **Path:** `.claude/settings.json`
+  - **Purpose:** Shared, conservative permissions + the guard hook registration.
+
+- **Path:** `.claude/hooks/guard`
+  - **Purpose:** Blocks destructive Git / catastrophic `rm`.
+
+- **Path:** `.claude/settings.local.json`
+  - **Purpose:** **Personal, git-ignored** — your own permission grants.
+
+- **Path:** `docs/ai/SOURCES.md`
+  - **Purpose:** External sources & license attribution.
+
+- **Path:** `tools/validate-ai-config.php`
+  - **Purpose:** The validator (`composer ai:validate`).
 
 ## Skills (when they activate)
 
-Skills live once under `.claude/skills/`. Claude Code loads their descriptions at
-startup and activates one when the task matches (or on `/skill-name`); Codex and
-other tools find them through the list in `AGENTS.md`.
+Skills live once under `.claude/skills/`. Claude Code loads their descriptions
+at startup and activates one when the task matches (or on `/skill-name`); Codex
+and other tools find them through the list in `AGENTS.md`.
 
-| Skill | Use when |
-| --- | --- |
-| `fetch-php-implement-change` | Adding a feature or fixing a bug in `src/Fetch`. |
-| `fetch-php-test-development` | Writing or fixing PHPUnit tests. |
-| `fetch-php-debug-failure` | A test or behavior is failing. |
-| `fetch-php-code-review` | Reviewing a diff/branch/PR. |
-| `fetch-php-http-security-review` | URL/auth/redirect/TLS/logging/cache changes. |
-| `fetch-php-performance-review` | Pool/stream/retry/async/event changes. |
-| `fetch-php-public-api-review` | Any public-surface or default change. |
-| `fetch-php-ci-triage` | GitHub Actions is red. |
-| `fetch-php-documentation-sync` | Docs/README/examples need updating. |
-| `fetch-php-release` | Preparing/recovering a release (maintainer-approved only). |
+- **Skill:** `fetch-php-implement-change`
+  - **Use when:** Adding a feature or fixing a bug in `src/Fetch`.
+
+- **Skill:** `fetch-php-test-development`
+  - **Use when:** Writing or fixing PHPUnit tests.
+
+- **Skill:** `fetch-php-debug-failure`
+  - **Use when:** A test or behavior is failing.
+
+- **Skill:** `fetch-php-code-review`
+  - **Use when:** Reviewing a diff/branch/PR.
+
+- **Skill:** `fetch-php-http-security-review`
+  - **Use when:** URL/auth/redirect/TLS/logging/cache changes.
+
+- **Skill:** `fetch-php-performance-review`
+  - **Use when:** Pool/stream/retry/async/event changes.
+
+- **Skill:** `fetch-php-public-api-review`
+  - **Use when:** Any public-surface or default change.
+
+- **Skill:** `fetch-php-ci-triage`
+  - **Use when:** GitHub Actions is red.
+
+- **Skill:** `fetch-php-documentation-sync`
+  - **Use when:** Docs/README/examples need updating.
+
+- **Skill:** `fetch-php-release`
+  - **Use when:** Preparing/recovering a release (maintainer-approved only).
 
 ## Subagents
 
@@ -62,15 +112,15 @@ tools — they report findings for a human or the maintainer agent to act on.
 
 `.claude/settings.json` is deliberately conservative:
 
-- **allow** — read-only and routine dev commands (`composer test/lint/analyse/
-  fix/check`, `phpunit`, `git status/diff/log`, `gh run/release view`, docs
-  build).
+- **allow** — read-only and routine dev commands
+  (`composer test/lint/analyse/ fix/check`, `phpunit`, `git status/diff/log`,
+  `gh run/release view`, docs build).
 - **ask** — anything outward-facing or state-changing (`git push`, `git tag`,
   `git commit`, `gh release`, `composer require/update/remove`, `curl`).
 - **deny** — destructive Git (`reset --hard`, `clean -fd`, force push) and
   reading secret files (`.env`, keys, `~/.ssh`, `~/.aws`).
 
-The `PreToolUse` hook (`.claude/hooks/guard-destructive.sh`) is defense-in-depth
+The `PreToolUse` hook (`.claude/hooks/guard`) is defense-in-depth
 for the destructive-Git and catastrophic-`rm` cases. It is pure POSIX `sh` +
 `grep` (no `jq`/PHP/Node dependency), runs locally, makes no network calls, and
 transmits nothing.
@@ -104,22 +154,22 @@ copy of any skill.
 composer ai:validate      # or: php tools/validate-ai-config.php
 ```
 
-It checks (no network, deterministic): required files exist; `CLAUDE.md`
-imports `@AGENTS.md`; every skill has valid, unique front matter with a name
-matching its directory; skills are referenced in `AGENTS.md` (Claude↔Codex
-sync); subagents/rules are well-formed; JSON parses; and no personal absolute
-paths or secret-looking strings are committed.
+It checks (no network, deterministic): required files exist; `CLAUDE.md` imports
+`@AGENTS.md`; every skill has valid, unique front matter with a name matching
+its directory; skills are referenced in `AGENTS.md` (Claude↔Codex sync);
+subagents/rules are well-formed; JSON parses; and no personal absolute paths or
+secret-looking strings are committed.
 
 ## Adding a new skill
 
 1. Create `.claude/skills/<kebab-name>/SKILL.md` with front matter:
 
-   ```yaml
-   ---
-   name: <kebab-name>            # must equal the directory name
-   description: <what it does, and exactly when to use it>   # ≤1024 chars
-   ---
-   ```
+    ```yaml
+    ---
+    name: <kebab-name> # must equal the directory name
+    description: <what it does, and exactly when to use it> # ≤1024 chars
+    ---
+    ```
 
 2. Write a concrete, executable workflow with verification steps and red-flag
    stop conditions. Reference repository commands from `AGENTS.md`; don't invent

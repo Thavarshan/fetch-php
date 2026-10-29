@@ -14,7 +14,11 @@ class CacheKeyGenerator
      *
      * @var array<int, string>
      */
-    private const DEFAULT_VARY_HEADERS = ['Accept', 'Accept-Encoding', 'Accept-Language'];
+    private const DEFAULT_VARY_HEADERS = [
+        'Accept',
+        'Accept-Encoding',
+        'Accept-Language',
+    ];
 
     /**
      * The prefix for all cache keys.
@@ -31,10 +35,13 @@ class CacheKeyGenerator
     /**
      * Create a new cache key generator.
      *
-     * @param  array<int, string>  $varyHeaders  Headers to use for cache key variation
+     * @param  array<int, string>  $varyHeaders  Headers to use for cache key
+     *                                           variation
      */
-    public function __construct(string $prefix = 'fetch:', array $varyHeaders = [])
-    {
+    public function __construct(
+        string $prefix = 'fetch:',
+        array $varyHeaders = [],
+    ) {
         $this->prefix = $prefix;
         $this->varyHeaders = $varyHeaders ?: self::DEFAULT_VARY_HEADERS;
     }
@@ -44,8 +51,11 @@ class CacheKeyGenerator
      *
      * @param  array<string, mixed>  $options  Request options
      */
-    public function generate(string $method, string $uri, array $options = []): string
-    {
+    public function generate(
+        string $method,
+        string $uri,
+        array $options = [],
+    ): string {
         $components = [
             'method' => strtoupper($method),
             'uri' => $this->normalizeUri($uri),
@@ -61,9 +71,13 @@ class CacheKeyGenerator
 
         // Include body hash for unsafe methods when opt-in is set
         $cacheConfig = $options['cache'] ?? [];
-        $bodyCachingEnabled = is_array($cacheConfig) && ($cacheConfig['cache_body'] ?? false);
+        $bodyCachingEnabled =
+            is_array($cacheConfig) && ($cacheConfig['cache_body'] ?? false);
 
-        if (! in_array($upperMethod, ['GET', 'HEAD'], true) && $bodyCachingEnabled) {
+        if (
+            ! in_array($upperMethod, ['GET', 'HEAD'], true) &&
+            $bodyCachingEnabled
+        ) {
             $bodyHash = $this->hashBody($options);
 
             if ($bodyHash !== null) {
@@ -129,7 +143,10 @@ class CacheKeyGenerator
             $defaultPorts = ['http' => 80, 'https' => 443];
             $scheme = $parsed['scheme'] ?? 'http';
 
-            if (! isset($defaultPorts[$scheme]) || $parsed['port'] !== $defaultPorts[$scheme]) {
+            if (
+                ! isset($defaultPorts[$scheme]) ||
+                $parsed['port'] !== $defaultPorts[$scheme]
+            ) {
                 $normalized .= ':'.$parsed['port'];
             }
         }
@@ -149,7 +166,8 @@ class CacheKeyGenerator
      */
     private function normalizeQuery(string $query): string
     {
-        // Parse query string into array of [key, value] pairs, preserving duplicates and order
+        // Parse query string into array of [key, value] pairs, preserving
+        // duplicates and order
         $pairs = [];
 
         foreach (explode('&', $query) as $part) {
@@ -212,7 +230,9 @@ class CacheKeyGenerator
         foreach ($this->varyHeaders as $header) {
             foreach ($headers as $name => $value) {
                 if (strcasecmp($name, $header) === 0) {
-                    $varyHeaders[strtolower($header)] = is_array($value) ? implode(', ', $value) : (string) $value;
+                    $varyHeaders[strtolower($header)] = is_array($value)
+                        ? implode(', ', $value)
+                        : (string) $value;
 
                     break;
                 }

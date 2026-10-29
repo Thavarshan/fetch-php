@@ -7,7 +7,9 @@ description: Configure bearer tokens, basic authentication, and request headers.
 
 # Authentication
 
-Authentication can be applied to one request or configured on a handler. `withToken()` sets a bearer `Authorization` header; `withAuth()` configures Guzzle basic authentication.
+Authentication can be applied to one request or configured on a handler.
+`withToken()` sets a bearer `Authorization` header; `withAuth()` configures
+Guzzle basic authentication.
 
 ## Bearer token
 
@@ -18,7 +20,8 @@ $response = $handler
     ->get('https://api.example.test/v1/profile');
 ```
 
-For a single call, pass a `token` request option to `fetch()` or a verb helper. Helper options are per-request.
+For a single call, pass a `token` request option to `fetch()` or a verb helper.
+Helper options are per-request.
 
 ```php
 $response = fetch('https://api.example.test/v1/profile', ['token' => $token]);
@@ -40,6 +43,8 @@ $response = fetch('https://api.example.test/v1/private', [
 ]);
 ```
 
-Use HTTPS and obtain credentials from an appropriate secret store. Do not write tokens or passwords to logs, fixtures, or committed examples. The offline fixture is checked by `composer docs:examples`.
+Use HTTPS and obtain credentials from an appropriate secret store. Do not write
+tokens or passwords to logs, fixtures, or committed examples. The offline
+fixture is checked by `composer docs:examples`.
 
 <<< @/examples/snippets/authentication.php

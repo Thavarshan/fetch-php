@@ -73,11 +73,7 @@ class ConnectionPoolTest extends TestCase
 
     public function test_connection_lifecycle(): void
     {
-        $connection = new Connection(
-            host: 'example.com',
-            port: 443,
-            ssl: true,
-        );
+        $connection = new Connection(host: 'example.com', port: 443, ssl: true);
 
         $this->assertEquals('example.com', $connection->getHost());
         $this->assertEquals(443, $connection->getPort());
@@ -115,12 +111,18 @@ class ConnectionPoolTest extends TestCase
 
         $this->assertGreaterThanOrEqual($before, $connection->getCreatedAt());
         $this->assertLessThanOrEqual($after, $connection->getCreatedAt());
-        $this->assertEquals($connection->getCreatedAt(), $connection->getLastUsedAt());
+        $this->assertEquals(
+            $connection->getCreatedAt(),
+            $connection->getLastUsedAt(),
+        );
 
         sleep(1);
         $connection->markUsed();
 
-        $this->assertGreaterThan($connection->getCreatedAt(), $connection->getLastUsedAt());
+        $this->assertGreaterThan(
+            $connection->getCreatedAt(),
+            $connection->getLastUsedAt(),
+        );
     }
 
     public function test_connection_close(): void
@@ -156,7 +158,9 @@ class ConnectionPoolTest extends TestCase
         $config = new PoolConfiguration;
         $pool = new ConnectionPool($config);
 
-        $connection = $pool->getConnectionFromUrl('https://api.example.com:8443/v1/users');
+        $connection = $pool->getConnectionFromUrl(
+            'https://api.example.com:8443/v1/users',
+        );
 
         $this->assertEquals('api.example.com', $connection->getHost());
         $this->assertEquals(8443, $connection->getPort());
@@ -168,11 +172,15 @@ class ConnectionPoolTest extends TestCase
         $config = new PoolConfiguration;
         $pool = new ConnectionPool($config);
 
-        $httpConnection = $pool->getConnectionFromUrl('http://example.com/path');
+        $httpConnection = $pool->getConnectionFromUrl(
+            'http://example.com/path',
+        );
         $this->assertEquals(80, $httpConnection->getPort());
         $this->assertFalse($httpConnection->isSsl());
 
-        $httpsConnection = $pool->getConnectionFromUrl('https://example.com/path');
+        $httpsConnection = $pool->getConnectionFromUrl(
+            'https://example.com/path',
+        );
         $this->assertEquals(443, $httpsConnection->getPort());
         $this->assertTrue($httpsConnection->isSsl());
     }
@@ -293,7 +301,10 @@ class ConnectionPoolTest extends TestCase
         $curlOptions = $config->getCurlOptions();
 
         $this->assertArrayHasKey(CURLOPT_HTTP_VERSION, $curlOptions);
-        $this->assertEquals(CURL_HTTP_VERSION_2_0, $curlOptions[CURLOPT_HTTP_VERSION]);
+        $this->assertEquals(
+            CURL_HTTP_VERSION_2_0,
+            $curlOptions[CURLOPT_HTTP_VERSION],
+        );
     }
 
     public function test_http2_curl_multi_options(): void
@@ -301,10 +312,14 @@ class ConnectionPoolTest extends TestCase
         $config = new Http2Configuration(enabled: true);
         $curlMultiOptions = $config->getCurlMultiOptions();
 
-        // CURLMOPT_PIPELINING should be in multi options, not regular curl options
+        // CURLMOPT_PIPELINING should be in multi options, not regular curl
+        // options
         if (defined('CURLPIPE_MULTIPLEX')) {
             $this->assertArrayHasKey(CURLMOPT_PIPELINING, $curlMultiOptions);
-            $this->assertEquals(CURLPIPE_MULTIPLEX, $curlMultiOptions[CURLMOPT_PIPELINING]);
+            $this->assertEquals(
+                CURLPIPE_MULTIPLEX,
+                $curlMultiOptions[CURLMOPT_PIPELINING],
+            );
         }
     }
 

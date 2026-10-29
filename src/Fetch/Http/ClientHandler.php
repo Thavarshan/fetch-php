@@ -48,7 +48,8 @@ class ClientHandler implements ClientHandlerInterface
     use PerformsHttpRequests;
 
     /**
-     * Legacy compatibility storage. Runtime defaults are owned by GlobalServices.
+     * Legacy compatibility storage. Runtime defaults are owned by
+     *     GlobalServices.
      *
      * @var array<string, mixed>
      *
@@ -116,7 +117,8 @@ class ClientHandler implements ClientHandlerInterface
      * @param  int|null  $maxRetries  Number of retries for the request
      * @param  int|null  $retryDelay  Delay between retries in milliseconds
      * @param  bool  $isAsync  Whether the request is asynchronous
-     * @param  LoggerInterface|null  $logger  Logger for request/response details
+     * @param  LoggerInterface|null  $logger  Logger for request/response
+     *                                        details
      */
     public function __construct(
         protected ?ClientInterface $httpClient = null,
@@ -137,7 +139,7 @@ class ClientHandler implements ClientHandlerInterface
         // Initialize with default options using centralized merging
         $this->options = FetchRequestOptions::merge(
             self::getDefaultOptions(),
-            $this->options
+            $this->options,
         );
 
         // Set the timeout in options
@@ -221,7 +223,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Reset default options to factory defaults.
      *
-     * This is called by GlobalServices::reset() to ensure complete test isolation.
+     * This is called by GlobalServices::reset() to ensure complete test
+     *     isolation.
      *
      * @internal Used by GlobalServices for test isolation
      */
@@ -250,7 +253,13 @@ class ClientHandler implements ClientHandlerInterface
         string $version = '1.1',
         ?string $reason = null,
     ): Response {
-        return new Response($statusCode, $headers, $body ?? '', $version, $reason);
+        return new Response(
+            $statusCode,
+            $headers,
+            $body ?? '',
+            $version,
+            $reason,
+        );
     }
 
     /**
@@ -270,7 +279,7 @@ class ClientHandler implements ClientHandlerInterface
 
         $headers = array_merge(
             ['Content-Type' => ContentType::JSON->value],
-            $headers
+            $headers,
         );
 
         return self::createMockResponse($statusCode, $headers, $jsonData);
@@ -285,8 +294,11 @@ class ClientHandler implements ClientHandlerInterface
     {
         if (! $this->httpClient) {
             $this->httpClient = new GuzzleClient([
-                RequestOptions::CONNECT_TIMEOUT => $this->options['timeout'] ?? self::DEFAULT_TIMEOUT,
-                RequestOptions::HTTP_ERRORS => false, // We'll handle HTTP errors ourselves
+                RequestOptions::CONNECT_TIMEOUT => (
+                    $this->options['timeout'] ?? self::DEFAULT_TIMEOUT
+                ),
+                // We'll handle HTTP errors ourselves.
+                RequestOptions::HTTP_ERRORS => false,
             ]);
         }
 
@@ -331,13 +343,15 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @param  array<string, mixed>  $options  Cache options
      */
-    public function withCache(?CacheInterface $cache = null, array $options = []): self
-    {
+    public function withCache(
+        ?CacheInterface $cache = null,
+        array $options = [],
+    ): self {
         $this->cacheManager = new CacheManager(
             cache: $cache,
             options: array_merge(['enabled' => true], $options),
             logger: $this->logger,
-            logLevel: $this->logLevel
+            logLevel: $this->logLevel,
         );
 
         return $this;
@@ -437,7 +451,16 @@ class ClientHandler implements ClientHandlerInterface
     public function withLogLevel(string $level): self
     {
         $level = strtolower($level);
-        $allowed = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
+        $allowed = [
+            'debug',
+            'info',
+            'notice',
+            'warning',
+            'error',
+            'critical',
+            'alert',
+            'emergency',
+        ];
 
         if (! in_array($level, $allowed, true)) {
             throw new InvalidArgumentException("Invalid log level: {$level}");
@@ -475,7 +498,9 @@ class ClientHandler implements ClientHandlerInterface
         $uri = $this->options['uri'] ?? null;
 
         if (! is_string($method) || ! is_string($uri)) {
-            throw new LogicException('sendAsync() requires method and uri to be set.');
+            throw new LogicException(
+                'sendAsync() requires method and uri to be set.',
+            );
         }
 
         $startTime = microtime(true);
@@ -496,7 +521,7 @@ class ClientHandler implements ClientHandlerInterface
             $startTime,
             $startMemory,
             $requestId,
-            $context
+            $context,
         );
     }
 
@@ -507,22 +532,22 @@ class ClientHandler implements ClientHandlerInterface
      * @param  int  $maxAttempts  Maximum attempts
      * @param  \Throwable  $exception  The exception that caused the retry
      */
-    protected function logRetry(int $attempt, int $maxAttempts, \Throwable $exception): void
-    {
-        $this->logger->info(
-            'Retrying request',
-            [
-                'attempt' => $attempt,
-                'max_attempts' => $maxAttempts,
-                // Read the raw URI option rather than getFullUri(): requests are
-                // dispatched statelessly, so handler-state URI resolution would
-                // throw when no URI is configured on the handler itself.
-                'uri' => $this->options['uri'] ?? '',
-                'method' => $this->options['method'] ?? Method::GET->value,
-                'error' => $exception->getMessage(),
-                'code' => $exception->getCode(),
-            ]
-        );
+    protected function logRetry(
+        int $attempt,
+        int $maxAttempts,
+        \Throwable $exception,
+    ): void {
+        $this->logger->info('Retrying request', [
+            'attempt' => $attempt,
+            'max_attempts' => $maxAttempts,
+            // Read the raw URI option rather than getFullUri(): requests are
+            // dispatched statelessly, so handler-state URI resolution would
+            // throw when no URI is configured on the handler itself.
+            'uri' => $this->options['uri'] ?? '',
+            'method' => $this->options['method'] ?? Method::GET->value,
+            'error' => $exception->getMessage(),
+            'code' => $exception->getCode(),
+        ]);
     }
 
     /**
@@ -532,20 +557,19 @@ class ClientHandler implements ClientHandlerInterface
      * @param  string  $uri  Request URI
      * @param  array<string, mixed>  $options  Request options
      */
-    protected function logRequest(string $method, string $uri, array $options): void
-    {
+    protected function logRequest(
+        string $method,
+        string $uri,
+        array $options,
+    ): void {
         // Remove potentially sensitive data
         $sanitizedOptions = $this->sanitizeOptions($options);
 
-        $this->logger->log(
-            $this->logLevel,
-            'Sending HTTP request',
-            [
-                'method' => $method,
-                'uri' => $uri,
-                'options' => $sanitizedOptions,
-            ]
-        );
+        $this->logger->log($this->logLevel, 'Sending HTTP request', [
+            'method' => $method,
+            'uri' => $uri,
+            'options' => $sanitizedOptions,
+        ]);
     }
 
     /**
@@ -556,16 +580,12 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected function logResponse(Response $response, float $duration): void
     {
-        $this->logger->log(
-            $this->logLevel,
-            'Received HTTP response',
-            [
-                'status_code' => $response->getStatusCode(),
-                'reason' => $response->getReasonPhrase(),
-                'duration' => round($duration, 3),
-                'content_length' => $this->getResponseContentLength($response),
-            ]
-        );
+        $this->logger->log($this->logLevel, 'Received HTTP response', [
+            'status_code' => $response->getStatusCode(),
+            'reason' => $response->getReasonPhrase(),
+            'duration' => round($duration, 3),
+            'content_length' => $this->getResponseContentLength($response),
+        ]);
     }
 
     /**
@@ -599,15 +619,29 @@ class ClientHandler implements ClientHandlerInterface
         $sanitizedOptions = $options;
 
         // Mask sensitive headers (case-insensitive)
-        if (isset($sanitizedOptions['headers']) && is_array($sanitizedOptions['headers'])) {
+        if (
+            isset($sanitizedOptions['headers']) &&
+            is_array($sanitizedOptions['headers'])
+        ) {
             $sensitiveHeaders = [
-                'authorization', 'x-api-key', 'api-key', 'x-auth-token', 'cookie', 'set-cookie',
+                'authorization',
+                'x-api-key',
+                'api-key',
+                'x-auth-token',
+                'cookie',
+                'set-cookie',
             ];
 
             foreach ($sanitizedOptions['headers'] as $key => $value) {
-                if (in_array(strtolower((string) $key), $sensitiveHeaders, true)) {
+                if (
+                    in_array(strtolower((string) $key), $sensitiveHeaders, true)
+                ) {
                     if (is_array($value)) {
-                        $sanitizedOptions['headers'][$key] = array_fill(0, count($value), '[REDACTED]');
+                        $sanitizedOptions['headers'][$key] = array_fill(
+                            0,
+                            count($value),
+                            '[REDACTED]',
+                        );
                     } else {
                         $sanitizedOptions['headers'][$key] = '[REDACTED]';
                     }

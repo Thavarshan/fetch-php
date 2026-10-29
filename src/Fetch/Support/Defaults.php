@@ -10,7 +10,8 @@ use Fetch\Enum\Method;
  * Centralized defaults for all Fetch HTTP client configuration.
  *
  * This class serves as the single source of truth for all default values,
- * eliminating duplication across ClientHandler, GlobalServices, and other classes.
+ * eliminating duplication across ClientHandler, GlobalServices, and other
+ *     classes.
  *
  * @internal
  */

@@ -16,8 +16,11 @@ class ManagesRetriesTestClass
 
     public const DEFAULT_RETRY_DELAY = 100;
 
-    public function logRetry(int $attempt, int $maxAttempts, Throwable $exception): void
-    {
+    public function logRetry(
+        int $attempt,
+        int $maxAttempts,
+        Throwable $exception,
+    ): void {
         // Do nothing in the test implementation
     }
 }

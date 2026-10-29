@@ -2,8 +2,8 @@
 
 ## Description
 
-**What does this PR do?**
-Describe the changes and their purpose. Link any related issues.
+**What does this PR do?** Describe the changes and their purpose. Link any
+related issues.
 
 Fixes #(issue_number)
 
@@ -13,7 +13,8 @@ Please delete options that are not relevant:
 
 - [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
 - [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality
+      to not work as expected)
 - [ ] 📚 Documentation update
 - [ ] 🧹 Code cleanup/refactoring
 - [ ] ⚡ Performance improvement
@@ -35,6 +36,7 @@ Please delete options that are not relevant:
 - [ ] All existing tests pass
 
 **Test Environment:**
+
 - PHP Version:
 - Operating System:
 

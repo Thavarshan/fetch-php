@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Fetch\Exceptions;
 
-use Psr\Http\Client\NetworkExceptionInterface;
+use Psr\Http\Client\NetworkExceptionInterface as NetworkContract;
 use Psr\Http\Message\RequestInterface;
 use Throwable;
 
-class NetworkException extends ClientException implements NetworkExceptionInterface
+class NetworkException extends ClientException implements NetworkContract
 {
     /**
      * The request.
@@ -22,8 +22,11 @@ class NetworkException extends ClientException implements NetworkExceptionInterf
      * @param  RequestInterface  $request  The request
      * @param  Throwable|null  $previous  The previous exception
      */
-    public function __construct(string $message, RequestInterface $request, ?Throwable $previous = null)
-    {
+    public function __construct(
+        string $message,
+        RequestInterface $request,
+        ?Throwable $previous = null,
+    ) {
         parent::__construct($message, 0, $previous);
         $this->request = $request;
     }

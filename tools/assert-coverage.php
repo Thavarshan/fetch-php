@@ -18,7 +18,11 @@ if (! $document->load($reportPath)) {
 
 $xpath = new DOMXPath($document);
 $xpath->registerNamespace('coverage', 'https://schema.phpunit.de/coverage/1.0');
-$percent = $xpath->evaluate('string(/coverage:phpunit/coverage:project/coverage:directory[@name="/"]/coverage:totals/coverage:lines/@percent)');
+$percent = $xpath->evaluate(
+    'string(/coverage:phpunit/coverage:project/'
+        . 'coverage:directory[@name="/"]/coverage:totals/'
+        . 'coverage:lines/@percent)',
+);
 
 if (! is_numeric($percent)) {
     fwrite(STDERR, "Coverage report has no project line coverage total.\n");

@@ -9,14 +9,23 @@ class ContentTypeTest extends TestCase
 {
     public function test_from_string(): void
     {
-        $this->assertEquals(ContentType::JSON, ContentType::fromString('application/json'));
-        $this->assertEquals(ContentType::TEXT, ContentType::fromString('text/plain'));
+        $this->assertEquals(
+            ContentType::JSON,
+            ContentType::fromString('application/json'),
+        );
+        $this->assertEquals(
+            ContentType::TEXT,
+            ContentType::fromString('text/plain'),
+        );
 
         // Test case insensitivity
-        $this->assertEquals(ContentType::JSON, ContentType::fromString('APPLICATION/JSON'));
+        $this->assertEquals(
+            ContentType::JSON,
+            ContentType::fromString('APPLICATION/JSON'),
+        );
     }
 
-    public function test_from_string_throws_exception_for_invalid_content_type(): void
+    public function test_from_string_rejects_invalid_content_type(): void
     {
         $this->expectException(\ValueError::class);
         ContentType::fromString('invalid/content-type');
@@ -24,10 +33,19 @@ class ContentTypeTest extends TestCase
 
     public function test_try_from_string(): void
     {
-        $this->assertEquals(ContentType::JSON, ContentType::tryFromString('application/json'));
+        $this->assertEquals(
+            ContentType::JSON,
+            ContentType::tryFromString('application/json'),
+        );
 
         // Test with invalid content type and default
-        $this->assertEquals(ContentType::JSON, ContentType::tryFromString('invalid/content-type', ContentType::JSON));
+        $this->assertEquals(
+            ContentType::JSON,
+            ContentType::tryFromString(
+                'invalid/content-type',
+                ContentType::JSON,
+            ),
+        );
         $this->assertNull(ContentType::tryFromString('invalid/content-type'));
     }
 
@@ -65,7 +83,10 @@ class ContentTypeTest extends TestCase
     {
         $this->assertTrue(ContentType::EVENT_STREAM->isEventStream());
         $this->assertFalse(ContentType::JSON->isEventStream());
-        $this->assertSame(ContentType::EVENT_STREAM, ContentType::fromString('text/event-stream'));
+        $this->assertSame(
+            ContentType::EVENT_STREAM,
+            ContentType::fromString('text/event-stream'),
+        );
     }
 
     public function test_is_streamable(): void
@@ -80,13 +101,22 @@ class ContentTypeTest extends TestCase
     {
         // Test with ContentType instance
         $contentType = ContentType::JSON;
-        $this->assertSame($contentType, ContentType::normalizeContentType($contentType));
+        $this->assertSame(
+            $contentType,
+            ContentType::normalizeContentType($contentType),
+        );
 
         // Test with valid string
-        $this->assertEquals(ContentType::JSON, ContentType::normalizeContentType('application/json'));
+        $this->assertEquals(
+            ContentType::JSON,
+            ContentType::normalizeContentType('application/json'),
+        );
 
         // Test with invalid string
         $invalidType = 'invalid/content-type';
-        $this->assertSame($invalidType, ContentType::normalizeContentType($invalidType));
+        $this->assertSame(
+            $invalidType,
+            ContentType::normalizeContentType($invalidType),
+        );
     }
 }

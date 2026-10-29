@@ -19,13 +19,25 @@ use function Matrix\Support\await;
  */
 class ConcurrentRequestsTest extends TestCase
 {
-    public function test_concurrent_async_requests_with_different_options(): void
+    public function test_async_requests_keep_options_isolated(): void
     {
         // Create a mock handler with different responses
         $mockHandler = new MockHandler([
-            new GuzzleResponse(200, ['X-Request' => '1'], json_encode(['id' => 1, 'name' => 'Request 1'])),
-            new GuzzleResponse(201, ['X-Request' => '2'], json_encode(['id' => 2, 'name' => 'Request 2'])),
-            new GuzzleResponse(202, ['X-Request' => '3'], json_encode(['id' => 3, 'name' => 'Request 3'])),
+            new GuzzleResponse(
+                200,
+                ['X-Request' => '1'],
+                json_encode(['id' => 1, 'name' => 'Request 1']),
+            ),
+            new GuzzleResponse(
+                201,
+                ['X-Request' => '2'],
+                json_encode(['id' => 2, 'name' => 'Request 2']),
+            ),
+            new GuzzleResponse(
+                202,
+                ['X-Request' => '3'],
+                json_encode(['id' => 3, 'name' => 'Request 3']),
+            ),
         ]);
 
         $handlerStack = HandlerStack::create($mockHandler);
@@ -35,8 +47,10 @@ class ConcurrentRequestsTest extends TestCase
         $handler = ClientHandler::createWithClient($guzzleClient);
         $handler->baseUri('https://api.example.com');
 
-        // Fire three async requests with different per-request options on the SAME handler instance
-        // Using sendRequest with per-request options instead of withOptions (which mutates state)
+        // Fire three async requests with different per-request options on the
+        // SAME handler instance
+        // Using sendRequest with per-request options instead of withOptions
+        // (which mutates state)
         $promise1 = $handler->sendRequest('GET', '/endpoint1', [
             'async' => true,
             'retries' => 1,
@@ -66,23 +80,40 @@ class ConcurrentRequestsTest extends TestCase
         // Assert that each response matches its expected values
         $this->assertEquals(200, $response1->getStatusCode());
         $this->assertEquals('1', $response1->getHeaderLine('X-Request'));
-        $this->assertEquals(['id' => 1, 'name' => 'Request 1'], $response1->json());
+        $this->assertEquals(
+            ['id' => 1, 'name' => 'Request 1'],
+            $response1->json(),
+        );
 
         $this->assertEquals(201, $response2->getStatusCode());
         $this->assertEquals('2', $response2->getHeaderLine('X-Request'));
-        $this->assertEquals(['id' => 2, 'name' => 'Request 2'], $response2->json());
+        $this->assertEquals(
+            ['id' => 2, 'name' => 'Request 2'],
+            $response2->json(),
+        );
 
         $this->assertEquals(202, $response3->getStatusCode());
         $this->assertEquals('3', $response3->getHeaderLine('X-Request'));
-        $this->assertEquals(['id' => 3, 'name' => 'Request 3'], $response3->json());
+        $this->assertEquals(
+            ['id' => 3, 'name' => 'Request 3'],
+            $response3->json(),
+        );
     }
 
-    public function test_concurrent_requests_do_not_interfere_with_handler_state(): void
+    public function test_concurrent_requests_keep_handler_state_isolated(): void
     {
         // Create mock responses
         $mockHandler = new MockHandler([
-            new GuzzleResponse(200, [], json_encode(['result' => 'sync-request'])),
-            new GuzzleResponse(200, [], json_encode(['result' => 'async-request'])),
+            new GuzzleResponse(
+                200,
+                [],
+                json_encode(['result' => 'sync-request']),
+            ),
+            new GuzzleResponse(
+                200,
+                [],
+                json_encode(['result' => 'async-request']),
+            ),
         ]);
 
         $handlerStack = HandlerStack::create($mockHandler);
@@ -91,8 +122,8 @@ class ConcurrentRequestsTest extends TestCase
         // Create handler with default options
         $handler = ClientHandler::createWithClient($guzzleClient);
         $handler->baseUri('https://api.example.com');
-        $handler->retry(2);  // Default retry count
-        $handler->timeout(15);  // Default timeout
+        $handler->retry(2); // Default retry count
+        $handler->timeout(15); // Default timeout
 
         // Before requests: verify handler state
         $this->assertEquals(2, $handler->getMaxRetries());
@@ -105,10 +136,19 @@ class ConcurrentRequestsTest extends TestCase
         ]);
 
         // After sync request: verify handler state was NOT mutated
-        $this->assertEquals(2, $handler->getMaxRetries(), 'Handler maxRetries should remain unchanged after sync request');
-        $this->assertEquals(15, $handler->getEffectiveTimeout(), 'Handler timeout should remain unchanged after sync request');
+        $this->assertEquals(
+            2,
+            $handler->getMaxRetries(),
+            'Handler maxRetries should remain unchanged after sync request',
+        );
+        $this->assertEquals(
+            15,
+            $handler->getEffectiveTimeout(),
+            'Handler timeout should remain unchanged after sync request',
+        );
 
-        // Fire async request with different per-request options (uses same handler instance)
+        // Fire async request with different per-request options (uses same
+        // handler instance)
         $promise2 = $handler->sendRequest('GET', '/test2', [
             'async' => true,
             'retries' => 10,
@@ -119,8 +159,16 @@ class ConcurrentRequestsTest extends TestCase
         $response2 = await($promise2);
 
         // After async request: verify handler state was NOT mutated
-        $this->assertEquals(2, $handler->getMaxRetries(), 'Handler maxRetries should remain unchanged after async request');
-        $this->assertEquals(15, $handler->getEffectiveTimeout(), 'Handler timeout should remain unchanged after async request');
+        $this->assertEquals(
+            2,
+            $handler->getMaxRetries(),
+            'Handler maxRetries should remain unchanged after async request',
+        );
+        $this->assertEquals(
+            15,
+            $handler->getEffectiveTimeout(),
+            'Handler timeout should remain unchanged after async request',
+        );
 
         // Verify responses are correct
         $this->assertEquals(200, $response1->getStatusCode());
@@ -130,7 +178,7 @@ class ConcurrentRequestsTest extends TestCase
         $this->assertEquals(['result' => 'async-request'], $response2->json());
     }
 
-    public function test_handler_can_be_cloned_for_different_configurations(): void
+    public function test_cloned_handlers_keep_configuration_isolated(): void
     {
         // Create mock responses
         $mockHandler = new MockHandler([
@@ -147,7 +195,10 @@ class ConcurrentRequestsTest extends TestCase
         $handler1->retry(3);
 
         // Clone handler with different options
-        $handler2 = $handler1->withClonedOptions(['retries' => 10, 'timeout' => 99]);
+        $handler2 = $handler1->withClonedOptions([
+            'retries' => 10,
+            'timeout' => 99,
+        ]);
 
         // Verify that handler1 state is unchanged
         $this->assertEquals(3, $handler1->getMaxRetries());
@@ -164,12 +215,20 @@ class ConcurrentRequestsTest extends TestCase
         $this->assertEquals(['config' => 'handler2'], $response2->json());
     }
 
-    public function test_debug_info_does_not_leak_between_concurrent_requests(): void
+    public function test_debug_info_is_isolated_between_requests(): void
     {
         // Create mock responses with different data
         $mockHandler = new MockHandler([
-            new GuzzleResponse(200, ['X-Debug' => 'req1'], json_encode(['debug' => 'request1'])),
-            new GuzzleResponse(200, ['X-Debug' => 'req2'], json_encode(['debug' => 'request2'])),
+            new GuzzleResponse(
+                200,
+                ['X-Debug' => 'req1'],
+                json_encode(['debug' => 'request1']),
+            ),
+            new GuzzleResponse(
+                200,
+                ['X-Debug' => 'req2'],
+                json_encode(['debug' => 'request2']),
+            ),
         ]);
 
         $handlerStack = HandlerStack::create($mockHandler);
@@ -188,11 +247,21 @@ class ConcurrentRequestsTest extends TestCase
         $debugInfo2 = $handler->getLastDebugInfo();
 
         // Verify that debug info was captured for both requests
-        $this->assertNotNull($debugInfo1, 'Debug info should be captured for first request');
-        $this->assertNotNull($debugInfo2, 'Debug info should be captured for second request');
+        $this->assertNotNull(
+            $debugInfo1,
+            'Debug info should be captured for first request',
+        );
+        $this->assertNotNull(
+            $debugInfo2,
+            'Debug info should be captured for second request',
+        );
 
         // Verify that debug info is different for each request
-        $this->assertNotSame($debugInfo1, $debugInfo2, 'Debug info should be different objects');
+        $this->assertNotSame(
+            $debugInfo1,
+            $debugInfo2,
+            'Debug info should be different objects',
+        );
 
         // Verify that the most recent debug info is from request2
         $this->assertSame($debugInfo2, $handler->getLastDebugInfo());
@@ -204,8 +273,16 @@ class ConcurrentRequestsTest extends TestCase
         $mockHandler = new MockHandler([
             new GuzzleResponse(503, [], 'Service Unavailable'),
             new GuzzleResponse(503, [], 'Service Unavailable'),
-            new GuzzleResponse(200, [], json_encode(['success' => true, 'attempt' => 3])),
-            new GuzzleResponse(200, [], json_encode(['success' => true, 'attempt' => 1])),
+            new GuzzleResponse(
+                200,
+                [],
+                json_encode(['success' => true, 'attempt' => 3]),
+            ),
+            new GuzzleResponse(
+                200,
+                [],
+                json_encode(['success' => true, 'attempt' => 1]),
+            ),
         ]);
 
         $handlerStack = HandlerStack::create($mockHandler);
@@ -222,15 +299,24 @@ class ConcurrentRequestsTest extends TestCase
 
         $this->assertEquals(200, $response1->getStatusCode());
         $data1 = $response1->json();
-        $this->assertEquals(3, $data1['attempt'], 'Request should have succeeded on 3rd attempt after 2 retries');
+        $this->assertEquals(
+            3,
+            $data1['attempt'],
+            'Request should have succeeded on 3rd attempt after 2 retries',
+        );
 
-        // Second request with no retries - should succeed immediately (no retries even if it fails)
+        // Second request with no retries - should succeed immediately (no
+        // retries even if it fails)
         $response2 = $handler->sendRequest('GET', '/test2', [
             'retries' => 0,
         ]);
 
         $this->assertEquals(200, $response2->getStatusCode());
         $data2 = $response2->json();
-        $this->assertEquals(1, $data2['attempt'], 'Request should have succeeded on first attempt');
+        $this->assertEquals(
+            1,
+            $data2['attempt'],
+            'Request should have succeeded on first attempt',
+        );
     }
 }

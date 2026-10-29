@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 require dirname(__DIR__, 3).'/vendor/autoload.php';
 
+use Fetch\Interfaces\Response as FetchResponse;
 use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
-use Fetch\Interfaces\Response as FetchResponse;
 
 MockServer::fake([
     'GET https://api.example.test/v1/users*' => MockResponse::json([
@@ -21,7 +21,7 @@ MockServer::preventStrayRequests();
 
 $usersResponse = get('https://api.example.test/v1/users', ['active' => true]);
 
-if (! $usersResponse instanceof FetchResponse) {
+if (! ($usersResponse instanceof FetchResponse)) {
     throw new RuntimeException('The user request did not return a response.');
 }
 
@@ -34,6 +34,12 @@ $created = fetch('https://api.example.test/v1/users', [
     'timeout' => 5,
 ]);
 
-if (! $created instanceof FetchResponse || count($users) !== 1 || ! $created->isCreated()) {
-    throw new RuntimeException('The request examples returned unexpected responses.');
+if (
+    ! ($created instanceof FetchResponse) ||
+    count($users) !== 1 ||
+    ! $created->isCreated()
+) {
+    throw new RuntimeException(
+        'The request examples returned unexpected responses.',
+    );
 }

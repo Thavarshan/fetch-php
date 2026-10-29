@@ -1,9 +1,9 @@
 ---
 paths:
-  - "docs/**/*.md"
-  - "README.md"
-  - "CODE_MAP.md"
-  - "CHANGELOG.md"
+    - 'docs/**/*.md'
+    - 'README.md'
+    - 'CODE_MAP.md'
+    - 'CHANGELOG.md'
 ---
 
 # Documentation rules

@@ -12,7 +12,11 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 
 $mock = new MockHandler([
-    new GuzzleResponse(200, ['Content-Type' => 'text/plain'], "first line\nsecond line\n"),
+    new GuzzleResponse(
+        200,
+        ['Content-Type' => 'text/plain'],
+        "first line\nsecond line\n",
+    ),
 ]);
 $client = new GuzzleClient(['handler' => HandlerStack::create($mock)]);
 $handler = ClientHandler::createWithClient($client);
@@ -20,5 +24,7 @@ $stream = $handler->stream(Method::GET, 'https://api.example.test/log');
 $lines = iterator_to_array($stream->lines(), false);
 
 if ($lines !== ['first line', 'second line']) {
-    throw new RuntimeException('The streamed response example returned unexpected lines.');
+    throw new RuntimeException(
+        'The streamed response example returned unexpected lines.',
+    );
 }

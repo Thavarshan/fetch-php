@@ -51,8 +51,12 @@ class RecorderTest extends TestCase
     {
         Recorder::start();
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
-        $response = Response::createFromBase(new GuzzleResponse(200, [], 'Test'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
+        $response = Response::createFromBase(
+            new GuzzleResponse(200, [], 'Test'),
+        );
 
         Recorder::record($request, $response);
 
@@ -68,8 +72,12 @@ class RecorderTest extends TestCase
 
     public function test_does_not_record_when_not_active(): void
     {
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
-        $response = Response::createFromBase(new GuzzleResponse(200, [], 'Test'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
+        $response = Response::createFromBase(
+            new GuzzleResponse(200, [], 'Test'),
+        );
 
         Recorder::record($request, $response);
 
@@ -82,8 +90,12 @@ class RecorderTest extends TestCase
     {
         Recorder::start();
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
-        $response = Response::createFromBase(new GuzzleResponse(200, [], 'Test'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
+        $response = Response::createFromBase(
+            new GuzzleResponse(200, [], 'Test'),
+        );
         Recorder::record($request, $response);
 
         $this->assertCount(1, Recorder::getRecordings());
@@ -97,8 +109,12 @@ class RecorderTest extends TestCase
     {
         Recorder::start();
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
-        $response = Response::createFromBase(new GuzzleResponse(200, [], 'Test'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
+        $response = Response::createFromBase(
+            new GuzzleResponse(200, [], 'Test'),
+        );
         Recorder::record($request, $response);
 
         $recordings = Recorder::stop();
@@ -111,8 +127,12 @@ class RecorderTest extends TestCase
     {
         Recorder::start();
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
-        $response = Response::createFromBase(new GuzzleResponse(200, [], 'Test'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
+        $response = Response::createFromBase(
+            new GuzzleResponse(200, [], 'Test'),
+        );
         Recorder::record($request, $response);
 
         $this->assertCount(1, Recorder::getRecordings());
@@ -126,25 +146,37 @@ class RecorderTest extends TestCase
     {
         $recordings = [
             [
-                'request' => Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users')),
-                'response' => Response::createFromBase(new GuzzleResponse(200, [], json_encode(['users' => []]))),
+                'request' => Request::createFromBase(
+                    new GuzzleRequest('GET', 'https://api.example.com/users'),
+                ),
+                'response' => Response::createFromBase(
+                    new GuzzleResponse(200, [], json_encode(['users' => []])),
+                ),
             ],
             [
-                'request' => Request::createFromBase(new GuzzleRequest('POST', 'https://api.example.com/users')),
-                'response' => Response::createFromBase(new GuzzleResponse(201, [], json_encode(['id' => 1]))),
+                'request' => Request::createFromBase(
+                    new GuzzleRequest('POST', 'https://api.example.com/users'),
+                ),
+                'response' => Response::createFromBase(
+                    new GuzzleResponse(201, [], json_encode(['id' => 1])),
+                ),
             ],
         ];
 
         Recorder::replay($recordings);
 
         // Verify that MockServer has been set up with these recordings
-        $getRequest = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $getRequest = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         $getResponse = MockServer::getInstance()->handleRequest($getRequest);
 
         $this->assertNotNull($getResponse);
         $this->assertSame(['users' => []], $getResponse->json());
 
-        $postRequest = Request::createFromBase(new GuzzleRequest('POST', 'https://api.example.com/users'));
+        $postRequest = Request::createFromBase(
+            new GuzzleRequest('POST', 'https://api.example.com/users'),
+        );
         $postResponse = MockServer::getInstance()->handleRequest($postRequest);
 
         $this->assertNotNull($postResponse);
@@ -155,18 +187,28 @@ class RecorderTest extends TestCase
     {
         $recordings = [
             [
-                'request' => Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users')),
-                'response' => Response::createFromBase(new GuzzleResponse(200, [], 'First')),
+                'request' => Request::createFromBase(
+                    new GuzzleRequest('GET', 'https://api.example.com/users'),
+                ),
+                'response' => Response::createFromBase(
+                    new GuzzleResponse(200, [], 'First'),
+                ),
             ],
             [
-                'request' => Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users')),
-                'response' => Response::createFromBase(new GuzzleResponse(200, [], 'Second')),
+                'request' => Request::createFromBase(
+                    new GuzzleRequest('GET', 'https://api.example.com/users'),
+                ),
+                'response' => Response::createFromBase(
+                    new GuzzleResponse(200, [], 'Second'),
+                ),
             ],
         ];
 
         Recorder::replay($recordings);
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
 
         $firstResponse = MockServer::getInstance()->handleRequest($request);
         $this->assertSame('First', $firstResponse->body());
@@ -179,8 +221,18 @@ class RecorderTest extends TestCase
     {
         Recorder::start();
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users', ['Authorization' => 'Bearer token']));
-        $response = Response::createFromBase(new GuzzleResponse(200, ['Content-Type' => 'application/json'], json_encode(['users' => []])));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users', [
+                'Authorization' => 'Bearer token',
+            ]),
+        );
+        $response = Response::createFromBase(
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                json_encode(['users' => []]),
+            ),
+        );
 
         Recorder::record($request, $response);
 
@@ -191,8 +243,14 @@ class RecorderTest extends TestCase
         $data = json_decode($json, true);
         $this->assertCount(1, $data);
         $this->assertSame('GET', $data[0]['request']['method']);
-        $this->assertSame('https://api.example.com/users', $data[0]['request']['url']);
-        $this->assertArrayHasKey('Authorization', $data[0]['request']['headers']);
+        $this->assertSame(
+            'https://api.example.com/users',
+            $data[0]['request']['url'],
+        );
+        $this->assertArrayHasKey(
+            'Authorization',
+            $data[0]['request']['headers'],
+        );
         $this->assertSame(200, $data[0]['response']['status']);
     }
 
@@ -218,7 +276,9 @@ class RecorderTest extends TestCase
         Recorder::importFromJson($json);
 
         // Verify that MockServer has been set up
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://api.example.com/users'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://api.example.com/users'),
+        );
         $response = MockServer::getInstance()->handleRequest($request);
 
         $this->assertNotNull($response);
@@ -238,8 +298,12 @@ class RecorderTest extends TestCase
     {
         Recorder::start();
 
-        $request = Request::createFromBase(new GuzzleRequest('GET', 'https://example.com'));
-        $response = Response::createFromBase(new GuzzleResponse(200, [], 'Test'));
+        $request = Request::createFromBase(
+            new GuzzleRequest('GET', 'https://example.com'),
+        );
+        $response = Response::createFromBase(
+            new GuzzleResponse(200, [], 'Test'),
+        );
         Recorder::record($request, $response);
 
         $this->assertTrue(Recorder::isRecording());
@@ -256,7 +320,8 @@ class RecorderTest extends TestCase
         Recorder::start();
 
         // This should enable recording in MockServer as well
-        // We can't directly test this without integration, but we can verify it doesn't error
+        // We can't directly test this without integration, but we can verify it
+        // doesn't error
         $this->assertTrue(Recorder::isRecording());
     }
 }

@@ -5,9 +5,15 @@ description: Guides and API reference for the Fetch PHP HTTP client.
 
 # Fetch PHP
 
-Fetch PHP is a Guzzle-based HTTP client for PHP 8.3+. This site explains its helper functions, client and handler APIs, request and response behavior, and optional facilities such as retries, caching, middleware, streaming, and Matrix promises.
+Fetch PHP is a Guzzle-based HTTP client for PHP 8.3+. This site explains its
+helper functions, client and handler APIs, request and response behavior, and
+optional facilities such as retries, caching, middleware, streaming, and Matrix
+promises.
 
-> Fetch's Matrix promise integration currently wraps synchronous Guzzle requests. It does not provide nonblocking HTTP I/O. See [Asynchronous requests](/guide/async-requests) before using it in an event-loop application.
+> Fetch's Matrix promise integration currently wraps synchronous Guzzle
+> requests. It does not provide nonblocking HTTP I/O. See
+> [Asynchronous requests](/guide/async-requests) before using it in an
+> event-loop application.
 
 ## Start here
 
