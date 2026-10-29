@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use Fetch\Enum\ContentType;
 use Fetch\Http\Client;
+use Fetch\Support\RequestOptions;
 use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
 use PHPUnit\Framework\TestCase;
@@ -86,6 +87,52 @@ class HelperFunctionsTest extends TestCase
         ]);
         $this->assertSame(['winner' => true], $body);
         $this->assertSame(ContentType::JSON, $contentType);
+    }
+
+    public function test_base_uri_preserves_form_and_multipart_array_bodies(): void
+    {
+        MockServer::fake([
+            'https://example.com/submit' => MockResponse::ok(),
+        ]);
+
+        $formData = ['name' => 'Ada Lovelace'];
+        $multipartData = [['name' => 'field', 'contents' => 'multipart value']];
+
+        $this->assertSame(
+            $formData,
+            RequestOptions::normalizeBodyOptions([
+                'body' => $formData,
+                'content_type' => ContentType::FORM_URLENCODED,
+            ])['form_params']
+        );
+        $this->assertSame(
+            $multipartData,
+            RequestOptions::normalizeBodyOptions([
+                'body' => $multipartData,
+                'content_type' => ContentType::MULTIPART,
+            ])['multipart']
+        );
+
+        fetch('/submit', [
+            'base_uri' => 'https://example.com',
+            'method' => 'POST',
+            'body' => ['name' => 'Ada Lovelace'],
+            'content_type' => ContentType::FORM_URLENCODED,
+        ]);
+
+        MockServer::assertSent(function ($request): bool {
+            return (string) $request->getBody() === 'name=Ada+Lovelace'
+                && $request->getHeaderLine('Content-Type') === ContentType::FORM_URLENCODED->value;
+        });
+
+        fetch('/submit', [
+            'base_uri' => 'https://example.com',
+            'method' => 'POST',
+            'body' => [['name' => 'field', 'contents' => 'multipart value']],
+            'content_type' => ContentType::MULTIPART,
+        ]);
+
+        MockServer::assertSent('POST https://example.com/submit', 2);
     }
 
     public function test_request_method(): void

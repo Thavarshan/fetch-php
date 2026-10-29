@@ -160,6 +160,16 @@ class ResponseTest extends TestCase
         $this->assertNull($result);
     }
 
+    public function test_suppressed_json_errors_do_not_hide_later_decoding_errors(): void
+    {
+        $response = new Response(200, ['Content-Type' => 'application/json'], '{invalid');
+
+        $this->assertSame([], $response->array(false));
+
+        $this->expectException(RuntimeException::class);
+        $response->array();
+    }
+
     public function test_status_code_checkers(): void
     {
         // 1xx - Informational

@@ -39,6 +39,8 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
     /** @var array<string|int, mixed>|null */
     private ?array $parsedBody = null;
 
+    private bool $lastJsonDecodeFailed = false;
+
     /**
      * Create new response instance.
      */
@@ -138,6 +140,8 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed
     {
+        $this->lastJsonDecodeFailed = false;
+
         if ($depth < 1) {
             throw new InvalidArgumentException('JSON decode depth must be greater than 0.');
         }
@@ -149,6 +153,8 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
                 $options | JSON_THROW_ON_ERROR
             );
         } catch (JsonException $e) {
+            $this->lastJsonDecodeFailed = true;
+
             if ($throwOnError) {
                 throw new RuntimeException('Failed to decode JSON: '.$e->getMessage(), $e->getCode(), $e);
             }
@@ -175,9 +181,11 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
         }
 
         $decoded = $this->json(true, $throwOnError);
-        $this->parsedBody = is_array($decoded) ? $decoded : [];
+        if ($this->lastJsonDecodeFailed || ! is_array($decoded)) {
+            return [];
+        }
 
-        return $this->parsedBody;
+        return $this->parsedBody = $decoded;
     }
 
     /**
