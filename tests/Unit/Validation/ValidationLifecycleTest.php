@@ -33,6 +33,18 @@ use function Matrix\Support\await;
 
 final class ValidationLifecycleTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        MockServer::resetInstance();
+    }
+
+    protected function tearDown(): void
+    {
+        MockServer::resetInstance();
+        parent::tearDown();
+    }
+
     public function test_invalid_request_payload_fails_before_transport_dispatch(): void
     {
         $mock = new MockHandler([new Psr7Response(200)]);
@@ -126,6 +138,24 @@ final class ValidationLifecycleTest extends TestCase
         self::assertSame(204, $response->getStatusCode());
     }
 
+    public function test_unvalidated_stream_upload_is_not_buffered_before_dispatch(): void
+    {
+        $reads = 0;
+        $body = Utils::streamFor(static function (int $length) use (&$reads): ?string {
+            $reads++;
+
+            return $reads === 1 ? 'streamed upload' : null;
+        });
+        $mock = new MockHandler([new Psr7Response(204)]);
+        $handler = $this->handler($mock);
+
+        $response = $handler->post('https://example.test/upload', $body, ContentType::TEXT);
+
+        self::assertSame(204, $response->getStatusCode());
+        self::assertSame(0, $reads, 'Requests without validation must not pull upload stream contents into memory.');
+        self::assertSame($body, $mock->getLastRequest()?->getBody());
+    }
+
     public function test_invalid_response_is_not_cached_and_is_not_retried(): void
     {
         $mock = new MockHandler([
@@ -173,6 +203,70 @@ final class ValidationLifecycleTest extends TestCase
 
     public function test_async_middleware_can_transform_request_before_validation_and_dispatch_once(): void
     {
+        $state = (object) ['dispatches' => 0, 'request_body' => null, 'request_events' => 0, 'response_events' => 0, 'error_events' => 0];
+        $transport = new class($state) implements AsyncTransport
+        {
+            public function __construct(private \stdClass $state) {}
+
+            public function requestAsync(string $method, string $uri, array $options): PromiseInterface
+            {
+                $this->state->dispatches++;
+                $this->state->request_body = isset($options['body']) ? (string) $options['body'] : null;
+
+                return \React\Promise\resolve(new Psr7Response(204));
+            }
+        };
+        $handler = new ClientHandler;
+        $handler->setAsyncTransport($transport)
+            ->withRequestSchema($this->userSchema())
+            ->async();
+        $handler->onRequest(static function () use ($state): void {
+            $state->request_events++;
+        });
+        $handler->onResponse(static function () use ($state): void {
+            $state->response_events++;
+        });
+        $handler->onError(static function () use ($state): void {
+            $state->error_events++;
+        });
+        $handler->addMiddleware(static function (RequestInterface $request, callable $next): PromiseInterface {
+            $deferred = new Deferred;
+            Loop::futureTick(static function () use ($request, $next, $deferred): void {
+                $contents = '{"name":"Ada"}';
+                $body = Utils::streamFor(static function (int $length) use (&$contents): ?string {
+                    if ($contents === '') {
+                        return null;
+                    }
+
+                    $chunk = $contents;
+                    $contents = '';
+
+                    return $chunk;
+                });
+                $result = $next($request->withBody($body));
+                self::assertInstanceOf(PromiseInterface::class, $result);
+                $result->then(
+                    static fn (mixed $response): mixed => $deferred->resolve($response),
+                    static fn (\Throwable $error): mixed => $deferred->reject($error),
+                );
+            });
+
+            return $deferred->promise();
+        });
+
+        $result = await($handler->post('https://example.test/users', ['name' => 42])
+            ->catch(static fn (\Throwable $error): \Throwable => $error));
+
+        self::assertInstanceOf(ResponseInterface::class, $result);
+        self::assertSame(1, $state->dispatches);
+        self::assertSame('{"name":"Ada"}', $state->request_body);
+        self::assertSame(1, $state->request_events);
+        self::assertSame(1, $state->response_events);
+        self::assertSame(0, $state->error_events);
+    }
+
+    public function test_async_short_circuit_validates_the_latest_middleware_request(): void
+    {
         $state = (object) ['dispatches' => 0, 'request_events' => 0, 'response_events' => 0, 'error_events' => 0];
         $transport = new class($state) implements AsyncTransport
         {
@@ -201,22 +295,18 @@ final class ValidationLifecycleTest extends TestCase
         $handler->addMiddleware(static function (RequestInterface $request, callable $next): PromiseInterface {
             $deferred = new Deferred;
             Loop::futureTick(static function () use ($request, $next, $deferred): void {
-                $result = $next($request->withBody(Utils::streamFor('{"name":"Ada"}')));
-                self::assertInstanceOf(PromiseInterface::class, $result);
-                $result->then(
-                    static fn (mixed $response): mixed => $deferred->resolve($response),
-                    static fn (\Throwable $error): mixed => $deferred->reject($error),
-                );
+                $deferred->resolve($next($request->withBody(Utils::streamFor('{"name":"Ada"}'))));
             });
 
             return $deferred->promise();
-        });
+        }, 10);
+        $handler->addMiddleware(static fn (RequestInterface $request, callable $next): Psr7Response => new Psr7Response(204), 1);
 
         $result = await($handler->post('https://example.test/users', ['name' => 42])
             ->catch(static fn (\Throwable $error): \Throwable => $error));
 
         self::assertInstanceOf(ResponseInterface::class, $result);
-        self::assertSame(1, $state->dispatches);
+        self::assertSame(0, $state->dispatches, 'The downstream middleware response should short-circuit transport.');
         self::assertSame(1, $state->request_events);
         self::assertSame(1, $state->response_events);
         self::assertSame(0, $state->error_events);

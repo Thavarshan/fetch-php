@@ -8,6 +8,7 @@ use Fetch\Enum\ContentType;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
+use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use RuntimeException;
@@ -51,12 +52,49 @@ final class RequestBuilder
      * @param  array<string, mixed>  $guzzleOptions
      * @return array{0: RequestInterface, 1: string|null}
      */
-    public function buildMiddlewareRequest(string $method, string $uri, array $guzzleOptions): array
+    public function buildMiddlewareRequest(string $method, string $uri, array $guzzleOptions, bool $captureStreamBody = true): array
     {
         $headers = $guzzleOptions['headers'] ?? [];
-        $seedBody = $this->encodeSeedBody($guzzleOptions);
+        $body = $guzzleOptions['body'] ?? null;
+        $isStreamBody = is_resource($body) || $body instanceof StreamInterface;
+        $seedBody = $isStreamBody && ! $captureStreamBody ? null : $this->encodeSeedBody($guzzleOptions);
+        $requestBody = $isStreamBody && ! $captureStreamBody ? $body : ($seedBody ?? '');
 
-        return [new GuzzleRequest($method, $uri, $headers, $seedBody ?? ''), $seedBody];
+        return [new GuzzleRequest($method, $uri, $headers, $requestBody), $seedBody];
+    }
+
+    /**
+     * Wrap PHP resources as PSR-7 streams without reading or rewinding them.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public function normalizeStreamBody(array $options): array
+    {
+        if (isset($options['body']) && is_resource($options['body'])) {
+            $options['body'] = Utils::streamFor($options['body']);
+        }
+
+        return $options;
+    }
+
+    /**
+     * Make a non-seekable request body replayable after its contents are inspected by validation.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array{0: RequestInterface, 1: array<string, mixed>}
+     */
+    public function makeRequestBodyReplayable(RequestInterface $request, array $options): array
+    {
+        $body = $request->getBody();
+        if ($body->isSeekable()) {
+            return [$request, $options];
+        }
+
+        $replayableBody = Utils::streamFor($body->getContents());
+        $options['body'] = $replayableBody;
+
+        return [$request->withBody($replayableBody), $options];
     }
 
     /** @param array<string, mixed> $options */
@@ -131,8 +169,12 @@ final class RequestBuilder
      * @param  array<string, mixed>  $guzzleOptions
      * @return array<string, mixed>
      */
-    public function mergeMiddlewareRequest(RequestInterface $request, array $guzzleOptions, ?string $seedBody): array
-    {
+    public function mergeMiddlewareRequest(
+        RequestInterface $request,
+        array $guzzleOptions,
+        ?string $seedBody,
+        ?StreamInterface $initialBody = null,
+    ): array {
         $headers = [];
         foreach ($request->getHeaders() as $name => $values) {
             $headers[$name] = count($values) === 1 ? $values[0] : $values;
@@ -143,7 +185,20 @@ final class RequestBuilder
         }
 
         unset($guzzleOptions['base_uri']);
-        $body = (string) $request->getBody();
+        $requestBody = $request->getBody();
+
+        if ($initialBody !== null && $requestBody === $initialBody) {
+            return $guzzleOptions;
+        }
+
+        if ($initialBody !== null) {
+            unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);
+            $guzzleOptions['body'] = $requestBody;
+
+            return $guzzleOptions;
+        }
+
+        $body = (string) $requestBody;
 
         if ($seedBody !== null && $body !== $seedBody) {
             unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);

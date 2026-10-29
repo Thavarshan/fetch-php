@@ -26,6 +26,11 @@ trait HandlesMocking
      */
     protected function handleMockRequest(string $method, string $uri, array $options): ?ResponseInterface
     {
+        $mockServer = MockServer::getInstance();
+        if (! $mockServer->isActive()) {
+            return null;
+        }
+
         // Create a PSR-7 request for the mock server
         $psrRequest = $this->createPsrRequest($method, $uri, $options);
 
@@ -34,7 +39,7 @@ trait HandlesMocking
 
         // Check if MockServer has a response for this request
         try {
-            $mockResponse = MockServer::getInstance()->handleRequest($request);
+            $mockResponse = $mockServer->handleRequest($request);
 
             if ($mockResponse !== null) {
                 // Record the request/response if recording is enabled

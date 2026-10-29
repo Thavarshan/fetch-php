@@ -7,6 +7,7 @@ namespace Fetch\Validation;
 use League\OpenAPIValidation\PSR7\OperationAddress;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Throwable;
 
 final class ValidationManager
@@ -94,7 +95,7 @@ final class ValidationManager
         }
 
         if (str_contains(strtolower($request->getHeaderLine('Content-Type')), 'json')) {
-            return $this->decodeJson((string) $request->getBody(), 'request');
+            return $this->decodeJson($this->readRequestBody($request->getBody()), 'request');
         }
 
         return null;
@@ -117,6 +118,20 @@ final class ValidationManager
         }
 
         return $this->decodeJson($contents, 'response');
+    }
+
+    private function readRequestBody(StreamInterface $body): string
+    {
+        $seekable = $body->isSeekable();
+        $position = $seekable ? $body->tell() : null;
+
+        try {
+            return $body->getContents();
+        } finally {
+            if ($seekable && $position !== null) {
+                $body->seek($position);
+            }
+        }
     }
 
     private function decodeJson(string $json, string $direction): mixed

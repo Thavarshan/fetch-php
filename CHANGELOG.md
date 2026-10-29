@@ -24,7 +24,9 @@
 - Preserve JSON object-versus-array types, including empty objects and numeric property names, during schema validation.
 - Validate JSON request bodies provided as resources or PSR-7 streams from their current position while preserving seekable stream positions before dispatch.
 - Preserve Guzzle's incremental stream handler while routing other requests through the tracked cURL multi handler.
-- Wait for asynchronous middleware to settle before deciding whether it dispatched the core request, preventing premature validation and duplicate lifecycle events.
+- Avoid pre-reading stream-backed uploads when request validation is disabled, and skip mock request copying while the mock server is inactive.
+- Wait for asynchronous middleware to settle before deciding whether it dispatched the core request; use the latest transformed request for short-circuit validation and lifecycle events.
+- Preserve middleware-rewritten request streams during validation, including replaying non-seekable bodies to the transport after their opt-in validation read.
 
 ### Compatibility
 

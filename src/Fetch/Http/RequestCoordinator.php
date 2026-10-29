@@ -18,6 +18,7 @@ use Matrix\Exceptions\AsyncException;
 use Matrix\Exceptions\CancellationException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 use Throwable;
@@ -50,16 +51,23 @@ final class RequestCoordinator
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
         $requestId = ($this->hooks->startProfiling)($method, $uri);
-        [$psrRequest, $seedBody] = $this->requestBuilder->buildMiddlewareRequest($method, $uri, $guzzleOptions);
+        $guzzleOptions = $this->requestBuilder->normalizeStreamBody($guzzleOptions);
+        $captureStreamBody = $this->capturesRequestBody();
+        [$psrRequest, $seedBody] = $this->requestBuilder->buildMiddlewareRequest($method, $uri, $guzzleOptions, $captureStreamBody);
         $guzzleOptions = $this->requestBuilder->replaceConsumedNonSeekableBody($guzzleOptions, $seedBody);
+        $initialBody = $psrRequest->getBody();
         $coreDispatched = false;
         $lastMiddlewareRequest = $psrRequest;
 
-        $core = function (RequestInterface $request) use ($guzzleOptions, $seedBody, $context, $startTime, $startMemory, $requestId, &$coreDispatched): FetchResponseInterface|PromiseInterface {
+        $core = function (RequestInterface $request) use ($guzzleOptions, $seedBody, $initialBody, $context, $startTime, $startMemory, $requestId, &$coreDispatched): FetchResponseInterface|PromiseInterface {
             $coreDispatched = true;
-            $mergedOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody);
+            $mergedOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody, $initialBody);
 
             try {
+                if ($this->capturesRequestBody()) {
+                    [$request, $mergedOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $mergedOptions);
+                }
+
                 $validationRequest = $this->requestBuilder->withQueryOptions($request, $mergedOptions);
                 $operation = $this->validationManager->validateRequest($validationRequest, $mergedOptions, $this->validationPolicy);
             } catch (Throwable $exception) {
@@ -94,7 +102,7 @@ final class RequestCoordinator
 
         if ($result instanceof PromiseInterface) {
             return $result->then(
-                function (mixed $response) use (&$coreDispatched, $lastMiddlewareRequest, $guzzleOptions, $seedBody, $context, $startTime, $startMemory, $requestId): FetchResponseInterface|PromiseInterface {
+                function (mixed $response) use (&$coreDispatched, &$lastMiddlewareRequest, $guzzleOptions, $seedBody, $initialBody, $context, $startTime, $startMemory, $requestId): FetchResponseInterface|PromiseInterface {
                     if ($coreDispatched) {
                         return $this->requireFetchResponse($response);
                     }
@@ -104,13 +112,14 @@ final class RequestCoordinator
                         $lastMiddlewareRequest,
                         $guzzleOptions,
                         $seedBody,
+                        $initialBody,
                         $context,
                         $startTime,
                         $startMemory,
                         $requestId,
                     );
                 },
-                function (Throwable $exception) use (&$coreDispatched, $lastMiddlewareRequest, $guzzleOptions, $seedBody, $context, $startTime, $requestId): never {
+                function (Throwable $exception) use (&$coreDispatched, &$lastMiddlewareRequest, $guzzleOptions, $seedBody, $initialBody, $context, $startTime, $requestId): never {
                     if ($coreDispatched) {
                         throw $exception;
                     }
@@ -120,6 +129,7 @@ final class RequestCoordinator
                         $lastMiddlewareRequest,
                         $guzzleOptions,
                         $seedBody,
+                        $initialBody,
                         $context,
                         $startTime,
                         $requestId,
@@ -137,6 +147,7 @@ final class RequestCoordinator
             $lastMiddlewareRequest,
             $guzzleOptions,
             $seedBody,
+            $initialBody,
             $context,
             $startTime,
             $startMemory,
@@ -155,13 +166,18 @@ final class RequestCoordinator
         RequestInterface $request,
         array $guzzleOptions,
         ?string $seedBody,
+        ?StreamInterface $initialBody,
         RequestContext $context,
         float $startTime,
         int $startMemory,
         ?string $requestId,
     ): FetchResponseInterface|PromiseInterface {
         try {
-            $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody);
+            $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody, $initialBody);
+            if ($this->capturesRequestBody()) {
+                [$request, $shortCircuitOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $shortCircuitOptions);
+            }
+
             $validationRequest = $this->requestBuilder->withQueryOptions($request, $shortCircuitOptions);
             $operation = $this->validationManager->validateRequest($validationRequest, $shortCircuitOptions, $this->validationPolicy);
         } catch (Throwable $exception) {
@@ -220,11 +236,16 @@ final class RequestCoordinator
         RequestInterface $request,
         array $guzzleOptions,
         ?string $seedBody,
+        ?StreamInterface $initialBody,
         RequestContext $context,
         float $startTime,
         ?string $requestId,
     ): never {
-        $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody);
+        $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody, $initialBody);
+        if ($this->capturesRequestBody()) {
+            [$request, $shortCircuitOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $shortCircuitOptions);
+        }
+
         $validationRequest = $this->requestBuilder->withQueryOptions($request, $shortCircuitOptions);
         $this->validationManager->validateRequest($validationRequest, $shortCircuitOptions, $this->validationPolicy);
 
@@ -552,6 +573,12 @@ final class RequestCoordinator
         }
 
         return $this->coerceResponseValue($result);
+    }
+
+    private function capturesRequestBody(): bool
+    {
+        return $this->validationPolicy->requestSchema !== null
+            || ($this->validationPolicy->validateContracts && $this->validationPolicy->openApiSpec !== null);
     }
 
     private function coerceResponseValue(mixed $response): mixed
