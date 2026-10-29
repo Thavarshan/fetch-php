@@ -151,6 +151,9 @@ if (! function_exists('extract_body_and_content_type')) {
         } elseif (isset($options['body'])) {
             $body = $options['body'];
             $rawContentType = $options['content_type'] ?? $options['headers']['Content-Type'] ?? null;
+            if (is_array($rawContentType)) {
+                $rawContentType = $rawContentType[0] ?? null;
+            }
             $contentType = $rawContentType !== null ? ContentType::normalizeContentType($rawContentType) : null;
         }
 

@@ -81,6 +81,13 @@ class HelperFunctionsTest extends TestCase
         $this->assertEquals('text/plain', $contentType->value);
 
         [$body, $contentType] = extract_body_and_content_type([
+            'body' => 'raw header body',
+            'headers' => ['Content-Type' => ['text/plain']],
+        ]);
+        $this->assertSame('raw header body', $body);
+        $this->assertSame(ContentType::TEXT, $contentType);
+
+        [$body, $contentType] = extract_body_and_content_type([
             'json' => ['winner' => true],
             'form' => ['ignored' => true],
             'body' => 'ignored',
