@@ -181,7 +181,7 @@ trait ManagesMiddleware
      *
      * @param  callable(RequestInterface): (ResponseInterface|PromiseInterface)  $core
      */
-    protected function runThroughMiddleware(RequestInterface $request, callable $core): ResponseInterface|PromiseInterface
+    protected function runThroughMiddleware(RequestInterface $request, callable $core, ?callable $onRequest = null): ResponseInterface|PromiseInterface
     {
         $resolved = $this->resolveMiddleware();
 
@@ -189,6 +189,6 @@ trait ManagesMiddleware
             return $core($request);
         }
 
-        return (new MiddlewarePipeline($resolved))->handle($request, $core);
+        return (new MiddlewarePipeline($resolved))->handle($request, $core, $onRequest);
     }
 }

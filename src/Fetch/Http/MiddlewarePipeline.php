@@ -35,12 +35,13 @@ final class MiddlewarePipeline
      * Run the request through the middleware stack and core handler.
      *
      * @param  callable(RequestInterface): (ResponseInterface|PromiseInterface)  $core
+     * @param  callable(RequestInterface): void|null  $onRequest
      */
-    public function handle(RequestInterface $request, callable $core): ResponseInterface|PromiseInterface
+    public function handle(RequestInterface $request, callable $core, ?callable $onRequest = null): ResponseInterface|PromiseInterface
     {
         $pipeline = array_reduce(
             array_reverse($this->middleware),
-            fn (callable $next, Middleware|callable $middleware): callable => fn (RequestInterface $req): ResponseInterface|PromiseInterface => $this->call($middleware, $req, $next),
+            fn (callable $next, Middleware|callable $middleware): callable => fn (RequestInterface $req): ResponseInterface|PromiseInterface => $this->call($middleware, $req, $next, $onRequest),
             $core,
         );
 
@@ -51,9 +52,14 @@ final class MiddlewarePipeline
      * Invoke a single middleware entry.
      *
      * @param  callable(RequestInterface): (ResponseInterface|PromiseInterface)  $next
+     * @param  callable(RequestInterface): void|null  $onRequest
      */
-    private function call(Middleware|callable $middleware, RequestInterface $request, callable $next): ResponseInterface|PromiseInterface
+    private function call(Middleware|callable $middleware, RequestInterface $request, callable $next, ?callable $onRequest): ResponseInterface|PromiseInterface
     {
+        if ($onRequest !== null) {
+            $onRequest($request);
+        }
+
         if ($middleware instanceof Middleware) {
             return $middleware->handle($request, $next);
         }

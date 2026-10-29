@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use Fetch\Pool\ConnectionPool;
 use Fetch\Pool\Http2Configuration;
 use GuzzleHttp\Client as GuzzleClient;
@@ -96,6 +97,22 @@ class ManagesConnectionPoolTest extends TestCase
         $handler->withHttp2(false);
 
         $this->assertFalse($handler->isHttp2Enabled());
+    }
+
+    public function test_cloned_handler_keeps_pool_and_http2_configuration_local(): void
+    {
+        $handler = ClientHandler::create()
+            ->withConnectionPool(true)
+            ->withHttp2(false);
+        $clone = $handler->withClonedOptions([]);
+
+        $clone
+            ->withConnectionPool(false)
+            ->withHttp2(['enabled' => false, 'max_concurrent_streams' => 12]);
+
+        $this->assertTrue($handler->isPoolingEnabled());
+        $this->assertSame(100, $handler->getHttp2Config()?->getMaxConcurrentStreams());
+        $this->assertSame(12, $clone->getHttp2Config()?->getMaxConcurrentStreams());
     }
 
     public function test_get_pool_stats(): void
@@ -256,7 +273,7 @@ class ManagesConnectionPoolTest extends TestCase
         $stack = HandlerStack::create($mock);
         $client = new GuzzleClient(['handler' => $stack]);
 
-        $handler = ClientHandler::createWithClient($client);
+        $handler = ClientHandler::createWithClient($client, new GuzzleAsyncTransport($client, supportsQueueOnlyHandlers: true));
         $handler->withConnectionPool(true)->async();
 
         $promise = $handler->get('https://example.com');

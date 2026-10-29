@@ -11,6 +11,7 @@ use Fetch\Events\ResponseEvent;
 use Fetch\Events\RetryEvent;
 use Fetch\Events\TimeoutEvent;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
@@ -18,6 +19,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestInterface;
 
 use function Matrix\Support\await;
 
@@ -28,7 +30,7 @@ class EventsTest extends TestCase
         $stack = HandlerStack::create(new MockHandler($responses));
         $guzzle = new GuzzleClient(['handler' => $stack]);
 
-        return (new ClientHandler)->setHttpClient($guzzle);
+        return (new ClientHandler)->setHttpClient($guzzle, new GuzzleAsyncTransport($guzzle, supportsQueueOnlyHandlers: true));
     }
 
     public function test_request_and_response_events_fire_with_shared_correlation_id(): void
@@ -57,6 +59,33 @@ class EventsTest extends TestCase
         // Both events share the request's correlation id.
         $this->assertNotSame('', $requestEvent->getCorrelationId());
         $this->assertSame($requestEvent->getCorrelationId(), $responseEvent->getCorrelationId());
+    }
+
+    public function test_middleware_short_circuit_fires_request_and_response_events_in_sync_and_async_modes(): void
+    {
+        foreach ([false, true] as $async) {
+            $handler = $this->handler([]);
+            $requestEvent = null;
+            $responseEvent = null;
+
+            $handler
+                ->addMiddleware(static fn (RequestInterface $request, callable $next): PsrResponse => new PsrResponse(200, [], 'short-circuit'))
+                ->onRequest(function (RequestEvent $event) use (&$requestEvent): void {
+                    $requestEvent = $event;
+                })
+                ->onResponse(function (ResponseEvent $event) use (&$responseEvent): void {
+                    $responseEvent = $event;
+                });
+
+            $handler->async($async);
+            $request = $handler->get('https://example.com/short-circuit');
+            $response = $request instanceof \React\Promise\PromiseInterface ? await($request) : $request;
+
+            $this->assertSame('short-circuit', (string) $response->getBody());
+            $this->assertInstanceOf(RequestEvent::class, $requestEvent);
+            $this->assertInstanceOf(ResponseEvent::class, $responseEvent);
+            $this->assertSame($requestEvent->getCorrelationId(), $responseEvent->getCorrelationId());
+        }
     }
 
     public function test_error_and_timeout_events_fire_on_failure(): void

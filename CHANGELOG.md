@@ -4,6 +4,12 @@
 
 ### Changed
 
+- Resolve #45 with opt-in JSON Schema draft 2020-12 and OpenAPI 3.0.x request/response validation. The optional adapters are documented in the validation guide; external schema references are blocked unless explicitly trusted, and streaming validation fails without buffering.
+- Resolve #80 by extracting request coordination, sync/async/streaming executors, request construction, and a ReactPHP-compatible Guzzle async transport. Requests use cURL multi for nonblocking Guzzle I/O; custom Guzzle clients must inject a loop-compatible `AsyncTransport` for async use.
+- Resolve #94 by moving promise and connection-pool management behind injected collaborators, and delegating retries to the existing `RetryStrategy` for both sync and async execution.
+- Async HTTP requests now dispatch through an event-loop-driven transport rather than invoking synchronous Guzzle I/O inside Matrix `async()`; unsupported queue-only/default stream handlers fail explicitly unless a queue-only test transport is opted into.
+- Keep the old `ManagesPromises` trait as a deprecated compatibility shim for consumers that composed it directly; `ClientHandler` itself now uses `PromiseManager` by composition. Async mock/cache shortcuts now return promises consistently.
+- Resolve #83 by documenting `Response::isStatus()` as the preferred general-purpose status check while preserving every explicit `isXxx()` helper as a public delegation to it.
 - Upgrade `jerome/matrix` to `^4.0`. Fetch's promise mapper now uses Matrix 4's lazy, keyed scheduler, which bounds work per event-loop tick, preserves input keys, stops queued tasks after failure, and forwards cancellation to active tasks. Mapper concurrency is limited to 200 to protect workers from unsafe caller-supplied limits.
 - Re-export the Matrix 4 helpers from the global Fetch helper file when those global names are available, including `any()` and timeout-aware `await()`; retry delay integers remain milliseconds at the Fetch bridge.
 - Add TRACE and CONNECT request methods; recognize JSON:API, JSON-LD, GeoJSON, and Problem Details media types as JSON.
@@ -15,6 +21,9 @@
 
 ### Compatibility
 
+- Preserve all explicit `Response::isXxx()` helpers and `isStatus()`; no named response helper was removed or dynamically generated.
+- `ClientHandler` promise methods remain available. Direct `ManagesPromises` trait consumers keep the deprecated shim and can migrate to `Fetch\Async\PromiseManager`.
+- Async calls made through mocks or other immediate middleware/cache paths now return promise objects, matching the documented async return contract. Custom Guzzle clients need a loop-compatible `AsyncTransport` for asynchronous network I/O.
 - Matrix 4 rejects cancelled operations with `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch promises should handle this exception when cancelling pending work.
 - `Client::fetch()` and verb helpers now declare `PromiseInterface` in their return unions when called with async request options. Synchronous calls still return a response; callers enabling async mode should await or chain the returned promise.
 

@@ -3,6 +3,7 @@
 namespace Tests\Integration;
 
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -32,7 +33,10 @@ class ConcurrentRequestsTest extends TestCase
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
         // Create a single handler instance
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true),
+        );
         $handler->baseUri('https://api.example.com');
 
         // Fire three async requests with different per-request options on the SAME handler instance
@@ -89,7 +93,10 @@ class ConcurrentRequestsTest extends TestCase
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
         // Create handler with default options
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->retry(2);  // Default retry count
         $handler->timeout(15);  // Default timeout

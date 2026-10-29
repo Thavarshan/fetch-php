@@ -6,9 +6,15 @@ namespace Fetch\Support;
 
 use Fetch\Exceptions\RequestException as FetchRequestException;
 use Fetch\Interfaces\Response as ResponseInterface;
+use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
+use Matrix\Exceptions\CancellationException;
+use Matrix\Exceptions\RetryException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use React\Promise\PromiseInterface;
 use RuntimeException;
+
+use function Matrix\Support\retry as matrixRetry;
 
 /**
  * Handles retry logic for failed HTTP requests.
@@ -161,10 +167,58 @@ final class RetryStrategy
     }
 
     /**
+     * Execute an asynchronous request with the same retry policy as execute().
+     * Delays are scheduled on the ReactPHP loop and never block the caller.
+     *
+     * @param  callable(): PromiseInterface  $request
+     * @param  callable(int, int, \Throwable, int): void|null  $onRetry
+     * @return PromiseInterface<ResponseInterface>
+     */
+    public function executeAsync(callable $request, ?callable $onRetry = null): PromiseInterface
+    {
+        return matrixRetry(
+            $request,
+            $this->maxRetries + 1,
+            function (int $attempt, \Throwable $exception) use ($onRetry): ?float {
+                if (! $this->isRetryable($exception)) {
+                    return null;
+                }
+
+                $delay = $this->calculateDelay($attempt - 1);
+                $this->logRetry($attempt, $this->maxRetries, $exception);
+                if ($onRetry !== null) {
+                    $onRetry($attempt, $this->maxRetries, $exception, $delay);
+                }
+
+                // Fetch configures retry delays in milliseconds; Matrix expects seconds.
+                return $delay / 1000;
+            },
+        )->catch(function (\Throwable $exception): never {
+            if (! $exception instanceof RetryException) {
+                throw $exception;
+            }
+
+            $failures = $exception->getFailures();
+            $lastException = $failures === [] ? $exception->getPrevious() : end($failures);
+            $lastException ??= $exception;
+
+            if (! $this->isRetryable($lastException)) {
+                throw $lastException;
+            }
+
+            $this->handleFinalFailure($this->maxRetries, $lastException);
+        });
+    }
+
+    /**
      * Check if an error is retryable.
      */
     public function isRetryable(\Throwable $e): bool
     {
+        if ($e instanceof CancellationException) {
+            return false;
+        }
+
         // Check status code from response
         $statusCode = $this->extractStatusCode($e);
         if ($statusCode !== null && $this->isRetryableStatusCode($statusCode)) {
@@ -323,7 +377,7 @@ final class RetryStrategy
         }
 
         // Check Guzzle-style exceptions
-        if (method_exists($e, 'getResponse')) {
+        if ($e instanceof GuzzleRequestException) {
             $response = $e->getResponse();
             if ($response instanceof \Psr\Http\Message\ResponseInterface) {
                 return $response->getStatusCode();

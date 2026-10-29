@@ -7,6 +7,7 @@ namespace Tests\Integration;
 use Fetch\Cache\MemoryCache;
 use Fetch\Http\Client;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use Fetch\Support\FetchProfiler;
 use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
@@ -130,7 +131,7 @@ class DebugFlowTest extends TestCase
     {
         $mockResponses = $responses ?? [new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"ok":true}')];
 
-        return new class($mockResponses) extends ClientHandler
+        $handler = new class($mockResponses) extends ClientHandler
         {
             public function __construct(private array $mockResponses)
             {
@@ -148,5 +149,9 @@ class DebugFlowTest extends TestCase
                 return $this->httpClient;
             }
         };
+
+        $handler->setAsyncTransport(new GuzzleAsyncTransport($handler->getHttpClient(), supportsQueueOnlyHandlers: true));
+
+        return $handler;
     }
 }
