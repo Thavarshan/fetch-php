@@ -7,6 +7,7 @@ namespace Fetch\Http;
 use Fetch\Enum\ContentType;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions;
+use GuzzleHttp\Cookie\CookieJarInterface;
 use GuzzleHttp\Psr7\MultipartStream;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use GuzzleHttp\Psr7\Utils;
@@ -143,11 +144,13 @@ final class RequestBuilder
         }
 
         $authType = isset($auth[2]) && is_string($auth[2]) ? strtolower($auth[2]) : 'basic';
-        if ($authType !== 'basic') {
-            return $request;
+        if ($authType === 'basic') {
+            $request = $request->withHeader('Authorization', 'Basic '.base64_encode($auth[0].':'.$auth[1]));
         }
 
-        return $request->withHeader('Authorization', 'Basic '.base64_encode($auth[0].':'.$auth[1]));
+        $cookies = $options['cookies'] ?? null;
+
+        return $cookies instanceof CookieJarInterface ? $cookies->withCookieHeader($request) : $request;
     }
 
     /** @param array<string, mixed> $options */

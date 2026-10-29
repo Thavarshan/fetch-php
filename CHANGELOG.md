@@ -30,6 +30,7 @@
 - Preserve in-place middleware edits to materialized bodies and validate multipart OpenAPI requests with a matching generated boundary.
 - Match OpenAPI request checks to Guzzle's generated Basic Authorization header and query-option replacement behavior, and send the same resolved query that was validated.
 - Validate raw JSON from the materialized transport body even when middleware has read its PSR-7 view, and preserve empty schema objects in JSON OpenAPI documents.
+- Include URL-matched Guzzle cookie-jar headers in OpenAPI request validation.
 
 ### Compatibility
 

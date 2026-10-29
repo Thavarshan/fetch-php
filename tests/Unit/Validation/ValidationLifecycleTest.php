@@ -15,6 +15,7 @@ use Fetch\Validation\RequestValidationException;
 use Fetch\Validation\ResponseValidationException;
 use Fetch\Validation\ValidationConfigurationException;
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -264,6 +265,46 @@ YAML;
                 'Basic '.base64_encode('fixture-user:fixture-password'),
                 $mock->getLastRequest()?->getHeaderLine('Authorization'),
             );
+        });
+    }
+
+    public function test_openapi_request_validation_includes_matching_cookie_jar_headers(): void
+    {
+        $mock = new MockHandler([new Psr7Response(200)]);
+        $cookies = CookieJar::fromArray(['session' => 'fixture-session'], 'example.test');
+        $spec = <<<'YAML'
+openapi: 3.0.3
+info:
+  title: Cookie API
+  version: 1.0.0
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+paths:
+  /secure:
+    get:
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Secure response
+YAML;
+
+        $this->withOpenApiSpec($spec, function (string $path) use ($mock, $cookies): void {
+            $handler = $this->handler($mock);
+            $handler->withOpenApiSpec($path)->validateContracts();
+
+            $response = $handler->sendRequest(
+                'GET',
+                'https://example.test/secure',
+                ['cookies' => $cookies],
+            );
+
+            self::assertSame(200, $response->getStatusCode());
+            self::assertSame('session=fixture-session', $mock->getLastRequest()?->getHeaderLine('Cookie'));
         });
     }
 
