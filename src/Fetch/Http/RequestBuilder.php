@@ -7,6 +7,7 @@ namespace Fetch\Http;
 use Fetch\Enum\ContentType;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions;
+use GuzzleHttp\Psr7\MultipartStream;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\RequestInterface;
@@ -55,6 +56,19 @@ final class RequestBuilder
     public function buildMiddlewareRequest(string $method, string $uri, array $guzzleOptions, bool $captureStreamBody = true): array
     {
         $headers = $guzzleOptions['headers'] ?? [];
+
+        if (isset($guzzleOptions['multipart']) && is_array($guzzleOptions['multipart'])) {
+            $multipartBody = new MultipartStream(RequestOptions::normalizeMultipart($guzzleOptions['multipart']));
+            foreach (array_keys($headers) as $name) {
+                if (strcasecmp((string) $name, 'Content-Type') === 0) {
+                    unset($headers[$name]);
+                }
+            }
+            $headers['Content-Type'] = 'multipart/form-data; boundary='.$multipartBody->getBoundary();
+
+            return [new GuzzleRequest($method, $uri, $headers, $multipartBody), null];
+        }
+
         $body = $guzzleOptions['body'] ?? null;
         $isStreamBody = is_resource($body) || $body instanceof StreamInterface;
         $seedBody = $isStreamBody && ! $captureStreamBody ? null : $this->encodeSeedBody($guzzleOptions);
@@ -188,6 +202,21 @@ final class RequestBuilder
         $requestBody = $request->getBody();
 
         if ($initialBody !== null && $requestBody === $initialBody) {
+            if ($seedBody !== null && $requestBody->isSeekable()) {
+                $body = $this->readFullStreamBody($requestBody);
+                if ($body !== $seedBody) {
+                    unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);
+                    $guzzleOptions['body'] = $body;
+
+                    return $guzzleOptions;
+                }
+            }
+
+            if (isset($guzzleOptions['multipart'])) {
+                unset($guzzleOptions['multipart']);
+                $guzzleOptions['body'] = $requestBody;
+            }
+
             return $guzzleOptions;
         }
 
@@ -249,6 +278,18 @@ final class RequestBuilder
         }
 
         return $contents;
+    }
+
+    private function readFullStreamBody(StreamInterface $body): string
+    {
+        $position = $body->tell();
+        $body->rewind();
+
+        try {
+            return $body->getContents();
+        } finally {
+            $body->seek($position);
+        }
     }
 
     /**

@@ -41,6 +41,44 @@ class RequestBuilderTest extends TestCase
         self::assertArrayNotHasKey('json', $options);
     }
 
+    public function test_middleware_edits_to_a_materialized_body_stream_are_sent(): void
+    {
+        $builder = new RequestBuilder;
+        $seedBody = '{"name":"Ada"}';
+        $request = new Request('POST', 'https://example.test/users', ['Content-Type' => 'application/json'], $seedBody);
+        $request->getBody()->write('{"name":"Grace"}');
+
+        $options = $builder->mergeMiddlewareRequest(
+            $request,
+            ['json' => ['name' => 'Ada'], 'headers' => ['Content-Type' => 'application/json']],
+            $seedBody,
+            $request->getBody(),
+        );
+
+        self::assertSame('{"name":"Grace"}', $options['body']);
+        self::assertArrayNotHasKey('json', $options);
+    }
+
+    public function test_multipart_middleware_request_has_a_matching_boundary_and_transport_body(): void
+    {
+        $builder = new RequestBuilder;
+        $parts = [['name' => 'title', 'contents' => 'quarterly report']];
+        [$request, $seedBody] = $builder->buildMiddlewareRequest(
+            'POST',
+            'https://example.test/upload',
+            ['multipart' => $parts],
+        );
+        $boundary = substr($request->getHeaderLine('Content-Type'), strlen('multipart/form-data; boundary='));
+
+        $options = $builder->mergeMiddlewareRequest($request, ['multipart' => $parts], $seedBody, $request->getBody());
+
+        self::assertNull($seedBody);
+        self::assertNotSame('', $boundary);
+        self::assertSame($request->getBody(), $options['body']);
+        self::assertArrayNotHasKey('multipart', $options);
+        self::assertSame('multipart/form-data; boundary='.$boundary, $options['headers']['Content-Type']);
+    }
+
     public function test_seed_body_reads_psr_stream_from_its_current_position_and_restores_it(): void
     {
         $body = Utils::streamFor('invalid-prefix{"name":"Ada"}');

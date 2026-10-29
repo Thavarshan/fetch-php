@@ -70,6 +70,8 @@ $response = ClientHandler::createWithBaseUri('https://api.example.com')
 
 The adapter resolves the operation using the outgoing HTTP method and path, then checks applicable parameters, request content, response status, headers, media type, and body schema. JSON and YAML files are supported. Only OpenAPI 3.0.x is accepted; 3.1 documents fail with a configuration exception rather than being interpreted as 3.0. External `$ref` URLs are rejected to prevent implicit network retrieval; references within the local document are supported.
 
+Multipart requests are constructed with their generated boundary before contract checks. Because validating multipart content reads the serialized body before dispatch, enable this for uploads only when the buffering cost fits the expected payload size.
+
 ## Lifecycle and streaming
 
 Request validation runs after middleware has transformed the outgoing request and before mock/cache/transport selection. Responses from middleware, mocks, cache hits, and the transport are validated before being returned. Invalid responses are not cached, and schema failures are not retried. OpenAPI response validation uses the operation matched from the final outgoing request. Non-2xx responses can be validated when declared in the contract.

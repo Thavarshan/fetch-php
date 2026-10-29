@@ -138,6 +138,51 @@ final class ValidationLifecycleTest extends TestCase
         self::assertSame(204, $response->getStatusCode());
     }
 
+    public function test_openapi_request_validation_accepts_multipart_body_and_preserves_its_boundary(): void
+    {
+        $mock = new MockHandler([new Psr7Response(204)]);
+        $spec = <<<'YAML'
+openapi: 3.0.3
+info:
+  title: Upload API
+  version: 1.0.0
+paths:
+  /upload:
+    post:
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+      responses:
+        '204':
+          description: Uploaded
+YAML;
+
+        $this->withOpenApiSpec($spec, function (string $path) use ($mock): void {
+            $handler = $this->handler($mock);
+            $handler->withOpenApiSpec($path)->validateContracts();
+
+            $response = $handler->post(
+                'https://example.test/upload',
+                [['name' => 'title', 'contents' => 'quarterly report']],
+                ContentType::MULTIPART,
+            );
+            $request = $mock->getLastRequest();
+
+            self::assertSame(204, $response->getStatusCode());
+            self::assertNotNull($request);
+            self::assertMatchesRegularExpression('/^multipart\/form-data; boundary=(.+)$/', $request->getHeaderLine('Content-Type'));
+            self::assertStringContainsString('name="title"', (string) $request->getBody());
+            self::assertStringContainsString('quarterly report', (string) $request->getBody());
+        });
+    }
+
     public function test_unvalidated_stream_upload_is_not_buffered_before_dispatch(): void
     {
         $reads = 0;
@@ -493,6 +538,21 @@ final class ValidationLifecycleTest extends TestCase
         ]);
 
         return ClientHandler::createWithClient($client, new GuzzleAsyncTransport($client, supportsQueueOnlyHandlers: true));
+    }
+
+    private function withOpenApiSpec(string $contents, callable $test): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'fetch-openapi-');
+        if ($path === false) {
+            self::fail('Could not create a temporary OpenAPI file.');
+        }
+
+        try {
+            file_put_contents($path, $contents);
+            $test($path);
+        } finally {
+            unlink($path);
+        }
     }
 
     /** @return array<string, mixed> */

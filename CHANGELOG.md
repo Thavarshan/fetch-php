@@ -27,6 +27,7 @@
 - Avoid pre-reading stream-backed uploads when request validation is disabled, and skip mock request copying while the mock server is inactive.
 - Wait for asynchronous middleware to settle before deciding whether it dispatched the core request; use the latest transformed request for short-circuit validation and lifecycle events.
 - Preserve middleware-rewritten request streams during validation, including replaying non-seekable bodies to the transport after their opt-in validation read.
+- Preserve in-place middleware edits to materialized bodies and validate multipart OpenAPI requests with a matching generated boundary.
 
 ### Compatibility
 
