@@ -303,6 +303,14 @@ class ManagesPromisesTest extends TestCase
         }, 0); // Invalid concurrency
     }
 
+    public function test_map_rejects_concurrency_above_safe_limit(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('exceeds the maximum allowed (200)');
+
+        $this->handler->map([1], static fn ($item) => resolve($item), PHP_INT_MAX);
+    }
+
     public function test_validate_promises(): void
     {
         $promises = [

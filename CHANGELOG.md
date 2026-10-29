@@ -2,6 +2,14 @@
 
 ## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.8.1...HEAD)
 
+### Changed
+
+- Upgrade `jerome/matrix` to `^4.0`. Fetch's promise mapper now uses Matrix 4's lazy, keyed scheduler, which bounds work per event-loop tick, preserves input keys, stops queued tasks after failure, and forwards cancellation to active tasks. Mapper concurrency is limited to 200 to protect workers from unsafe caller-supplied limits.
+
+### Compatibility
+
+- Matrix 4 rejects cancelled operations with `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch promises should handle this exception when cancelling pending work. The existing Fetch promise methods and return types are unchanged.
+
 ## [v3.8.1](https://github.com/Thavarshan/fetch-php/compare/3.8.0...3.8.1) - 2026-07-23
 
 Development-tooling and documentation release. **No runtime library changes** —
