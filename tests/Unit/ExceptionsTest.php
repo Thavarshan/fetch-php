@@ -15,7 +15,6 @@ use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Client\RequestExceptionInterface;
 use RuntimeException;
-use Throwable;
 
 class ExceptionsTest extends TestCase
 {

@@ -4,9 +4,12 @@ namespace Tests\Unit;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Exceptions\NetworkException;
 use Fetch\Http\Client;
+use Fetch\Http\Request;
 use Fetch\Http\Response;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
+use GuzzleHttp\Exception\ConnectException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
@@ -161,5 +164,24 @@ class ClientTest extends TestCase
         $result = $this->client->sendRequest($mockRequest);
 
         $this->assertSame($mockResponse, $result);
+    }
+
+    public function test_fetch_wraps_connection_failures_in_network_exception(): void
+    {
+        $request = new Request('GET', 'https://example.com');
+        $this->mockHandler->expects($this->once())
+            ->method('withOptions')
+            ->willReturnSelf();
+        $this->mockHandler->expects($this->once())
+            ->method('sendRequest')
+            ->willThrowException(new ConnectException('Connection refused', $request));
+
+        try {
+            $this->client->fetch('https://example.com');
+            $this->fail('Expected a network exception');
+        } catch (NetworkException $exception) {
+            $this->assertSame($request->getUri(), $exception->getRequest()->getUri());
+            $this->assertInstanceOf(ConnectException::class, $exception->getPrevious());
+        }
     }
 }
