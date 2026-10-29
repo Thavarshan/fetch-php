@@ -249,6 +249,10 @@ trait PerformsHttpRequests
         // Prepare Guzzle options from context
         $guzzleOptions = $context->toGuzzleOptions();
 
+        // Query parameters have already been folded into the resolved URI.
+        // Passing them to Guzzle as well would append them a second time.
+        unset($guzzleOptions['query']);
+
         // Start profiling once for this request path
         $requestId = $this->startProfiling($methodStr, $fullUri);
 
@@ -639,6 +643,7 @@ trait PerformsHttpRequests
         $context = RequestContext::fromOptions($requestOptions);
         $fullUri = $this->buildFullUriFromContext($context);
         $guzzleOptions = $context->toGuzzleOptions();
+        unset($guzzleOptions['query']);
         $guzzleOptions['stream'] = true;
 
         $requestId = $this->startProfiling($methodStr, $fullUri);

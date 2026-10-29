@@ -215,12 +215,6 @@ class Client implements ClientInterface, LoggerAwareInterface
             $contentType = ContentType::JSON;
         }
 
-        // Handle base URI if provided
-        if (isset($options['base_uri'])) {
-            $this->handler->baseUri($options['base_uri']);
-            unset($options['base_uri']);
-        }
-
         $this->logger->info('Sending fetch request', [
             'method' => $method,
             'url' => $url,
@@ -228,14 +222,7 @@ class Client implements ClientInterface, LoggerAwareInterface
 
         // Send the request using the new unified approach
         try {
-            $handler = $this->handler->withOptions($options);
-
-            if ($body !== null) {
-                $handler = $handler->withBody($body, $contentType);
-            }
-
-            /** @var ClientHandlerInterface $handler */
-            return $handler->sendRequest($method, $url);
+            return $this->handler->request($methodEnum, $url, $body, $contentType, $options);
         } catch (GuzzleRequestException $e) {
             $this->logger->error('Request exception', [
                 'message' => $e->getMessage(),

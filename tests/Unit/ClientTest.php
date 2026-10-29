@@ -43,16 +43,14 @@ class ClientTest extends TestCase
         $mockResponse = $this->createMock(Response::class);
 
         $this->mockHandler->expects($this->once())
-            ->method('withOptions')
-            ->willReturnSelf();
-
-        // Since we're not providing a body in the test, we shouldn't expect withBody to be called
-        $this->mockHandler->expects($this->never())
-            ->method('withBody');
-
-        $this->mockHandler->expects($this->once())
-            ->method('sendRequest')
-            ->with('GET', $url)
+            ->method('request')
+            ->with(
+                Method::GET,
+                $url,
+                null,
+                ContentType::JSON,
+                $this->callback(static fn (array $requestOptions): bool => $requestOptions['timeout'] === 30)
+            )
             ->willReturn($mockResponse);
 
         $result = $this->client->fetch($url, $options);
@@ -71,17 +69,14 @@ class ClientTest extends TestCase
         $mockResponse = $this->createMock(Response::class);
 
         $this->mockHandler->expects($this->once())
-            ->method('withOptions')
-            ->willReturnSelf();
-
-        $this->mockHandler->expects($this->once())
-            ->method('withBody')
-            ->with($body, ContentType::JSON)
-            ->willReturnSelf();
-
-        $this->mockHandler->expects($this->once())
-            ->method('sendRequest')
-            ->with('POST', $url)
+            ->method('request')
+            ->with(
+                Method::POST,
+                $url,
+                $body,
+                ContentType::JSON,
+                $this->callback(static fn (array $requestOptions): bool => $requestOptions['json'] === $body)
+            )
             ->willReturn($mockResponse);
 
         $result = $this->client->fetch($url, $options);
@@ -96,16 +91,15 @@ class ClientTest extends TestCase
         $options = ['timeout' => 30];
         $mockResponse = $this->createMock(Response::class);
 
-        // For methodRequest, we need to define behavior for both withOptions and withBody
         $this->mockHandler->expects($this->once())
-            ->method('withOptions')
-            ->willReturnSelf();
-
-        // Note: For a GET request, body should be null, so withBody should not be called
-        // We need to modify the methodRequest method to handle this
-
-        $this->mockHandler->expects($this->once())
-            ->method('sendRequest')
+            ->method('request')
+            ->with(
+                Method::GET,
+                $url,
+                null,
+                ContentType::JSON,
+                $this->callback(static fn (array $requestOptions): bool => $requestOptions['query'] === $queryParams)
+            )
             ->willReturn($mockResponse);
 
         $result = $this->client->get($url, $queryParams, $options);
@@ -121,18 +115,15 @@ class ClientTest extends TestCase
         $options = ['timeout' => 30];
         $mockResponse = $this->createMock(Response::class);
 
-        // Set up expectations for the methodRequest flow
         $this->mockHandler->expects($this->once())
-            ->method('withOptions')
-            ->willReturnSelf();
-
-        $this->mockHandler->expects($this->once())
-            ->method('withBody')
-            ->with($body, $this->anything())
-            ->willReturnSelf();
-
-        $this->mockHandler->expects($this->once())
-            ->method('sendRequest')
+            ->method('request')
+            ->with(
+                Method::POST,
+                $url,
+                $body,
+                $contentType,
+                $this->callback(static fn (array $requestOptions): bool => $requestOptions['timeout'] === 30)
+            )
             ->willReturn($mockResponse);
 
         $result = $this->client->post($url, $body, $contentType, $options);
@@ -170,10 +161,8 @@ class ClientTest extends TestCase
     {
         $request = new Request('GET', 'https://example.com');
         $this->mockHandler->expects($this->once())
-            ->method('withOptions')
-            ->willReturnSelf();
-        $this->mockHandler->expects($this->once())
-            ->method('sendRequest')
+            ->method('request')
+            ->with(Method::GET, 'https://example.com', null, ContentType::JSON, $this->anything())
             ->willThrowException(new ConnectException('Connection refused', $request));
 
         try {

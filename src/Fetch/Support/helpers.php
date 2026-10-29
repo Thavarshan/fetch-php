@@ -178,24 +178,9 @@ if (! function_exists('handle_request_with_base_uri')) {
     function handle_request_with_base_uri(string $resource, array $options, array $processedOptions): ResponseInterface|PromiseInterface
     {
         $client = fetch_client();
-        $handler = $client->getHandler();
-        if (isset($options['base_uri']) && is_string($options['base_uri'])) {
-            $handler->baseUri($options['base_uri']);
-        }
-        $handler->withOptions($processedOptions);
+        $requestOptions = array_merge($processedOptions, ['base_uri' => $options['base_uri']]);
 
-        // Extract body and content type if not already processed
-        [$body, $contentType] = extract_body_and_content_type($options);
-
-        if ($body !== null) {
-            if ($contentType !== null) {
-                $handler->withBody($body, $contentType);
-            } else {
-                $handler->withBody($body);
-            }
-        }
-
-        return $handler->sendRequest($processedOptions['method'], $resource);
+        return $client->getHandler()->sendRequest($processedOptions['method'], $resource, $requestOptions);
     }
 }
 
