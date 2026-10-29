@@ -50,6 +50,7 @@ final class RequestCoordinator
         $startMemory = memory_get_usage(true);
         $requestId = ($this->hooks->startProfiling)($method, $uri);
         [$psrRequest, $seedBody] = $this->requestBuilder->buildMiddlewareRequest($method, $uri, $guzzleOptions);
+        $guzzleOptions = $this->requestBuilder->replaceConsumedNonSeekableBody($guzzleOptions, $seedBody);
         $coreDispatched = false;
         $lastMiddlewareRequest = $psrRequest;
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Validation;
 
 use Fetch\Cache\MemoryCache;
+use Fetch\Enum\ContentType;
 use Fetch\Http\ClientHandler;
 use Fetch\Interfaces\AsyncTransport;
 use Fetch\Testing\MockResponse;
@@ -42,6 +43,84 @@ final class ValidationLifecycleTest extends TestCase
             self::assertStringNotContainsString('42', $exception->getMessage());
             self::assertCount(1, $mock);
         }
+    }
+
+    public function test_json_validation_preserves_object_and_array_shapes(): void
+    {
+        $mock = new MockHandler([
+            new Psr7Response(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"empty":{},"sequential":{"0":"first","1":"second"},"nested":[{}]}',
+            ),
+        ]);
+        $handler = $this->handler($mock);
+        $handler->withResponseSchema([
+            'type' => 'object',
+            'properties' => [
+                'empty' => ['type' => 'object'],
+                'sequential' => ['type' => 'object'],
+                'nested' => ['type' => 'array', 'items' => ['type' => 'object']],
+            ],
+        ]);
+
+        self::assertSame(200, $handler->get('https://example.test/users')->getStatusCode());
+        self::assertCount(0, $mock);
+    }
+
+    public function test_json_validation_rejects_an_empty_object_for_an_array_schema(): void
+    {
+        $handler = $this->handler(new MockHandler([
+            new Psr7Response(200, ['Content-Type' => 'application/json'], '{}'),
+        ]));
+        $handler->withResponseSchema(['type' => 'array']);
+
+        $this->expectException(ResponseValidationException::class);
+        $handler->get('https://example.test/users');
+    }
+
+    public function test_request_json_validation_preserves_object_and_array_shapes(): void
+    {
+        $handler = $this->handler(new MockHandler([new Psr7Response(204)]));
+        $handler->withRequestSchema([
+            'type' => 'object',
+            'properties' => [
+                'empty' => ['type' => 'object'],
+                'sequential' => ['type' => 'object'],
+                'nested' => ['type' => 'array', 'items' => ['type' => 'object']],
+            ],
+        ]);
+        $json = '{"empty":{},"sequential":{"0":"first","1":"second"},"nested":[{}]}';
+
+        $response = $handler->request('POST', 'https://example.test/users', $json, ContentType::JSON);
+
+        self::assertSame(204, $response->getStatusCode());
+    }
+
+    public function test_request_validation_reads_psr_stream_json_body_before_dispatch(): void
+    {
+        $body = Utils::streamFor('invalid-prefix{"name":"Ada"}');
+        $body->seek(strlen('invalid-prefix'));
+        $handler = $this->handler(new MockHandler([new Psr7Response(204)]));
+        $handler->withRequestSchema($this->userSchema());
+
+        $response = $handler->request('POST', 'https://example.test/users', $body, ContentType::JSON);
+
+        self::assertSame(204, $response->getStatusCode());
+    }
+
+    public function test_request_validation_reads_resource_json_body_before_dispatch(): void
+    {
+        $body = fopen('php://temp', 'r+');
+        self::assertIsResource($body);
+        fwrite($body, 'invalid-prefix{"name":"Ada"}');
+        fseek($body, strlen('invalid-prefix'));
+
+        $handler = $this->handler(new MockHandler([new Psr7Response(204)]));
+        $handler->withRequestSchema($this->userSchema());
+        $response = $handler->request('POST', 'https://example.test/users', $body, ContentType::JSON);
+
+        self::assertSame(204, $response->getStatusCode());
     }
 
     public function test_invalid_response_is_not_cached_and_is_not_retried(): void

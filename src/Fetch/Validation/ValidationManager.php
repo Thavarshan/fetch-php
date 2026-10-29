@@ -122,7 +122,7 @@ final class ValidationManager
     private function decodeJson(string $json, string $direction): mixed
     {
         try {
-            return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            return json_decode($json, false, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $exception) {
             $result = new ValidationResult([new ValidationError([], 'The JSON payload is malformed.', ['keyword' => 'json'])]);
             $exceptionClass = $direction === 'request' ? RequestValidationException::class : ResponseValidationException::class;

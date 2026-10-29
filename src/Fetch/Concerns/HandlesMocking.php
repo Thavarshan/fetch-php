@@ -11,6 +11,8 @@ use Fetch\Testing\Recorder;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\StreamInterface;
+use RuntimeException;
 
 trait HandlesMocking
 {
@@ -70,7 +72,7 @@ trait HandlesMocking
             $body = Utils::streamFor(http_build_query($options['form_params']));
             $headers['Content-Type'] = 'application/x-www-form-urlencoded';
         } elseif (isset($options['body'])) {
-            $body = Utils::streamFor($options['body']);
+            $body = Utils::streamFor($this->copyBodyForMocking($options['body']));
         } elseif (isset($options['multipart'])) {
             // For multipart, we'll create a simple representation
             // In a real scenario, Guzzle handles the complex multipart encoding
@@ -84,5 +86,37 @@ trait HandlesMocking
         }
 
         return new GuzzleRequest($method, $uri, $headers, $body);
+    }
+
+    private function copyBodyForMocking(mixed $body): mixed
+    {
+        if ($body instanceof StreamInterface) {
+            $seekable = $body->isSeekable();
+            $position = $seekable ? $body->tell() : null;
+            try {
+                return $body->getContents();
+            } finally {
+                if ($seekable && $position !== null) {
+                    $body->seek($position);
+                }
+            }
+        }
+
+        if (! is_resource($body)) {
+            return $body;
+        }
+
+        $metadata = stream_get_meta_data($body);
+        $seekable = $metadata['seekable'];
+        $position = $seekable ? ftell($body) : false;
+        $contents = stream_get_contents($body);
+        if ($seekable && $position !== false && fseek($body, $position) !== 0) {
+            throw new RuntimeException('Unable to restore the request body stream position for mock matching.');
+        }
+        if ($contents === false) {
+            throw new RuntimeException('Unable to read the request body stream for mock matching.');
+        }
+
+        return $contents;
     }
 }

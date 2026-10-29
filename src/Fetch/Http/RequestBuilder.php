@@ -9,6 +9,8 @@ use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\StreamInterface;
+use RuntimeException;
 
 /** Builds normalized request options and the PSR-7 request used by middleware. */
 final class RequestBuilder
@@ -80,6 +82,10 @@ final class RequestBuilder
             return $options['body'];
         }
 
+        if (isset($options['body']) && (is_resource($options['body']) || $options['body'] instanceof StreamInterface)) {
+            return $this->readStreamBody($options['body']);
+        }
+
         if (array_key_exists('json', $options)) {
             try {
                 return json_encode($options['json'], JSON_THROW_ON_ERROR);
@@ -93,6 +99,32 @@ final class RequestBuilder
         }
 
         return null;
+    }
+
+    /**
+     * Replace a consumed non-seekable body stream with the bytes captured for middleware.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public function replaceConsumedNonSeekableBody(array $options, ?string $seedBody): array
+    {
+        if ($seedBody === null || ! isset($options['body'])) {
+            return $options;
+        }
+
+        $body = $options['body'];
+        $seekable = match (true) {
+            is_resource($body) => stream_get_meta_data($body)['seekable'],
+            $body instanceof StreamInterface => $body->isSeekable(),
+            default => true,
+        };
+
+        if (! $seekable && (is_resource($body) || $body instanceof StreamInterface)) {
+            $options['body'] = $seedBody;
+        }
+
+        return $options;
     }
 
     /**
@@ -133,6 +165,35 @@ final class RequestBuilder
     public function prepareGuzzleOptions(array $options, ?RequestContext $context = null): array
     {
         return ($context ?? RequestContext::fromOptions($options))->toGuzzleOptions();
+    }
+
+    /** Read from the body's current position and restore it when the source is seekable. */
+    private function readStreamBody(mixed $body): string
+    {
+        if ($body instanceof StreamInterface) {
+            $seekable = $body->isSeekable();
+            $position = $seekable ? $body->tell() : null;
+            try {
+                return $body->getContents();
+            } finally {
+                if ($seekable && $position !== null) {
+                    $body->seek($position);
+                }
+            }
+        }
+
+        $metadata = stream_get_meta_data($body);
+        $seekable = $metadata['seekable'];
+        $position = $seekable ? ftell($body) : false;
+        $contents = stream_get_contents($body);
+        if ($seekable && $position !== false && fseek($body, $position) !== 0) {
+            throw new RuntimeException('Unable to restore the request body stream position.');
+        }
+        if ($contents === false) {
+            throw new RuntimeException('Unable to read the request body stream.');
+        }
+
+        return $contents;
     }
 
     /**

@@ -19,6 +19,11 @@
 - Remove `buildFullUri()` from internal URI resolution; mark external uses deprecated with a Fetch 4.0 removal target.
 - Raise PHPStan to level 8 and tighten internal return and interface annotations to keep the stricter analysis clean.
 
+### Fixed
+
+- Preserve JSON object-versus-array types, including empty objects and numeric property names, during schema validation.
+- Validate JSON request bodies provided as resources or PSR-7 streams from their current position while preserving seekable stream positions before dispatch.
+
 ### Compatibility
 
 - Preserve all explicit `Response::isXxx()` helpers and `isStatus()`; no named response helper was removed or dynamically generated.
