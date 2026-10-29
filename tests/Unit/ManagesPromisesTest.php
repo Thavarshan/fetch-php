@@ -5,7 +5,9 @@ namespace Tests\Unit;
 use Exception;
 use Fetch\Http\ClientHandler;
 use InvalidArgumentException;
+use Matrix\Exceptions\CancellationException;
 use PHPUnit\Framework\TestCase;
+use React\EventLoop\Loop;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use ReflectionClass;
@@ -309,6 +311,23 @@ class ManagesPromisesTest extends TestCase
         $this->expectExceptionMessage('exceeds the maximum allowed (200)');
 
         $this->handler->map([1], static fn ($item) => resolve($item), PHP_INT_MAX);
+    }
+
+    public function test_matrix_cancellation_reaches_active_mapped_promises(): void
+    {
+        $sourceCancelled = false;
+        $deferred = new Deferred(static function () use (&$sourceCancelled): void {
+            $sourceCancelled = true;
+        });
+        $mapped = $this->handler->map([1], static fn () => $deferred->promise(), 1);
+        $observed = $mapped->catch(static fn (\Throwable $error) => $error);
+
+        Loop::futureTick(static fn () => $mapped->cancel());
+
+        $reason = await($observed);
+
+        $this->assertInstanceOf(CancellationException::class, $reason);
+        $this->assertTrue($sourceCancelled);
     }
 
     public function test_validate_promises(): void

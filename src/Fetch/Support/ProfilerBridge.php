@@ -112,7 +112,7 @@ final class ProfilerBridge
      */
     public function startRequest(string $method, string $uri): ?string
     {
-        if (! $this->isEnabled()) {
+        if ($this->profiler === null || ! $this->profiler->isEnabled()) {
             return null;
         }
 
@@ -130,7 +130,7 @@ final class ProfilerBridge
      */
     public function recordEvent(?string $requestId, string $event): void
     {
-        if ($requestId === null || ! $this->isEnabled()) {
+        if ($requestId === null || $this->profiler === null || ! $this->profiler->isEnabled()) {
             return;
         }
 
@@ -145,7 +145,7 @@ final class ProfilerBridge
      */
     public function endRequest(?string $requestId, ?int $statusCode = null): void
     {
-        if ($requestId === null || ! $this->isEnabled()) {
+        if ($requestId === null || $this->profiler === null || ! $this->profiler->isEnabled()) {
             return;
         }
 

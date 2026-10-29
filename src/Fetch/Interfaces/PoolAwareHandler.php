@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
+use Fetch\Pool\ConnectionPool;
+use Fetch\Pool\DnsCache;
+use Fetch\Pool\Http2Configuration;
+
 interface PoolAwareHandler
 {
     /**
@@ -16,11 +20,11 @@ interface PoolAwareHandler
      */
     public function withHttp2(array|bool $config = true): self;
 
-    public function getConnectionPool(): ?\Fetch\Pool\ConnectionPool;
+    public function getConnectionPool(): ?ConnectionPool;
 
-    public function getDnsCache(): ?\Fetch\Pool\DnsCache;
+    public function getDnsCache(): ?DnsCache;
 
-    public function getHttp2Config(): ?\Fetch\Pool\Http2Configuration;
+    public function getHttp2Config(): ?Http2Configuration;
 
     public function isPoolingEnabled(): bool;
 

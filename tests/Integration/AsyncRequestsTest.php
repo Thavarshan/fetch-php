@@ -7,8 +7,13 @@ use Fetch\Http\Client;
 use Fetch\Http\ClientHandler;
 use Fetch\Http\Response;
 use Fetch\Interfaces\Response as ResponseInterface;
+use Fetch\Support\RequestContext;
+use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
 use Fetch\Testing\Recorder;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use Matrix\Exceptions\AsyncException;
 use PHPUnit\Framework\TestCase;
 use React\Promise\PromiseInterface;
 
@@ -110,7 +115,7 @@ class AsyncRequestsTest extends TestCase
     public function test_mock_server_respected_in_async_mode(): void
     {
         MockServer::fake([
-            'https://api.example.com/mock-async' => \Fetch\Testing\MockResponse::json(['mocked' => true]),
+            'https://api.example.com/mock-async' => MockResponse::json(['mocked' => true]),
         ]);
 
         $handler = new ClientHandler;
@@ -134,7 +139,7 @@ class AsyncRequestsTest extends TestCase
                 float $startTime,
                 int $startMemory,
                 ?string $requestId = null,
-                ?\Fetch\Support\RequestContext $context = null,
+                ?RequestContext $context = null,
             ): ResponseInterface {
                 throw new \RuntimeException('simulated failure');
             }
@@ -153,7 +158,7 @@ class AsyncRequestsTest extends TestCase
         // Restore original handler
         \React\Promise\set_rejection_handler($previousHandler);
 
-        $this->assertInstanceOf(\Matrix\Exceptions\AsyncException::class, $result);
+        $this->assertInstanceOf(AsyncException::class, $result);
         $this->assertStringContainsString('Request GET https://example.com/fail failed', $result->getMessage());
         $this->assertInstanceOf(\RuntimeException::class, $result->getPrevious());
         $this->assertStringContainsString('simulated failure', $result->getPrevious()->getMessage());
@@ -201,7 +206,7 @@ class AsyncRequestsTest extends TestCase
         // The ConcurrentRequestsTest::test_retries_are_isolated_per_request covers the sync case
         // Here we test that the config flows properly through the async path
 
-        $mockHandler = new \GuzzleHttp\Handler\MockHandler([
+        $mockHandler = new MockHandler([
             // First 2 attempts fail with 503
             new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
             new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
@@ -209,7 +214,7 @@ class AsyncRequestsTest extends TestCase
             new \GuzzleHttp\Psr7\Response(200, [], json_encode(['success' => true, 'attempt' => 3])),
         ]);
 
-        $handlerStack = \GuzzleHttp\HandlerStack::create($mockHandler);
+        $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new \GuzzleHttp\Client(['handler' => $handlerStack]);
 
         // Create handler with custom Guzzle client
@@ -248,7 +253,7 @@ class AsyncRequestsTest extends TestCase
                 float $startTime,
                 int $startMemory,
                 ?string $requestId = null,
-                ?\Fetch\Support\RequestContext $context = null,
+                ?RequestContext $context = null,
             ): ResponseInterface {
                 // Capture the timeout from context
                 if ($context !== null) {

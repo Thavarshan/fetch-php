@@ -5,10 +5,17 @@
 ### Changed
 
 - Upgrade `jerome/matrix` to `^4.0`. Fetch's promise mapper now uses Matrix 4's lazy, keyed scheduler, which bounds work per event-loop tick, preserves input keys, stops queued tasks after failure, and forwards cancellation to active tasks. Mapper concurrency is limited to 200 to protect workers from unsafe caller-supplied limits.
+- Re-export the Matrix 4 helpers from the global Fetch helper file when those global names are available, including `any()` and timeout-aware `await()`; retry delay integers remain milliseconds at the Fetch bridge.
+- Add TRACE and CONNECT request methods; recognize JSON:API, JSON-LD, GeoJSON, and Problem Details media types as JSON.
+- Validate retry status codes and multipart field names. Build multipart requests with Guzzle's binary-safe `MultipartStream`.
+- Route handler-wide defaults through `GlobalServices`, cache decoded response arrays, and map Guzzle transport failures to Fetch's PSR client exceptions.
+- Include `Fetch/Support` in coverage, enforce an 80% line-coverage floor in CI, make assertion-free tests risky, and check local Markdown links during documentation CI.
+- Remove `buildFullUri()` from internal URI resolution; mark external uses deprecated with a Fetch 4.0 removal target.
 
 ### Compatibility
 
-- Matrix 4 rejects cancelled operations with `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch promises should handle this exception when cancelling pending work. The existing Fetch promise methods and return types are unchanged.
+- Matrix 4 rejects cancelled operations with `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch promises should handle this exception when cancelling pending work.
+- `Client::fetch()` and verb helpers now declare `PromiseInterface` in their return unions when called with async request options. Synchronous calls still return a response; callers enabling async mode should await or chain the returned promise.
 
 ## [v3.8.1](https://github.com/Thavarshan/fetch-php/compare/3.8.0...3.8.1) - 2026-07-23
 

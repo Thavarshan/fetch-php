@@ -63,7 +63,7 @@ While Guzzle is a powerful HTTP client, Fetch PHP enhances the experience by pro
 composer require jerome/fetch-php
 ```
 
-> **Requirements**: PHP 8.3 or higher
+> **Requirements**: PHP 8.3 or higher. Async support uses `jerome/matrix ^4.0` and ReactPHP.
 
 ## Basic Usage
 

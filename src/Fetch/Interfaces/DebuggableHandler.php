@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
+use Fetch\Support\DebugInfo;
 use Fetch\Support\FetchProfiler;
 use Fetch\Support\ProfilerInterface;
 use Psr\Log\LoggerInterface;
@@ -35,5 +36,5 @@ interface DebuggableHandler
      */
     public function getDebugOptions(): array;
 
-    public function getLastDebugInfo(): ?\Fetch\Support\DebugInfo;
+    public function getLastDebugInfo(): ?DebugInfo;
 }

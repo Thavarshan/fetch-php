@@ -3,6 +3,7 @@
 namespace Tests\Integration;
 
 use Fetch\Http\ClientHandler;
+use Fetch\Http\Response;
 use Fetch\Support\FetchProfiler;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
@@ -243,7 +244,7 @@ class DebugInfoIsolationTest extends TestCase
 
         // Fire sync request
         $syncResponse1 = $handler->get('/sync1');
-        $this->assertInstanceOf(\Fetch\Http\Response::class, $syncResponse1);
+        $this->assertInstanceOf(Response::class, $syncResponse1);
 
         // Clone handler for async requests to avoid mode mutation
         $asyncHandler = clone $handler;
@@ -257,7 +258,7 @@ class DebugInfoIsolationTest extends TestCase
 
         // Fire another sync request on original handler
         $syncResponse2 = $handler->get('/sync2');
-        $this->assertInstanceOf(\Fetch\Http\Response::class, $syncResponse2);
+        $this->assertInstanceOf(Response::class, $syncResponse2);
 
         // All responses should have their own debug info
         $this->assertTrue($syncResponse1->hasDebugInfo());

@@ -54,7 +54,7 @@
         "test": "phpunit --no-coverage",
         "test:unit": "phpunit --no-coverage tests/Unit",
         "test:integration": "phpunit --no-coverage tests/Integration",
-        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage",
+        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage --coverage-clover=coverage/clover.xml",
         "analyse": "phpstan analyse",
         "ai:validate": "php tools/validate-ai-config.php",
         "check": [

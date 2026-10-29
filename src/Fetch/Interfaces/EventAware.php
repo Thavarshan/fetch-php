@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
+use Fetch\Events\ErrorEvent;
 use Fetch\Events\FetchEvent;
+use Fetch\Events\RedirectEvent;
+use Fetch\Events\RequestEvent;
+use Fetch\Events\ResponseEvent;
+use Fetch\Events\RetryEvent;
+use Fetch\Events\TimeoutEvent;
 
 interface EventAware
 {
@@ -26,32 +32,32 @@ interface EventAware
     public function hooks(array $hooks): self;
 
     /**
-     * @param  callable(\Fetch\Events\RequestEvent): void  $listener
+     * @param  callable(RequestEvent): void  $listener
      */
     public function onRequest(callable $listener, int $priority = 0): self;
 
     /**
-     * @param  callable(\Fetch\Events\ResponseEvent): void  $listener
+     * @param  callable(ResponseEvent): void  $listener
      */
     public function onResponse(callable $listener, int $priority = 0): self;
 
     /**
-     * @param  callable(\Fetch\Events\ErrorEvent): void  $listener
+     * @param  callable(ErrorEvent): void  $listener
      */
     public function onError(callable $listener, int $priority = 0): self;
 
     /**
-     * @param  callable(\Fetch\Events\RetryEvent): void  $listener
+     * @param  callable(RetryEvent): void  $listener
      */
     public function onRetry(callable $listener, int $priority = 0): self;
 
     /**
-     * @param  callable(\Fetch\Events\TimeoutEvent): void  $listener
+     * @param  callable(TimeoutEvent): void  $listener
      */
     public function onTimeout(callable $listener, int $priority = 0): self;
 
     /**
-     * @param  callable(\Fetch\Events\RedirectEvent): void  $listener
+     * @param  callable(RedirectEvent): void  $listener
      */
     public function onRedirect(callable $listener, int $priority = 0): self;
 

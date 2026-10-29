@@ -11,8 +11,16 @@ use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
 use Fetch\Support\RequestOptions;
+use Matrix\Support\all;
+use Matrix\Support\async;
+use Matrix\Support\await;
+use Matrix\Support\batch;
+use Matrix\Support\map;
+use Matrix\Support\race;
+use Matrix\Support\retry;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestInterface;
+use React\Promise\PromiseInterface;
 
 if (! function_exists('fetch')) {
     /**
@@ -32,11 +40,11 @@ if (! function_exists('fetch')) {
      *                                              - retries: Number of retries (int)
      *                                              - auth: Basic auth credentials [username, password] (array)
      *                                              - token: Bearer token (string)
-     * @return ResponseInterface|ClientHandlerInterface|Client Response or handler for method chaining
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>|ClientHandlerInterface|Client Response, promise, client, or handler for method chaining
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function fetch(string|RequestInterface|null $resource = null, ?array $options = []): ResponseInterface|ClientHandlerInterface|Client
+    function fetch(string|RequestInterface|null $resource = null, ?array $options = []): ResponseInterface|PromiseInterface|ClientHandlerInterface|Client
     {
         $options = $options ?? [];
 
@@ -126,24 +134,23 @@ if (! function_exists('extract_body_and_content_type')) {
      */
     function extract_body_and_content_type(array $options): array
     {
+        $options = RequestOptions::normalizeBodyOptions($options);
         $body = null;
         $contentType = null;
 
-        // Body handling - json takes precedence, then form, then multipart, then raw body
+        // RequestOptions owns normalization and body precedence for all entry points.
         if (isset($options['json'])) {
             $body = $options['json'];
             $contentType = ContentType::JSON;
-        } elseif (isset($options['form'])) {
-            $body = $options['form'];
+        } elseif (isset($options['form_params'])) {
+            $body = $options['form_params'];
             $contentType = ContentType::FORM_URLENCODED;
         } elseif (isset($options['multipart'])) {
             $body = $options['multipart'];
             $contentType = ContentType::MULTIPART;
         } elseif (isset($options['body'])) {
             $body = $options['body'];
-            // IMPORTANT: Don't auto-convert arrays to JSON here
-            // The content type should be explicitly set
-            $rawContentType = $options['content_type'] ?? null;
+            $rawContentType = $options['content_type'] ?? $options['headers']['Content-Type'] ?? null;
             $contentType = $rawContentType !== null ? ContentType::normalizeContentType($rawContentType) : null;
         }
 
@@ -158,9 +165,9 @@ if (! function_exists('handle_request_with_base_uri')) {
      * @param  string  $resource  URL to fetch
      * @param  array<string, mixed>  $options  Original options
      * @param  array<string, mixed>  $processedOptions  Processed options
-     * @return ResponseInterface|\React\Promise\PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
      */
-    function handle_request_with_base_uri(string $resource, array $options, array $processedOptions): ResponseInterface|\React\Promise\PromiseInterface
+    function handle_request_with_base_uri(string $resource, array $options, array $processedOptions): ResponseInterface|PromiseInterface
     {
         $client = fetch_client();
         $handler = $client->getHandler();
@@ -252,11 +259,11 @@ if (! function_exists('request_method')) {
      * @param  mixed  $data  Request data (for body or query parameters)
      * @param  array<string, mixed>|null  $options  Additional request options
      * @param  bool  $dataIsQuery  Whether data is used as query parameters (true) or request body (false)
-     * @return ResponseInterface|ClientHandlerInterface|Client The response or handler
+     * @return ResponseInterface|PromiseInterface The response or promise
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function request_method(string $method, string $url, mixed $data = null, ?array $options = [], bool $dataIsQuery = false): ResponseInterface|ClientHandlerInterface|Client
+    function request_method(string $method, string $url, mixed $data = null, ?array $options = [], bool $dataIsQuery = false): ResponseInterface|PromiseInterface
     {
         $options = $options ?? [];
         $options['method'] = $method;
@@ -271,7 +278,10 @@ if (! function_exists('request_method')) {
             }
         }
 
-        return fetch($url, $options);
+        /** @var ResponseInterface|PromiseInterface<ResponseInterface> $response */
+        $response = fetch($url, $options);
+
+        return $response;
     }
 }
 
@@ -283,11 +293,11 @@ if (! function_exists('get')) {
      * @param  string  $url  URL to fetch
      * @param  array<string, mixed>|null  $query  Query parameters
      * @param  array<string, mixed>|null  $options  Additional request options
-     * @return ResponseInterface The response
+     * @return ResponseInterface|PromiseInterface The response or promise
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function get(string $url, ?array $query = null, ?array $options = []): ResponseInterface
+    function get(string $url, ?array $query = null, ?array $options = []): ResponseInterface|PromiseInterface
     {
         return request_method('GET', $url, $query, $options, true);
     }
@@ -300,11 +310,11 @@ if (! function_exists('post')) {
      * @param  string  $url  URL to fetch
      * @param  mixed  $data  Request body or JSON data
      * @param  array<string, mixed>|null  $options  Additional request options
-     * @return ResponseInterface The response
+     * @return ResponseInterface|PromiseInterface The response or promise
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function post(string $url, mixed $data = null, ?array $options = []): ResponseInterface
+    function post(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
     {
         return request_method('POST', $url, $data, $options);
     }
@@ -317,11 +327,11 @@ if (! function_exists('put')) {
      * @param  string  $url  URL to fetch
      * @param  mixed  $data  Request body or JSON data
      * @param  array<string, mixed>|null  $options  Additional request options
-     * @return ResponseInterface The response
+     * @return ResponseInterface|PromiseInterface The response or promise
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function put(string $url, mixed $data = null, ?array $options = []): ResponseInterface
+    function put(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
     {
         return request_method('PUT', $url, $data, $options);
     }
@@ -334,11 +344,11 @@ if (! function_exists('patch')) {
      * @param  string  $url  URL to fetch
      * @param  mixed  $data  Request body or JSON data
      * @param  array<string, mixed>|null  $options  Additional request options
-     * @return ResponseInterface The response
+     * @return ResponseInterface|PromiseInterface The response or promise
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function patch(string $url, mixed $data = null, ?array $options = []): ResponseInterface
+    function patch(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
     {
         return request_method('PATCH', $url, $data, $options);
     }
@@ -351,11 +361,11 @@ if (! function_exists('delete')) {
      * @param  string  $url  URL to fetch
      * @param  mixed  $data  Request body or JSON data
      * @param  array<string, mixed>|null  $options  Additional request options
-     * @return ResponseInterface The response
+     * @return ResponseInterface|PromiseInterface The response or promise
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function delete(string $url, mixed $data = null, ?array $options = []): ResponseInterface
+    function delete(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
     {
         return request_method('DELETE', $url, $data, $options);
     }
@@ -420,114 +430,141 @@ if (! function_exists('fetch_sse')) {
 }
 
 // Re-export Matrix async utilities for convenience
-if (! function_exists('async') && function_exists('\\Matrix\\async')) {
+if (! function_exists('async') && function_exists('\\Matrix\\Support\\async')) {
     /**
      * Wraps a callable to run asynchronously and return a promise.
      *
      * @param  callable  $callable  The callable to execute asynchronously
-     * @return \React\Promise\PromiseInterface The promise
+     * @return PromiseInterface The promise
      *
-     * @see \Matrix\async()
+     * @see async()
      */
-    function async(callable $callable): \React\Promise\PromiseInterface
+    function async(callable $callable): PromiseInterface
     {
-        return \Matrix\async($callable);
+        return \Matrix\Support\async($callable);
     }
 }
 
-if (! function_exists('await') && function_exists('\\Matrix\\await')) {
+if (! function_exists('await') && function_exists('\\Matrix\\Support\\await')) {
     /**
      * Waits for a promise to resolve and returns its value.
      *
-     * @param  \React\Promise\PromiseInterface  $promise  The promise to wait for
+     * @param  PromiseInterface  $promise  The promise to wait for
      * @return mixed The resolved value
      *
-     * @see \Matrix\await()
+     * @see await()
      */
-    function await(\React\Promise\PromiseInterface $promise): mixed
+    function await(PromiseInterface $promise, ?float $timeout = null): mixed
     {
-        return \Matrix\await($promise);
+        return \Matrix\Support\await($promise, $timeout);
     }
 }
 
-if (! function_exists('all') && function_exists('\\Matrix\\all')) {
+if (! function_exists('all') && function_exists('\\Matrix\\Support\\all')) {
     /**
      * Executes multiple promises concurrently and waits for all to complete.
      *
-     * @param  array<\React\Promise\PromiseInterface>  $promises  Array of promises
-     * @return \React\Promise\PromiseInterface Promise that resolves with array of results
+     * @param  array<PromiseInterface>  $promises  Array of promises
+     * @return PromiseInterface Promise that resolves with array of results
      *
-     * @see \Matrix\all()
+     * @see all()
      */
-    function all(array $promises): \React\Promise\PromiseInterface
+    function all(array $promises): PromiseInterface
     {
-        return \Matrix\all($promises);
+        return \Matrix\Support\all($promises);
     }
 }
 
-if (! function_exists('race') && function_exists('\\Matrix\\race')) {
+if (! function_exists('any') && function_exists('\\Matrix\\Support\\any')) {
+    /**
+     * Resolves with the first successful promise.
+     *
+     * @param  array<PromiseInterface>  $promises
+     */
+    function any(array $promises): PromiseInterface
+    {
+        return \Matrix\Support\any($promises);
+    }
+}
+
+if (! function_exists('race') && function_exists('\\Matrix\\Support\\race')) {
     /**
      * Executes multiple promises concurrently and returns the first to complete.
      *
-     * @param  array<\React\Promise\PromiseInterface>  $promises  Array of promises
-     * @return \React\Promise\PromiseInterface Promise that resolves with the first result
+     * @param  array<PromiseInterface>  $promises  Array of promises
+     * @return PromiseInterface Promise that resolves with the first result
      *
-     * @see \Matrix\race()
+     * @see race()
      */
-    function race(array $promises): \React\Promise\PromiseInterface
+    function race(array $promises): PromiseInterface
     {
-        return \Matrix\race($promises);
+        return \Matrix\Support\race($promises);
     }
 }
 
-if (! function_exists('map') && function_exists('\\Matrix\\map')) {
+if (! function_exists('map') && function_exists('\\Matrix\\Support\\map')) {
     /**
      * Maps an array of items through an async callback.
      *
      * @param  array<mixed>  $items  Items to process
      * @param  callable  $callback  Callback that returns a promise
      * @param  int  $concurrency  Maximum number of concurrent promises
-     * @return \React\Promise\PromiseInterface Promise that resolves with array of results
+     * @return PromiseInterface Promise that resolves with array of results
      *
-     * @see \Matrix\map()
+     * @see map()
      */
-    function map(array $items, callable $callback, int $concurrency = 5): \React\Promise\PromiseInterface
+    function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
     {
-        return \Matrix\map($items, $callback, $concurrency);
+        return \Matrix\Support\map($items, $callback, $concurrency);
     }
 }
 
-if (! function_exists('batch') && function_exists('\\Matrix\\batch')) {
+if (! function_exists('batch') && function_exists('\\Matrix\\Support\\batch')) {
     /**
      * Processes items in batches with controlled batch size and concurrency.
      *
-     * @param  array<mixed>  $items  Items to process
-     * @param  callable  $callback  Callback that returns a promise
+     * @template TInput
+     * @template TOutput
+     *
+     * @param  array<array-key, TInput>  $items  Items to process
+     * @param  callable(list<TInput>): (iterable<array-key, TOutput>|PromiseInterface<iterable<array-key, TOutput>>)  $callback  Batch callback
      * @param  int  $batchSize  Number of items per batch
      * @param  int  $concurrency  Maximum number of concurrent batches
-     * @return \React\Promise\PromiseInterface Promise that resolves with array of results
+     * @return PromiseInterface<list<TOutput>> Promise that resolves with flattened results
      *
-     * @see \Matrix\batch()
+     * @see batch()
      */
-    function batch(array $items, callable $callback, int $batchSize = 10, int $concurrency = 5): \React\Promise\PromiseInterface
+    function batch(array $items, callable $callback, int $batchSize = 10, int $concurrency = 5): PromiseInterface
     {
-        return \Matrix\batch($items, $callback, $batchSize, $concurrency);
+        return \Matrix\Support\batch($items, $callback, $batchSize, $concurrency);
     }
 }
 
-if (! function_exists('retry') && function_exists('\\Matrix\\retry')) {
+if (! function_exists('retry') && function_exists('\\Matrix\\Support\\retry')) {
     /**
      * Retries an async operation with exponential backoff.
      *
      * @param  callable  $callable  The operation to retry
      * @param  int  $attempts  Maximum number of attempts
      * @param  callable|int  $delay  Delay between retries (ms) or delay function
-     * @return \React\Promise\PromiseInterface Promise that resolves with the result
+     * @return PromiseInterface Promise that resolves with the result
      *
-     * @see \Matrix\retry()
+     * @see retry()
      */
-    function retry(callable $callable, int $attempts = 3, callable|int $delay = 100): \React\Promise\PromiseInterface
+    function retry(callable $callable, int $attempts = 3, callable|int $delay = 100): PromiseInterface
     {
-        return \Matrix\retry($callable, $attempts, $delay);
+        $backoff = is_int($delay)
+            ? static fn (int $_attempt, Throwable $_error): float => $delay / 1000
+            : static function (int $attempt, Throwable $error) use ($delay): float {
+                $delayMilliseconds = $delay($attempt, $error);
+
+                if (! is_int($delayMilliseconds) && ! is_float($delayMilliseconds)) {
+                    throw new InvalidArgumentException('Retry delay callback must return a number of milliseconds.');
+                }
+
+                return $delayMilliseconds / 1000;
+            };
+
+        return \Matrix\Support\retry($callable, $attempts, $backoff);
     }
 }

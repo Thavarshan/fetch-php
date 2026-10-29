@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Fetch\Http;
 
+use InvalidArgumentException;
+
 /**
  * Immutable value object representing a single Server-Sent Event.
  *
@@ -41,6 +43,9 @@ final class ServerSentEvent
      */
     public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed
     {
+        if ($depth < 1) {
+            throw new InvalidArgumentException('JSON decode depth must be greater than 0.');
+        }
         try {
             return json_decode($this->data, $assoc, $depth, $options | JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
