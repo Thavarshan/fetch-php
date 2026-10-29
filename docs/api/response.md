@@ -184,11 +184,23 @@ public function statusEnum(): ?Status
 
 ### `isStatus()`
 
-Check if the response has the given status code.
+Use `isStatus()` as the preferred check for any HTTP status code. It accepts either a `Status` enum case or an integer. The named `isXxx()` convenience methods remain available and delegate to this method.
 
 ```php
 public function isStatus(int|Status $status): bool
 ```
+
+```php
+if ($response->isStatus(Status::NOT_FOUND)) {
+    // Handle a 404 response.
+}
+
+if ($response->isStatus(418)) {
+    // Handle a status code without a named convenience method.
+}
+```
+
+Existing helpers such as `isOk()`, `isCreated()`, `isUnauthorized()`, and `isNotFound()` stay explicit public methods for compatibility and discoverability.
 
 ## Status Category Methods
 
