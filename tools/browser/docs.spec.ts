@@ -36,9 +36,12 @@ test('request tabs support mouse, keyboard, and visible focus',
         await response.press('ArrowLeft');
         await expect(request).toHaveAttribute('aria-selected', 'true');
         await expect(request).toBeFocused();
-        const outline = await request.evaluate((el) =>
-            getComputedStyle(el).outlineStyle);
-        expect(outline).not.toBe('none');
+        const focus = await request.evaluate((el) => ({
+            visible: el.matches(':focus-visible'),
+            shadow: getComputedStyle(el).boxShadow,
+        }));
+        expect(focus.visible).toBe(true);
+        expect(focus.shadow).not.toBe('none');
         await request.press('End');
         await expect(response).toHaveAttribute('aria-selected', 'true');
     });

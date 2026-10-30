@@ -88,7 +88,7 @@ for (const width of [375, 1440]) {
                 await expect(page.locator('.fetch-tooltip')).toHaveCount(0);
                 await button.focus();
                 expect(await button.evaluate((el) =>
-                    getComputedStyle(el).outlineStyle)).not.toBe('none');
+                    getComputedStyle(el).boxShadow)).not.toBe('none');
                 await button.click();
                 await expect(button).toHaveText('Copied');
                 const copied = (await card.boundingBox())!;

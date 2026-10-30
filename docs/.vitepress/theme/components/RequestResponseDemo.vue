@@ -16,13 +16,13 @@ import { data } from '../data/showcases.data';
         <div class="workbench-body">
             <Tabs default-value="request" class="request-tabs">
                 <TabsList
-                    class="mx-5 h-auto min-h-12 w-fit"
+                    class="mx-5 self-start"
                     aria-label="HTTP example views"
                 >
-                    <TabsTrigger value="request" class="min-h-11">
+                    <TabsTrigger value="request">
                         PHP request
                     </TabsTrigger>
-                    <TabsTrigger value="response" class="min-h-11">
+                    <TabsTrigger value="response">
                         JSON response
                     </TabsTrigger>
                 </TabsList>
@@ -121,7 +121,6 @@ import { data } from '../data/showcases.data';
 }
 .request-tabs {
     min-width: 0;
-    gap: 0;
     padding: 14px 0 0;
 }
 .request-tabs :deep(.code-showcase) {

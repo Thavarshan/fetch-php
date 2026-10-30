@@ -12,7 +12,8 @@ body {
     color: var(--site-text);
     background: var(--site-accent-soft);
 }
-:focus-visible {
+/* Shared primitives own their focus rings and offsets. */
+:focus-visible:not([data-slot]) {
     outline: 2px solid var(--site-accent);
     outline-offset: 4px;
 }
