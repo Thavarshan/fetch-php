@@ -4,4 +4,4 @@ set -e # this makes the script fail on first error
 
 composer fix
 composer lint
-php artisan test || true
+NO_NETWORK=1 composer test

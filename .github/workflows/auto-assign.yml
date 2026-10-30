@@ -6,8 +6,13 @@ on:
   pull_request:
     types: [opened]
 
+permissions:
+  contents: read
+
 jobs:
   auto-assign:
+    permissions:
+      issues: write
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

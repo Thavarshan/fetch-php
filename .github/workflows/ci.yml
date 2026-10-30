@@ -8,9 +8,24 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
+  line-length:
+    name: Line Length
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Enforce 80-column project text
+        run: php tools/check-line-length.php
+
   changes:
     runs-on: ubuntu-latest
     outputs:

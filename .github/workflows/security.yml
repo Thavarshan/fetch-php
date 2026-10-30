@@ -12,6 +12,9 @@ on:
   schedule:
     - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
 
+permissions:
+  contents: read
+
 jobs:
   security-audit:
     runs-on: ubuntu-latest

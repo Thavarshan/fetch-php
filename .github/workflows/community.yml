@@ -9,14 +9,15 @@ on:
     types: [created]
 
 permissions:
-  issues: write
-  pull-requests: write
-  discussions: write
+  contents: read
 
 jobs:
   welcome:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
+    permissions:
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Welcome new contributors
@@ -81,6 +82,9 @@ jobs:
   auto-label:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
+    permissions:
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Auto-label issues and PRs
@@ -142,6 +146,9 @@ jobs:
             }
 
   thank-you:
+    permissions:
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     if:
       github.event.action == 'labeled' &&
@@ -174,6 +181,8 @@ jobs:
             });
 
   discussion-welcome:
+    permissions:
+      discussions: write
     runs-on: ubuntu-latest
     if: github.event.action == 'created' && github.event.discussion
 
