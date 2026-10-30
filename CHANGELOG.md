@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [v4.0.1] - 2026-10-30
+
+Release-automation patch. PHP runtime behavior and the public API are unchanged
+from 4.0.0. For upgrades from 3.x, follow the [upgrade guide].
+
+### Fixed
+
+- Verify the published Packagist version and exact source commit through the
+  existing automatic update integration. Replace the redundant authenticated
+  update request, which failed when optional credentials were unset even
+  though the package was already available and installable.
+- Bound indexing retries and fail publication verification on a source mismatch
+  or indexing timeout; no Packagist credentials are required for this check.
+
 ## [v4.0.0] - 2026-10-30
 
 This major release integrates the repository modernization in [#118], request
@@ -107,7 +121,8 @@ execution and validation in [#127], and documentation and release hardening in
 
 See the [upgrade guide] for code examples and transport migration details.
 
-[Unreleased]: https://github.com/Thavarshan/fetch-php/compare/4.0.0...HEAD
+[Unreleased]: https://github.com/Thavarshan/fetch-php/compare/4.0.1...HEAD
+[v4.0.1]: https://github.com/Thavarshan/fetch-php/compare/4.0.0...4.0.1
 [v4.0.0]: https://github.com/Thavarshan/fetch-php/compare/3.8.1...4.0.0
 [#118]: https://github.com/Thavarshan/fetch-php/pull/118
 [#127]: https://github.com/Thavarshan/fetch-php/pull/127

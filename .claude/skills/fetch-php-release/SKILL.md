@@ -184,6 +184,14 @@ gh release view X.Y.Z --repo Thavarshan/fetch-php --json tagName,url,publishedAt
 gh release view X.Y.N --repo Thavarshan/fetch-php --json tagName,url,publishedAt
 ```
 
+## Packagist publication verification
+
+The existing automatic Packagist integration indexes pushed tags. The release
+workflow verifies the published version and exact source commit with bounded
+retries. It does not need a second credentialed update request. If verification
+fails, inspect the public metadata and the automatic integration; never move a
+stable tag to force synchronization.
+
 ## Release Workflow Guardrails
 
 The tag workflow should:
