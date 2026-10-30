@@ -42,6 +42,8 @@ execution and validation in [#127], and documentation and release hardening in
   jobs no longer request unused package-write permission.
 - Pin Scorecard action 2.5.0 to its verified commit, restoring analysis after
   the old hosted image became unavailable.
+- Allow maintainers to run the complete CI matrix manually against the final
+  release commit, including when the last change only updates documentation.
 
 ### Fixed
 
