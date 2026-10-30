@@ -35,6 +35,10 @@ $excludedDirectories = [
     '.phpunit.cache',
     'vendor',
 ];
+$generatedDirectories = [
+    $root.'/docs/.vitepress/.temp',
+    $root.'/docs/.vitepress/cache',
+];
 $generatedFiles = [
     'composer.lock',
     'package-lock.json',
@@ -48,9 +52,14 @@ $filter = new RecursiveCallbackFilterIterator(
     $directory,
     static function (SplFileInfo $entry) use (
         $excludedDirectories,
+        $generatedDirectories,
         $generatedFiles,
     ): bool {
         if ($entry->isDir()) {
+            if (in_array($entry->getPathname(), $generatedDirectories, true)) {
+                return false;
+            }
+
             if (
                 $entry->getFilename() === '_'
                 && basename(dirname($entry->getPathname())) === '.husky'

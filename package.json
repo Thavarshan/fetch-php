@@ -4,14 +4,27 @@
     "scripts": {
         "dev": "vitepress dev docs",
         "build": "vitepress build docs",
+        "typecheck": "vue-tsc --noEmit",
         "check-links": "node tools/check-markdown-links.mjs",
         "preview": "vitepress preview docs",
         "prepare": "husky"
     },
     "devDependencies": {
+        "@tailwindcss/vite": "^4.3.3",
+        "@types/markdown-it-container": "^4.0.1",
         "@types/node": "^22.15.18",
         "husky": "^9.1.7",
+        "markdown-it-container": "^4.0.0",
+        "tailwindcss": "^4.3.3",
         "terser": "^5.39.2",
-        "vitepress": "^1.6.4"
+        "typescript": "^5.9.3",
+        "vitepress": "^1.6.4",
+        "vue-tsc": "^3.3.14"
+    },
+    "dependencies": {
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "reka-ui": "^2.11.0",
+        "tailwind-merge": "^3.7.0"
     }
 }

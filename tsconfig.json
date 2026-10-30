@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "skipLibCheck": true,
+        "paths": {
+            "@/*": ["./docs/.vitepress/theme/*"]
+        }
+    },
+    "include": [
+        "docs/.vitepress/config.mts",
+        "docs/.vitepress/theme/**/*.ts",
+        "docs/.vitepress/theme/**/*.vue"
+    ]
+}
