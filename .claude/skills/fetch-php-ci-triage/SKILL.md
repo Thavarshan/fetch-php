@@ -54,8 +54,9 @@ the underlying test/behavior use `fetch-php-debug-failure`.
     - **coverage/Codecov** → Codecov upload uses `fail_ci_if_error: false`, so a
       Codecov hiccup shouldn't fail the run; a red coverage job means the tests
       themselves failed under Xdebug.
-    - **docs** → reproduce with `npm ci && npm run build`. (`check-links` runs
-      with `|| true`; it never fails the job.)
+    - **docs** → reproduce with `npm ci && npm run build`, then run
+      `composer docs:examples` and `npm run check-links`. These checks fail the
+      job on errors; snippet PHPStan analysis also runs in documentation CI.
 
 3. **Reproduce locally** with the matching PHP version and stability before
    proposing a fix. Use `NO_NETWORK=1` for test jobs.
