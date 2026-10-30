@@ -34,10 +34,12 @@ final class RequestBuilder
             return $options;
         }
 
-        return RequestOptions::replaceBodyOptions($options, [
-            'body' => $body,
-            'content_type' => $contentType,
-        ], $preserveContentType);
+        return RequestOptions::replaceBodyOptions(
+            $options,
+            ['body' => $body],
+            $preserveContentType,
+            $contentType,
+        );
     }
 
     /**

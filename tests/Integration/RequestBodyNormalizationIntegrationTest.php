@@ -237,6 +237,62 @@ final class RequestBodyNormalizationIntegrationTest extends TestCase
         );
     }
 
+    public function test_custom_headers_do_not_change_selected_body_encoding(
+    ): void {
+        $history = [];
+        $handler = $this->createHandler($history, 3);
+
+        $handler
+            ->withHeader('Content-Type', 'text/plain')
+            ->post(
+                'https://example.test/handler-form',
+                ['name' => 'Ada'],
+                ContentType::FORM_URLENCODED,
+            );
+
+        $handler->request(
+            Method::POST,
+            'https://example.test/request-form',
+            ['name' => 'Grace'],
+            ContentType::FORM_URLENCODED,
+            ['headers' => ['Content-Type' => 'text/plain']],
+        );
+
+        $handler->post(
+            'https://example.test/handler-multipart',
+            [['name' => 'upload', 'contents' => 'fixture']],
+            ContentType::MULTIPART,
+        );
+
+        self::assertSame(
+            'name=Ada',
+            (string) $history[0]['request']->getBody(),
+        );
+        self::assertSame(
+            'text/plain',
+            $history[0]['request']->getHeaderLine('Content-Type'),
+        );
+
+        self::assertSame(
+            'name=Grace',
+            (string) $history[1]['request']->getBody(),
+        );
+        self::assertSame(
+            'text/plain',
+            $history[1]['request']->getHeaderLine('Content-Type'),
+        );
+
+        $multipartRequest = $history[2]['request'];
+        self::assertStringStartsWith(
+            'multipart/form-data; boundary=',
+            $multipartRequest->getHeaderLine('Content-Type'),
+        );
+        self::assertStringContainsString(
+            'fixture',
+            (string) $multipartRequest->getBody(),
+        );
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $history
      */

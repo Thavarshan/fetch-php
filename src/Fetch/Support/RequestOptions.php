@@ -223,8 +223,10 @@ class RequestOptions
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public static function normalizeBodyOptions(array $options): array
-    {
+    public static function normalizeBodyOptions(
+        array $options,
+        ContentType|string|null $serializationType = null,
+    ): array {
         $headers = $options['headers'] ?? [];
         $contentTypeOverride = $options['content_type'] ?? null;
 
@@ -272,11 +274,9 @@ class RequestOptions
         } elseif (isset($options['body'])) {
             $options = self::stripBodyOptionsExcept($options, ['body']);
             if (is_array($options['body'])) {
-                $explicitContentType =
-                    $contentTypeOverride ?? self::getHeaderValue(
-                        $headers,
-                        'Content-Type',
-                    );
+                $explicitContentType = $contentTypeOverride ??
+                    $serializationType ??
+                    self::getHeaderValue($headers, 'Content-Type');
                 $explicitContentType =
                     $explicitContentType instanceof ContentType
                         ? $explicitContentType->value
@@ -328,9 +328,11 @@ class RequestOptions
                         $setContentType($explicitContentType);
                     }
                 }
-            } elseif ($contentTypeOverride !== null) {
-                // String/stream body with explicit content type
-                $setContentType($contentTypeOverride);
+            } elseif (
+                $contentTypeOverride !== null || $serializationType !== null
+            ) {
+                // Keep an explicit header while recording the body format.
+                $setContentType($contentTypeOverride ?? $serializationType);
             }
         }
 
@@ -354,6 +356,7 @@ class RequestOptions
         array $options,
         array $bodyOptions,
         bool $preserveContentType = true,
+        ContentType|string|null $serializationType = null,
     ): array {
         $options = self::stripBodyOptionsExcept($options, []);
 
@@ -361,7 +364,10 @@ class RequestOptions
             $options = self::withoutHeader($options, 'Content-Type');
         }
 
-        return self::normalizeBodyOptions(array_merge($options, $bodyOptions));
+        return self::normalizeBodyOptions(
+            array_merge($options, $bodyOptions),
+            $serializationType,
+        );
     }
 
     /**
@@ -388,7 +394,36 @@ class RequestOptions
     public static function getExplicitContentType(
         array $options,
     ): ContentType|string|null {
-        $value = $options['content_type'] ?? self::getHeaderValue(
+        return self::getExplicitContentTypeOption($options) ??
+            self::getExplicitContentTypeHeader($options);
+    }
+
+    /**
+     * Get a content type supplied as an option, separate from a header.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function getExplicitContentTypeOption(
+        array $options,
+    ): ContentType|string|null {
+        $value = $options['content_type'] ?? null;
+
+        if ($value instanceof ContentType || is_string($value)) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get a Content-Type header supplied in an option set.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function getExplicitContentTypeHeader(
+        array $options,
+    ): ContentType|string|null {
+        $value = self::getHeaderValue(
             $options['headers'] ?? [],
             'Content-Type',
         );

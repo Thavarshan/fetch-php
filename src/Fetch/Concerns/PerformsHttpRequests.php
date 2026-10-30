@@ -505,11 +505,14 @@ trait PerformsHttpRequests
         $explicitContentType =
             RequestOptions::getExplicitContentType($requestOptions) ??
             $this->explicitContentType;
+        $serializationType =
+            RequestOptions::getExplicitContentTypeOption($requestOptions) ??
+            $contentType;
 
         return $this->requestBuilder->applyBodyOptions(
             $options,
             $body,
-            $explicitContentType ?? $contentType,
+            $serializationType,
             $explicitContentType !== null,
         );
     }
