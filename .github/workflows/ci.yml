@@ -216,7 +216,7 @@ jobs:
         run: php tools/assert-coverage.php coverage/index.xml 80
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         if: github.event_name != 'schedule'
         with:
           file: ./coverage/clover.xml
