@@ -66,6 +66,8 @@ execution and validation in [#127], and documentation and release hardening in
 - Preserve validation dependency/configuration exception types across sync and
   async response paths. Keep syntax-check temporary files outside the project
   so documentation checks and the width checker can run concurrently.
+- Include `composer.json` in release archives and verify essential package
+  files before publication.
 
 ### Security
 

@@ -74,6 +74,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify release archive contents
+        run: |
+          archive_files="$RUNNER_TEMP/release-archive-files"
+          git archive --format=tar HEAD | tar -tf - > "$archive_files"
+          for path in composer.json LICENSE src/Fetch/Support/helpers.php; do
+            if ! grep -Fxq "$path" "$archive_files"; then
+              echo "Release archive is missing $path"
+              exit 1
+            fi
+          done
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
