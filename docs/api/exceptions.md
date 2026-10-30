@@ -14,8 +14,9 @@ Optional validation uses exceptions under `Fetch\Validation`:
 - `ValidationDependencyException` identifies a missing optional adapter.
 - `ValidationConfigurationException` identifies an invalid schema or policy.
 
-The validation exception types are preserved in synchronous requests and async
-rejections, including mock and middleware short circuits. See
+Handler and convenience requests preserve the validation exception types in
+synchronous calls and async rejections, including mock and middleware short
+circuits. See
 [validation](/guide/validation) for the configured lifecycle boundaries.
 
 ## HTTP client exceptions
@@ -25,6 +26,9 @@ implements the PSR client exception contract. `NetworkException` implements PSR
 `NetworkExceptionInterface`; `RequestException` includes the relevant
 request/response context; `HttpException` is a legacy runtime exception that can
 carry a response.
+
+PSR-18 `Client::sendRequest()` maps validation failures to client exceptions,
+retaining the original failure as the previous exception.
 
 HTTP status codes are normally returned as responses rather than thrown. Catch
 client exceptions for transport/request failures, and inspect response status
