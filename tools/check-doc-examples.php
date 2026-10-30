@@ -56,7 +56,7 @@ foreach ($markdownFiles as $file) {
         $source = str_starts_with(ltrim($code), '<?php')
             ? $code
             : "<?php\n".$code;
-        $temporaryFile = tempnam($root, '.doc-example-');
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'fetch-doc-example-');
 
         if ($temporaryFile === false) {
             throw new RuntimeException(
