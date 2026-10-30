@@ -27,7 +27,7 @@ existing test deterministic. For diagnosing _why_ a test fails, use
   fakes go in `tests/Mocks/` (excluded from the suite and PHPStan).
 - Extend `Tests\TestCase` when you touch global state — it resets
   `GlobalServices` in `tearDown`. Also reset `MockServer::resetInstance()` and
-  `fetch_client(reset: true)` when used. `src/Fetch/Support` is excluded from
+  `fetch_client(reset: true)` when used. `src/Fetch/Support` is included in
   coverage.
 
 ## Faking HTTP (never hit the network)

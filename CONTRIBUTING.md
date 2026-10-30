@@ -307,6 +307,17 @@ For feature requests, describe:
 - Alternative approaches considered
 - Example usage
 
+## Documentation dependencies
+
+The documentation uses stable VitePress 1.6.x and Node.js 20 in CI. Run
+`npm audit --omit=dev` for the production dependency gate and `npm audit` to
+review the complete build-tool graph. Remaining Vite/esbuild development-server
+advisories are tracked in [#131]. Keep development servers local; published
+documentation is a static build. PHP consumer dependencies are managed and
+audited separately with Composer.
+
+[#131]: https://github.com/Thavarshan/fetch-php/issues/131
+
 ## Security Issues
 
 **DO NOT** report security vulnerabilities in public issues.

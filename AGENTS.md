@@ -113,7 +113,7 @@ There is no `bin/` script directory. `composer lint` does not run PHPStan; use
   keep every test offline and deterministic.
 - Avoid `sleep()`/wall-clock assertions; test timing, retry, cancellation, and
   error paths with fakes and injected clocks/strategies.
-- Add a regression test with every bug fix. Coverage excludes
+- Add a regression test with every bug fix. Coverage includes
   `src/Fetch/Support`.
 
 ## Public API & backward compatibility
