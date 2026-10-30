@@ -6,6 +6,8 @@ description:
 
 # Guides
 
+<Badge type="info" text="PHP 8.3+" />
+
 Use the guides to learn the library from installation through advanced
 integrations. The public API is described in the [API reference](/api/).
 

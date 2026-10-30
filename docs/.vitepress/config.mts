@@ -1,7 +1,9 @@
 import { defineConfig, type HeadConfig } from 'vitepress';
-import container from 'markdown-it-container';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { getSyntaxThemes } from './theme/syntax-themes';
+
+const syntaxThemes = await getSyntaxThemes();
 
 const siteUrl = 'https://fetch-php.thavarshan.com/';
 const siteTitle = 'FetchPHP';
@@ -311,71 +313,14 @@ export default defineConfig({
         },
     },
     markdown: {
-        theme: {
-            light: 'github-light',
-            dark: 'github-dark',
-        },
-        config(md) {
-            [
-                'landing-strip',
-                'landing-section',
-                'landing-feature-list',
-                'landing-async',
-                'landing-close',
-            ].forEach((name) => md.use(container, name));
-            [
-                'landing-section-copy',
-                'landing-section-code',
-                'landing-async-copy',
-                'landing-async-code',
-                'landing-close-copy',
-                'landing-close-actions',
-            ].forEach((name) => md.use(container, name, { marker: '=' }));
-            md.use(container, 'landing-tabs', {
-                render(
-                    tokens: { nesting: number }[],
-                    index: number,
-                ) {
-                    if (tokens[index].nesting === 1) {
-                        return [
-                            '<div class="landing-demo">',
-                            '<div class="landing-demo-label">',
-                            '<p>Request inspector',
-                            '<span>GET · /v1/users/42</span></p></div>',
-                            '<Tabs default-value="request"',
-                            'class="landing-tabs">',
-                            '<TabsList class="landing-tabs-list"',
-                            'aria-label="Request example views">',
-                            '<TabsTrigger value="request"',
-                            'class="landing-tab-trigger">PHP request',
-                            '</TabsTrigger>',
-                            '<TabsTrigger value="response"',
-                            'class="landing-tab-trigger">Response',
-                            '</TabsTrigger></TabsList>',
-                        ].join(' ');
-                    }
-
-                    return '</Tabs></div>';
-                },
-            });
-            [
-                ['landing-tab-request', 'request'],
-                ['landing-tab-response', 'response'],
-            ].forEach(([name, value]) => {
-                md.use(container, name, {
-                    marker: '=',
-                    render(
-                        tokens: { nesting: number }[],
-                        index: number,
-                    ) {
-                        return tokens[index].nesting === 1
-                            ? `<TabsContent value="${value}" `
-                                + 'class="landing-tab-panel">'
-                            : '</TabsContent>';
-                    },
-                });
-            });
-        },
+        theme: syntaxThemes,
+        codeTransformers: [{
+            pre(node) {
+                node.properties.tabindex = 0;
+                node.properties.role = 'region';
+                node.properties['aria-label'] = 'Code example';
+            },
+        }],
     },
     vite: {
         plugins: [tailwindcss()],

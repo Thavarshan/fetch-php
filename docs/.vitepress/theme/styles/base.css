@@ -1,0 +1,126 @@
+html {
+    scroll-padding-top: calc(var(--vp-nav-height) + 28px);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+}
+body {
+    color: var(--site-text);
+    background: var(--site-bg);
+    -webkit-font-smoothing: antialiased;
+}
+::selection {
+    color: var(--site-text);
+    background: var(--site-accent-soft);
+}
+/* Shared primitives own their focus rings and offsets. */
+:focus-visible:not([data-slot]) {
+    outline: 2px solid var(--site-accent);
+    outline-offset: 4px;
+}
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.site-container {
+    width: min(1240px, calc(100% - 96px));
+    margin: 0 auto;
+}
+.eyebrow {
+    margin: 0 0 22px;
+    color: var(--site-accent);
+    font-family: var(--vp-font-family-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.07em;
+    line-height: 1.6;
+    text-transform: uppercase;
+}
+.text-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 32px;
+    color: var(--site-accent);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+}
+.text-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 5px;
+}
+.VPNavBarTitle .title {
+    font-size: 20px;
+    font-weight: 650;
+    letter-spacing: -0.055em;
+}
+.VPNavBar .divider,
+.VPNavBar .divider-line {
+    display: none;
+}
+.VPNavBar .content-body {
+    border-bottom: 1px solid var(--site-border);
+    background: var(--site-bg);
+}
+.VPNavBarMenuLink {
+    font-size: 14px;
+}
+.VPNavBarSearch .DocSearch-Button {
+    min-height: 40px;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius);
+    background: var(--site-surface);
+}
+.VPNavBarSearch .DocSearch-Button:hover {
+    border-color: var(--site-accent);
+}
+.VPNavBarSearch .DocSearch-Button:focus-visible {
+    outline: 2px solid var(--site-accent);
+    outline-offset: 3px;
+}
+.VPLocalSearchBox .shell {
+    border: 1px solid var(--site-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--site-shadow);
+}
+.VPFooter {
+    border-top: 0;
+    background: var(--site-bg);
+}
+.VPFooter .message,
+.VPFooter .copyright {
+    color: var(--site-muted);
+    font-size: 13px;
+}
+@media (min-width: 960px) {
+    .VPNavBar.has-sidebar #local-search {
+        width: min(360px, 100%);
+    }
+    .VPNavBar.has-sidebar #local-search .DocSearch-Button {
+        justify-content: space-between;
+        width: 100%;
+    }
+}
+@media (max-width: 767px) {
+    .site-container {
+        width: calc(100% - 40px);
+    }
+    .eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.05em;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

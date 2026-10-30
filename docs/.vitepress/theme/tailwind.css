@@ -1,30 +1,36 @@
 @import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+@import 'tailwindcss/utilities.css';
 
 @source '../../';
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --color-background: var(--site-bg);
-    --color-foreground: var(--site-text);
-    --color-card: var(--site-surface);
-    --color-card-foreground: var(--site-text);
-    --color-popover: var(--site-surface);
-    --color-popover-foreground: var(--site-text);
-    --color-primary: var(--site-highlight);
-    --color-primary-foreground: #172840;
-    --color-secondary: var(--site-surface-raised);
-    --color-secondary-foreground: var(--site-text);
-    --color-muted: var(--site-surface-raised);
-    --color-muted-foreground: var(--site-muted);
-    --color-accent: var(--site-accent-soft);
-    --color-accent-foreground: var(--site-text);
-    --color-destructive: #b42318;
-    --color-border: var(--site-border);
-    --color-input: var(--site-border);
-    --color-ring: var(--site-accent);
-    --radius-sm: 0.25rem;
-    --radius-md: 0.375rem;
-    --radius-lg: 0.5rem;
-    --radius-xl: 0.75rem;
+    --font-sans: var(--vp-font-family-base);
+    --font-mono: var(--vp-font-family-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+}
+
+@theme {
+    --radius-xs: calc(var(--radius) - 6px);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
 }

@@ -75,6 +75,8 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 - Full gate: `composer check` runs analysis, lint, and tests.
 - Docs development: `npm run dev`.
 - Docs build: `npm run build`.
+- Docs types: `npm run typecheck`.
+- Docs browser checks: `npm run test:browser` (build first).
 
 Focused runs use `./vendor/bin/phpunit --filter=some_method` or a test path.
 Composer forwards arguments too: `composer test -- --filter=some_method`.
