@@ -57,6 +57,15 @@ class ConfiguresRequestsTest extends TestCase
         $this->assertEquals($params, $this->handler->getOptions()['query']);
     }
 
+    public function test_with_options_replaces_array_query_with_string(): void
+    {
+        $this->handler
+            ->withOptions(['query' => ['page' => 1]])
+            ->withOptions(['query' => 'q=A%20B']);
+
+        $this->assertSame('q=A%20B', $this->handler->getOptions()['query']);
+    }
+
     public function test_with_json_body(): void
     {
         $data = ['name' => 'John Doe', 'email' => 'john@example.com'];

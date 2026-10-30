@@ -134,6 +134,8 @@ class ClientHandler implements ClientHandlerInterface
 
     private ContentType|string|null $explicitContentType = null;
 
+    private ContentType|string|null $explicitContentTypeOption = null;
+
     /**
      * ClientHandler constructor.
      *
@@ -179,6 +181,11 @@ class ClientHandler implements ClientHandlerInterface
         // Track only caller-supplied Content-Type values. Inferred values are
         // replaced when a later body setter selects a different format.
         $defaultOptions = self::getDefaultOptions();
+        $this->explicitContentTypeOption =
+            FetchRequestOptions::getExplicitContentTypeOption($this->options) ??
+            FetchRequestOptions::getExplicitContentTypeOption(
+                $defaultOptions,
+            );
         $this->explicitContentType =
             FetchRequestOptions::getExplicitContentType($this->options) ??
             FetchRequestOptions::getExplicitContentType($defaultOptions);

@@ -47,6 +47,13 @@ trait ConfiguresRequests
         ) || array_key_exists('content_type', $options);
         $contentType = RequestOptions::getExplicitContentType($options);
 
+        if (array_key_exists('content_type', $options)) {
+            $this->explicitContentTypeOption =
+                RequestOptions::getExplicitContentTypeOption($options);
+        } elseif ($hasContentType) {
+            $this->explicitContentTypeOption = null;
+        }
+
         if ($hasBody) {
             $normalized = RequestOptions::normalizeBodyOptions($options);
 
@@ -56,6 +63,7 @@ trait ConfiguresRequests
                     'Content-Type',
                 );
                 $this->explicitContentType = null;
+                $this->explicitContentTypeOption = null;
             } elseif ($hasContentType) {
                 $this->explicitContentType = $contentType;
 
@@ -130,6 +138,7 @@ trait ConfiguresRequests
                     RequestOptions::getExplicitContentType([
                         'headers' => $value,
                     ]);
+                $this->explicitContentTypeOption = null;
             }
 
             return $this;
@@ -140,6 +149,7 @@ trait ConfiguresRequests
                 is_string($value)
                 ? $value
                 : null;
+            $this->explicitContentTypeOption = $this->explicitContentType;
         }
 
         $this->options[$key] = $value;
@@ -222,6 +232,7 @@ trait ConfiguresRequests
                 RequestOptions::getExplicitContentType([
                     'headers' => $headers,
                 ]);
+            $this->explicitContentTypeOption = null;
         }
 
         return $this;
@@ -246,6 +257,7 @@ trait ConfiguresRequests
                 RequestOptions::getExplicitContentType([
                     'headers' => [$header => $value],
                 ]);
+            $this->explicitContentTypeOption = null;
         }
 
         return $this;
@@ -427,6 +439,7 @@ trait ConfiguresRequests
     {
         $this->options = [];
         $this->explicitContentType = null;
+        $this->explicitContentTypeOption = null;
         $this->timeout = null;
         $this->maxRetries = null;
         $this->retryDelay = null;
@@ -508,20 +521,30 @@ trait ConfiguresRequests
         array $bodyOptions,
         ContentType|string|null $serializationType = null,
     ): void {
+        $effectiveSerializationType =
+            $this->explicitContentTypeOption ?? $serializationType;
         $multipart = isset($bodyOptions['multipart']) ||
             $this->isMultipartContentType(
-                $serializationType ?? $bodyOptions['content_type'] ?? null,
+                $effectiveSerializationType ??
+                $bodyOptions['content_type'] ??
+                null,
             );
 
         if ($multipart) {
             $this->explicitContentType = null;
+            $this->explicitContentTypeOption = null;
+        } elseif (
+            $this->explicitContentTypeOption !== null &&
+            ! array_key_exists('content_type', $bodyOptions)
+        ) {
+            $bodyOptions['content_type'] = $this->explicitContentTypeOption;
         }
 
         $this->options = RequestOptions::replaceBodyOptions(
             $this->options,
             $bodyOptions,
             $this->explicitContentType !== null,
-            $serializationType,
+            $effectiveSerializationType,
         );
     }
 

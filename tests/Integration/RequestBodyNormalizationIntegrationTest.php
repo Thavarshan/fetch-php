@@ -391,6 +391,49 @@ final class RequestBodyNormalizationIntegrationTest extends TestCase
         );
     }
 
+    public function test_content_type_option_survives_header_configuration(
+    ): void {
+        $history = [];
+        $handler = $this->createHandler($history, 2);
+
+        $handler
+            ->withOption('content_type', ContentType::TEXT)
+            ->withHeader('Accept', 'application/json')
+            ->withBody('hello')
+            ->sendRequest(Method::POST, 'https://example.test/pending-type');
+
+        $handler
+            ->reset()
+            ->withOption(
+                'content_type',
+                ContentType::FORM_URLENCODED,
+            )
+            ->withHeader('Accept', 'application/json')
+            ->sendRequest(
+                Method::POST,
+                'https://example.test/pending-form',
+                ['body' => ['name' => 'Ada']],
+            );
+
+        self::assertSame(
+            'hello',
+            (string) $history[0]['request']->getBody(),
+        );
+        self::assertSame(
+            ContentType::TEXT->value,
+            $history[0]['request']->getHeaderLine('Content-Type'),
+        );
+
+        self::assertSame(
+            'name=Ada',
+            (string) $history[1]['request']->getBody(),
+        );
+        self::assertSame(
+            ContentType::FORM_URLENCODED->value,
+            $history[1]['request']->getHeaderLine('Content-Type'),
+        );
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $history
      */

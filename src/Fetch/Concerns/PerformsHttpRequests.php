@@ -248,6 +248,15 @@ trait PerformsHttpRequests
 
         if (
             RequestOptions::hasBodyOption($options) &&
+            ! array_key_exists('content_type', $options) &&
+            RequestOptions::getExplicitContentTypeHeader($options) === null &&
+            $this->explicitContentTypeOption !== null
+        ) {
+            $options['content_type'] = $this->explicitContentTypeOption;
+        }
+
+        if (
+            RequestOptions::hasBodyOption($options) &&
             $this->explicitContentType === null
         ) {
             $baseOptions = RequestOptions::withoutHeader(
@@ -502,8 +511,24 @@ trait PerformsHttpRequests
         ContentType|string $contentType,
         array $requestOptions = [],
     ): array {
-        $contentTypeOption =
-            RequestOptions::getExplicitContentTypeOption($requestOptions);
+        $requestContentTypeOption = array_key_exists(
+            'content_type',
+            $requestOptions,
+        )
+            ? RequestOptions::getExplicitContentTypeOption($requestOptions)
+            : null;
+        $contentTypeOption = array_key_exists(
+            'content_type',
+            $requestOptions,
+        )
+            ? $requestContentTypeOption
+            : (
+                RequestOptions::getExplicitContentTypeHeader(
+                    $requestOptions,
+                ) === null
+                    ? $this->explicitContentTypeOption
+                    : null
+            );
         $explicitContentType =
             RequestOptions::getExplicitContentType($requestOptions) ??
             $this->explicitContentType;

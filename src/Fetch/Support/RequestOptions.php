@@ -160,7 +160,12 @@ class RequestOptions
             }
 
             // Deep merge query parameters
-            if (isset($options['query']) && isset($result['query'])) {
+            if (
+                isset($options['query']) &&
+                isset($result['query']) &&
+                is_array($options['query']) &&
+                is_array($result['query'])
+            ) {
                 $options['query'] = array_merge(
                     $result['query'],
                     $options['query'],
