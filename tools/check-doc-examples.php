@@ -110,9 +110,36 @@ foreach ($exampleFiles as $file) {
     }
 }
 
+$application = $root.'/docs/examples/app/quickstart.php';
+$sandbox = sys_get_temp_dir().'/fetch-doc-app-'.bin2hex(random_bytes(6));
+mkdir($sandbox.'/vendor', 0777, true);
+
+try {
+    $bootstrap = "<?php\nrequire "
+        .var_export($root.'/vendor/autoload.php', true).";\n"
+        ."Fetch\\Testing\\MockServer::fake([\n"
+        ."'GET https://jsonplaceholder.typicode.com/users/1' => "
+        ."Fetch\\Testing\\MockResponse::json(['name' => 'Ada Lovelace'])"
+        ."]);\nFetch\\Testing\\MockServer::preventStrayRequests();\n";
+    file_put_contents($sandbox.'/vendor/autoload.php', $bootstrap);
+    copy($application, $sandbox.'/example.php');
+    [$exitCode, $output] = $run([PHP_BINARY, $sandbox.'/example.php']);
+
+    if ($exitCode !== 0 || trim($output) !== 'Ada Lovelace') {
+        throw new RuntimeException(
+            "The application quickstart failed offline:\n".$output,
+        );
+    }
+} finally {
+    unlink($sandbox.'/example.php');
+    unlink($sandbox.'/vendor/autoload.php');
+    rmdir($sandbox.'/vendor');
+    rmdir($sandbox);
+}
+
 printf(
     'Checked syntax for %d Markdown PHP block(s) and executed '
         ."%d offline PHP example(s).\n",
     $phpBlocks,
-    count($exampleFiles),
+    count($exampleFiles) + 1,
 );

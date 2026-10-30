@@ -329,12 +329,25 @@ Shared tokens live in `theme/styles/tokens.css`. `base.css` owns site chrome;
 `documentation.css` owns deliberate VitePress overrides. Complex homepage
 compositions use scoped component styles. Tailwind v4 utilities omit Preflight
 to preserve VitePress's Markdown rendering. shadcn-vue Button, Tabs, and Tooltip
-components use Reka UI; VitePress retains navigation, search, and theme state.
+components use Reka UI and the upstream New York variants. Slate semantic
+colors are the source of truth; VitePress and site tokens reference them.
+Only primary and focus colors carry the blue brand. Keep component appearance
+in the shared variants, rather than overriding it from page CSS. Utilities
+are unlayered so explicit variants outrank VitePress resets without Preflight.
+The outline variant explicitly supplies `border-border` to outrank
+VitePress's button reset. Component and surface radii derive from `--radius`;
+do not hardcode parallel corner values. Copy controls use outline buttons and
+reserve their feedback space.
+VitePress retains navigation, search, and theme state. A small focus-trap
+adapter contains mobile menu focus and restores dismissed search focus.
 
 The homepage data loader highlights PHP fixtures with the same Shiki 2.x
 version used by VitePress. It extracts `@showcase` regions from offline-tested
 PHP files. The JSON response fixture is shared by the PHP check and UI. Do not
 hand-copy API examples into component strings or send live demo requests.
+Quickstart presents a normal Composer application first. Its exact file runs
+in an offline sandbox during verification; the separate complete fixture
+explains test setup without putting it in the application example.
 
 ```sh
 npm ci
@@ -349,8 +362,11 @@ composer docs:examples
 The Playwright suite runs only against the local static preview, rejects
 external requests, and checks SSR, built-in theme initialization, tabs,
 clipboard feedback, local search, theme switching, mobile navigation, runtime
-errors, and overflow. It captures the homepage and an article at five widths in
-both themes. Reports and screenshots go to ignored `.artifacts/` directories;
+errors, keyboard focus containment/restoration, copy resets, table/code
+scrolling, sampled text contrast, and stable installation geometry. It captures
+the homepage, Quickstart, async guide, API, and examples at five widths in both
+themes. These checks do not certify WCAG compliance or replace visual review.
+Reports and screenshots go to ignored `.artifacts/` directories;
 CI uploads them for review. On macOS, the configuration can use installed
 Chrome; CI uses Playwright's matching Chromium build.
 
@@ -358,6 +374,8 @@ Playwright is an Apache-2.0 development dependency for browser verification.
 Shiki is an MIT build dependency, already used transitively by VitePress; the
 explicit declaration supports the homepage data loader. These tools do not
 change Composer dependencies, PHP compatibility, or the consumer package.
+The MIT focus-trap dependency matches VitePress's existing 7.x dependency and
+supports the mobile menu adapter without introducing a second major version.
 
 
 ## Security Issues

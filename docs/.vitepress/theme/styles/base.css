@@ -67,7 +67,7 @@ body {
     background: var(--site-bg);
 }
 .VPNavBarMenuLink {
-    font-size: 13px;
+    font-size: 14px;
 }
 .VPNavBarSearch .DocSearch-Button {
     min-height: 40px;
@@ -84,7 +84,7 @@ body {
 }
 .VPLocalSearchBox .shell {
     border: 1px solid var(--site-border);
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     box-shadow: var(--site-shadow);
 }
 .VPFooter {
@@ -94,19 +94,7 @@ body {
 .VPFooter .message,
 .VPFooter .copyright {
     color: var(--site-muted);
-    font-size: 12px;
-}
-[data-slot='button'] {
-    min-height: 44px;
-    border-radius: var(--site-radius);
-    font-weight: 500;
-    text-decoration: none;
-}
-a[data-slot='button'] {
-    color: inherit;
-}
-a[data-slot='button'][data-variant='default'] {
-    color: var(--site-accent-contrast);
+    font-size: 13px;
 }
 @media (min-width: 960px) {
     .VPNavBar.has-sidebar #local-search {

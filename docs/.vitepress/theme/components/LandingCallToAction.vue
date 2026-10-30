@@ -17,10 +17,13 @@ import { Button } from './ui/button';
                     The documentation takes it from there.
                 </p>
                 <div class="flex flex-wrap gap-3">
-                    <Button as-child size="lg">
+                    <Button as-child size="lg" class="min-h-11">
                         <a href="/guide/quickstart">Read the quickstart →</a>
                     </Button>
-                    <Button as-child size="lg" variant="outline">
+                    <Button
+                        as-child size="lg"
+                        class="min-h-11" variant="outline"
+                    >
                         <a href="/api/">Explore the API</a>
                     </Button>
                 </div>

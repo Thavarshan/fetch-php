@@ -1,62 +1,48 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { cn } from '@/lib/utils';
-import { TabsTrigger as PrimitiveTabsTrigger } from 'reka-ui';
+import type { TabsTriggerProps } from "reka-ui";
+import type { HTMLAttributes } from "vue";
+import { computed } from "vue";
+import { cn } from "@/lib/utils";
+import { TabsTrigger, useForwardProps } from "reka-ui";
 
-interface Props {
-    class?: string;
-    disabled?: boolean;
-    value: string;
-}
+const props = defineProps<
+    TabsTriggerProps & { class?: HTMLAttributes["class"] }
+>();
 
-const props = defineProps<Props>();
 const delegatedProps = computed(() => {
-    const attributes = { ...props };
-    delete attributes.class;
-
-    return attributes;
+    const { class: _, ...rest } = props;
+    return rest;
 });
+
+const forwardedProps = useForwardProps(delegatedProps);
 </script>
 
 <template>
-    <PrimitiveTabsTrigger
+    <TabsTrigger
         data-slot="tabs-trigger"
-        v-bind="delegatedProps"
-        :class="cn(
-            [
-                'inline-flex',
-                'flex-1',
-                'items-center',
-                'justify-center',
-                'gap-1.5',
-                'rounded-sm',
-                'border',
-                'border-transparent',
-                'px-3',
-                'py-1.5',
-                'text-sm',
-                'font-medium',
-                'whitespace-nowrap',
-                'transition-colors',
-                'disabled:pointer-events-none',
-                'disabled:opacity-50',
-                'focus-visible:outline-1',
-                'focus-visible:outline-ring',
-                'focus-visible:ring-3',
-                'focus-visible:ring-ring/50',
-                'data-[state=active]:bg-background',
-                'data-[state=active]:text-foreground',
-                'data-[state=active]:shadow-sm',
-                'dark:text-muted-foreground',
-                'dark:data-[state=active]:border-input',
-                'dark:data-[state=active]:bg-input/30',
-                '[&_svg]:pointer-events-none',
-                '[&_svg]:shrink-0',
-                '[&_svg:not([class*=size-])]:size-4',
-            ],
-            props.class,
-        )"
+        :class="
+            cn(
+                `
+data-[state=active]:bg-background
+dark:data-[state=active]:text-foreground
+focus-visible:border-ring focus-visible:ring-ring/50
+focus-visible:outline-ring
+dark:data-[state=active]:border-input
+dark:data-[state=active]:bg-input/30 text-foreground
+dark:text-muted-foreground inline-flex h-[calc(100%-1px)]
+flex-1 items-center justify-center gap-1.5 rounded-md border
+border-transparent px-2 py-1 text-sm font-medium
+whitespace-nowrap transition-[color,box-shadow]
+focus-visible:ring-3 focus-visible:outline-1
+disabled:pointer-events-none disabled:opacity-50
+data-[state=active]:shadow-sm [&_svg]:pointer-events-none
+[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4
+`,
+                props.class,
+            )
+        "
+        v-bind="forwardedProps"
     >
         <slot />
-    </PrimitiveTabsTrigger>
+    </TabsTrigger>
 </template>

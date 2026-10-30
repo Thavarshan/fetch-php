@@ -1,35 +1,54 @@
 <script setup lang="ts">
-import { TooltipContent, TooltipPortal } from 'reka-ui';
+import type { TooltipContentEmits, TooltipContentProps } from "reka-ui";
+import type { HTMLAttributes } from "vue";
+import { computed } from "vue";
+import { cn } from "@/lib/utils";
+import {
+    TooltipArrow,
+    TooltipContent,
+    TooltipPortal,
+    useForwardPropsEmits,
+} from "reka-ui";
 
-withDefaults(defineProps<{
-    side?: 'top' | 'right' | 'bottom' | 'left';
-    sideOffset?: number;
-}>(), { side: 'top', sideOffset: 6 });
+defineOptions({
+    inheritAttrs: false,
+});
+
+const props = withDefaults(
+    defineProps<TooltipContentProps & { class?: HTMLAttributes["class"] }>(),
+    {
+        sideOffset: 4,
+    },
+);
+
+const emits = defineEmits<TooltipContentEmits>();
+
+const delegatedProps = computed(() => {
+    const { class: _, ...rest } = props;
+    return rest;
+});
+const forwarded = useForwardPropsEmits(delegatedProps, emits);
 </script>
 
 <template>
     <TooltipPortal>
         <TooltipContent
             data-slot="tooltip-content"
-            class="tooltip-content"
-            :side="side"
-            :side-offset="sideOffset"
+            v-bind="{ ...forwarded, ...$attrs }"
+            :class="
+                cn(
+                    `bg-foreground text-background z-50 w-fit rounded-md
+        px-3 py-1.5 text-xs text-balance shadow-md`,
+                    props.class,
+                )
+            "
         >
             <slot />
+
+            <TooltipArrow
+                class="bg-foreground fill-foreground z-50 size-2.5
+                translate-y-[calc(-50%_-_2px)] rotate-45 rounded-xs"
+            />
         </TooltipContent>
     </TooltipPortal>
 </template>
-
-<style scoped>
-.tooltip-content {
-    z-index: 100;
-    max-width: 250px;
-    padding: 7px 11px;
-    border: 1px solid var(--site-border);
-    border-radius: var(--site-radius);
-    background: var(--site-text);
-    color: var(--site-bg);
-    font-size: 11px;
-    line-height: 1.6;
-}
-</style>

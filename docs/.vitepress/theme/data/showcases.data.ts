@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createHighlighter } from 'shiki';
+import { getSyntaxThemes } from '../syntax-themes';
 
 type Example = { code: string; html: string };
 type Showcases = Record<
@@ -18,15 +19,16 @@ export default {
     watch: [fixture('homepage-request'), fixture('homepage-client'),
         fixture('homepage-async'), fixture('homepage-response', 'json')],
     async load(): Promise<Showcases> {
+        const themes = await getSyntaxThemes();
         const highlighter = await createHighlighter({
-            themes: ['github-light', 'github-dark'],
+            themes: [themes.light, themes.dark],
             langs: ['php', 'json'],
         });
         const render = (code: string, lang = 'php'): Example => ({
             code,
             html: highlighter.codeToHtml(code, {
                 lang,
-                themes: { light: 'github-light', dark: 'github-dark' },
+                themes: { light: 'fetch-light', dark: 'fetch-dark' },
                 defaultColor: false,
             }),
         });

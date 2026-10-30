@@ -5,16 +5,26 @@ import { data } from '../data/showcases.data';
 </script>
 
 <template>
-    <div class="workbench" aria-label="Illustrative HTTP request and response">
+    <div
+        class="workbench dark"
+        aria-label="Illustrative HTTP request and response"
+    >
         <div class="workbench-header">
             <p><b>GET</b><code>api.example.test/v1/users/42</code></p>
             <span>Illustrative example · no request is sent</span>
         </div>
         <div class="workbench-body">
             <Tabs default-value="request" class="request-tabs">
-                <TabsList aria-label="HTTP example views">
-                    <TabsTrigger value="request">PHP request</TabsTrigger>
-                    <TabsTrigger value="response">JSON response</TabsTrigger>
+                <TabsList
+                    class="mx-5 h-auto min-h-12 w-fit"
+                    aria-label="HTTP example views"
+                >
+                    <TabsTrigger value="request" class="min-h-11">
+                        PHP request
+                    </TabsTrigger>
+                    <TabsTrigger value="response" class="min-h-11">
+                        JSON response
+                    </TabsTrigger>
                 </TabsList>
                 <TabsContent value="request">
                     <CodeShowcase
@@ -63,12 +73,11 @@ import { data } from '../data/showcases.data';
 
 <style scoped>
 .workbench {
-    --site-accent: #9bc3ff;
     position: relative;
-    border: 1px solid #31425f;
-    border-radius: 8px;
-    background: #111c2e;
-    color: #e4edfb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--background);
+    color: var(--foreground);
     box-shadow: var(--site-shadow);
 }
 .workbench-header {
@@ -78,7 +87,7 @@ import { data } from '../data/showcases.data';
     flex-wrap: wrap;
     gap: 12px;
     padding: 19px 26px;
-    border-bottom: 1px solid #2d3b52;
+    border-bottom: 1px solid var(--border);
 }
 .workbench-header p {
     display: flex;
@@ -90,21 +99,21 @@ import { data } from '../data/showcases.data';
 }
 .workbench-header b {
     padding: 3px 8px;
-    border: 1px solid #436494;
-    border-radius: 3px;
-    color: #a8ceff;
-    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    color: var(--primary);
+    font-size: 13px;
     letter-spacing: 0.05em;
 }
 .workbench-header code {
     padding: 0;
-    color: #e4edfb;
-    font-size: 12px;
+    color: var(--foreground);
+    font-size: 13px;
     overflow-wrap: anywhere;
 }
 .workbench-header > span {
-    color: #a7b7d0;
-    font-size: 11px;
+    color: var(--muted-foreground);
+    font-size: 13px;
 }
 .workbench-body {
     display: grid;
@@ -115,38 +124,13 @@ import { data } from '../data/showcases.data';
     gap: 0;
     padding: 14px 0 0;
 }
-.request-tabs :deep([data-slot='tabs-list']) {
-    justify-content: flex-start;
-    gap: 25px;
-    width: 100%;
-    height: auto;
-    padding: 0 26px;
-    border-radius: 0;
-    background: transparent;
-}
-.request-tabs :deep([data-slot='tabs-trigger']) {
-    flex: none;
-    min-height: 44px;
-    padding: 0;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    background: transparent;
-    color: #a7b7d0;
-    font-size: 12px;
-    box-shadow: none;
-}
-.request-tabs :deep([data-slot='tabs-trigger'][data-state='active']) {
-    border-bottom-color: #8dbbff;
-    color: #f2f6ff;
-}
 .request-tabs :deep(.code-showcase) {
     border: 0;
     border-radius: 0;
 }
 .request-tabs :deep(figcaption) {
     min-height: 44px;
-    border-top: 1px solid #2d3b52;
+    border-top: 1px solid var(--border);
     border-bottom: 0;
     padding-left: 26px;
 }
@@ -158,8 +142,8 @@ import { data } from '../data/showcases.data';
     display: flex;
     flex-direction: column;
     padding: 28px 32px;
-    border-left: 1px solid #2d3b52;
-    background: linear-gradient(135deg, #1a2b46, #142238);
+    border-left: 1px solid var(--border);
+    background: var(--secondary);
 }
 .response-topline {
     display: flex;
@@ -169,23 +153,23 @@ import { data } from '../data/showcases.data';
     font-size: 13px;
 }
 .response-topline b {
-    color: #a8ceff;
+    color: var(--primary);
     font-family: var(--vp-font-family-mono);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 400;
 }
 .response-type {
     margin: 6px 0 24px;
-    color: #a7b7d0;
+    color: var(--muted-foreground);
     font-family: var(--vp-font-family-mono);
-    font-size: 11px;
+    font-size: 13px;
 }
 dl {
     display: grid;
     gap: 14px;
     margin: 0;
     font-family: var(--vp-font-family-mono);
-    font-size: 12px;
+    font-size: 13px;
 }
 dl > div {
     display: grid;
@@ -193,17 +177,17 @@ dl > div {
     gap: 12px;
 }
 dt {
-    color: #a7b7d0;
+    color: var(--muted-foreground);
 }
 dd {
     margin: 0;
-    color: #e3edff;
+    color: var(--foreground);
 }
 .response-note {
     margin: auto 0 0;
     padding-top: 26px;
-    color: #a7b7d0;
-    font-size: 12px;
+    color: var(--muted-foreground);
+    font-size: 13px;
     line-height: 1.8;
 }
 .request-lifecycle {
@@ -212,23 +196,23 @@ dd {
     justify-content: space-between;
     gap: 22px;
     padding: 20px 26px;
-    border-top: 1px solid #2d3b52;
-    font-size: 11px;
-    color: #bccbe0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted-foreground);
 }
 .request-lifecycle span {
     white-space: nowrap;
 }
 .request-lifecycle b {
     margin-right: 9px;
-    color: #83b6ff;
+    color: var(--primary);
     font-family: var(--vp-font-family-mono);
     font-weight: 400;
 }
 .request-lifecycle i {
     flex: 1;
     height: 1px;
-    background: #344762;
+    background: var(--border);
 }
 .example-note {
     display: flex;
@@ -237,12 +221,12 @@ dd {
     gap: 8px;
     margin: 0;
     padding: 13px 26px;
-    border-top: 1px solid #2d3b52;
-    color: #a7b7d0;
-    font-size: 11px;
+    border-top: 1px solid var(--border);
+    color: var(--muted-foreground);
+    font-size: 13px;
 }
 .example-note a {
-    color: #b6d4ff;
+    color: var(--primary);
     text-underline-offset: 4px;
 }
 .example-note a:hover {
@@ -257,7 +241,7 @@ dd {
     }
     .response-inspector {
         padding: 22px;
-        border-top: 1px solid #2d3b52;
+        border-top: 1px solid var(--border);
         border-left: 0;
     }
     .response-note {

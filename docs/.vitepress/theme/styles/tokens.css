@@ -14,22 +14,45 @@
     src: url('/fonts/ibm-plex-mono-latin.woff2') format('woff2');
 }
 
+/* Official Slate semantic colors; primary and ring carry the blue brand. */
 :root {
     color-scheme: light;
-    --site-bg: #fcfcfd;
-    --site-surface: #ffffff;
-    --site-surface-raised: #f0f3f9;
-    --site-code-bg: #f7f9fd;
-    --site-border: #dce3ed;
-    --site-text: #111d32;
-    --site-muted: #4d5b72;
-    --site-accent: #245edb;
-    --site-accent-hover: #174bb9;
-    --site-accent-contrast: #ffffff;
-    --site-accent-soft: rgb(36 94 219 / 8%);
-    --site-wash: #eaf1ff;
-    --site-radius: 6px;
-    --site-shadow: 0 22px 64px -28px rgb(17 35 66 / 45%);
+    --background: hsl(0 0% 100%);
+    --foreground: hsl(222.2 84% 4.9%);
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(222.2 84% 4.9%);
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(222.2 84% 4.9%);
+    --primary: #245edb;
+    --primary-foreground: #ffffff;
+    --secondary: hsl(210 40% 96.1%);
+    --secondary-foreground: hsl(222.2 47.4% 11.2%);
+    --muted: hsl(210 40% 96.1%);
+    /* Slate 600 keeps small muted text readable on Slate 100. */
+    --muted-foreground: hsl(215.3 19.3% 34.5%);
+    --accent: hsl(210 40% 96.1%);
+    --accent-foreground: hsl(222.2 47.4% 11.2%);
+    --destructive: hsl(0 84.2% 60.2%);
+    --destructive-foreground: hsl(210 40% 98%);
+    --border: hsl(214.3 31.8% 91.4%);
+    --input: hsl(214.3 31.8% 91.4%);
+    --ring: #245edb;
+    --site-bg: var(--background);
+    --site-surface: var(--card);
+    --site-surface-raised: var(--secondary);
+    --site-code-bg: var(--muted);
+    --site-border: var(--border);
+    --site-text: var(--foreground);
+    --site-muted: var(--muted-foreground);
+    --site-danger: var(--foreground);
+    --site-accent: var(--primary);
+    --site-accent-hover: var(--primary);
+    --site-accent-contrast: var(--primary-foreground);
+    --site-accent-soft: var(--accent);
+    --site-wash: var(--accent);
+    --radius: 0.625rem;
+    --site-radius: var(--radius-md);
+    --site-shadow: 0 16px 48px -24px rgb(15 23 42 / 35%);
     --vp-c-brand-1: var(--site-accent);
     --vp-c-brand-2: var(--site-accent-hover);
     --vp-c-brand-3: var(--site-accent);
@@ -51,7 +74,7 @@
     --vp-sidebar-width: 272px;
     --vp-code-block-bg: var(--site-code-bg);
     --vp-code-line-height: 1.85;
-    --vp-code-font-size: 13px;
+    --vp-code-font-size: 14px;
     --vp-code-copy-code-border-color: var(--site-border);
     --vp-code-copy-code-bg: var(--site-surface);
     --vp-code-copy-code-hover-bg: var(--site-wash);
@@ -65,18 +88,38 @@
 }
 
 .dark {
+    --site-bg: var(--background);
+    --site-surface: var(--card);
+    --site-surface-raised: var(--secondary);
+    --site-code-bg: var(--muted);
+    --site-border: var(--border);
+    --site-text: var(--foreground);
+    --site-muted: var(--muted-foreground);
+    --site-danger: var(--foreground);
+    --site-accent: var(--primary);
+    --site-accent-hover: var(--primary);
+    --site-accent-contrast: var(--primary-foreground);
+    --site-accent-soft: var(--accent);
+    --site-wash: var(--accent);
+
     color-scheme: dark;
-    --site-bg: #0e1522;
-    --site-surface: #111c2d;
-    --site-surface-raised: #19263a;
-    --site-code-bg: #111d30;
-    --site-border: #2a3a52;
-    --site-text: #edf2fc;
-    --site-muted: #afbdd3;
-    --site-accent: #9bc3ff;
-    --site-accent-hover: #c5dcff;
-    --site-accent-contrast: #10213b;
-    --site-accent-soft: rgb(135 180 255 / 11%);
-    --site-wash: #17263e;
-    --site-shadow: 0 26px 72px -30px rgb(0 0 0 / 70%);
+    --background: hsl(222.2 84% 4.9%);
+    --foreground: hsl(210 40% 98%);
+    --card: hsl(222.2 84% 4.9%);
+    --card-foreground: hsl(210 40% 98%);
+    --popover: hsl(222.2 84% 4.9%);
+    --popover-foreground: hsl(210 40% 98%);
+    --primary: #9bc3ff;
+    --primary-foreground: #10213b;
+    --secondary: hsl(217.2 32.6% 17.5%);
+    --secondary-foreground: hsl(210 40% 98%);
+    --muted: hsl(217.2 32.6% 17.5%);
+    --muted-foreground: hsl(215 20.2% 65.1%);
+    --accent: hsl(217.2 32.6% 17.5%);
+    --accent-foreground: hsl(210 40% 98%);
+    --destructive: hsl(0 62.8% 30.6%);
+    --destructive-foreground: hsl(210 40% 98%);
+    --border: hsl(217.2 32.6% 17.5%);
+    --input: hsl(217.2 32.6% 17.5%);
+    --ring: #9bc3ff;
 }

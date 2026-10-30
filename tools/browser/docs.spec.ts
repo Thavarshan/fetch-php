@@ -1,37 +1,4 @@
-import { test, expect } from '@playwright/test';
-
-const problems = new WeakMap<object, string[]>();
-
-test.beforeEach(async ({ page }) => {
-    const errors: string[] = [];
-    problems.set(page, errors);
-    page.on('pageerror', (error) => errors.push(error.message));
-    page.on('console', (message) => {
-        if (message.type() === 'error'
-            || /hydration|Failed to resolve component/i.test(message.text())) {
-            errors.push(message.text());
-        }
-    });
-    page.on('response', (response) => {
-        if (response.status() >= 400) {
-            errors.push(`${response.status()} ${response.url()}`);
-        }
-    });
-    await page.route('**/*', (route) => {
-        const url = new URL(route.request().url());
-        if (url.protocol.startsWith('http')
-            && url.origin !== 'http://127.0.0.1:4173') {
-            errors.push(`Unexpected external request: ${url.origin}`);
-            return route.abort();
-        }
-        return route.continue();
-    });
-});
-
-test.afterEach(async ({ page }) => {
-    expect(problems.get(page), 'browser errors and external requests')
-        .toEqual([]);
-});
+import { test, expect } from './test';
 
 test('homepage is rendered on the server with highlighted examples',
     async ({ page, request }) => {
@@ -165,7 +132,9 @@ for (const width of [375, 768, 1024, 1440, 1920]) {
             async ({ page }, testInfo) => {
                 await page.setViewportSize({ width, height: 1000 });
                 await page.emulateMedia({ colorScheme: scheme });
-                for (const path of ['/', '/guide/async-requests']) {
+                for (const path of ['/', '/guide/async-requests',
+                    '/guide/quickstart', '/api/client-handler',
+                    '/examples/api-integration']) {
                     await page.goto(path);
                     await expect(page.locator('h1')).toBeVisible();
                     await page.locator('.VPNavBar.top').waitFor();
@@ -180,11 +149,13 @@ for (const width of [375, 768, 1024, 1440, 1920]) {
                     if (path === '/' && width >= 768) {
                         await expect(page.locator('.workbench')).toBeVisible();
                     }
-                    if (path !== '/' && width >= 1440) {
+                    if (path !== '/' && width >= 1440
+                        && await page.locator('.vp-doc h2').count() > 0) {
                         await expect(page.locator('.VPDocAsideOutline'))
                             .toBeVisible();
                     }
-                    const name = path === '/' ? 'home' : 'article';
+                    const name = path === '/' ? 'home'
+                        : path.slice(1).replaceAll('/', '-');
                     await testInfo.attach(`${name}-${width}-${scheme}`, {
                         body: await page.screenshot({ fullPage: true }),
                         contentType: 'image/png',

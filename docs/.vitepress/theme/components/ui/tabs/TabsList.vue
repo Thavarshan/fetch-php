@@ -1,33 +1,34 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { cn } from '@/lib/utils';
-import { TabsList as PrimitiveTabsList } from 'reka-ui';
+import type { TabsListProps } from "reka-ui";
+import type { HTMLAttributes } from "vue";
+import { computed } from "vue";
+import { cn } from "@/lib/utils";
+import { TabsList } from "reka-ui";
 
-interface Props {
-    class?: string;
-    loop?: boolean;
-    orientation?: 'horizontal' | 'vertical';
-}
+const props = defineProps<
+    TabsListProps & { class?: HTMLAttributes["class"] }
+>();
 
-const props = defineProps<Props>();
 const delegatedProps = computed(() => {
-    const attributes = { ...props };
-    delete attributes.class;
-
-    return attributes;
+    const { class: _, ...rest } = props;
+    return rest;
 });
 </script>
 
 <template>
-    <PrimitiveTabsList
+    <TabsList
         data-slot="tabs-list"
         v-bind="delegatedProps"
-        :class="cn(
-            ['inline-flex', 'h-9', 'w-fit', 'items-center', 'justify-center'],
-            ['rounded-md', 'bg-muted', 'p-1', 'text-muted-foreground'],
-            props.class,
-        )"
+        :class="
+            cn(
+                `
+bg-muted text-muted-foreground inline-flex h-9 w-fit
+items-center justify-center rounded-lg p-0.75
+`,
+                props.class,
+            )
+        "
     >
         <slot />
-    </PrimitiveTabsList>
+    </TabsList>
 </template>

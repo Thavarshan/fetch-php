@@ -17,41 +17,79 @@ Create a handler with `create()`, `createWithBaseUri()`, or
 The fluent request methods return a Fetch response or a React promise when async
 mode is enabled.
 
-```text
-request(
-    string|Method $method,
-    string $uri,
-    mixed $body = null,
-    string|ContentType $contentType = ContentType::JSON,
-    array $options = [],
-): Response|PromiseInterface
+The following PHP blocks are selected interface excerpts. `Method` and
+`ContentType` refer to `Fetch\Enum`; `PromiseInterface` is ReactPHP's promise
+contract, and `Response` is `Fetch\Interfaces\Response`.
 
-sendRequest(
-    string|Method $method,
-    string $uri,
-    array $options = [],
-): Response|PromiseInterface
+### `request()`
 
-get(string $uri, array $queryParams = []): Response|PromiseInterface
+```php
+interface RequestExecutor
+{
+    public function request(
+        string|Method $method,
+        string $uri,
+        mixed $body = null,
+        string|ContentType $contentType = ContentType::JSON,
+        array $options = [],
+    ): Response|PromiseInterface;
+}
 ```
+
+### `sendRequest()` and `get()`
+
+```php
+interface RequestExecutor
+{
+    public function sendRequest(
+        Method|string $method,
+        string $uri,
+        array $options = [],
+    ): Response|PromiseInterface;
+
+    public function get(
+        string $uri,
+        array $queryParams = [],
+    ): Response|PromiseInterface;
+}
+```
+
+### Methods at a glance
+
+| Method | Accepts | Returns |
+| --- | --- | --- |
+| `request()` | Method, URI, body, content type, options | Response or promise |
+| `sendRequest()` | Method, URI, options | Response or promise |
+| `get()` | URI, query parameters | Response or promise |
+| `head()` | URI | Response or promise |
+| `options()` | URI | Response or promise |
+| `post()` | URI, body, content type | Response or promise |
+| `put()` | URI, body, content type | Response or promise |
+| `patch()` | URI, body, content type | Response or promise |
+| `delete()` | URI, body, content type | Response or promise |
+| `stream()` | Method, URI, options | `StreamedResponse` |
+| `sse()` | Method, URI, options | `EventSource` |
 
 `post()`, `put()`, `patch()`, and `delete()` accept the URI, optional body,
 and content type. `head()` and `options()` accept the URI.
 
 Streaming uses separate methods:
 
-```text
-stream(
-    string|Method $method = Method::GET,
-    string $uri = '',
-    array $options = [],
-): StreamedResponse
+```php
+interface RequestExecutor
+{
+    public function stream(
+        Method|string $method = Method::GET,
+        string $uri = '',
+        array $options = [],
+    ): StreamedResponse;
 
-sse(
-    string|Method $method = Method::GET,
-    string $uri = '',
-    array $options = [],
-): EventSource
+    public function sse(
+        Method|string $method = Method::GET,
+        string $uri = '',
+        array $options = [],
+    ): EventSource;
+}
 ```
 
 ## Configuration

@@ -129,7 +129,7 @@ h2 {
     gap: 8px;
     margin: 16px 0 0;
     color: var(--site-muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 .example-caption a {
     color: var(--site-accent);
@@ -149,7 +149,7 @@ h2 {
     padding-top: 4px;
     color: var(--site-accent);
     font-family: var(--vp-font-family-mono);
-    font-size: 11px;
+    font-size: 13px;
 }
 h3 {
     margin: 0 0 8px;

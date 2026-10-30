@@ -4,6 +4,13 @@
 
 ### Changed
 
+- Restore upstream shadcn-vue Button, Tabs, and Tooltip variants and Slate
+  semantic colors, retaining blue primary controls and VitePress navigation.
+- Refine the labelled Composer surface, align hero columns at the start,
+  reset accessible copy feedback, and contain mobile navigation focus.
+- Present a normal application in Quickstart, highlight API signatures, and
+  verify keyboard scrolling, sampled contrast, and responsive reading layouts.
+
 - Replace the homepage grid workarounds with a supported custom Vue layout,
   shared Shiki examples, an integrated request/response workbench, and a
   consistent blue/slate design system across the homepage and documentation.

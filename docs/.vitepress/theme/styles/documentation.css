@@ -11,7 +11,7 @@
 .VPSidebarItem.level-0 > .item > .text {
     padding-bottom: 7px;
     color: var(--site-text);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     letter-spacing: -0.01em;
     line-height: 1.7;
@@ -23,7 +23,7 @@
 }
 .VPSidebarItem .link .text {
     color: var(--site-muted);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 400;
     line-height: 1.7;
 }
@@ -31,7 +31,7 @@
     border-left-color: var(--site-accent);
     background: var(--site-accent-soft);
 }
-.VPSidebarItem.is-active > .item > .link .text,
+.VPSidebarItem.is-active > .item > .link > .text,
 .VPSidebarItem .link:hover .text {
     color: var(--site-accent);
 }
@@ -88,7 +88,7 @@
 .vp-doc :not(pre) > code {
     padding: 2px 5px;
     border: 1px solid var(--site-border);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     background: var(--site-code-bg);
     color: var(--site-accent);
     font-size: 0.81em;
@@ -113,11 +113,11 @@
 }
 .vp-doc div[class*='language-'] code {
     padding: 0 24px;
-    font-size: 13px;
+    font-size: 14px;
 }
 .vp-doc div[class*='language-'] > .lang {
     color: var(--site-muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 .vp-doc .copy {
     min-width: 44px;
@@ -160,7 +160,7 @@
     margin: 8px 0;
 }
 .vp-doc .custom-block .custom-block-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
 }
 .VPDocAside {
@@ -168,7 +168,7 @@
 }
 .VPDocAsideOutline .outline-title {
     color: var(--site-text);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     letter-spacing: 0;
 }
@@ -178,7 +178,7 @@
     padding: 5px 0;
     overflow: visible;
     color: var(--site-muted);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.65;
     white-space: normal;
 }
@@ -189,7 +189,7 @@
 .VPDocFooter .edit-link-button,
 .VPDocFooter .last-updated {
     color: var(--site-muted);
-    font-size: 12px;
+    font-size: 13px;
 }
 .VPDocFooter .pager-link {
     padding: 20px;
@@ -221,10 +221,21 @@
     .vp-doc div[class*='language-'] {
         margin-right: 0;
         margin-left: 0;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
     }
     .vp-doc div[class*='language-'] code {
         padding: 0 18px;
-        font-size: 12px;
+        font-size: 13px;
     }
+}
+
+
+.vp-doc pre:focus-visible,
+.vp-doc table:focus-visible {
+    outline-offset: -3px;
+}
+
+.vp-doc th,
+.vp-doc td {
+    min-width: 140px;
 }

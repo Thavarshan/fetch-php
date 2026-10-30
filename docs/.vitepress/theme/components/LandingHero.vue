@@ -22,12 +22,15 @@ import RequestResponseDemo from './RequestResponseDemo.vue';
                         write HTTP that feels at home in PHP.
                     </p>
                     <div class="hero-actions flex flex-wrap gap-3">
-                        <Button as-child size="lg">
+                        <Button as-child size="lg" class="min-h-11">
                             <a href="/guide/quickstart">
                                 Get started <span aria-hidden="true">→</span>
                             </a>
                         </Button>
-                        <Button as-child size="lg" variant="outline">
+                        <Button
+                            as-child size="lg"
+                            class="min-h-11" variant="outline"
+                        >
                             <a href="https://github.com/Thavarshan/fetch-php">
                                 GitHub <span aria-hidden="true">↗</span>
                             </a>
@@ -61,7 +64,7 @@ import RequestResponseDemo from './RequestResponseDemo.vue';
     display: grid;
     grid-template-columns: 1.55fr 1fr;
     gap: 60px;
-    align-items: end;
+    align-items: start;
     padding-bottom: 52px;
 }
 h1 {
@@ -94,7 +97,7 @@ h1 em {
     gap: 12px;
     padding: 23px 0;
     color: var(--site-muted);
-    font-size: 12px;
+    font-size: 13px;
 }
 .hero-foundations p {
     display: flex;
@@ -102,7 +105,7 @@ h1 em {
     gap: 25px;
     margin: 0;
     font-family: var(--vp-font-family-mono);
-    font-size: 11px;
+    font-size: 12px;
 }
 .hero-foundations b {
     font-weight: 400;

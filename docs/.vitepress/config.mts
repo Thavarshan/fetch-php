@@ -1,6 +1,9 @@
 import { defineConfig, type HeadConfig } from 'vitepress';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { getSyntaxThemes } from './theme/syntax-themes';
+
+const syntaxThemes = await getSyntaxThemes();
 
 const siteUrl = 'https://fetch-php.thavarshan.com/';
 const siteTitle = 'FetchPHP';
@@ -310,11 +313,14 @@ export default defineConfig({
         },
     },
     markdown: {
-        theme: {
-            light: 'github-light',
-            dark: 'github-dark',
-        },
-
+        theme: syntaxThemes,
+        codeTransformers: [{
+            pre(node) {
+                node.properties.tabindex = 0;
+                node.properties.role = 'region';
+                node.properties['aria-label'] = 'Code example';
+            },
+        }],
     },
     vite: {
         plugins: [tailwindcss()],

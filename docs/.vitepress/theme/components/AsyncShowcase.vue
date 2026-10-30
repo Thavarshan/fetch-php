@@ -4,7 +4,7 @@ import { data } from '../data/showcases.data';
 </script>
 
 <template>
-    <section class="async-section" aria-labelledby="async-title">
+    <section class="async-section dark" aria-labelledby="async-title">
         <div class="site-container async-composition">
             <div class="async-copy">
                 <p class="eyebrow">Concurrency, with intention</p>
@@ -43,13 +43,9 @@ import { data } from '../data/showcases.data';
 
 <style scoped>
 .async-section {
-    --site-accent: #a4caff;
-    --site-muted: #b0bfd6;
-    --site-border: #2e405c;
     padding: 104px 0;
-    color: #f0f5ff;
-    background:
-        linear-gradient(115deg, #10213c, #0e1829 65%);
+    color: var(--foreground);
+    background: var(--background);
 }
 .async-composition {
     display: grid;
@@ -65,7 +61,7 @@ h2 {
     line-height: 1.1;
 }
 h2 em {
-    color: #9bc4ff;
+    color: var(--primary);
     font-style: normal;
 }
 .async-copy > p:not(.eyebrow) {
@@ -84,12 +80,12 @@ h2 em {
     padding-top: 24px;
     border-top: 1px solid var(--site-border);
     color: var(--site-muted);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.8;
 }
 .async-boundary code {
-    color: #b9d7ff;
-    font-size: 12px;
+    color: var(--primary);
+    font-size: 13px;
 }
 .async-example {
     min-width: 0;
@@ -101,7 +97,7 @@ h2 em {
     gap: 8px;
     margin: 15px 0 0;
     color: var(--site-muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 .async-example > p a {
     color: var(--site-accent);
