@@ -298,6 +298,15 @@ class MockServer
         return $executedResponse;
     }
 
+    /** Determine whether request interception, stray-request checks, or recording is active. */
+    public function isActive(): bool
+    {
+        return $this->fakes !== []
+            || $this->callback !== null
+            || $this->preventStrayRequests
+            || $this->recording;
+    }
+
     /**
      * Reset the mock server state.
      */

@@ -66,35 +66,26 @@ Type-safe PHP 8.3 enums for HTTP concepts:
 ## Architecture
 
 ```
-+------------------+
-|      Client      |  <-- High-level API (PSR-18 compliant)
-+------------------+
-          |
-          v
-+------------------+
-|   ClientHandler  |  <-- Core implementation with advanced features
-+------------------+
-          |
-    +-----------+
-    |  Traits   |  <-- Functionality separated into focused traits
-    +-----------+
-    |  ConfiguresRequests
-    |  HandlesUris
-    |  ManagesPromises
-    |  ManagesRetries
-    |  PerformsHttpRequests
-    +-----------+
-          |
-          v
-+------------------+
-|  Response        |  <-- Enhanced response handling
-+------------------+
-          |
-          v
-+------------------+
-|  Guzzle Client   |  <-- Underlying HTTP client implementation
-+------------------+
+Client (PSR-18 facade)
+        |
+        v
+ClientHandler (stable fluent API)
+        |
+        +-- RequestCoordinator -- RequestBuilder
+        |                    +-- RequestExecutor (sync)
+        |                    +-- AsyncRequestExecutor -- AsyncTransport
+        |                    +-- StreamingRequestExecutor
+        +-- PromiseManager (Matrix 4)
+        +-- RetryStrategy and ConnectionPoolManager
+        +-- ValidationManager (opt-in JSON Schema / OpenAPI)
+        |
+        v
+Guzzle client and normalized responses
 ```
+
+Small traits still expose cohesive configuration and lifecycle APIs. HTTP
+execution, promise management, pooling, and validation are composed services;
+the deprecated `ManagesPromises` shim is not used by `ClientHandler`.
 
 ## Usage Patterns
 

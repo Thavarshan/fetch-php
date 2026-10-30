@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Closure;
 use Exception;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
@@ -11,8 +12,12 @@ use Fetch\Testing\MockServer;
 use Fetch\Testing\Recorder;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Handler\CurlMultiHandler;
+use GuzzleHttp\Handler\StreamHandler;
+use GuzzleHttp\HandlerStack;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionProperty;
 
@@ -195,6 +200,25 @@ class ClientHandlerTest extends TestCase
         // Test auto-creation of client
         $handlerWithoutClient = new ClientHandler;
         $this->assertInstanceOf(ClientInterface::class, $handlerWithoutClient->getHttpClient());
+    }
+
+    public function test_default_client_routes_streaming_requests_to_guzzles_stream_handler(): void
+    {
+        if (! extension_loaded('curl')) {
+            $this->markTestSkipped('This routing is configured only when cURL is available.');
+        }
+
+        $client = (new ClientHandler)->getHttpClient();
+        $stack = $client->getConfig('handler');
+        self::assertInstanceOf(HandlerStack::class, $stack);
+
+        $handlerProperty = new ReflectionProperty(HandlerStack::class, 'handler');
+        $router = $handlerProperty->getValue($stack);
+        self::assertInstanceOf(Closure::class, $router);
+
+        $handlers = (new ReflectionFunction($router))->getStaticVariables();
+        self::assertInstanceOf(CurlMultiHandler::class, $handlers['default']);
+        self::assertInstanceOf(StreamHandler::class, $handlers['streaming']);
     }
 
     public function test_set_http_client(): void

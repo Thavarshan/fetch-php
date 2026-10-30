@@ -56,10 +56,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $this->handler = $handler ?? new ClientHandler(options: $options);
         $this->logger = $logger ?? new NullLogger;
 
-        // If handler supports logging, set the logger
-        if (method_exists($this->handler, 'setLogger')) {
-            $this->handler->setLogger($this->logger);
-        }
+        $this->handler->setLogger($this->logger);
     }
 
     /**
@@ -89,10 +86,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     {
         $this->logger = $logger;
 
-        // If handler supports logging, set the logger
-        if (method_exists($this->handler, 'setLogger')) {
-            $this->handler->setLogger($logger);
-        }
+        $this->handler->setLogger($logger);
     }
 
     /**

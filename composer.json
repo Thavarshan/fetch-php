@@ -36,12 +36,20 @@
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.64",
         "laravel/pint": "^1.21",
+        "league/openapi-psr7-validator": "^0.24",
         "mockery/mockery": "^1.6",
+        "opis/json-schema": "^2.6",
         "phpstan/phpstan": "^1.11.5",
         "phpunit/phpunit": "^11.5",
         "squizlabs/php_codesniffer": "^3.7",
+        "symfony/yaml": "^6.0|^7.0",
         "symfony/var-dumper": "^6.0|^7.2",
         "tightenco/duster": "3.3.0"
+    },
+    "suggest": {
+        "opis/json-schema": "^2.6 to validate JSON request and response schemas.",
+        "league/openapi-psr7-validator": "^0.24 to validate OpenAPI 3.0.x request and response contracts.",
+        "symfony/yaml": "^6.0|^7.0 to validate YAML OpenAPI documents when ext-yaml is unavailable."
     },
     "autoload-dev": {
         "psr-4": {

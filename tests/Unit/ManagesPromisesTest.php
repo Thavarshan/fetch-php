@@ -106,6 +106,19 @@ class ManagesPromisesTest extends TestCase
         $this->assertEquals('quick result', $result);
     }
 
+    public function test_timeout_promise_uses_a_matrix_delay_and_preserves_legacy_exception(): void
+    {
+        $reflection = new ReflectionClass($this->handler);
+        $method = $reflection->getMethod('createTimeoutPromise');
+        $promise = $method->invoke($this->handler, 0.0);
+
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Promise timed out after 0 seconds');
+
+        await($promise);
+    }
+
     public function test_all_with_promises(): void
     {
         $promises = [
@@ -291,6 +304,38 @@ class ManagesPromisesTest extends TestCase
 
         $results = await($mapPromise);
         $this->assertEquals([2, 4, 6], $results);
+    }
+
+    public function test_map_preserves_keys_and_passes_value_then_key_to_callbacks(): void
+    {
+        $results = await($this->handler->map(
+            ['first' => 'Ada', 7 => 'Grace'],
+            static fn (string $value, int|string $key): PromiseInterface => resolve($key.':'.$value),
+            1,
+        ));
+
+        self::assertSame(['first' => 'first:Ada', 7 => '7:Grace'], $results);
+    }
+
+    public function test_map_cancellation_stops_queued_callbacks_and_cancels_active_work(): void
+    {
+        $started = [];
+        $activeCancelled = false;
+        $mapped = $this->handler->map(['first', 'second'], function (string $value) use (&$started, &$activeCancelled): PromiseInterface {
+            $started[] = $value;
+
+            return (new Deferred(static function () use (&$activeCancelled): void {
+                $activeCancelled = true;
+            }))->promise();
+        }, 1);
+        $observed = $mapped->catch(static fn (\Throwable $error): \Throwable => $error);
+
+        Loop::futureTick(static fn () => $mapped->cancel());
+        $reason = await($observed);
+
+        self::assertInstanceOf(CancellationException::class, $reason);
+        self::assertSame(['first'], $started);
+        self::assertTrue($activeCancelled);
     }
 
     public function test_map_throws_with_invalid_concurrency(): void

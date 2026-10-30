@@ -185,6 +185,10 @@ export default defineConfig({
                             text: "Error Handling",
                             link: "/guide/error-handling",
                         },
+                        {
+                            text: "Request & Response Validation",
+                            link: "/guide/validation",
+                        },
                         { text: "Logging", link: "/guide/logging" },
                     ],
                 },

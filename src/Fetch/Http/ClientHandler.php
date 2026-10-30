@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fetch\Http;
 
+use Fetch\Async\PromiseManager;
 use Fetch\Cache\CacheInterface;
 use Fetch\Cache\CacheManager;
 use Fetch\Concerns\ConfiguresRequests;
@@ -13,23 +14,33 @@ use Fetch\Concerns\ManagesConnectionPool;
 use Fetch\Concerns\ManagesDebugAndProfiling;
 use Fetch\Concerns\ManagesEvents;
 use Fetch\Concerns\ManagesMiddleware;
-use Fetch\Concerns\ManagesPromises;
 use Fetch\Concerns\ManagesRetries;
 use Fetch\Concerns\PerformsHttpRequests;
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Events\RedirectEvent;
+use Fetch\Interfaces\AsyncTransport;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\Response as ResponseContract;
+use Fetch\Pool\ConnectionPoolManager;
 use Fetch\Support\Defaults;
 use Fetch\Support\GlobalServices;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions as FetchRequestOptions;
 use Fetch\Support\RetryDefaults;
+use Fetch\Validation\ValidationManager;
+use Fetch\Validation\ValidationPolicy;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Handler\CurlMultiHandler;
+use GuzzleHttp\Handler\Proxy;
+use GuzzleHttp\Handler\StreamHandler;
+use GuzzleHttp\HandlerStack;
 use GuzzleHttp\RequestOptions;
 use InvalidArgumentException;
 use LogicException;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use React\Promise\PromiseInterface;
@@ -43,7 +54,6 @@ class ClientHandler implements ClientHandlerInterface
     use ManagesDebugAndProfiling;
     use ManagesEvents;
     use ManagesMiddleware;
-    use ManagesPromises;
     use ManagesRetries;
     use PerformsHttpRequests;
 
@@ -107,6 +117,20 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected ?CacheManager $cacheManager = null;
 
+    private ValidationManager $validationManager;
+
+    private ValidationPolicy $validationPolicy;
+
+    private PromiseManager $promiseManager;
+
+    private ConnectionPoolManager $connectionPoolManager;
+
+    private RequestBuilder $requestBuilder;
+
+    private ?AsyncTransport $asyncTransport;
+
+    private ?CurlMultiHandler $curlMultiHandler = null;
+
     /**
      * ClientHandler constructor.
      *
@@ -127,12 +151,24 @@ class ClientHandler implements ClientHandlerInterface
         bool $isAsync = false,
         ?LoggerInterface $logger = null,
         ?CacheManager $cacheManager = null,
+        ?ValidationManager $validationManager = null,
+        ?ValidationPolicy $validationPolicy = null,
+        ?AsyncTransport $asyncTransport = null,
+        ?PromiseManager $promiseManager = null,
+        ?ConnectionPoolManager $connectionPoolManager = null,
+        ?RequestBuilder $requestBuilder = null,
     ) {
         $this->logger = $logger ?? new NullLogger;
         $this->isAsync = $isAsync;
         $this->maxRetries = $maxRetries ?? self::DEFAULT_RETRIES;
         $this->retryDelay = $retryDelay ?? self::DEFAULT_RETRY_DELAY;
         $this->cacheManager = $cacheManager;
+        $this->validationManager = $validationManager ?? new ValidationManager;
+        $this->validationPolicy = $validationPolicy ?? new ValidationPolicy;
+        $this->promiseManager = $promiseManager ?? new PromiseManager;
+        $this->connectionPoolManager = $connectionPoolManager ?? new ConnectionPoolManager;
+        $this->requestBuilder = $requestBuilder ?? new RequestBuilder;
+        $this->asyncTransport = $asyncTransport;
 
         // Initialize with default options using centralized merging
         $this->options = FetchRequestOptions::merge(
@@ -185,11 +221,11 @@ class ClientHandler implements ClientHandlerInterface
      * @param  ClientInterface  $client  Custom HTTP client
      * @return static New client handler instance
      */
-    public static function createWithClient(ClientInterface $client): static
+    public static function createWithClient(ClientInterface $client, ?AsyncTransport $asyncTransport = null): static
     {
         static::initializePool();
 
-        return new static(httpClient: $client);
+        return new static(httpClient: $client, asyncTransport: $asyncTransport);
     }
 
     /**
@@ -276,6 +312,85 @@ class ClientHandler implements ClientHandlerInterface
         return self::createMockResponse($statusCode, $headers, $jsonData);
     }
 
+    /** Set whether requests on this handler use asynchronous transport. */
+    public function async(?bool $async = true): ClientHandlerInterface
+    {
+        $this->isAsync = $async ?? true;
+
+        return $this;
+    }
+
+    public function isAsync(): bool
+    {
+        return $this->isAsync;
+    }
+
+    public function wrapAsync(callable $callable): PromiseInterface
+    {
+        return $this->promiseManager->wrapAsync($callable);
+    }
+
+    public function awaitPromise(PromiseInterface $promise, ?float $timeout = null): mixed
+    {
+        return $this->promiseManager->awaitPromise($promise, $timeout);
+    }
+
+    public function all(array $promises): PromiseInterface
+    {
+        return $this->promiseManager->all($promises);
+    }
+
+    public function race(array $promises): PromiseInterface
+    {
+        return $this->promiseManager->race($promises);
+    }
+
+    public function any(array $promises): PromiseInterface
+    {
+        return $this->promiseManager->any($promises);
+    }
+
+    public function sequence(array $callables): PromiseInterface
+    {
+        return $this->promiseManager->sequence($callables);
+    }
+
+    public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface
+    {
+        $this->async();
+
+        return $this->sendAsync()->then($onFulfilled, $onRejected);
+    }
+
+    public function catch(callable $onRejected): PromiseInterface
+    {
+        $this->async();
+
+        return $this->sendAsync()->catch($onRejected);
+    }
+
+    public function finally(callable $onFinally): PromiseInterface
+    {
+        $this->async();
+
+        return $this->sendAsync()->finally($onFinally);
+    }
+
+    public function resolve(mixed $value): PromiseInterface
+    {
+        return $this->promiseManager->resolve($value);
+    }
+
+    public function reject(mixed $reason): PromiseInterface
+    {
+        return $this->promiseManager->reject($reason);
+    }
+
+    public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
+    {
+        return $this->promiseManager->map($items, $callback, $concurrency);
+    }
+
     /**
      * Get the HTTP client.
      *
@@ -284,10 +399,21 @@ class ClientHandler implements ClientHandlerInterface
     public function getHttpClient(): ClientInterface
     {
         if (! $this->httpClient) {
-            $this->httpClient = new GuzzleClient([
+            $clientOptions = [
                 RequestOptions::CONNECT_TIMEOUT => $this->options['timeout'] ?? self::DEFAULT_TIMEOUT,
                 RequestOptions::HTTP_ERRORS => false, // We'll handle HTTP errors ourselves
-            ]);
+            ];
+
+            if (extension_loaded('curl')) {
+                $curlMultiHandler = new CurlMultiHandler(['select_timeout' => 0.001]);
+                $this->curlMultiHandler = $curlMultiHandler;
+                $clientOptions['handler'] = HandlerStack::create(
+                    Proxy::wrapStreaming($curlMultiHandler, new StreamHandler),
+                );
+            }
+
+            $this->httpClient = new GuzzleClient($clientOptions);
+            $this->asyncTransport ??= new GuzzleAsyncTransport($this->httpClient, $this->curlMultiHandler);
         }
 
         return $this->httpClient;
@@ -299,11 +425,84 @@ class ClientHandler implements ClientHandlerInterface
      * @param  ClientInterface  $client  The HTTP client
      * @return $this
      */
-    public function setHttpClient(ClientInterface $client): self
+    public function setHttpClient(ClientInterface $client, ?AsyncTransport $asyncTransport = null): self
     {
         $this->httpClient = $client;
+        $this->asyncTransport = $asyncTransport;
+        $this->curlMultiHandler = null;
 
         return $this;
+    }
+
+    public function setAsyncTransport(AsyncTransport $asyncTransport): self
+    {
+        $this->asyncTransport = $asyncTransport;
+
+        return $this;
+    }
+
+    /** Configure a JSON Schema for outgoing JSON request bodies. */
+    public function withRequestSchema(mixed $schema): static
+    {
+        $this->validationPolicy = new ValidationPolicy(
+            requestSchema: $schema,
+            responseSchema: $this->validationPolicy->responseSchema,
+            openApiSpec: $this->validationPolicy->openApiSpec,
+            validateContracts: $this->validationPolicy->validateContracts,
+        );
+
+        return $this;
+    }
+
+    /** Configure a JSON Schema for JSON response bodies. */
+    public function withResponseSchema(mixed $schema): static
+    {
+        $this->validationPolicy = new ValidationPolicy(
+            requestSchema: $this->validationPolicy->requestSchema,
+            responseSchema: $schema,
+            openApiSpec: $this->validationPolicy->openApiSpec,
+            validateContracts: $this->validationPolicy->validateContracts,
+        );
+
+        return $this;
+    }
+
+    /** Configure an OpenAPI 3.0.x JSON or YAML file. */
+    public function withOpenApiSpec(string $specPath): static
+    {
+        $this->validationPolicy = new ValidationPolicy(
+            requestSchema: $this->validationPolicy->requestSchema,
+            responseSchema: $this->validationPolicy->responseSchema,
+            openApiSpec: $specPath,
+            validateContracts: $this->validationPolicy->validateContracts,
+        );
+
+        return $this;
+    }
+
+    /** Enable or disable request and response contract validation. */
+    public function validateContracts(bool $validate = true): static
+    {
+        $this->validationPolicy = new ValidationPolicy(
+            requestSchema: $this->validationPolicy->requestSchema,
+            responseSchema: $this->validationPolicy->responseSchema,
+            openApiSpec: $this->validationPolicy->openApiSpec,
+            validateContracts: $validate,
+        );
+
+        return $this;
+    }
+
+    public function getValidationManager(): ValidationManager
+    {
+        return $this->validationManager;
+    }
+
+    public function getValidationPolicy(?RequestContext $context = null): ValidationPolicy
+    {
+        $perRequest = $context?->getOption('validation', []);
+
+        return is_array($perRequest) ? $this->validationPolicy->withOptions($perRequest) : $this->validationPolicy;
     }
 
     /**
@@ -462,6 +661,34 @@ class ClientHandler implements ClientHandlerInterface
         return $clone;
     }
 
+    /** @param array<mixed> $promises */
+    protected function validatePromises(array $promises): void
+    {
+        $this->promiseManager->validatePromises($promises);
+    }
+
+    protected function awaitWithTimeout(PromiseInterface $promise, float $timeout): mixed
+    {
+        return $this->promiseManager->awaitPromise($promise, $timeout);
+    }
+
+    protected function createTimeoutPromise(float $timeout): PromiseInterface
+    {
+        return $this->promiseManager->createTimeoutPromise($timeout);
+    }
+
+    protected function getAsyncTransport(): AsyncTransport
+    {
+        if ($this->asyncTransport !== null) {
+            return $this->asyncTransport;
+        }
+
+        $client = $this->getHttpClient();
+        $this->asyncTransport = new GuzzleAsyncTransport($client, $this->curlMultiHandler);
+
+        return $this->asyncTransport;
+    }
+
     /**
      * Send the configured request asynchronously based on current options.
      *
@@ -478,26 +705,12 @@ class ClientHandler implements ClientHandlerInterface
             throw new LogicException('sendAsync() requires method and uri to be set.');
         }
 
-        $startTime = microtime(true);
-        $startMemory = memory_get_usage(true);
+        $promise = $this->sendRequest($method, $uri, ['async' => true]);
+        if (! $promise instanceof PromiseInterface) {
+            throw new LogicException('The asynchronous request pipeline did not return a promise.');
+        }
 
-        $context = RequestContext::fromOptions($this->options);
-        // Use context-based URI building for stateless operation
-        $fullUri = $this->buildFullUriFromContext($context);
-        $guzzleOptions = $context->toGuzzleOptions();
-
-        // Start profiling for this request
-        $requestId = $this->startProfiling($method, $fullUri);
-
-        return $this->executeAsyncRequest(
-            $method,
-            $fullUri,
-            $guzzleOptions,
-            $startTime,
-            $startMemory,
-            $requestId,
-            $context
-        );
+        return $promise;
     }
 
     /**
@@ -621,5 +834,60 @@ class ClientHandler implements ClientHandlerInterface
         }
 
         return $sanitizedOptions;
+    }
+
+    /** @param array<int, mixed> $middleware */
+    private function createRequestCoordinator(
+        RequestContext $context,
+        ValidationPolicy $policy,
+        array $middleware,
+    ): RequestCoordinator {
+        return new RequestCoordinator(
+            requestBuilder: $this->requestBuilder,
+            validationManager: $this->getValidationManager(),
+            validationPolicy: $policy,
+            httpClient: $this->getHttpClient(),
+            asyncTransport: $this->getAsyncTransport(),
+            retryStrategy: $this->createRetryStrategy($context),
+            cacheManager: $this->getCacheManager(),
+            middleware: $middleware,
+            hooks: new RequestCoordinatorHooks(
+                mockRequest: fn (string $method, string $uri, array $options) => $this->handleMockRequest($method, $uri, $options),
+                startProfiling: fn (string $method, string $uri) => $this->startProfiling($method, $uri),
+                recordProfilingEvent: fn (?string $requestId, string $event) => $this->recordProfilingEvent($requestId, $event),
+                endProfiling: fn (?string $requestId, ?int $statusCode) => $this->endProfiling($requestId, $statusCode),
+                connectionStats: fn (): array => $this->getConnectionDebugStats(),
+                captureDebugSnapshot: fn (string $method, string $uri, array $options, ?ResponseInterface $response, float $startTime, int $startMemory, array $connectionStats) => $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats),
+                logRequest: fn (string $method, string $uri, array $options) => $this->logRequest($method, $uri, $options),
+                logResponse: function (ResponseContract $response, float $duration): void {
+                    if ($response instanceof Response) {
+                        $this->logResponse($response, $duration);
+                    }
+                },
+                eventRequest: fn (string $method, string $uri, array $headers) => $this->eventRequest($method, $uri, $headers),
+                emitRequestEvent: fn (RequestInterface $request, RequestContext $requestContext, float $timestamp) => $this->emitRequestEvent($request, $requestContext, $timestamp),
+                emitResponseEvent: fn (RequestInterface $request, ResponseInterface $response, RequestContext $requestContext, float $startTime) => $this->emitResponseEvent($request, $response, $requestContext, $startTime),
+                emitErrorEvent: fn (RequestInterface $request, \Throwable $exception, RequestContext $requestContext, float $startTime) => $this->emitErrorEvent($request, $exception, $requestContext, $startTime),
+                hasRedirectListeners: fn (): bool => $this->hasEventListeners(RedirectEvent::NAME),
+                attachRedirectListener: fn (array $options, RequestInterface $request, RequestContext $requestContext): array => $this->attachRedirectListener($options, $request, $requestContext),
+                notifyRetry: fn (int $attempt, int $maxAttempts, \Throwable $exception, int $delay, ?RequestContext $requestContext) => $this->notifyRetry($attempt, $maxAttempts, $exception, $delay, $requestContext),
+                withErrorContext: fn (\Throwable $exception, string $method, string $uri): \Throwable => $this->withErrorContext($exception, $method, $uri),
+                logAsyncFailure: function (string $method, string $uri, \Throwable $exception): void {
+                    $this->logger->error('Async request failed', [
+                        'method' => $method,
+                        'uri' => $uri,
+                        'error' => $exception->getMessage(),
+                        'exception_class' => get_class($exception),
+                    ]);
+                },
+            ),
+        );
+    }
+
+    public function __clone(): void
+    {
+        // Pool and HTTP/2 toggles belong to the handler; GlobalServices still
+        // owns the shared pool and DNS cache used by each manager instance.
+        $this->connectionPoolManager = clone $this->connectionPoolManager;
     }
 }

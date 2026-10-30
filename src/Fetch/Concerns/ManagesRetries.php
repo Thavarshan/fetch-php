@@ -11,7 +11,6 @@ use Fetch\Support\RequestContext;
 use Fetch\Support\RetryDefaults;
 use Fetch\Support\RetryStrategy;
 use InvalidArgumentException;
-use Psr\Log\NullLogger;
 
 trait ManagesRetries
 {
@@ -157,7 +156,18 @@ trait ManagesRetries
      */
     protected function retryRequest(?RequestContext $context, callable $request): ResponseInterface
     {
-        // Read retry config from context if provided, otherwise fall back to handler state
+        $strategy = $this->createRetryStrategy($context);
+
+        return $strategy->execute(
+            $request,
+            function (int $attempt, int $maxAttempts, \Throwable $exception, int $delayMs) use ($context): void {
+                $this->notifyRetry($attempt, $maxAttempts, $exception, $delayMs, $context);
+            }
+        );
+    }
+
+    protected function createRetryStrategy(?RequestContext $context): RetryStrategy
+    {
         $maxRetries = $context?->getMaxRetries() ?? $this->getMaxRetries();
         $baseDelayMs = $context?->getRetryDelay() ?? $this->getRetryDelay();
 
@@ -170,25 +180,26 @@ trait ManagesRetries
             ? $context->getRetryableExceptions()
             : $this->retryableExceptions;
 
-        $strategy = new RetryStrategy(
+        return new RetryStrategy(
             maxRetries: $maxRetries,
             baseDelayMs: $baseDelayMs,
             retryableStatusCodes: $retryableStatusCodes,
             retryableExceptions: $retryableExceptions,
-            logger: $this->logger ?? new NullLogger
+            logger: $this->logger,
         );
+    }
 
-        return $strategy->execute(
-            $request,
-            function (int $attempt, int $maxAttempts, \Throwable $exception, int $delayMs) use ($context): void {
-                $this->logRetryAttempt($attempt, $maxAttempts, $exception, $delayMs, $context);
-
-                // Fire the request.retrying event when the events trait is present.
-                if ($context !== null && method_exists($this, 'emitRetryEvent')) {
-                    $this->emitRetryEvent($context, $exception, $attempt, $maxAttempts, $delayMs);
-                }
-            }
-        );
+    protected function notifyRetry(
+        int $attempt,
+        int $maxAttempts,
+        \Throwable $exception,
+        int $delayMs,
+        ?RequestContext $context,
+    ): void {
+        $this->logRetryAttempt($attempt, $maxAttempts, $exception, $delayMs, $context);
+        if ($context !== null) {
+            $this->emitRetryEvent($context, $exception, $attempt, $maxAttempts, $delayMs);
+        }
     }
 
     /**
@@ -207,9 +218,7 @@ trait ManagesRetries
         int $delayMs,
         ?RequestContext $context = null,
     ): void {
-        if (method_exists($this, 'logRetry')) {
-            $this->logRetry($attempt, $maxAttempts, $exception);
-        }
+        $this->logRetry($attempt, $maxAttempts, $exception);
     }
 
     /**
@@ -239,20 +248,6 @@ trait ManagesRetries
      */
     protected function isRetryableError(\Throwable $e, ?RequestContext $context = null): bool
     {
-        // Use context values if provided, otherwise fall back to handler state
-        $retryableStatusCodes = $context !== null
-            ? $context->getRetryableStatusCodes()
-            : $this->retryableStatusCodes;
-
-        $retryableExceptions = $context !== null
-            ? $context->getRetryableExceptions()
-            : $this->retryableExceptions;
-
-        $strategy = new RetryStrategy(
-            retryableStatusCodes: $retryableStatusCodes,
-            retryableExceptions: $retryableExceptions,
-        );
-
-        return $strategy->isRetryable($e);
+        return $this->createRetryStrategy($context)->isRetryable($e);
     }
 }

@@ -25,6 +25,20 @@ class MockServerTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_is_active_tracks_fakes_and_recording(): void
+    {
+        $mockServer = MockServer::getInstance();
+        self::assertFalse($mockServer->isActive());
+
+        MockServer::fake([]);
+        self::assertTrue($mockServer->isActive());
+
+        MockServer::resetInstance();
+        $mockServer = MockServer::getInstance();
+        MockServer::startRecording();
+        self::assertTrue($mockServer->isActive());
+    }
+
     public function test_fakes_all_requests_with_empty_200(): void
     {
         MockServer::fake();

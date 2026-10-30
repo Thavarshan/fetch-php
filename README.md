@@ -27,6 +27,7 @@ Full documentation can be found [here](https://fetch-php.thavarshan.com/)
 - **Streaming & Server-Sent Events**: Consume response bodies incrementally (`response.body`-style) and parse `text/event-stream` responses — ideal for streaming LLM APIs and live feeds
 - **Middleware Pipeline**: PSR-7-based middleware/interceptors for cross-cutting concerns (auth, logging, versioning) with priority ordering and conditional application
 - **Lifecycle Events & Hooks**: Observe the full request lifecycle (`onRequest`/`onResponse`/`onError`/`onRetry`/`onTimeout`/`onRedirect`) with correlation IDs and prioritised listeners
+- **Opt-in Contract Validation**: Validate JSON request/response schemas and OpenAPI 3.0.x contracts using optional adapters
 - **Retry Mechanics**: Configurable retry logic with exponential backoff for transient failures
 - **RFC 7234 HTTP Caching**: Full caching support with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error
 - **Connection Pooling**: Reuse TCP connections across requests with global connection pool and DNS caching
@@ -70,13 +71,17 @@ composer require jerome/fetch-php
 ### JavaScript-style API (Promise Chaining)
 
 ```php
-use function Matrix\Support\async;
+use Fetch\Http\ClientHandler;
 
-// JavaScript-like promise chaining in PHP
-async(fn() => fetch('https://api.example.com/users'))
+$handler = ClientHandler::create()->async();
+$handler->get('https://api.example.com/users')
     ->then(fn ($response) => $response->json())
-    ->catch(fn ($error) => echo "Error: " . $error->getMessage())
-    ->finally(fn () => echo "Request completed.");
+    ->catch(static function (\Throwable $error): array {
+        error_log('Request failed: '.$error::class);
+
+        return [];
+    })
+    ->finally(static fn () => print("Request completed.\n"));
 ```
 
 Or, using the client handler for more control:
@@ -116,223 +121,44 @@ $response = fetch_client()
     ->get('/users');
 ```
 
-## Async/Await Pattern
+## Async/Await and Matrix 4
 
-> **Note**: The async functions (`async`, `await`, `all`, `race`, `map`, `batch`, `retry`) are provided by the [jerome/matrix](https://packagist.org/packages/jerome/matrix) library, which is included as a dependency.
-
-### Using Async/Await
+Matrix provides promise helpers such as `await()`, `all()`, `race()`, and `map()`. Use an async `ClientHandler` for nonblocking HTTP I/O; wrapping synchronous `fetch()` in Matrix's `async()` helper does not make network I/O asynchronous.
 
 ```php
-use function Matrix\Support\async;
-use function Matrix\Support\await;
-
-$response = await(async(fn() => fetch('https://api.example.com/users')));
-$users = $response->json();
-echo "Fetched " . count($users) . " users";
-```
-
-### Multiple Concurrent Requests with Async/Await
-
-```php
-// These async functions are provided by the Matrix library dependency
-use function Matrix\Support\async;
-use function Matrix\Support\await;
+use Fetch\Http\ClientHandler;
 use function Matrix\Support\all;
-
-// Execute an async function
-await(async(function() {
-    // Create multiple requests
-    $results = await(all([
-        'users' => async(fn() => fetch('https://api.example.com/users')),
-        'posts' => async(fn() => fetch('https://api.example.com/posts')),
-        'comments' => async(fn() => fetch('https://api.example.com/comments'))
-    ]));
-
-    // Process the results
-    $users = $results['users']->json();
-    $posts = $results['posts']->json();
-    $comments = $results['comments']->json();
-
-    echo "Fetched " . count($users) . " users, " .
-         count($posts) . " posts, and " .
-         count($comments) . " comments";
-}));
-```
-
-### Sequential Requests with Async/Await
-
-```php
-use function Matrix\Support\async;
 use function Matrix\Support\await;
 
-await(async(function() {
-    // First request: get auth token
-    $authResponse = await(async(fn() =>
-        fetch('https://api.example.com/auth/login', [
-            'method' => 'POST',
-            'json' => [
-                'username' => 'user',
-                'password' => 'pass'
-            ]
-        ])
-    ));
+$handler = ClientHandler::create()->async();
+$responses = await(all([
+    'users' => $handler->get('https://api.example.com/users'),
+    'posts' => $handler->get('https://api.example.com/posts'),
+]));
 
-    $token = $authResponse->json()['token'];
-
-    // Second request: use token to get user data
-    $userResponse = await(async(fn() =>
-        fetch('https://api.example.com/me', [
-            'token' => $token
-        ])
-    ));
-
-    return $userResponse->json();
-}));
+$users = $responses['users']->json();
+$posts = $responses['posts']->json();
 ```
 
-### Error Handling with Async/Await
+`ClientHandler::map()` bounds concurrency and preserves input keys. Async requests use a cURL multi driver when available. A custom Guzzle client needs an explicitly injected loop-compatible `AsyncTransport`; see the [async guide](docs/guide/async-requests.md) for details.
+
+## Request and Response Validation
+
+Validation is opt-in. Install the optional adapters you need with Composer:
+
+```sh
+composer require opis/json-schema:^2.6 league/openapi-psr7-validator:^0.24
+```
+
+Then configure JSON Schema or OpenAPI 3.0.x validation on `ClientHandler`. YAML OpenAPI files also need `symfony/yaml` or `ext-yaml`.
 
 ```php
-use function Matrix\Support\async;
-use function Matrix\Support\await;
-
-try {
-    $data = await(async(function() {
-        $response = await(async(fn() =>
-            fetch('https://api.example.com/users/999')
-        ));
-
-        if ($response->isNotFound()) {
-            throw new \Exception("User not found");
-        }
-
-        return $response->json();
-    }));
-
-    // Process the data
-
-} catch (\Exception $e) {
-    echo "Error: " . $e->getMessage();
-}
+$response = ClientHandler::createWithBaseUri('https://api.example.com')
+    ->withResponseSchema($userSchema)
+    ->get('/users/123');
 ```
 
-## Traditional Promise-based Pattern
-
-```php
-// Set up an async request
-// Get the handler for async operations
-$handler = fetch_client()->getHandler();
-$handler->async();
-
-// Make the async request
-$promise = $handler->get('https://api.example.com/users');
-
-// Handle the result with callbacks
-$promise->then(
-    function ($response) {
-        // Process successful response
-        $users = $response->json();
-        foreach ($users as $user) {
-            echo $user['name'] . PHP_EOL;
-        }
-    },
-    function ($exception) {
-        // Handle errors
-        echo "Error: " . $exception->getMessage();
-    }
-);
-```
-
-## Advanced Async Usage
-
-### Concurrent Requests with Promise Utilities
-
-```php
-use function Matrix\Support\race;
-
-// Create promises for redundant endpoints
-$promises = [
-    async(fn() => fetch('https://api1.example.com/data')),
-    async(fn() => fetch('https://api2.example.com/data')),
-    async(fn() => fetch('https://api3.example.com/data'))
-];
-
-// Get the result from whichever completes first
-$response = await(race($promises));
-$data = $response->json();
-echo "Got data from the fastest source";
-```
-
-### Controlled Concurrency with Map
-
-```php
-use function Matrix\Support\map;
-
-// List of user IDs to fetch
-$userIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-// Process at most 3 requests at a time
-$responses = await(map($userIds, function($id) {
-    return async(function() use ($id) {
-        return fetch("https://api.example.com/users/{$id}");
-    });
-}, 3));
-
-// Process the responses
-foreach ($responses as $index => $response) {
-    $user = $response->json();
-    echo "Processed user {$user['name']}\n";
-}
-```
-
-### Batch Processing
-
-```php
-use function Matrix\Support\batch;
-
-// Array of items to process
-$items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-// Process in batches of 3 with max 2 concurrent batches
-$results = await(batch(
-    $items,
-    function($batch) {
-        // Process a batch
-        return async(function() use ($batch) {
-            $batchResults = [];
-            foreach ($batch as $id) {
-                $response = await(async(fn() =>
-                    fetch("https://api.example.com/users/{$id}")
-                ));
-                $batchResults[] = $response->json();
-            }
-            return $batchResults;
-        });
-    },
-    3, // batch size
-    2  // concurrency
-));
-```
-
-### With Retries
-
-```php
-use function Matrix\Support\retry;
-
-// Retry a flaky request up to 3 times with exponential backoff
-$data = await(retry(
-    function() {
-        return async(function() {
-            return fetch('https://api.example.com/unstable-endpoint');
-        });
-    },
-    3, // max attempts
-    function($attempt) {
-        // Exponential backoff strategy
-        return min(pow(2, $attempt) * 100, 1000);
-    }
-));
-```
+See the [validation guide](docs/guide/validation.md) for per-request schemas, OpenAPI contracts, error behavior, and streaming limitations.
 
 ## Advanced Configuration
 
@@ -804,10 +630,12 @@ $stats = $handler->getPoolStats();
 
 ## Async Notes
 
-- Async requests use the same pipeline (mocking, profiling, logging) but bypass caching by design.
+- Async requests use an event-loop-driven transport and the same middleware, mocking, profiling, and logging pipeline; they bypass caching by design.
 - Matrix helpers (`async`, `await`, `all`, `race`, `map`, `batch`, `retry`) are re-exported in `Fetch\Support\helpers.php`.
 - Errors are wrapped with method/URL context while preserving the original exception chain.
-- Use `$handler->async()` to enable async mode, or use the Matrix async utilities directly.
+- Use `$handler->async()` to dispatch nonblocking HTTP requests. Wrapping synchronous `fetch()` in Matrix's `async()` does not make its I/O nonblocking.
+- The default Guzzle adapter uses cURL multi when available. Custom Guzzle clients need a loop-compatible `AsyncTransport`; otherwise async calls fail explicitly instead of blocking the event loop.
+- Keep `await()` at top-level synchronous boundaries; inside event-loop callbacks, compose and return promises.
 
 ## License
 

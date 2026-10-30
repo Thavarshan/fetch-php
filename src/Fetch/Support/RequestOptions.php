@@ -55,7 +55,7 @@ class RequestOptions
     private const FETCH_OPTIONS = [
         'method', 'uri', 'base_uri', 'async', 'retries', 'max_retries',
         'retry_delay', 'retry_status_codes', 'retry_exceptions',
-        'cache', 'profiler', 'content_type', 'token',
+        'cache', 'profiler', 'content_type', 'token', 'validation',
     ];
 
     /**
@@ -255,6 +255,27 @@ class RequestOptions
         // Validate base_uri format
         if (isset($options['base_uri']) && ! filter_var($options['base_uri'], FILTER_VALIDATE_URL)) {
             throw new InvalidArgumentException("Invalid base URI: {$options['base_uri']}");
+        }
+
+        if (isset($options['validation']) && ! is_array($options['validation'])) {
+            throw new InvalidArgumentException('Validation options must be an array.');
+        }
+
+        if (isset($options['validation']) && is_array($options['validation'])) {
+            $unsupported = array_diff(array_keys($options['validation']), [
+                'request_schema', 'response_schema', 'openapi_spec', 'validate_contracts',
+            ]);
+            if ($unsupported !== []) {
+                throw new InvalidArgumentException(sprintf('Unsupported validation option: %s', (string) reset($unsupported)));
+            }
+
+            if (isset($options['validation']['openapi_spec']) && ! is_string($options['validation']['openapi_spec'])) {
+                throw new InvalidArgumentException('The validation openapi_spec option must be a file path string.');
+            }
+
+            if (isset($options['validation']['validate_contracts']) && ! is_bool($options['validation']['validate_contracts'])) {
+                throw new InvalidArgumentException('The validation validate_contracts option must be a boolean.');
+            }
         }
     }
 

@@ -23,18 +23,22 @@ The public GitHub repository is `Thavarshan/fetch-php`; the Packagist package is
 Read [CODE_MAP.md](CODE_MAP.md) for the concrete public surface before making
 non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 
-- `Http/` — `Client` (PSR-18), `ClientHandler` (fluent engine), `Request`,
+- `Http/` — `Client` (PSR-18), `ClientHandler` (stable facade), `Request`,
   `Response`, `StreamedResponse`, `EventSource`, `ServerSentEvent`,
-  `MiddlewarePipeline`.
-- `Concerns/` — traits composed into `ClientHandler`: `ConfiguresRequests`,
-  `HandlesUris`, `PerformsHttpRequests`, `ManagesPromises`, `ManagesRetries`,
-  `ManagesMiddleware`, `ManagesEvents`, `ManagesConnectionPool`,
-  `ManagesDebugAndProfiling`, `HandlesMocking`.
+  `MiddlewarePipeline`, request coordinator/builder, sync/async/streaming
+  executors, and the Guzzle async transport adapter.
+- `Concerns/` — facade traits for `ConfiguresRequests`, `HandlesUris`,
+  `PerformsHttpRequests`, `ManagesRetries`, `ManagesMiddleware`, `ManagesEvents`,
+  `ManagesConnectionPool`, `ManagesDebugAndProfiling`, and `HandlesMocking`.
+  `ManagesPromises` remains only as a deprecated direct-consumer compatibility
+  shim; `ClientHandler` uses `Async/PromiseManager` by composition.
+- `Async/` — Matrix-backed `PromiseManager`.
+- `Validation/` — opt-in JSON Schema and OpenAPI request/response validation.
 - `Enum/` — `Method`, `ContentType`, `Status`.
 - `Cache/` — RFC 7234 caching: `CacheManager`, `CacheControl`,
   `CacheKeyGenerator`, `CachedResponse`, `MemoryCache`, `FileCache`.
-- `Pool/` — `ConnectionPool`, `HostConnectionPool`, `Connection`, `DnsCache`,
-  `Http2Configuration`, `PoolConfiguration`.
+- `Pool/` — `ConnectionPoolManager`, `ConnectionPool`, `HostConnectionPool`,
+  `Connection`, `DnsCache`, `Http2Configuration`, `PoolConfiguration`.
 - `Events/` — `EventDispatcher` and lifecycle events.
 - `Middleware/` — built-in `AddHeadersMiddleware`, `LoggingMiddleware`.
 - `Exceptions/` — `ClientException`, `NetworkException`, `RequestException`,
@@ -51,7 +55,7 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
   plus one `prefer-lowest` job (Ubuntu, 8.3). Local dev pins 8.4 (`.phpvmrc`).
 - Requires `ext-pcntl` (ignored on Windows, along with `ext-posix`).
 - Runtime deps: `guzzlehttp/guzzle ^7.9`, `guzzlehttp/psr7 ^2.7`,
-  `jerome/matrix ^3.4`, `react/event-loop ^1.5`, `react/promise ^3.2`,
+  `jerome/matrix ^4.0`, `react/event-loop ^1.5`, `react/promise ^3.2`,
   `psr/http-message ^1|^2`, `psr/log ^1|^2|^3`.
 - `composer.json` has **no `version` field** — versions come from Git tags.
 - `composer.lock` is not committed (this is a library).

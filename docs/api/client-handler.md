@@ -14,14 +14,8 @@ namespace Fetch\Http;
 
 class ClientHandler implements ClientHandlerInterface
 {
-    use ConfiguresRequests,
-        HandlesUris,
-        ManagesPromises,
-        ManagesRetries,
-        PerformsHttpRequests,
-        HandlesMocking,
-        ManagesConnectionPool,
-        ManagesDebugAndProfiling;
+    // Stable facade backed by focused request, async, validation, retry,
+    // promise, and connection-pool collaborators.
 
     // ...
 }
@@ -96,6 +90,12 @@ Creates a client handler with a custom HTTP client.
 ```php
 public static function createWithClient(ClientInterface $client): static
 ```
+
+The default client uses cURL multi when available. For a custom Guzzle client, call `setAsyncTransport()` with a loop-compatible `AsyncTransport` before making async requests; see [Asynchronous Requests](/guide/async-requests).
+
+### Validation configuration
+
+`withRequestSchema(mixed $schema)`, `withResponseSchema(mixed $schema)`, `withOpenApiSpec(string $specPath)`, and `validateContracts(bool $validate = true)` configure opt-in validation on the handler. The optional validators are `opis/json-schema:^2.6` and `league/openapi-psr7-validator:^0.24`; see the [validation guide](/guide/validation).
 
 ### `handle()`
 

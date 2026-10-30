@@ -56,21 +56,23 @@ Implements the union interface `Fetch\Interfaces\ClientHandler`, combining:
 - `PoolAwareHandler` (`withConnectionPool`, `withHttp2`, DNS cache controls).
 - `HttpClientAware` (inject your own Guzzle client).
 
-Implementation relies on traits in `src/Fetch/Concerns/`:
+The stable handler facade composes focused collaborators. Traits remain for cohesive fluent configuration and facade delegation:
 
 - `ConfiguresRequests` – base URI, headers, authentication, body helpers (`withBody` enforces content-type/header consistency).
 - `HandlesUris` – builds absolute URIs using handler options or immutable `RequestContext`.
-- `ManagesPromises` – toggles async mode, exposes `then/catch/finally`, `map`, `sequence`, and concurrency utilities (Matrix bridge).
-- `ManagesRetries` – exposes fluent retry configuration and delegates execution to `Support\RetryStrategy`.
-- `PerformsHttpRequests` – orchestrates RequestContext creation, logging, caching, mocking, profiling, and actual HTTP execution (sync + async).
+- `ManagesPromises` – deprecated compatibility shim for direct trait consumers; `ClientHandler` no longer composes it and uses `Fetch\Async\PromiseManager` directly.
+- `ManagesRetries` – exposes fluent retry configuration and delegates sync and async execution to `Support\RetryStrategy`.
+- `PerformsHttpRequests` – small public delegation layer; `Fetch\Http\RequestCoordinator` owns the request lifecycle.
 - `HandlesMocking` – consults `Testing\MockServer` before hitting the network.
 - `ManagesConnectionPool` – bridges to `Support\GlobalServices` for shared pools/DNS cache/HTTP2.
 - `ManagesDebugAndProfiling` – surfaces `withDebug`, `withProfiler`, attaches `DebugInfo` snapshots per response.
 
+Execution collaborators include `RequestBuilder`, `RequestExecutor`, `AsyncRequestExecutor`, `StreamingRequestExecutor`, `GuzzleAsyncTransport`, and `ConnectionPoolManager`. Validation uses `Fetch\Validation\ValidationManager`, optional JSON Schema/OpenAPI adapters, and an immutable `ValidationPolicy`.
+
 Key runtime behaviors:
 
 - Builds an immutable `RequestContext` per call by merging factory defaults → global defaults → handler options → request overrides.
-- Supports synchronous and asynchronous execution. Async requests always bypass caching and use `React\Promise` via Matrix's helpers.
+- Supports synchronous and asynchronous execution. Async requests use a ReactPHP `AsyncTransport` bridge and bypass caching.
 - Integrates caching through `CacheManager` automatically when `withCache()` was called or a `cache` option is present.
 - Supports `MockServer` fakes before network IO, `Recorder` integration when recording is enabled.
 - Logging sanitizes sensitive headers and auth credentials.
@@ -212,12 +214,18 @@ Key runtime behaviors:
 
 ## Async & Promise Operations
 
-- `ManagesPromises` trait exposes:
+- `Fetch\Async\PromiseManager` backs the stable handler facade and exposes:
   - `async(?bool $async = true)`, `isAsync()`.
   - `wrapAsync(callable $cb)`, `awaitPromise(PromiseInterface $promise, ?float $timeout)`, `all()`, `race()`, `any()`, `sequence()`.
   - `then`, `catch`, `finally` automatically toggle async mode and call `sendAsync()`.
-  - `map(array $items, callable $cb, int $concurrency)` uses `mapBatched()` for controlled concurrency.
-  - Internally delegates to Matrix helpers (e.g., `Matrix\Support\async`, `await`, `timeout`) and rethrows timeouts as `RuntimeException`.
+  - `map(array $items, callable $cb, int $concurrency)` delegates scheduling to Matrix 4 and preserves the input keys and the established `(value, key)` callback contract.
+  - Internally delegates composition, aggregation, and mapping to Matrix 4 helpers. Guzzle transport promises are explicitly bridged to React promises; the default bridge requires cURL multi for network I/O.
+
+## Validation
+
+- `Fetch\Validation\JsonSchemaValidator` uses optional `opis/json-schema:^2.6`; it does not fetch external references automatically.
+- `OpenApiContractValidator` uses optional `league/openapi-psr7-validator:^0.24` and supports local OpenAPI 3.0.x JSON/YAML documents.
+- `ValidationManager` integrates request checks after middleware and response checks before cache persistence/return. Validation is disabled by default and streaming validation fails clearly rather than buffering.
 
 ---
 
@@ -225,7 +233,7 @@ Key runtime behaviors:
 
 - `ManagesRetries::retry(int $retries, int $delayMs = 100)` updates handler defaults; negative inputs throw `InvalidArgumentException`.
 - `retryStatusCodes()` / `retryExceptions()` allow per-handler overrides beyond defaults.
-- Execution pipeline (sync + async) routes through `retryRequest(RequestContext|null, callable $request)` which uses `RetryStrategy::execute()`.
+- Sync and async execution use `RetryStrategy::execute()` and its nonblocking `executeAsync()` path, with Fetch retry counts translated to Matrix-compatible attempts and millisecond delays scheduled through ReactPHP.
 - Stored status codes/exceptions are also injected from `RequestContext` when per-request options specify `retry_status_codes` or `retry_exceptions`.
 - Exceptions:
   - `Fetch\Exceptions\ClientException` – base class implementing `Psr\Http\Client\ClientExceptionInterface`.
@@ -265,10 +273,10 @@ Key runtime behaviors:
 
 - `Fetch\Concerns\ConfiguresRequests` – option/header/body/auth helpers plus `reset()`.
 - `Fetch\Concerns\HandlesUris` – validation, normalization, query building, base URI enforcement.
-- `Fetch\Concerns\PerformsHttpRequests` – public `handle()` factory, verb wrappers, caching/mocking/profiling pipeline, sync/async execution, stale-if-error logic.
-- `Fetch\Concerns\ManagesPromises` – promise orchestration.
+- `Fetch\Concerns\PerformsHttpRequests` – stable public request facade and streaming dispatch.
+- `Fetch\Concerns\ManagesPromises` – deprecated compatibility shim; new code should use `Fetch\Async\PromiseManager`.
 - `Fetch\Concerns\ManagesRetries` – fluent retry configuration and integration with `RetryStrategy`.
-- `Fetch\Concerns\ManagesConnectionPool` – toggles pooling + HTTP/2, exposes diagnostics, DNS cache helpers.
+- `Fetch\Concerns\ManagesConnectionPool` – facade for `ConnectionPoolManager`, toggles pooling + HTTP/2, exposes diagnostics, DNS cache helpers.
 - `Fetch\Concerns\ManagesDebugAndProfiling` – `withDebug`, `withProfiler`, `getProfiler()`, debug snapshot capture.
 - `Fetch\Concerns\HandlesMocking` – converts handler options into PSR requests for the mock server.
 

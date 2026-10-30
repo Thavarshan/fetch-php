@@ -90,7 +90,7 @@ if ($response->isOk()) {                 // 200 OK
     // Handle validation errors
 }
 
-// Check any status code using isStatus()
+// Use isStatus() for arbitrary status codes (the preferred general API).
 if ($response->isStatus(418)) { // I'm a teapot 🫖
     echo "This server is a teapot!";
 }
