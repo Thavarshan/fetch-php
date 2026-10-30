@@ -39,7 +39,7 @@
         "league/openapi-psr7-validator": "^0.24",
         "mockery/mockery": "^1.6",
         "opis/json-schema": "^2.6",
-        "phpstan/phpstan": "^1.11.5",
+        "phpstan/phpstan": "^1.11.5 || ^2.0.0",
         "phpunit/phpunit": "^11.5",
         "squizlabs/php_codesniffer": "^3.7",
         "symfony/yaml": "^6.0|^7.0",
