@@ -482,11 +482,80 @@ body {
 }
 
 .VPHome > .VPHero + div div[class*='language-'] {
+    position: relative;
     max-width: 760px;
     margin: 24px 0;
     border: 1px solid var(--site-border);
     border-radius: 5px;
     background: var(--vp-code-block-bg);
+}
+
+.VPHome > .VPHero + div [class*='language-'] > span.lang {
+    position: absolute;
+    top: 6px;
+    right: 12px;
+    z-index: 2;
+    color: var(--site-muted);
+    font-size: 11px;
+    font-weight: 500;
+    user-select: none;
+}
+
+.VPHome > .VPHero + div [class*='language-'] > button.copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--vp-code-copy-code-border-color);
+    border-radius: 4px;
+    background-color: var(--vp-code-copy-code-bg);
+    background-image: var(--vp-icon-copy);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 18px;
+    cursor: pointer;
+    opacity: 0;
+}
+
+.VPHome > .VPHero + div [class*='language-']:hover > button.copy,
+.VPHome > .VPHero + div [class*='language-'] > button.copy:focus-visible {
+    opacity: 1;
+}
+
+.VPHome > .VPHero + div [class*='language-'] > button.copy:hover,
+.VPHome > .VPHero + div [class*='language-'] > button.copy.copied {
+    border-color: var(--vp-code-copy-code-hover-border-color);
+    background-color: var(--vp-code-copy-code-hover-bg);
+}
+
+.VPHome > .VPHero + div [class*='language-'] > button.copy.copied {
+    background-image: var(--vp-icon-copied);
+}
+
+.VPHome > .VPHero + div [class*='language-'] > button.copy.copied::before {
+    position: absolute;
+    top: -1px;
+    right: 31px;
+    display: flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--vp-code-copy-code-hover-border-color);
+    border-right: 0;
+    border-radius: 4px 0 0 4px;
+    background: var(--vp-code-copy-code-hover-bg);
+    color: var(--vp-code-copy-code-active-text);
+    content: var(--vp-code-copy-copied-text-content);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.VPHome > .VPHero + div [class*='language-']:hover > button.copy + span.lang,
+.VPHome > .VPHero + div [class*='language-'] > button.copy:focus + span.lang {
+    opacity: 0;
 }
 
 .VPHome > .VPHero + div div[class*='language-'] pre {
