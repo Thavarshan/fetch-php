@@ -4,6 +4,12 @@
 
 ### Changed
 
+- Replace the homepage grid workarounds with a supported custom Vue layout,
+  shared Shiki examples, an integrated request/response workbench, and a
+  consistent blue/slate design system across the homepage and documentation.
+- Preserve VitePress's default component initialization and enforce Vue
+  type-checking and deterministic browser smoke tests in documentation CI.
+
 - Redesign the documentation as a reading-first VitePress site with a
   code-led homepage, local fonts, page-specific metadata, and the native
   navigation and code-copy controls. Correct the pool transport limitation and

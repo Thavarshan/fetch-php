@@ -36,6 +36,7 @@ $excludedDirectories = [
     'vendor',
 ];
 $generatedDirectories = [
+    $root.'/.artifacts',
     $root.'/docs/.vitepress/.temp',
     $root.'/docs/.vitepress/cache',
 ];

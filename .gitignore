@@ -39,3 +39,6 @@ docs/.obsidian/*
 .claude/settings.local.json
 CLAUDE.local.md
 .agents/skills
+
+# Browser QA output
+.artifacts/

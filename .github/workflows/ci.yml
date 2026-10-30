@@ -54,6 +54,9 @@ jobs:
               - 'package-lock.json'
               - 'tools/check-doc-examples.php'
               - 'tools/check-markdown-links.mjs'
+              - 'tools/browser/**'
+              - 'playwright.config.ts'
+              - 'tsconfig.json'
               - 'composer.json'
               - '.github/workflows/ci.yml'
               - 'README.md'
@@ -261,8 +264,25 @@ jobs:
       - name: Audit production documentation dependencies
         run: npm audit --omit=dev --audit-level=moderate
 
+      - name: Type-check documentation components
+        run: npm run typecheck
+
       - name: Build documentation
         run: npm run build
+
+      - name: Install Chromium for frontend smoke tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Test documentation in Chromium
+        run: npm run test:browser
+
+      - name: Upload frontend test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-browser-${{ github.run_id }}
+          path: .artifacts/
+          retention-days: 7
 
       - name: Check documentation PHP examples
         run: composer docs:examples

@@ -11,8 +11,8 @@
     --color-card-foreground: var(--site-text);
     --color-popover: var(--site-surface);
     --color-popover-foreground: var(--site-text);
-    --color-primary: var(--site-highlight);
-    --color-primary-foreground: #172840;
+    --color-primary: var(--site-accent);
+    --color-primary-foreground: var(--site-accent-contrast);
     --color-secondary: var(--site-surface-raised);
     --color-secondary-foreground: var(--site-text);
     --color-muted: var(--site-surface-raised);
