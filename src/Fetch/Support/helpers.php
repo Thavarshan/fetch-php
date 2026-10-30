@@ -90,57 +90,39 @@ if (! function_exists('process_request_options')) {
      */
     function process_request_options(array $options): array
     {
-        $processedOptions = [];
+        $normalizedOptions = RequestOptions::normalizeOptionKeys($options);
 
         // Method (default to GET)
-        $method = $options['method'] ?? Method::GET;
+        $method = $normalizedOptions['method'] ?? Method::GET;
         $methodValue =
             $method instanceof Method ? $method->value : (string) $method;
-        $processedOptions['method'] = $methodValue;
-
-        // Headers
-        if (isset($options['headers'])) {
-            $processedOptions['headers'] = $options['headers'];
-        }
-
-        // Content type and body handling
-        [$body, $contentType] = extract_body_and_content_type($options);
-
-        if ($body !== null) {
-            $processedOptions['body'] = $body;
-            if ($contentType !== null) {
-                $processedOptions['content_type'] = $contentType;
-            }
-        }
-
-        // Query parameters
-        if (isset($options['query'])) {
-            $processedOptions['query'] = $options['query'];
-        }
-
-        // Copy other direct pass options
-        $directPassOptions = [
-            'timeout',
-            'connect_timeout',
-            'retries',
-            'retry_delay',
-            'auth',
-            'token',
-            'proxy',
-            'cookies',
-            'allow_redirects',
-            'cert',
-            'ssl_key',
-            'stream',
-            'progress',
-            'debug',
-        ];
-
-        foreach ($directPassOptions as $opt) {
-            if (isset($options[$opt])) {
-                $processedOptions[$opt] = $options[$opt];
-            }
-        }
+        $processedOptions = ['method' => $methodValue] + array_intersect_key(
+            $normalizedOptions,
+            array_flip([
+                'headers',
+                'body',
+                'json',
+                'form',
+                'form_params',
+                'multipart',
+                'content_type',
+                'query',
+                'timeout',
+                'connect_timeout',
+                'retries',
+                'retry_delay',
+                'auth',
+                'token',
+                'proxy',
+                'cookies',
+                'allow_redirects',
+                'cert',
+                'ssl_key',
+                'stream',
+                'progress',
+                'debug',
+            ]),
+        );
 
         return RequestOptions::normalizeBodyOptions($processedOptions);
     }

@@ -216,10 +216,6 @@ class Client implements ClientInterface, LoggerAwareInterface
             );
         }
 
-        [$body, $contentType] =
-            RequestOptions::extractBodyAndContentType($options);
-        $contentType ??= ContentType::JSON;
-
         $this->logger->info('Sending fetch request', [
             'method' => $method,
             'url' => $url,
@@ -230,8 +226,8 @@ class Client implements ClientInterface, LoggerAwareInterface
             return $this->handler->request(
                 $methodEnum,
                 $url,
-                $body,
-                $contentType,
+                null,
+                ContentType::JSON,
                 $options,
             );
         } catch (GuzzleRequestException $e) {
@@ -685,16 +681,13 @@ class Client implements ClientInterface, LoggerAwareInterface
         if ($body !== null) {
             $options['body'] = $body;
 
-            // Use the global normalize_content_type function
-            $normalizedContentType = ContentType::normalizeContentType(
-                $contentType,
-            );
-
-            if ($normalizedContentType instanceof ContentType) {
-                $options['headers']['Content-Type'] =
-                    $normalizedContentType->value;
-            } else {
-                $options['headers']['Content-Type'] = $normalizedContentType;
+            if (
+                ! RequestOptions::hasHeader(
+                    $options['headers'] ?? [],
+                    'Content-Type',
+                ) && ! array_key_exists('content_type', $options)
+            ) {
+                $options['content_type'] = $contentType;
             }
         }
 

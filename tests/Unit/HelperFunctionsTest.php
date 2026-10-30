@@ -78,6 +78,13 @@ class HelperFunctionsTest extends TestCase
         $this->assertEquals(['name' => 'John'], $body);
         $this->assertEquals(ContentType::FORM_URLENCODED, $contentType);
 
+        [$body, $contentType] = extract_body_and_content_type([
+            'form_params' => ['name' => 'John'],
+            'headers' => ['Content-Type' => 'text/plain'],
+        ]);
+        $this->assertSame(['name' => 'John'], $body);
+        $this->assertSame(ContentType::FORM_URLENCODED, $contentType);
+
         // Test with raw body
         [$body, $contentType] = extract_body_and_content_type([
             'body' => 'raw content',
@@ -107,7 +114,7 @@ class HelperFunctionsTest extends TestCase
             'content_type' => ContentType::VND_API_JSON,
         ]);
         $this->assertSame(['data' => ['type' => 'users']], $body);
-        $this->assertSame(ContentType::VND_API_JSON, $contentType);
+        $this->assertSame(ContentType::JSON, $contentType);
 
         $normalized = process_request_options([
             'body' => ['data' => ['type' => 'users']],
@@ -115,6 +122,17 @@ class HelperFunctionsTest extends TestCase
         ]);
         $this->assertSame(
             ContentType::VND_API_JSON->value,
+            $normalized['headers']['Content-Type'],
+        );
+
+        $normalized = process_request_options([
+            'method' => 'POST',
+            'form_params' => ['name' => 'Ada'],
+            'headers' => ['Content-Type' => 'text/plain'],
+        ]);
+        $this->assertSame(['name' => 'Ada'], $normalized['form_params']);
+        $this->assertSame(
+            'text/plain',
             $normalized['headers']['Content-Type'],
         );
     }

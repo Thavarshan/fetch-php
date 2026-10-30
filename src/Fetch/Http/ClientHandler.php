@@ -132,6 +132,8 @@ class ClientHandler implements ClientHandlerInterface
 
     private ?CurlMultiHandler $curlMultiHandler = null;
 
+    private ContentType|string|null $explicitContentType = null;
+
     /**
      * ClientHandler constructor.
      *
@@ -174,9 +176,16 @@ class ClientHandler implements ClientHandlerInterface
         $this->requestBuilder = $requestBuilder ?? new RequestBuilder;
         $this->asyncTransport = $asyncTransport;
 
+        // Track only caller-supplied Content-Type values. Inferred values are
+        // replaced when a later body setter selects a different format.
+        $defaultOptions = self::getDefaultOptions();
+        $this->explicitContentType =
+            FetchRequestOptions::getExplicitContentType($this->options) ??
+            FetchRequestOptions::getExplicitContentType($defaultOptions);
+
         // Initialize with default options using centralized merging
         $this->options = FetchRequestOptions::merge(
-            self::getDefaultOptions(),
+            $defaultOptions,
             $this->options,
         );
 

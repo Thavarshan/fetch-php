@@ -6,7 +6,9 @@
 
 - Route `Client::fetch()`, request helpers, request builders, and fluent body
   setters through `RequestOptions` normalization. Request-scope body values now
-  replace lower-scope defaults, and Content-Type matching is case-insensitive.
+  replace lower-scope defaults. Named JSON and form bodies retain their chosen
+  serialization with custom Content-Type headers, while multipart boundaries
+  remain transport-generated.
 - Preserve `GlobalServices` defaults when a handler initializes its services.
 
 ### Deprecated

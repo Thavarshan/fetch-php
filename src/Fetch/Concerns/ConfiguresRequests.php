@@ -39,10 +39,51 @@ trait ConfiguresRequests
      */
     public function withOptions(array $options): ClientHandler
     {
-        // Normalize body-related options to avoid conflicts
-        $options = RequestOptions::normalizeBodyOptions($options);
+        $baseOptions = $this->options;
+        $hasBody = RequestOptions::hasBodyOption($options);
+        $hasContentType = RequestOptions::hasHeader(
+            $options['headers'] ?? [],
+            'Content-Type',
+        ) || array_key_exists('content_type', $options);
+        $contentType = RequestOptions::getExplicitContentType($options);
 
-        $this->options = RequestOptions::merge($this->options, $options);
+        if ($hasBody) {
+            $normalized = RequestOptions::normalizeBodyOptions($options);
+
+            if (isset($normalized['multipart'])) {
+                $baseOptions = RequestOptions::withoutHeader(
+                    $baseOptions,
+                    'Content-Type',
+                );
+                $this->explicitContentType = null;
+            } elseif ($hasContentType) {
+                $this->explicitContentType = $contentType;
+
+                if ($contentType === null) {
+                    $baseOptions = RequestOptions::withoutHeader(
+                        $baseOptions,
+                        'Content-Type',
+                    );
+                }
+            } elseif ($this->explicitContentType !== null) {
+                $options = RequestOptions::withHeaderValue(
+                    $options,
+                    'Content-Type',
+                    $this->explicitContentType instanceof ContentType
+                        ? $this->explicitContentType->value
+                        : $this->explicitContentType,
+                );
+            } else {
+                $baseOptions = RequestOptions::withoutHeader(
+                    $baseOptions,
+                    'Content-Type',
+                );
+            }
+        } elseif ($hasContentType) {
+            $this->explicitContentType = $contentType;
+        }
+
+        $this->options = RequestOptions::merge($baseOptions, $options);
 
         // Map retry-related options to handler properties
         if (isset($options['retries']) && is_numeric($options['retries'])) {
@@ -73,12 +114,32 @@ trait ConfiguresRequests
             ['body', 'json', 'form', 'form_params', 'multipart'],
             true,
         )) {
-            $this->options = RequestOptions::replaceBodyOptions(
-                $this->options,
-                [$key => $value],
-            );
+            $this->replaceConfiguredBodyOptions([$key => $value]);
 
             return $this;
+        }
+
+        if ($key === 'headers' && is_array($value)) {
+            $this->options = RequestOptions::merge(
+                $this->options,
+                ['headers' => $value],
+            );
+
+            if (RequestOptions::hasHeader($value, 'Content-Type')) {
+                $this->explicitContentType =
+                    RequestOptions::getExplicitContentType([
+                        'headers' => $value,
+                    ]);
+            }
+
+            return $this;
+        }
+
+        if ($key === 'content_type') {
+            $this->explicitContentType = $value instanceof ContentType ||
+                is_string($value)
+                ? $value
+                : null;
         }
 
         $this->options[$key] = $value;
@@ -94,10 +155,7 @@ trait ConfiguresRequests
      */
     public function withFormParams(array $params): ClientHandler
     {
-        $this->options = RequestOptions::replaceBodyOptions(
-            $this->options,
-            ['form_params' => $params],
-        );
+        $this->replaceConfiguredBodyOptions(['form_params' => $params]);
 
         return $this;
     }
@@ -114,10 +172,7 @@ trait ConfiguresRequests
      */
     public function withMultipart(array $multipart): ClientHandler
     {
-        $this->options = RequestOptions::replaceBodyOptions(
-            $this->options,
-            ['multipart' => $multipart],
-        );
+        $this->replaceConfiguredBodyOptions(['multipart' => $multipart]);
 
         return $this;
     }
@@ -157,15 +212,17 @@ trait ConfiguresRequests
      */
     public function withHeaders(array $headers): ClientHandler
     {
-        // Initialize headers array if not set
-        if (! isset($this->options['headers'])) {
-            $this->options['headers'] = [];
-        }
-
-        $this->options['headers'] = array_merge(
-            $this->options['headers'],
-            $headers,
+        $this->options = RequestOptions::merge(
+            $this->options,
+            ['headers' => $headers],
         );
+
+        if (RequestOptions::hasHeader($headers, 'Content-Type')) {
+            $this->explicitContentType =
+                RequestOptions::getExplicitContentType([
+                    'headers' => $headers,
+                ]);
+        }
 
         return $this;
     }
@@ -179,12 +236,17 @@ trait ConfiguresRequests
      */
     public function withHeader(string $header, mixed $value): ClientHandler
     {
-        // Initialize headers array if not set
-        if (! isset($this->options['headers'])) {
-            $this->options['headers'] = [];
-        }
+        $this->options = RequestOptions::merge(
+            $this->options,
+            ['headers' => [$header => $value]],
+        );
 
-        $this->options['headers'][$header] = $value;
+        if (strcasecmp($header, 'Content-Type') === 0) {
+            $this->explicitContentType =
+                RequestOptions::getExplicitContentType([
+                    'headers' => [$header => $value],
+                ]);
+        }
 
         return $this;
     }
@@ -200,18 +262,13 @@ trait ConfiguresRequests
         array|string $body,
         string|ContentType $contentType = ContentType::JSON,
     ): ClientHandler {
-        $existingContentType = RequestOptions::getHeaderValue(
-            $this->options['headers'] ?? [],
-            'Content-Type',
-        );
-        $type = is_string($existingContentType)
-            ? $existingContentType
-            : $contentType;
-
-        $this->options = RequestOptions::replaceBodyOptions(
-            $this->options,
-            ['body' => $body, 'content_type' => $type],
-        );
+        $type = $this->isMultipartContentType($contentType)
+            ? $contentType
+            : ($this->explicitContentType ?? $contentType);
+        $this->replaceConfiguredBodyOptions([
+            'body' => $body,
+            'content_type' => $type,
+        ]);
 
         return $this;
     }
@@ -225,10 +282,7 @@ trait ConfiguresRequests
      */
     public function withJson(array $data, int $options = 0): ClientHandler
     {
-        $this->options = RequestOptions::replaceBodyOptions(
-            $this->options,
-            ['json' => $data],
-        );
+        $this->replaceConfiguredBodyOptions(['json' => $data]);
 
         return $this;
     }
@@ -375,6 +429,7 @@ trait ConfiguresRequests
     public function reset(): ClientHandler
     {
         $this->options = [];
+        $this->explicitContentType = null;
         $this->timeout = null;
         $this->maxRetries = null;
         $this->retryDelay = null;
@@ -445,5 +500,45 @@ trait ConfiguresRequests
     protected function normalizeMultipart(array $multipart): array
     {
         return RequestOptions::normalizeMultipart($multipart);
+    }
+
+    /**
+     * Replace body options while retaining only an explicit Content-Type.
+     *
+     * @param  array<string, mixed>  $bodyOptions
+     */
+    private function replaceConfiguredBodyOptions(array $bodyOptions): void
+    {
+        $multipart = isset($bodyOptions['multipart']) ||
+            $this->isMultipartContentType(
+                $bodyOptions['content_type'] ?? null,
+            );
+
+        if ($multipart) {
+            $this->explicitContentType = null;
+        } elseif (
+            $this->explicitContentType !== null &&
+            ! array_key_exists('content_type', $bodyOptions)
+        ) {
+            $bodyOptions['content_type'] = $this->explicitContentType;
+        }
+
+        $this->options = RequestOptions::replaceBodyOptions(
+            $this->options,
+            $bodyOptions,
+            $this->explicitContentType !== null,
+        );
+    }
+
+    private function isMultipartContentType(mixed $contentType): bool
+    {
+        if ($contentType instanceof ContentType) {
+            return $contentType === ContentType::MULTIPART;
+        }
+
+        return is_string($contentType) && str_starts_with(
+            strtolower($contentType),
+            ContentType::MULTIPART->value,
+        );
     }
 }

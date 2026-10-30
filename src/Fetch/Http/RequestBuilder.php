@@ -28,6 +28,7 @@ final class RequestBuilder
         array $options,
         mixed $body,
         ContentType|string $contentType,
+        bool $preserveContentType = true,
     ): array {
         if ($body === null) {
             return $options;
@@ -36,7 +37,7 @@ final class RequestBuilder
         return RequestOptions::replaceBodyOptions($options, [
             'body' => $body,
             'content_type' => $contentType,
-        ]);
+        ], $preserveContentType);
     }
 
     /**

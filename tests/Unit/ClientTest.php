@@ -105,7 +105,7 @@ class ClientTest extends TestCase
             ->with(
                 Method::POST,
                 $url,
-                $body,
+                null,
                 ContentType::JSON,
                 $this->callback(
                     static fn (array $requestOptions): bool => $requestOptions[
@@ -131,12 +131,15 @@ class ClientTest extends TestCase
             ->with(
                 Method::POST,
                 'https://example.com/users',
-                $body,
-                ContentType::FORM_URLENCODED,
+                null,
+                ContentType::JSON,
                 $this->callback(
-                    static fn (array $requestOptions): bool =>
-                        $requestOptions['form_params'] === $body &&
-                        ! isset($requestOptions['body']),
+                    static function (array $requestOptions) use (
+                        $body,
+                    ): bool {
+                        return $requestOptions['form_params'] === $body &&
+                            ! isset($requestOptions['body']);
+                    },
                 ),
             )
             ->willReturn($mockResponse);
@@ -162,12 +165,15 @@ class ClientTest extends TestCase
             ->with(
                 Method::POST,
                 'https://example.com/users',
-                '{"name":"Ada Lovelace"}',
-                ContentType::TEXT,
+                null,
+                ContentType::JSON,
                 $this->callback(
-                    static fn (array $requestOptions): bool =>
-                        $requestOptions['headers']['content-type'] ===
-                            'text/plain',
+                    static function (array $requestOptions): bool {
+                        return $requestOptions['body'] ===
+                                '{"name":"Ada Lovelace"}' &&
+                            $requestOptions['headers']['content-type'] ===
+                                'text/plain';
+                    },
                 ),
             )
             ->willReturn($mockResponse);
@@ -224,12 +230,12 @@ class ClientTest extends TestCase
             ->with(
                 Method::POST,
                 $url,
-                $body,
-                $contentType,
+                null,
+                ContentType::JSON,
                 $this->callback(
                     static fn (array $requestOptions): bool => $requestOptions[
                         'timeout'
-                    ] === 30,
+                    ] === 30 && $requestOptions['json'] === $body,
                 ),
             )
             ->willReturn($mockResponse);

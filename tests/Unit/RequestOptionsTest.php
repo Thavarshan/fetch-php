@@ -247,6 +247,18 @@ class RequestOptionsTest extends TestCase
         self::assertArrayNotHasKey('content-type', $normalized['headers']);
     }
 
+    public function test_array_body_multipart_removes_lowercase_type_header(
+    ): void {
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'body' => [['name' => 'upload', 'contents' => 'fixture']],
+            'headers' => ['content-type' => 'multipart/form-data'],
+        ]);
+
+        self::assertArrayHasKey('multipart', $normalized);
+        self::assertArrayNotHasKey('Content-Type', $normalized['headers']);
+        self::assertArrayNotHasKey('content-type', $normalized['headers']);
+    }
+
     public function test_merge_deep_merges_headers(): void
     {
         $options1 = [

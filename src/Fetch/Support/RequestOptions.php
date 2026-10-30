@@ -105,13 +105,47 @@ class RequestOptions
     public static function merge(array ...$optionSets): array
     {
         $result = [];
+        $contentTypeIsExplicit = false;
 
         foreach ($optionSets as $options) {
             // Normalize option keys to canonical names
             $options = self::normalizeOptionKeys($options);
+            $hasBody = self::hasBodyOption($options);
+            $hasContentType = self::hasHeader(
+                $options['headers'] ?? [],
+                'Content-Type',
+            ) || array_key_exists('content_type', $options);
+            $contentType = self::getExplicitContentType($options);
+
+            if ($hasBody) {
+                if ($contentType !== null) {
+                    $contentTypeIsExplicit = true;
+                } elseif ($hasContentType) {
+                    $result = self::withoutHeader($result, 'Content-Type');
+                    $contentTypeIsExplicit = false;
+                } elseif ($contentTypeIsExplicit) {
+                    $options = self::withHeaderValue(
+                        $options,
+                        'Content-Type',
+                        self::getHeaderValue(
+                            $result['headers'] ?? [],
+                            'Content-Type',
+                        ),
+                    );
+                } else {
+                    $result = self::withoutHeader($result, 'Content-Type');
+                }
+            } elseif ($hasContentType) {
+                $contentTypeIsExplicit = $contentType !== null;
+            }
 
             // Normalize body options
             $options = self::normalizeBodyOptions($options);
+
+            if ($hasBody && isset($options['multipart'])) {
+                $result = self::withoutHeader($result, 'Content-Type');
+                $contentTypeIsExplicit = false;
+            }
 
             if (self::hasBodyOption($options)) {
                 $result = self::stripBodyOptionsExcept($result, []);
@@ -283,7 +317,7 @@ class RequestOptions
                         'multipart',
                     ]);
                     $options['multipart'] = self::normalizeMultipart($body);
-                    unset($headers['Content-Type']);
+                    self::removeHeader($headers, 'Content-Type');
                 } else {
                     // Array body with non-JSON content type - encode to string
                     // but keep user's content type
@@ -319,14 +353,112 @@ class RequestOptions
     public static function replaceBodyOptions(
         array $options,
         array $bodyOptions,
+        bool $preserveContentType = true,
     ): array {
         $options = self::stripBodyOptionsExcept($options, []);
+
+        if (! $preserveContentType) {
+            $options = self::withoutHeader($options, 'Content-Type');
+        }
 
         return self::normalizeBodyOptions(array_merge($options, $bodyOptions));
     }
 
     /**
-     * Read the normalized body and its effective content type.
+     * Return whether an option set contains a body option, including null.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function hasBodyOption(array $options): bool
+    {
+        foreach (self::BODY_OPTIONS as $key) {
+            if (array_key_exists($key, $options)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get an explicitly supplied Content-Type from an option set.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function getExplicitContentType(
+        array $options,
+    ): ContentType|string|null {
+        $value = $options['content_type'] ?? self::getHeaderValue(
+            $options['headers'] ?? [],
+            'Content-Type',
+        );
+
+        if ($value instanceof ContentType || is_string($value)) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check for a header name without regard to its casing.
+     *
+     * @param  array<string, mixed>  $headers
+     */
+    public static function hasHeader(array $headers, string $name): bool
+    {
+        foreach ($headers as $header => $_) {
+            if (strcasecmp((string) $header, $name) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return request options with a case-insensitively replaced header.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public static function withHeaderValue(
+        array $options,
+        string $name,
+        mixed $value,
+    ): array {
+        $headers = $options['headers'] ?? [];
+        self::setHeaderValue($headers, $name, $value);
+        $options['headers'] = $headers;
+
+        return $options;
+    }
+
+    /**
+     * Return request options without a case-insensitive header name.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public static function withoutHeader(
+        array $options,
+        string $name,
+    ): array {
+        $headers = $options['headers'] ?? [];
+        self::removeHeader($headers, $name);
+
+        if ($headers !== [] || array_key_exists('headers', $options)) {
+            $options['headers'] = $headers;
+        }
+
+        return $options;
+    }
+
+    /**
+     * Read the normalized body and its serialization content type.
+     *
+     * Named body representations keep their encoding even when a custom
+     * Content-Type header is present; that header remains in the options.
      *
      * @param  array<string, mixed>  $options
      * @return array{0: mixed, 1: ContentType|string|null}
@@ -352,7 +484,11 @@ class RequestOptions
                 default => null,
             };
 
-            return [$options[$key], $contentType ?? $default];
+            $serializationType = $key === 'body'
+                ? ($contentType ?? $default)
+                : ($default ?? $contentType);
+
+            return [$options[$key], $serializationType];
         }
 
         return [null, null];
@@ -710,18 +846,6 @@ class RequestOptions
         }
 
         return $options;
-    }
-
-    /** @param array<string, mixed> $options */
-    private static function hasBodyOption(array $options): bool
-    {
-        foreach (self::BODY_OPTIONS as $key) {
-            if (array_key_exists($key, $options)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /** @param array<string, mixed> $headers */

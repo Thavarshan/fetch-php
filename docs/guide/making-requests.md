@@ -98,11 +98,15 @@ Within one option set, body precedence is
 `json > form/form_params > multipart > body`. A body option from a later
 configuration scope replaces the earlier scope's body. The explicit
 `content_type` option overrides inferred content types; otherwise an explicit
-Content-Type header is preserved case-insensitively. Multipart requests always
-get a boundary from Guzzle. Query parameters and other headers merge with
-handler defaults. `Client::fetch()` and the global base-URI helper pass request
-overrides through the immutable request context, so they do not persist into
-later requests or change the shared handler defaults.
+Content-Type header is preserved case-insensitively. Named `json` and
+`form`/`form_params` options determine serialization even when a custom
+Content-Type header is supplied; the header is sent as provided. A generic
+array `body` uses `content_type` or Content-Type to select its serialization.
+Multipart requests drop the caller's Content-Type so Guzzle can provide the
+boundary. Query parameters and other headers merge with handler defaults.
+`Client::fetch()` and the global base-URI helper pass request overrides through
+the immutable request context, so they do not persist into later requests or
+change the shared handler defaults.
 
 <<< @/examples/snippets/request-options.php
 
