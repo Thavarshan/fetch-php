@@ -101,13 +101,13 @@ configuration scope replaces the earlier scope's body. The explicit
 Content-Type header is preserved case-insensitively. Named `json` and
 `form`/`form_params` options determine serialization even when a custom
 Content-Type header is supplied; the header is sent as provided. The
-`request()`, `post()`, `put()`, `patch()`, and `delete()` body-format argument
-also selects serialization independently of an explicit Content-Type header.
-A request-scope `content_type` option takes precedence over that argument. A
-generic array `body` passed to `sendRequest()` uses `content_type` or
-Content-Type to select its serialization. Multipart requests drop the caller's
-Content-Type so Guzzle can provide the boundary. Query parameters and other
-headers merge with handler defaults.
+`withBody()`, `request()`, `post()`, `put()`, `patch()`, and `delete()`
+body-format argument also selects serialization independently of an explicit
+Content-Type header. A request-scope `content_type` option takes precedence
+over that argument. A generic array `body` passed to `sendRequest()` uses
+`content_type` or Content-Type to select its serialization. Multipart requests
+drop the caller's Content-Type so Guzzle can provide the boundary. Query
+parameters and other headers merge with handler defaults.
 `Client::fetch()` and the global base-URI helper pass request overrides through
 the immutable request context, so they do not persist into later requests or
 change the shared handler defaults.

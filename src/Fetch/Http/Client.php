@@ -200,63 +200,12 @@ class Client implements ClientInterface, LoggerAwareInterface
             return $this->handler;
         }
 
-        $options = RequestOptions::merge(
-            ClientHandler::getDefaultOptions(),
+        return $this->sendFetchRequest(
+            $url,
             $options ?? [],
+            null,
+            ContentType::JSON,
         );
-
-        // Normalize the HTTP method
-        $method = RequestOptions::getMethod($options);
-
-        try {
-            $methodEnum = Method::fromString($method);
-        } catch (\ValueError $e) {
-            throw new InvalidArgumentException(
-                "Invalid HTTP method: {$method}",
-            );
-        }
-
-        $this->logger->info('Sending fetch request', [
-            'method' => $method,
-            'url' => $url,
-        ]);
-
-        // Send the request using the new unified approach
-        try {
-            return $this->handler->request(
-                $methodEnum,
-                $url,
-                null,
-                ContentType::JSON,
-                $options,
-            );
-        } catch (GuzzleRequestException $e) {
-            $this->logger->error('Request exception', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-            ]);
-
-            // If the exception has a response, return it
-            $response = $e->getResponse();
-            if ($response !== null) {
-                return Response::createFromBase($response);
-            }
-
-            throw new RequestException(
-                $e->getMessage(),
-                $e->getRequest(),
-                null,
-                $e,
-            );
-        } catch (ConnectException $e) {
-            throw new NetworkException($e->getMessage(), $e->getRequest(), $e);
-        } catch (GuzzleException $e) {
-            throw new ClientException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e,
-            );
-        }
     }
 
     /**
@@ -678,25 +627,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $options = $options ?? [];
         $options['method'] = $method->value;
 
-        if ($body !== null) {
-            $options['body'] = $body;
-
-            if (
-                ! RequestOptions::hasHeader(
-                    $options['headers'] ?? [],
-                    'Content-Type',
-                ) && ! array_key_exists('content_type', $options)
-            ) {
-                $options['content_type'] = $contentType;
-            }
-        }
-
-        /**
-         * @var ResponseInterface|PromiseInterface<ResponseInterface> $result
-         */
-        $result = $this->fetch($url, $options);
-
-        return $result;
+        return $this->sendFetchRequest($url, $options, $body, $contentType);
     }
 
     /**
@@ -727,5 +658,79 @@ class Client implements ClientInterface, LoggerAwareInterface
         }
 
         return $options;
+    }
+
+    /**
+     * Send a fetch request after applying client defaults.
+     *
+     * @param  array<string, mixed>  $options
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
+     */
+    private function sendFetchRequest(
+        string $url,
+        array $options,
+        mixed $body,
+        string|ContentType $contentType,
+    ): ResponseInterface|PromiseInterface {
+        $serializationType =
+            RequestOptions::getExplicitContentTypeOption($options) ??
+            $contentType;
+        $options = RequestOptions::merge(
+            ClientHandler::getDefaultOptions(),
+            $options,
+        );
+
+        // Normalize the HTTP method
+        $method = RequestOptions::getMethod($options);
+
+        try {
+            $methodEnum = Method::fromString($method);
+        } catch (\ValueError $e) {
+            throw new InvalidArgumentException(
+                "Invalid HTTP method: {$method}",
+            );
+        }
+
+        $this->logger->info('Sending fetch request', [
+            'method' => $method,
+            'url' => $url,
+        ]);
+
+        // Send the request using the new unified approach
+        try {
+            return $this->handler->request(
+                $methodEnum,
+                $url,
+                $body,
+                $serializationType,
+                $options,
+            );
+        } catch (GuzzleRequestException $e) {
+            $this->logger->error('Request exception', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            // If the exception has a response, return it
+            $response = $e->getResponse();
+            if ($response !== null) {
+                return Response::createFromBase($response);
+            }
+
+            throw new RequestException(
+                $e->getMessage(),
+                $e->getRequest(),
+                null,
+                $e,
+            );
+        } catch (ConnectException $e) {
+            throw new NetworkException($e->getMessage(), $e->getRequest(), $e);
+        } catch (GuzzleException $e) {
+            throw new ClientException(
+                $e->getMessage(),
+                (int) $e->getCode(),
+                $e,
+            );
+        }
     }
 }

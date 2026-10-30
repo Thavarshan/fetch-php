@@ -293,6 +293,101 @@ final class RequestBodyNormalizationIntegrationTest extends TestCase
         );
     }
 
+    public function test_client_verb_helpers_keep_selected_body_encoding(
+    ): void {
+        $history = [];
+        $client = new Client($this->createHandler($history, 3));
+
+        $client->post(
+            'https://example.test/client-form',
+            ['name' => 'Ada'],
+            ContentType::FORM_URLENCODED,
+            ['headers' => ['Content-Type' => 'text/plain']],
+        );
+
+        $client->post(
+            'https://example.test/client-multipart',
+            [['name' => 'upload', 'contents' => 'fixture']],
+            ContentType::MULTIPART,
+            ['headers' => ['Content-Type' => 'text/plain']],
+        );
+
+        $client->post(
+            'https://example.test/client-option-form',
+            ['name' => 'Grace'],
+            ContentType::JSON,
+            ['content_type' => ContentType::FORM_URLENCODED],
+        );
+
+        self::assertSame(
+            'name=Ada',
+            (string) $history[0]['request']->getBody(),
+        );
+        self::assertSame(
+            'text/plain',
+            $history[0]['request']->getHeaderLine('Content-Type'),
+        );
+
+        $multipartRequest = $history[1]['request'];
+        self::assertStringStartsWith(
+            'multipart/form-data; boundary=',
+            $multipartRequest->getHeaderLine('Content-Type'),
+        );
+        self::assertStringContainsString(
+            'fixture',
+            (string) $multipartRequest->getBody(),
+        );
+
+        self::assertSame(
+            'name=Grace',
+            (string) $history[2]['request']->getBody(),
+        );
+        self::assertSame(
+            ContentType::FORM_URLENCODED->value,
+            $history[2]['request']->getHeaderLine('Content-Type'),
+        );
+    }
+
+    public function test_fluent_body_format_is_independent_of_custom_header(
+    ): void {
+        $history = [];
+        $handler = $this->createHandler($history, 2);
+
+        $handler
+            ->withHeader('Content-Type', 'text/plain')
+            ->withBody(
+                ['name' => 'Ada'],
+                ContentType::FORM_URLENCODED,
+            )
+            ->sendRequest(Method::POST, 'https://example.test/fluent-form');
+
+        $handler
+            ->withHeader(
+                'Content-Type',
+                ContentType::FORM_URLENCODED->value,
+            )
+            ->withBody(['name' => 'Grace'], ContentType::JSON)
+            ->sendRequest(Method::POST, 'https://example.test/fluent-json');
+
+        self::assertSame(
+            'name=Ada',
+            (string) $history[0]['request']->getBody(),
+        );
+        self::assertSame(
+            'text/plain',
+            $history[0]['request']->getHeaderLine('Content-Type'),
+        );
+
+        self::assertSame(
+            '{"name":"Grace"}',
+            (string) $history[1]['request']->getBody(),
+        );
+        self::assertSame(
+            ContentType::FORM_URLENCODED->value,
+            $history[1]['request']->getHeaderLine('Content-Type'),
+        );
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $history
      */

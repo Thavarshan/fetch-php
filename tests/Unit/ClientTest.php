@@ -230,12 +230,12 @@ class ClientTest extends TestCase
             ->with(
                 Method::POST,
                 $url,
-                null,
+                $body,
                 ContentType::JSON,
                 $this->callback(
                     static fn (array $requestOptions): bool => $requestOptions[
                         'timeout'
-                    ] === 30 && $requestOptions['json'] === $body,
+                    ] === 30 && ! isset($requestOptions['json']),
                 ),
             )
             ->willReturn($mockResponse);

@@ -262,13 +262,10 @@ trait ConfiguresRequests
         array|string $body,
         string|ContentType $contentType = ContentType::JSON,
     ): ClientHandler {
-        $type = $this->isMultipartContentType($contentType)
-            ? $contentType
-            : ($this->explicitContentType ?? $contentType);
-        $this->replaceConfiguredBodyOptions([
-            'body' => $body,
-            'content_type' => $type,
-        ]);
+        $this->replaceConfiguredBodyOptions(
+            ['body' => $body],
+            $contentType,
+        );
 
         return $this;
     }
@@ -507,26 +504,24 @@ trait ConfiguresRequests
      *
      * @param  array<string, mixed>  $bodyOptions
      */
-    private function replaceConfiguredBodyOptions(array $bodyOptions): void
-    {
+    private function replaceConfiguredBodyOptions(
+        array $bodyOptions,
+        ContentType|string|null $serializationType = null,
+    ): void {
         $multipart = isset($bodyOptions['multipart']) ||
             $this->isMultipartContentType(
-                $bodyOptions['content_type'] ?? null,
+                $serializationType ?? $bodyOptions['content_type'] ?? null,
             );
 
         if ($multipart) {
             $this->explicitContentType = null;
-        } elseif (
-            $this->explicitContentType !== null &&
-            ! array_key_exists('content_type', $bodyOptions)
-        ) {
-            $bodyOptions['content_type'] = $this->explicitContentType;
         }
 
         $this->options = RequestOptions::replaceBodyOptions(
             $this->options,
             $bodyOptions,
             $this->explicitContentType !== null,
+            $serializationType,
         );
     }
 
