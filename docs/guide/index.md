@@ -29,6 +29,7 @@ integrations. The public API is described in the [API reference](/api/).
 - [Promise helpers](/guide/promise-operations)
 - [Retries](/guide/retry-handling)
 - [HTTP caching](/guide/http-caching)
+- [Request and response validation](/guide/validation)
 - [Middleware](/guide/middleware)
 - [Lifecycle events](/guide/events)
 - [Streaming and SSE](/guide/streaming)
@@ -44,8 +45,8 @@ integrations. The public API is described in the [API reference](/api/).
 
 ## Limitations
 
-- The async API returns promises but executes Guzzle requests synchronously
-  inside Matrix tasks.
+- Async I/O requires cURL multi or an explicitly injected loop-compatible
+  transport. A synchronous request wrapped in Matrix `async()` still blocks.
 - Streaming is synchronous, consumes the underlying stream, and bypasses the
   cache and middleware pipeline.
-- JSON Schema and OpenAPI validation are not part of the package.
+- Validation requires optional adapters; OpenAPI support is limited to 3.0.x.

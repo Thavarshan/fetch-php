@@ -24,18 +24,23 @@ The public GitHub repository is `Thavarshan/fetch-php`; the Packagist package is
 Read [CODE_MAP.md](CODE_MAP.md) for the concrete public surface before making
 non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 
-- `Http/` — `Client` (PSR-18), `ClientHandler` (fluent engine), `Request`,
+- `Http/` — `Client` (PSR-18), `ClientHandler` (stable facade), `Request`,
   `Response`, `StreamedResponse`, `EventSource`, `ServerSentEvent`,
-  `MiddlewarePipeline`.
-- `Concerns/` — traits composed into `ClientHandler`: `ConfiguresRequests`,
-  `HandlesUris`, `PerformsHttpRequests`, `ManagesPromises`, `ManagesRetries`,
-  `ManagesMiddleware`, `ManagesEvents`, `ManagesConnectionPool`,
-  `ManagesDebugAndProfiling`, `HandlesMocking`.
+  `MiddlewarePipeline`, request coordinator/builder, sync/async/streaming
+  executors, and the Guzzle async transport adapter.
+- `Concerns/` — facade traits for `ConfiguresRequests`, `HandlesUris`,
+  `PerformsHttpRequests`, `ManagesRetries`, `ManagesMiddleware`,
+  `ManagesEvents`, `ManagesConnectionPool`, `ManagesDebugAndProfiling`, and
+  `HandlesMocking`. `ManagesPromises` remains only as a deprecated
+  direct-consumer compatibility shim; `ClientHandler` uses
+  `Async/PromiseManager` by composition.
+- `Async/` — Matrix-backed `PromiseManager`.
+- `Validation/` — opt-in JSON Schema and OpenAPI request/response validation.
 - `Enum/` — `Method`, `ContentType`, `Status`.
 - `Cache/` — RFC 7234 caching: `CacheManager`, `CacheControl`,
   `CacheKeyGenerator`, `CachedResponse`, `MemoryCache`, `FileCache`.
-- `Pool/` — `ConnectionPool`, `HostConnectionPool`, `Connection`, `DnsCache`,
-  `Http2Configuration`, `PoolConfiguration`.
+- `Pool/` — `ConnectionPoolManager`, `ConnectionPool`, `HostConnectionPool`,
+  `Connection`, `DnsCache`, `Http2Configuration`, `PoolConfiguration`.
 - `Events/` — `EventDispatcher` and lifecycle events.
 - `Middleware/` — built-in `AddHeadersMiddleware`, `LoggingMiddleware`.
 - `Exceptions/` — `ClientException`, `NetworkException`, `RequestException`,
@@ -52,7 +57,7 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
   plus one `prefer-lowest` job (Ubuntu, 8.3). Local dev pins 8.4 (`.phpvmrc`).
 - Requires `ext-pcntl` (ignored on Windows, along with `ext-posix`).
 - Runtime deps: `guzzlehttp/guzzle ^7.9`, `guzzlehttp/psr7 ^2.7`,
-  `jerome/matrix ^3.4`, `react/event-loop ^1.5`, `react/promise ^3.2`,
+  `jerome/matrix ^4.0`, `react/event-loop ^1.5`, `react/promise ^3.2`,
   `psr/http-message ^1|^2`, `psr/log ^1|^2|^3`.
 - `composer.json` has **no `version` field** — versions come from Git tags.
 - `composer.lock` is not committed (this is a library).
@@ -62,7 +67,7 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 - Install: `composer install`.
 - Style check: `composer lint` runs Duster on `src` and the project line check.
 - Auto-fix style: `composer fix` runs `duster fix src`.
-- Static analysis: `composer analyse` runs PHPStan at level 6.
+- Static analysis: `composer analyse` runs PHPStan at level 8.
 - All tests: `composer test` runs `phpunit --no-coverage`.
 - Unit only: `composer test:unit`.
 - Integration only: `composer test:integration`.
@@ -74,20 +79,21 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 Focused runs use `./vendor/bin/phpunit --filter=some_method` or a test path.
 Composer forwards arguments too: `composer test -- --filter=some_method`.
 
-There is no `bin/` script directory. `composer lint` does not run PHPStan;
-use `composer analyse` for that.
+There is no `bin/` script directory. `composer lint` does not run PHPStan; use
+`composer analyse` for that.
+
 ## Coding conventions
 
 - Declare `declare(strict_types=1);` in every new PHP file.
 - PSR-12 aligned, 4-space indent, single quotes, and 80-column maximum lines.
-  Duster enforces PHP style via `pint.json`; the `max_line_length` setting
-  there is checked across project text files by `tools/check-line-length.php`
-  as part of `composer lint`. Generated lock files and formatter caches are
-  excluded. Pint itself has no maximum-line-length fixer. Run `composer fix`
-  before committing.
+  Duster enforces PHP style via `pint.json`; the `max_line_length` setting there
+  is checked across project text files by `tools/check-line-length.php` as part
+  of `composer lint`. Generated lock files and formatter caches are excluded.
+  Pint itself has no maximum-line-length fixer. Run `composer fix` before
+  committing.
 - PSR-4 namespaces under `Fetch\...`; one class per file, filename matches
   class.
-- Keep PHPStan level 6 clean (`composer analyse`); prefer real type fixes over
+- Keep PHPStan level 8 clean (`composer analyse`); prefer real type fixes over
   new entries in `phpstan.neon` `ignoreErrors`.
 - Match the style, naming, and comment density of the surrounding file.
 
@@ -192,7 +198,7 @@ the full map and how to validate the setup (`composer ai:validate`).
 ## Definition of done
 
 1. `composer fix` applied; `composer lint` clean.
-2. `composer analyse` clean (PHPStan level 6).
+2. `composer analyse` clean (PHPStan level 8).
 3. Relevant tests added/updated; `composer test` green (`composer check` for the
    full gate).
 4. Docs/CHANGELOG updated when behavior or the public API changed.

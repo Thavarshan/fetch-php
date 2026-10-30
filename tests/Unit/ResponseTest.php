@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use Fetch\Enum\Status;
 use Fetch\Http\Response;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use GuzzleHttp\Psr7\Utils;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SimpleXMLElement;
@@ -141,8 +143,8 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/xml'],
-            '<?xml version="1.0"?>'
-                . '<root><name>Test</name><value>123</value></root>',
+            '<?xml version="1.0"?>'.
+                '<root><name>Test</name><value>123</value></root>',
         );
 
         $xml = $response->xml();
@@ -256,6 +258,54 @@ class ResponseTest extends TestCase
         $this->assertTrue((new Response(429))->isTooManyRequests());
         $this->assertTrue((new Response(500))->isInternalServerError());
         $this->assertTrue((new Response(503))->isServiceUnavailable());
+    }
+
+    #[DataProvider('status_helper_cases')]
+    public function test_named_status_helpers_delegate_to_their_status_enum(
+        string $method,
+        Status $status,
+    ): void {
+        $response = new Response($status->value);
+
+        $this->assertTrue($response->{$method}());
+        $this->assertFalse((new Response(599))->{$method}());
+        $this->assertTrue($response->isStatus($status));
+        $this->assertTrue($response->isStatus($status->value));
+    }
+
+    /** @return iterable<string, array{string, Status}> */
+    public static function status_helper_cases(): iterable
+    {
+        yield 'OK' => ['isOk', Status::OK];
+        yield 'created' => ['isCreated', Status::CREATED];
+        yield 'accepted' => ['isAccepted', Status::ACCEPTED];
+        yield 'no content' => ['isNoContent', Status::NO_CONTENT];
+        yield 'moved permanently' => [
+            'isMovedPermanently',
+            Status::MOVED_PERMANENTLY,
+        ];
+        yield 'found' => ['isFound', Status::FOUND];
+        yield 'bad request' => ['isBadRequest', Status::BAD_REQUEST];
+        yield 'unauthorized' => ['isUnauthorized', Status::UNAUTHORIZED];
+        yield 'forbidden' => ['isForbidden', Status::FORBIDDEN];
+        yield 'not found' => ['isNotFound', Status::NOT_FOUND];
+        yield 'conflict' => ['isConflict', Status::CONFLICT];
+        yield 'unprocessable entity' => [
+            'isUnprocessableEntity',
+            Status::UNPROCESSABLE_ENTITY,
+        ];
+        yield 'too many requests' => [
+            'isTooManyRequests',
+            Status::TOO_MANY_REQUESTS,
+        ];
+        yield 'internal server error' => [
+            'isInternalServerError',
+            Status::INTERNAL_SERVER_ERROR,
+        ];
+        yield 'service unavailable' => [
+            'isServiceUnavailable',
+            Status::SERVICE_UNAVAILABLE,
+        ];
     }
 
     public function test_to_string(): void

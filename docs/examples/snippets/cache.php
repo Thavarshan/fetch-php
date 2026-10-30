@@ -35,10 +35,10 @@ $second = $handler->sendRequest(
     'https://api.example.test/v1/catalog',
 );
 
-    if (
-        ! ($first instanceof FetchResponse)
-        || ! ($second instanceof FetchResponse)
-    ) {
+if (
+    ! ($first instanceof FetchResponse)
+    || ! ($second instanceof FetchResponse)
+) {
     throw new RuntimeException('The cache requests did not return responses.');
 }
 

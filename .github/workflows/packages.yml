@@ -171,5 +171,6 @@ jobs:
           update_url="${update_url}${{ secrets.PACKAGIST_TOKEN }}"
           repository_url="https://github.com/${{ github.repository }}"
           payload="{\"repository\":{\"url\":\"$repository_url\"}}"
-          curl -XPOST -H'content-type:application/json' "$update_url" \
+          curl --fail --silent --show-error -XPOST \
+            -H'content-type:application/json' "$update_url" \
             -d "$payload"

@@ -33,9 +33,9 @@ available from `$client->getHandler()`, for example
 
 ## Async work blocks the event loop
 
-Fetch currently wraps synchronous Guzzle I/O in Matrix promises. A request
-blocks while it is in progress, so Matrix timeouts cannot interrupt it. Use the
-Guzzle request timeout to bound the operation. See
+Use `ClientHandler::create()->async()` for nonblocking requests. Wrapping a
+synchronous request in Matrix `async()` still blocks. A custom Guzzle client
+needs an explicit `AsyncTransport`; missing drivers reject before dispatch. See
 [async requests](/guide/async-requests).
 
 ## A streaming or cached test bypasses `MockServer`

@@ -78,8 +78,14 @@ manager.
 `awaitPromise()`, `all()`, `race()`, `any()`, `sequence()`, `resolve()`,
 `reject()`, `map()`, `then()`, `catch()`, and `finally()`.
 
-The request callback performs synchronous Guzzle I/O inside the Matrix task.
-The promise API does not make Fetch HTTP I/O nonblocking.
+Async requests use a ReactPHP-compatible `AsyncTransport`. The default client
+uses cURL multi; custom Guzzle clients must supply their transport explicitly.
+`setAsyncTransport(AsyncTransport $transport)` replaces that bridge.
+
+The concrete handler also provides `withRequestSchema(mixed $schema)`,
+`withResponseSchema(mixed $schema)`, `withOpenApiSpec(string $path)`, and
+`validateContracts(bool $validate = true)`. These are opt-in; see
+[validation](/guide/validation) for optional adapters and per-request options.
 
 See [middleware and events](/api/middleware-events). Pool and DNS configuration
 is exposed by `PoolAwareHandler`, but those services are not integrated into

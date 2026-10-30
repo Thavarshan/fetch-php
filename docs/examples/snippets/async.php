@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 require dirname(__DIR__, 3).'/vendor/autoload.php';
 
-use Fetch\Interfaces\Response as FetchResponse;
+use Fetch\Http\ClientHandler;
 use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
 
 use function Matrix\Support\all;
-use function Matrix\Support\async;
 use function Matrix\Support\await;
 
 MockServer::fake([
@@ -22,32 +21,11 @@ MockServer::fake([
 ]);
 MockServer::preventStrayRequests();
 
-$results = await(
-    all([
-        'users' => async(static function (): FetchResponse {
-            $response = fetch('https://api.example.test/v1/users');
-
-            if (! ($response instanceof FetchResponse)) {
-                throw new RuntimeException(
-                    'The user request did not return a response.',
-                );
-            }
-
-            return $response;
-        }),
-        'posts' => async(static function (): FetchResponse {
-            $response = fetch('https://api.example.test/v1/posts');
-
-            if (! ($response instanceof FetchResponse)) {
-                throw new RuntimeException(
-                    'The post request did not return a response.',
-                );
-            }
-
-            return $response;
-        }),
-    ]),
-);
+$handler = ClientHandler::create()->async();
+$results = await(all([
+    'users' => $handler->get('https://api.example.test/v1/users'),
+    'posts' => $handler->get('https://api.example.test/v1/posts'),
+]));
 
 if (
     ! is_array($results) ||

@@ -14,10 +14,30 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
+use GuzzleHttp\Psr7\Request;
 use Tests\TestCase;
 
 final class ClientRequestOptionIsolationTest extends TestCase
 {
+    public function test_psr18_stays_sync_with_an_async_handler(): void
+    {
+        $guzzle = new GuzzleClient([
+            'handler' => HandlerStack::create(new MockHandler([
+                new GuzzleResponse(200, [], 'synchronous'),
+            ])),
+        ]);
+        $handler = ClientHandler::createWithClient($guzzle)->async();
+        $client = new Client($handler);
+
+        $response = $client->sendRequest(new Request(
+            'GET',
+            'https://api.example.test/status',
+        ));
+
+        self::assertSame('synchronous', (string) $response->getBody());
+        self::assertTrue($handler->isAsync());
+    }
+
     protected function setUp(): void
     {
         MockServer::resetInstance();

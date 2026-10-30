@@ -91,21 +91,24 @@ Implements the union interface `Fetch\Interfaces\ClientHandler`, combining:
 - `PoolAwareHandler` (`withConnectionPool`, `withHttp2`, DNS cache controls).
 - `HttpClientAware` (inject your own Guzzle client).
 
-Implementation relies on traits in `src/Fetch/Concerns/`:
+The facade composes focused services and configuration traits:
 
 - `ConfiguresRequests` – base URI, headers, authentication, body helpers
   (`withBody` enforces content-type/header consistency).
 - `HandlesUris` – builds absolute URIs using handler options or immutable
   `RequestContext`.
-- `ManagesPromises` – toggles async mode, exposes `then/catch/finally`, `map`,
-  `sequence`, and concurrency utilities (Matrix bridge).
+- `PromiseManager` – composes Matrix promises, mapping, and aggregation.
+  `ManagesPromises` remains a deprecated shim for direct trait consumers.
 - `ManagesRetries` – exposes fluent retry configuration and delegates execution
   to `Support\RetryStrategy`.
-- `PerformsHttpRequests` – orchestrates RequestContext creation, logging,
-  caching, mocking, profiling, and actual HTTP execution (sync + async).
+- `PerformsHttpRequests` – builds request contexts and delegates to
+  `RequestCoordinator`. Its builder, sync/async executors, and streaming
+  executor isolate transport concerns from the lifecycle.
+- `ValidationManager` – applies immutable validation policies through optional
+  JSON Schema and OpenAPI 3.0.x adapters.
 - `HandlesMocking` – consults `Testing\MockServer` before hitting the network.
-- `ManagesConnectionPool` – bridges to `Support\GlobalServices` for shared
-  pools/DNS cache/HTTP2.
+- `ManagesConnectionPool` – delegates to `ConnectionPoolManager`, which holds
+  handler toggles and bridges to shared `GlobalServices` pool/DNS settings.
 - `ManagesDebugAndProfiling` – surfaces `withDebug`, `withProfiler`, attaches
   `DebugInfo` snapshots per response.
 
@@ -113,15 +116,19 @@ Key runtime behaviors:
 
 - Builds an immutable `RequestContext` per call by merging factory defaults →
   global defaults → handler options → request overrides.
-- The default buffered path is synchronous. Async mode wraps synchronous Guzzle
-  request execution in a Matrix/React promise; it does not make network I/O
-  nonblocking or concurrent. Async requests bypass the cache.
+- Buffered async requests use `AsyncRequestExecutor` and `AsyncTransport`.
+  The default `GuzzleAsyncTransport` pumps cURL multi from ReactPHP. Custom
+  Guzzle clients need an explicit loop driver. Async requests bypass caching.
 - Caching runs only when a `CacheManager` has been attached with `withCache()`.
   A request `cache` option configures an attached manager; it does not
   initialize one.
 - Supports `MockServer` fakes before network IO, `Recorder` integration when
   recording is enabled.
 - Logging sanitizes sensitive headers and auth credentials.
+
+Validation runs after request middleware and before transport selection.
+Responses from middleware, mocks, caches, and transport are checked before
+returning. Invalid responses are not cached or retried.
 
 Streaming uses a separate direct Guzzle path and bypasses the normal MockServer,
 middleware, retry, and cache pipeline. It is synchronous; SSE parses the

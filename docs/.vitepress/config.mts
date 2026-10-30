@@ -101,6 +101,7 @@ export default defineConfig({
                         },
                         { text: 'Retries', link: '/guide/retry-handling' },
                         { text: 'HTTP caching', link: '/guide/http-caching' },
+                        { text: 'Validation', link: '/guide/validation' },
                         { text: 'Middleware', link: '/guide/middleware' },
                         { text: 'Lifecycle events', link: '/guide/events' },
                         { text: 'Streaming and SSE', link: '/guide/streaming' },

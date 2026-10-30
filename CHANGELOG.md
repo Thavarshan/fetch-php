@@ -1,56 +1,107 @@
 # Release Notes
 
-## [Unreleased](https://github.com/Thavarshan/fetch-php/compare/3.8.1...HEAD)
+## [Unreleased]
+
+## [v4.0.0] - 2026-10-30
+
+This major release integrates the repository modernization in [#118], request
+execution and validation in [#127], and documentation and release hardening in
+[#130]. PHP 8.3 remains the minimum supported version.
+
+### Added
+
+- Opt-in JSON Schema draft 2020-12 validation through `opis/json-schema ^2.6`
+  and OpenAPI 3.0.x contract validation through
+  `league/openapi-psr7-validator ^0.24`. YAML support uses `symfony/yaml`
+  or `ext-yaml`. These adapters are optional for consumers.
+- Request/response policies, structured validation errors, and per-request
+  validation options. Middleware, mock, cache, and transport responses pass
+  through the configured validation policy.
+- A ReactPHP-compatible `AsyncTransport` contract and cURL multi bridge for
+  nonblocking buffered HTTP requests, plus dedicated request, async, streaming,
+  builder, coordinator, promise, and pool configuration collaborators.
+- TRACE and CONNECT methods and JSON media-type recognition for JSON:API,
+  JSON-LD, GeoJSON, and Problem Details.
+- Executable offline documentation examples and a comprehensive API/guide
+  rewrite, including architecture, validation, troubleshooting, and upgrading.
 
 ### Changed
 
-- Upgrade `jerome/matrix` to `^4.0`. Fetch's promise mapper now uses Matrix 4's
-  lazy, keyed scheduler, which bounds work per event-loop tick, preserves input
-  keys, stops queued tasks after failure, and forwards cancellation to active
-  tasks. Mapper concurrency is limited to 200 to protect workers from unsafe
-  caller-supplied limits.
-- Re-export the Matrix 4 helpers from the global Fetch helper file when those
-  global names are available, including `any()` and timeout-aware `await()`;
-  retry delay integers remain milliseconds at the Fetch bridge.
-- Add TRACE and CONNECT request methods; recognize JSON:API, JSON-LD, GeoJSON,
-  and Problem Details media types as JSON.
-- Validate retry status codes and multipart field names. Build multipart
-  requests with Guzzle's binary-safe `MultipartStream`.
-- Route handler-wide defaults through `GlobalServices`, cache decoded response
-  arrays, and map Guzzle transport failures to Fetch's PSR client exceptions.
-- Include `Fetch/Support` in coverage, enforce an 80% line-coverage floor in CI,
-  make assertion-free tests risky, and check local Markdown links during
-  documentation CI.
-- Remove `buildFullUri()` from internal URI resolution; mark external uses
-  deprecated with a Fetch 4.0 removal target.
-- Raise PHPStan to level 8 and tighten internal return and interface annotations
-  to keep the stricter analysis clean.
-
-### Documentation
-
-- Rewrite the README and VitePress guides/API reference to match the current
-  implementation; add offline runnable examples, PHP snippet analysis, and local
-  Markdown fragment checking.
-- Document the blocking nature of Fetch's Matrix promise bridge and the fact
-  that the configured connection pool/DNS cache is not wired into request
-  execution.
+- Require `jerome/matrix ^4.0`. Keyed, lazy mapping bounds scheduled work,
+  forwards cancellation, and stops queued tasks after failure. Handler mapping
+  accepts concurrency from 1 to 200.
+- Use one retry policy for synchronous and asynchronous HTTP execution. Async
+  retries use Matrix timers, convert millisecond delays to seconds, preserve
+  the final failure, and never retry cancellation.
+- Use binary-safe multipart streams, immutable request contexts, shared default
+  services, and cached response JSON decoding.
+- Raise PHPStan to level 8, enforce 80% line coverage, and check the 80-column
+  maintained-text policy on every CI run. Generated locks/build output and
+  dependencies are excluded from width enforcement.
+- Restrict workflow write permissions to the jobs that require them. Release
+  jobs no longer request unused package-write permission.
+- Pin Scorecard action 2.5.0 to its verified commit, restoring analysis after
+  the old hosted image became unavailable.
 
 ### Fixed
 
-- Isolate per-request `Client::fetch()` and global `fetch()` base-URI options in
-  the immutable request context so options do not leak into later requests.
-- Append request query parameters once when building buffered and streamed
-  request URIs.
+- Preserve custom handler logger forwarding through the existing public
+  contract and retain every explicit named response status helper.
+- Keep PSR-18 dispatch synchronous when the shared handler is in async mode,
+  without changing that handler's configuration.
+- Isolate per-request options and base URIs, and resolve query options once
+  using Guzzle's replacement semantics.
+- Preserve JSON objects versus arrays, stream positions, non-seekable upload
+  replay, middleware body edits, and multipart boundaries during validation.
+- Wait for deferred middleware before classifying short circuits. Async mock
+  and middleware short circuits return promises consistently.
+- Preserve incremental Guzzle streaming while enabling the cURL multi driver.
+  Unvalidated uploads are not read into memory before dispatch.
+- Validate Basic-auth and matching cookie-jar headers independently and check
+  the same query and materialized payload that the transport sends.
+- Run the actual offline PHPUnit suite from the commit hook instead of calling
+  a nonexistent Laravel `artisan` command and masking its failure.
 
-### Compatibility
+### Security
 
-- Matrix 4 rejects cancelled operations with
-  `Matrix\Exceptions\CancellationException`. Code awaiting or catching Fetch
-  promises should handle this exception when cancelling pending work.
-- `Client::fetch()` and verb helpers now declare `PromiseInterface` in their
-  return unions when called with async request options. Synchronous calls still
-  return a response; callers enabling async mode should await or chain the
-  returned promise.
+- Partition cached responses by final Authorization and Cookie headers,
+  including middleware transformations, Basic-auth options, cookie jars, and
+  custom cache keys. Credential partitions use hashes, preventing cached data
+  from being reused across those authentication contexts.
+- Reject external OpenAPI references and unregistered JSON Schema references
+  without fetching them. Validation errors use safe structured messages.
+- Preserve the HTTP URI format checks; application SSRF controls are still
+  required for untrusted destinations.
+
+### Breaking changes and migration
+
+- Update applications to `jerome/fetch-php ^4.0` and resolve any Matrix 3
+  constraints. PHP remains `^8.3`; Guzzle remains `^7.9`.
+- Custom Guzzle clients must supply a loop-compatible `AsyncTransport` for
+  asynchronous calls. Missing drivers reject with `AsyncTransportException`.
+  Synchronous and PSR-18 calls remain synchronous.
+- Handle `Matrix\Exceptions\CancellationException` when cancelling promises.
+  Async short circuits now always return promises; await or chain them.
+- Public client convenience return unions include `PromiseInterface`.
+  Subclasses overriding those methods must keep compatible signatures.
+- Request execution now delegates to collaborators. Subclasses depending on
+  protected execution internals should migrate custom transport behavior to
+  `AsyncTransport` or middleware. The direct `ManagesPromises` trait remains
+  available as a deprecated compatibility shim.
+- Credential-aware cache keys change; clear persisted Fetch caches on upgrade.
+  Custom cache keys still need to distinguish unrelated resources.
+- Streaming/SSE remains synchronous and bypasses validation, middleware,
+  retries, mocks, and caching. Disable validation policies for streaming.
+- `buildFullUri()` remains deprecated; use `buildFullUriFromContext()`.
+
+See the [upgrade guide] for code examples and transport migration details.
+
+[Unreleased]: https://github.com/Thavarshan/fetch-php/compare/4.0.0...HEAD
+[v4.0.0]: https://github.com/Thavarshan/fetch-php/compare/3.8.1...4.0.0
+[#118]: https://github.com/Thavarshan/fetch-php/pull/118
+[#127]: https://github.com/Thavarshan/fetch-php/pull/127
+[#130]: https://github.com/Thavarshan/fetch-php/pull/130
+[upgrade guide]: https://fetch-php.thavarshan.com/guide/upgrading
 
 ## [v3.8.1] - 2026-07-23
 

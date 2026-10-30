@@ -199,8 +199,8 @@ class MockServer
             PHPUnit::assertSame(
                 $times,
                 $count,
-                "Expected request to be sent {$times} time(s), "
-                    ."but was sent {$count} time(s).",
+                "Expected request to be sent {$times} time(s), ".
+                    "but was sent {$count} time(s).",
             );
         }
     }
@@ -290,8 +290,8 @@ class MockServer
                 ! $this->isAllowedStrayRequest($url)
             ) {
                 throw new InvalidArgumentException(
-                    "No fake response registered for [{$method} {$url}] "
-                        .'and stray requests are prevented.',
+                    "No fake response registered for [{$method} {$url}] ".
+                        'and stray requests are prevented.',
                 );
             }
 
@@ -313,6 +313,18 @@ class MockServer
         }
 
         return $executedResponse;
+    }
+
+    /**
+     * Determine whether request interception, stray-request checks, or
+     *     recording is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->fakes !== [] ||
+            $this->callback !== null ||
+            $this->preventStrayRequests ||
+            $this->recording;
     }
 
     /**
@@ -410,7 +422,7 @@ class MockServer
     {
         // Convert wildcard pattern to regex
         $regex = preg_quote($pattern, '/');
-        $regex = str_replace('\*', '.*', $regex);
+        $regex = str_replace("\*", '.*', $regex);
         $regex = '/^'.$regex.'$/';
 
         return (bool) preg_match($regex, $url);

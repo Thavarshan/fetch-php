@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use Fetch\Cache\MemoryCache;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use Fetch\Http\Response;
 use Fetch\Testing\MockServer;
 use Fetch\Testing\Recorder;
@@ -28,7 +29,10 @@ class ClientHandlerCacheTest extends TestCase
         $handlerStack = HandlerStack::create($mock);
         $client = new GuzzleClient(['handler' => $handlerStack]);
 
-        return ClientHandler::createWithClient($client);
+        return ClientHandler::createWithClient(
+            $client,
+            new GuzzleAsyncTransport($client, supportsQueueOnlyHandlers: true),
+        );
     }
 
     public function test_async_requests_bypass_cache(): void

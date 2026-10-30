@@ -177,7 +177,7 @@ if (is_dir($skillsDir)) {
         ) {
             $errors[] = sprintf(
                 "Skill '%s' name '%s' must be lowercase alphanumeric "
-                    . 'with single hyphens',
+                    .'with single hyphens',
                 $dirName,
                 $name,
             );
@@ -212,7 +212,7 @@ if (is_dir($skillsDir)) {
         if (strpos($agents, (string) $dirName) === false) {
             $errors[] = sprintf(
                 "Skill '%s' is not referenced in AGENTS.md "
-                    . '(Claude/Codex skill discovery would drift)',
+                    .'(Claude/Codex skill discovery would drift)',
                 $dirName,
             );
         }
@@ -229,7 +229,7 @@ if (preg_match_all('/`(fetch-php-[a-z0-9-]+)`/', $agents, $mm)) {
         if (! isset($skillNames[$mentioned])) {
             $errors[] = sprintf(
                 "AGENTS.md references skill '%s' without a matching "
-                    . '.claude/skills/%s/SKILL.md file',
+                    .'.claude/skills/%s/SKILL.md file',
                 $mentioned,
                 $mentioned,
             );
@@ -360,7 +360,7 @@ $sources = @file_get_contents("$root/docs/ai/SOURCES.md") ?: '';
 if (strlen(trim($sources)) < 200) {
     $warnings[] =
         'docs/ai/SOURCES.md looks empty — external sources should be '
-            . 'attributed there.';
+            .'attributed there.';
 }
 
 // ---------------------------------------------------------------------------

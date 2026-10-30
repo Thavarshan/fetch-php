@@ -13,8 +13,7 @@ class UriValidationTest extends TestCase
     protected function setUp(): void
     {
         // Create anonymous class to expose protected methods
-        $this->handler = new class extends ClientHandler
-        {
+        $this->handler = new class extends ClientHandler {
             public function exposeValidateUriString(string $uri): void
             {
                 $this->validateUriString($uri);

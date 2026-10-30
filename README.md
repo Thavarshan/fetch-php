@@ -36,28 +36,28 @@ access. Save it as a PHP file in the project root after installing the package.
 
 declare(strict_types=1);
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . "/vendor/autoload.php";
 
 use Fetch\Interfaces\Response as FetchResponse;
 use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
 
 MockServer::fake([
-    'GET https://api.example.test/v1/users/42' => MockResponse::json([
-        'id' => 42,
-        'name' => 'Ada Lovelace',
+    "GET https://api.example.test/v1/users/42" => MockResponse::json([
+        "id" => 42,
+        "name" => "Ada Lovelace",
     ]),
 ]);
 MockServer::preventStrayRequests();
 
-$response = fetch('https://api.example.test/v1/users/42');
+$response = fetch("https://api.example.test/v1/users/42");
 
 if (!($response instanceof FetchResponse)) {
-    throw new RuntimeException('Expected a synchronous HTTP response.');
+    throw new RuntimeException("Expected a synchronous HTTP response.");
 }
 
 $user = $response->json();
-echo $user['name'], PHP_EOL;
+echo $user["name"], PHP_EOL;
 ```
 
 <!-- /docs-example: quickstart -->
@@ -74,11 +74,11 @@ shared `Fetch\Http\Client` facade; call `getHandler()` when you need
 handler-only configuration.
 
 ```php
-$response = get('https://api.example.test/users', ['page' => 2]);
-$created = post('https://api.example.test/users', ['name' => 'Grace']);
-$updated = put('https://api.example.test/users/42', ['name' => 'Grace Hopper']);
-$changed = patch('https://api.example.test/users/42', ['active' => false]);
-$deleted = delete('https://api.example.test/users/42');
+$response = get("https://api.example.test/users", ["page" => 2]);
+$created = post("https://api.example.test/users", ["name" => "Grace"]);
+$updated = put("https://api.example.test/users/42", ["name" => "Grace Hopper"]);
+$changed = patch("https://api.example.test/users/42", ["active" => false]);
+$deleted = delete("https://api.example.test/users/42");
 ```
 
 The `get()` helper treats its second argument as query parameters. Array data
@@ -104,14 +104,14 @@ text with `text()`, or inspect headers with `header()`. See the
 
 ## Async and Matrix
 
-Fetch PHP integrates with Matrix 4 and ReactPHP promises. The API can return
-promises and Matrix supplies helpers such as `async()`, `await()`, and `all()`.
-In this release, Fetch wraps synchronous Guzzle request execution in a promise:
-network I/O blocks the event loop, so these APIs do not make HTTP calls
-nonblocking or run them concurrently. Do not call blocking `await()` while the
-Matrix event loop is already running. See the
-[async guide](https://fetch-php.thavarshan.com/guide/async-requests) for these
-limits, cancellation, and timeout behavior.
+Fetch PHP integrates with Matrix 4 and ReactPHP promises. Use
+`ClientHandler::create()->async()` for nonblocking buffered HTTP requests
+through the default cURL multi transport. Matrix's `all()` and `map()` compose
+concurrent requests; cancellation reaches the active transport and retry timers.
+Custom Guzzle clients require an explicit loop-compatible `AsyncTransport`.
+Wrapping a synchronous `fetch()` call in `async()` still blocks. See the
+[async guide](https://fetch-php.thavarshan.com/guide/async-requests) for
+transport configuration, cancellation, and timeouts.
 
 ## More features
 
@@ -120,15 +120,17 @@ The documentation site covers
 [HTTP caching](https://fetch-php.thavarshan.com/guide/http-caching),
 [middleware](https://fetch-php.thavarshan.com/guide/middleware),
 [lifecycle events](https://fetch-php.thavarshan.com/guide/events),
-[streaming and SSE](https://fetch-php.thavarshan.com/guide/streaming),
-[HTTP/2 configuration and pool limits][pool],
+[streaming and SSE](https://fetch-php.thavarshan.com/guide/streaming), [HTTP/2
+configuration and pool limits][pool],
 [logging and profiling](https://fetch-php.thavarshan.com/guide/logging), and
 [offline testing](https://fetch-php.thavarshan.com/guide/testing).
 
 The package implements PSR-7 HTTP messages, PSR-18 HTTP client behavior, and
-PSR-3 logger awareness. It does not include JSON Schema or OpenAPI contract
-validation.
+PSR-3 logger awareness. Optional JSON Schema and OpenAPI 3.0.x validation runs
+after request middleware and before responses are returned. Install the optional
+adapters described in the [validation guide][validation] to enable it.
 
+[validation]: https://fetch-php.thavarshan.com/guide/validation
 [pool]: https://fetch-php.thavarshan.com/guide/connection-pooling
 
 ## Development

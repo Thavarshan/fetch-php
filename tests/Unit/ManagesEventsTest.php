@@ -17,8 +17,7 @@ class ManagesEventsTest extends TestCase
 {
     private function handler(): object
     {
-        return new class
-        {
+        return new class {
             use ManagesEvents;
         };
     }

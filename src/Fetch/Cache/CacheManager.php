@@ -484,7 +484,10 @@ final class CacheManager
         $cacheConfig = $options['cache'] ?? [];
 
         if (is_array($cacheConfig) && isset($cacheConfig['key'])) {
-            return $this->keyGenerator->generateCustom($cacheConfig['key']);
+            return $this->keyGenerator->generateCustom(
+                $cacheConfig['key'],
+                $options,
+            );
         }
 
         return $this->keyGenerator->generate($method, $uri, $options);

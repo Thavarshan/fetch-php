@@ -33,3 +33,12 @@ asynchronous mode is enabled; PSR-18 `sendRequest()` is synchronous.
 Reset shared state in tests. Per-request options passed to `Client` methods are
 sent through an immutable request context and do not become defaults for later
 requests.
+
+For async calls, supply an `AsyncTransport` using
+`ClientHandler::createWithClient($guzzleClient, $transport)` or
+`setAsyncTransport($transport)`. `GuzzleAsyncTransport` needs the same
+`CurlMultiHandler` used by that Guzzle client. A client without a loop driver
+rejects with `AsyncTransportException` rather than running blocking I/O.
+Keep authentication and cookie options in Fetch's request options when using
+validation or caching; defaults hidden inside a custom transport are not
+available to those layers.

@@ -11,8 +11,7 @@ class HandlesUrisTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->handler = new class extends ClientHandler
-        {
+        $this->handler = new class extends ClientHandler {
             public function exposeBuildFullUri(string $uri): string
             {
                 return $this->buildFullUri($uri);

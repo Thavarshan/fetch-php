@@ -56,10 +56,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $this->handler = $handler ?? new ClientHandler(options: $options);
         $this->logger = $logger ?? new NullLogger;
 
-        // If handler supports logging, set the logger
-        if (method_exists($this->handler, 'setLogger')) {
-            $this->handler->setLogger($this->logger);
-        }
+        $this->handler->setLogger($this->logger);
     }
 
     /**
@@ -91,10 +88,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     {
         $this->logger = $logger;
 
-        // If handler supports logging, set the logger
-        if (method_exists($this->handler, 'setLogger')) {
-            $this->handler->setLogger($logger);
-        }
+        $this->handler->setLogger($logger);
     }
 
     /**
@@ -122,6 +116,7 @@ class Client implements ClientInterface, LoggerAwareInterface
             $method = $request->getMethod();
             $uri = (string) $request->getUri();
             $options = $this->extractOptionsFromRequest($request);
+            $options['async'] = false;
 
             $this->logger->info('Sending PSR-7 request', [
                 'method' => $method,

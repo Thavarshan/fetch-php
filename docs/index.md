@@ -10,10 +10,9 @@ helper functions, client and handler APIs, request and response behavior, and
 optional facilities such as retries, caching, middleware, streaming, and Matrix
 promises.
 
-> Fetch's Matrix promise integration currently wraps synchronous Guzzle
-> requests. It does not provide nonblocking HTTP I/O. See
-> [Asynchronous requests](/guide/async-requests) before using it in an
-> event-loop application.
+> Buffered async requests use cURL multi on the ReactPHP event loop. Custom
+> clients need an explicit async transport. See
+> [Asynchronous requests](/guide/async-requests) for configuration and limits.
 
 ## Start here
 
@@ -29,6 +28,7 @@ promises.
 - [Errors and status codes](/guide/error-handling)
 - [Retry behavior](/guide/retry-handling)
 - [Promises and Matrix](/guide/async-requests)
+- [Schema and contract validation](/guide/validation)
 - [Streaming and Server-Sent Events](/guide/streaming)
 - [Testing offline](/guide/testing)
 

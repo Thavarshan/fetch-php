@@ -91,8 +91,7 @@ class EventDispatcherTest extends TestCase
     public function test_listener_exception_is_isolated_and_logged(): void
     {
         $logs = [];
-        $logger = new class($logs) extends AbstractLogger
-        {
+        $logger = new class($logs) extends AbstractLogger {
             public function __construct(private array &$logs) {}
 
             public function log($level, $message, array $context = []): void

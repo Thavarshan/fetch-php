@@ -112,7 +112,7 @@ foreach ($exampleFiles as $file) {
 
 printf(
     'Checked syntax for %d Markdown PHP block(s) and executed '
-        . "%d offline PHP example(s).\n",
+        ."%d offline PHP example(s).\n",
     $phpBlocks,
     count($exampleFiles),
 );

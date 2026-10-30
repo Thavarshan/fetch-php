@@ -11,8 +11,6 @@ permissions:
 
 jobs:
   auto-assign:
-    permissions:
-      issues: write
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

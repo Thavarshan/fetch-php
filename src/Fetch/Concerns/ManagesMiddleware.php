@@ -201,13 +201,14 @@ trait ManagesMiddleware
 
     /**
      * Run a request through the middleware pipeline around the given core
-     *     handler.
+     * handler.
      *
      * @param  CoreHandler  $core
      */
     protected function runThroughMiddleware(
         RequestInterface $request,
         callable $core,
+        ?callable $onRequest = null,
     ): ResponseInterface|PromiseInterface {
         $resolved = $this->resolveMiddleware();
 
@@ -215,6 +216,10 @@ trait ManagesMiddleware
             return $core($request);
         }
 
-        return (new MiddlewarePipeline($resolved))->handle($request, $core);
+        return (new MiddlewarePipeline($resolved))->handle(
+            $request,
+            $core,
+            $onRequest,
+        );
     }
 }

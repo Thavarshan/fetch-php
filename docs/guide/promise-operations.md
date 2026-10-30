@@ -34,8 +34,8 @@ from milliseconds to Matrix seconds.
 - `await(PromiseInterface $promise, ?float $timeout = null)` drives the loop
   from a non-running context. The timeout is seconds.
 
-These operations can be useful for promises that do nonblocking work. Wrapping
-Fetch calls does not make Guzzle's synchronous HTTP transport concurrent.
+Pass async handler request promises to these helpers. Wrapping synchronous
+Fetch calls in a Matrix task does not change their transport behavior.
 
 ## Map and batch limits
 
@@ -49,9 +49,9 @@ calls the callback with each batch, then flattens each callback's iterable
 result. Batch size and concurrency are counts, not durations. Fetch's global
 wrapper defaults the batch concurrency to `5`.
 
-A concurrency limit bounds scheduled promises, but it cannot make synchronous
-Fetch requests concurrent. Use a genuinely asynchronous PSR-18 transport or a
-different nonblocking HTTP client if concurrent network I/O is required.
+A concurrency limit bounds scheduled tasks. Return an async handler request
+promise from the callback to bound the number of in-flight HTTP requests.
+`ClientHandler::map()` defaults to five concurrent tasks and accepts 1 to 200.
 
 ## Retry timing
 
@@ -66,8 +66,8 @@ configuration instead.
 
 Aggregation preserves promise rejection. Matrix 4 cancels queued scheduler tasks
 when a mapped task fails and propagates cancellation to active promises. A
-wrapped Fetch request already executing synchronous Guzzle I/O cannot be
-interrupted by that cancellation. Matrix cancellation rejects with
+Fetch async request forwards cancellation to its transport; synchronous I/O
+cannot be interrupted by promise cancellation. Matrix cancellation rejects with
 `Matrix\Exceptions\CancellationException`.
 
 See [Async requests and Matrix](/guide/async-requests) for loop ownership and

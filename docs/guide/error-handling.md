@@ -30,6 +30,7 @@ failure and calling API. Catch the narrowest relevant type and preserve the
 previous exception when wrapping failures.
 
 In Matrix promise workflows, handle rejections with `then()`'s second callback
-or `catch()`. `await()` rethrows a rejected operation. A synchronous Guzzle
-request inside Fetch's async callback can block the event loop; see
+or `catch()`. `await()` rethrows a rejected operation. Cancellation rejects with
+`Matrix\Exceptions\CancellationException`; validation uses dedicated request
+and response exceptions. See
 [async requests](/guide/async-requests).

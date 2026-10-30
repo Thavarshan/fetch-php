@@ -20,8 +20,8 @@ $xpath = new DOMXPath($document);
 $xpath->registerNamespace('coverage', 'https://schema.phpunit.de/coverage/1.0');
 $percent = $xpath->evaluate(
     'string(/coverage:phpunit/coverage:project/'
-        . 'coverage:directory[@name="/"]/coverage:totals/'
-        . 'coverage:lines/@percent)',
+        .'coverage:directory[@name="/"]/coverage:totals/'
+        .'coverage:lines/@percent)',
 );
 
 if (! is_numeric($percent)) {

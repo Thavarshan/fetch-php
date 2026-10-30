@@ -3,6 +3,7 @@
 namespace Tests\Integration;
 
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use Fetch\Http\Response;
 use Fetch\Support\FetchProfiler;
 use GuzzleHttp\Client;
@@ -27,7 +28,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -77,7 +84,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -129,7 +142,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -171,7 +190,13 @@ class DebugInfoIsolationTest extends TestCase
 
         $profiler = new FetchProfiler;
 
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withProfiler($profiler);
         $handler->withDebug(true); // Enable debug mode to capture debug info
@@ -213,7 +238,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         // Don't enable debug mode
 
@@ -234,7 +265,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -265,7 +302,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 

@@ -38,7 +38,7 @@ and pull the matching specialist skill for those.
    signature, helper, enum case, exception, or default triggers
    `fetch-php-public-api-review`. Confirm PSR-7/PSR-18/PSR-3 contracts still
    hold.
-4. **Static analysis** — PHPStan level 6 clean; no new `ignoreErrors` masking a
+4. **Static analysis** — PHPStan level 8 clean; no new `ignoreErrors` masking a
    real type issue; `declare(strict_types=1)` present in new files.
 5. **Test quality** — new behavior covered; bug fixes have a regression test;
    tests are offline, deterministic, and `snake_case`; failure/cancellation

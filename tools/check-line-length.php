@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$configFile = $root . '/pint.json';
+$configFile = $root.'/pint.json';
 $configContents = file_get_contents($configFile);
 
 if ($configContents === false) {
@@ -118,7 +118,7 @@ if ($failures !== []) {
             $maxLength,
         ),
     );
-    fwrite(STDERR, implode("\n", $failures) . "\n");
+    fwrite(STDERR, implode("\n", $failures)."\n");
     exit(1);
 }
 

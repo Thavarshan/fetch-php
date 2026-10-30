@@ -16,8 +16,7 @@ class LoggingMiddlewareTest extends TestCase
 {
     private function collectingLogger(array &$logs): AbstractLogger
     {
-        return new class($logs) extends AbstractLogger
-        {
+        return new class($logs) extends AbstractLogger {
             public function __construct(private array &$logs) {}
 
             public function log($level, $message, array $context = []): void

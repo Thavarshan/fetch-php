@@ -105,8 +105,7 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_supports_middleware_objects(): void
     {
-        $middleware = new class implements Middleware
-        {
+        $middleware = new class implements Middleware {
             public function handle(
                 RequestInterface $request,
                 callable $next,

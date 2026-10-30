@@ -25,6 +25,14 @@ and selected `Vary` request headers influence storage and revalidation. Private
 caching is disabled by default. Review `CacheManager` options before persisting
 data that may contain credentials or user-specific responses.
 
+Cache lookup and storage use the final middleware-transformed request options.
+Authorization and Cookie headers always partition cache entries, including
+custom cache keys. Basic-auth options and URL-matched cookie jars are converted
+to those headers before key generation. Credential values are hashed rather
+than written into generated keys. A custom key still controls URL/resource
+variation, so never reuse one key for unrelated resources. Application identity
+carried outside these headers needs an explicit varying header or custom key.
+
 The async and streaming request paths do not currently go through the cache
 manager. `MockServer` returns fakes outside the cache pipeline; use an injected
 Guzzle `MockHandler` when testing cache hits and revalidation.

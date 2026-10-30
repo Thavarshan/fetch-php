@@ -5,14 +5,16 @@ namespace Tests\Integration;
 use Fetch\Enum\Method;
 use Fetch\Http\Client;
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use Fetch\Http\Response;
+use Fetch\Interfaces\AsyncTransport;
 use Fetch\Interfaces\Response as ResponseInterface;
-use Fetch\Support\RequestContext;
 use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
 use Fetch\Testing\Recorder;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response as Psr7Response;
 use Matrix\Exceptions\AsyncException;
 use PHPUnit\Framework\TestCase;
 use React\Promise\PromiseInterface;
@@ -21,6 +23,8 @@ use function Matrix\Support\all;
 use function Matrix\Support\async;
 use function Matrix\Support\await;
 use function Matrix\Support\race;
+use function React\Promise\reject;
+use function React\Promise\resolve;
 
 class AsyncRequestsTest extends TestCase
 {
@@ -31,8 +35,7 @@ class AsyncRequestsTest extends TestCase
     protected function setUp(): void
     {
         // Create a mock handler that returns predictable responses
-        $this->mockHandler = new class extends ClientHandler
-        {
+        $this->mockHandler = new class extends ClientHandler {
             /**
              * Override sendRequest with compatible signature.
              */
@@ -136,7 +139,9 @@ class AsyncRequestsTest extends TestCase
         $handler->async();
         $client = new Client($handler);
 
-        $response = $client->fetch('https://api.example.com/mock-async');
+        $promise = $client->fetch('https://api.example.com/mock-async');
+        $this->assertInstanceOf(PromiseInterface::class, $promise);
+        $response = await($promise);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals(['mocked' => true], $response->json());
@@ -144,20 +149,18 @@ class AsyncRequestsTest extends TestCase
 
     public function test_async_error_contains_context(): void
     {
-        $handler = new class extends ClientHandler
-        {
-            protected function executeSyncRequest(
-                string $method,
-                string $uri,
-                array $options,
-                float $startTime,
-                int $startMemory,
-                ?string $requestId = null,
-                ?RequestContext $context = null,
-            ): ResponseInterface {
-                throw new \RuntimeException('simulated failure');
-            }
-        };
+        $handler = new ClientHandler;
+        $handler->setAsyncTransport(
+            new class implements AsyncTransport {
+                public function requestAsync(
+                    string $method,
+                    string $uri,
+                    array $options,
+                ): PromiseInterface {
+                    return reject(new \RuntimeException('simulated failure'));
+                }
+            },
+        );
 
         $handler->async();
 
@@ -234,10 +237,10 @@ class AsyncRequestsTest extends TestCase
 
         $mockHandler = new MockHandler([
             // First 2 attempts fail with 503
-            new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
-            new \GuzzleHttp\Psr7\Response(503, [], 'Service Unavailable'),
+            new Psr7Response(503, [], 'Service Unavailable'),
+            new Psr7Response(503, [], 'Service Unavailable'),
             // Third attempt succeeds
-            new \GuzzleHttp\Psr7\Response(
+            new Psr7Response(
                 200,
                 [],
                 json_encode(['success' => true, 'attempt' => 3]),
@@ -248,7 +251,13 @@ class AsyncRequestsTest extends TestCase
         $guzzleClient = new \GuzzleHttp\Client(['handler' => $handlerStack]);
 
         // Create handler with custom Guzzle client
-        $handler = ClientHandler::createWithClient($guzzleClient);
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->async();
 
@@ -271,33 +280,30 @@ class AsyncRequestsTest extends TestCase
 
     public function test_async_request_respects_per_request_timeout(): void
     {
-        $capturedTimeout = null;
-
-        $handler = new class extends ClientHandler
-        {
+        $handler = new ClientHandler;
+        $transport = new class implements AsyncTransport {
             public ?int $capturedTimeout = null;
 
-            protected function executeSyncRequest(
+            public function requestAsync(
                 string $method,
                 string $uri,
                 array $options,
-                float $startTime,
-                int $startMemory,
-                ?string $requestId = null,
-                ?RequestContext $context = null,
-            ): ResponseInterface {
-                // Capture the timeout from context
-                if ($context !== null) {
-                    $this->capturedTimeout = $context->getTimeout();
-                }
+            ): PromiseInterface {
+                $this->capturedTimeout = $options['timeout'] ?? null;
 
-                return new Response(
-                    200,
-                    [],
-                    json_encode(['timeout_captured' => $this->capturedTimeout]),
+                return resolve(
+                    new Psr7Response(
+                        200,
+                        ['Content-Type' => 'application/json'],
+                        json_encode(
+                            ['timeout_captured' => $this->capturedTimeout],
+                            JSON_THROW_ON_ERROR,
+                        ),
+                    ),
                 );
             }
         };
+        $handler->setAsyncTransport($transport);
 
         // Set default timeout
         $handler->timeout(30);
@@ -317,6 +323,7 @@ class AsyncRequestsTest extends TestCase
 
         // Verify the per-request timeout was used
         $this->assertEquals(99, $data['timeout_captured']);
+        $this->assertSame(99, $transport->capturedTimeout);
 
         // Verify handler state was not mutated
         $this->assertEquals(30, $handler->getEffectiveTimeout());

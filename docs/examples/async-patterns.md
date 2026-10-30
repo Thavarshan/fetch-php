@@ -6,20 +6,18 @@ description:
 
 # Async Patterns
 
-Fetch integrates with Matrix promises and exports Matrix helper functions where
-available. This lets applications compose promise values, but Fetch currently
-performs synchronous Guzzle HTTP I/O inside the async callback. Multiple Fetch
-requests therefore do not provide concurrent nonblocking network I/O.
+Fetch integrates with Matrix promises. An async handler returns request promises
+that can progress concurrently through cURL multi on the ReactPHP event loop.
 
 ```php
 use function Matrix\Support\all;
-use function Matrix\Support\async;
 use function Matrix\Support\await;
 
+$handler = \Fetch\Http\ClientHandler::create()->async();
 $results = await(
     all([
-        'first' => async(fn() => loadFirstValue()),
-        'second' => async(fn() => loadSecondValue()),
+        'first' => $handler->get('https://api.example.test/first'),
+        'second' => $handler->get('https://api.example.test/second'),
     ]),
 );
 ```

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use Fetch\Http\ClientHandler;
+use Fetch\Http\GuzzleAsyncTransport;
 use Fetch\Middleware\AddHeadersMiddleware;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Handler\MockHandler;
@@ -28,7 +29,10 @@ class MiddlewareTest extends TestCase
         $stack = HandlerStack::create($this->mock);
         $guzzle = new GuzzleClient(['handler' => $stack]);
 
-        return (new ClientHandler)->setHttpClient($guzzle);
+        return (new ClientHandler)->setHttpClient(
+            $guzzle,
+            new GuzzleAsyncTransport($guzzle, supportsQueueOnlyHandlers: true),
+        );
     }
 
     public function test_middleware_injects_header_into_real_request(): void

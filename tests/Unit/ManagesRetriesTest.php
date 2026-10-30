@@ -18,8 +18,7 @@ class ManagesRetriesTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->handler = new class extends ClientHandler
-        {
+        $this->handler = new class extends ClientHandler {
             public function exposeIsRetryableError(\Throwable $e): bool
             {
                 return $this->isRetryableError($e);
@@ -141,8 +140,7 @@ class ManagesRetriesTest extends TestCase
         );
 
         // Create a test handler and manually configure it
-        $handler = new class extends ClientHandler
-        {
+        $handler = new class extends ClientHandler {
             // Override isRetryableError to always return true for the test
             protected function isRetryableError(
                 \Throwable $e,

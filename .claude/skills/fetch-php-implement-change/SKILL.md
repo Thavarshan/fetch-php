@@ -51,7 +51,7 @@ middleware/event, bug fix, refactor. For pure test work use
 
 ## Verification
 
-- `composer check` passes (PHPStan level 6, Duster, full PHPUnit).
+- `composer check` passes (PHPStan level 8, Duster, full PHPUnit).
 - New/changed behavior is covered by a test that fails without your change.
 - No unrelated dependency, config, or formatting churn in the diff.
 - Docs/CHANGELOG updated if the public API or behavior changed.

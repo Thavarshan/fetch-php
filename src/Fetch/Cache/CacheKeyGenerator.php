@@ -90,10 +90,22 @@ class CacheKeyGenerator
 
     /**
      * Generate a cache key with a custom key provided by the user.
+     *
+     * @param  array<string, mixed>  $options
      */
-    public function generateCustom(string $customKey): string
-    {
-        return $this->prefix.$customKey;
+    public function generateCustom(
+        string $customKey,
+        array $options = [],
+    ): string {
+        $credentials = array_intersect_key(
+            $this->extractVaryHeaders($options),
+            ['authorization' => true, 'cookie' => true],
+        );
+        $suffix = $credentials === []
+            ? ''
+            : ':'.hash('sha256', serialize($credentials));
+
+        return $this->prefix.$customKey.$suffix;
     }
 
     /**
@@ -227,7 +239,12 @@ class CacheKeyGenerator
         $varyHeaders = [];
         $headers = $options['headers'] ?? [];
 
-        foreach ($this->varyHeaders as $header) {
+        $headersToVary = array_unique(array_merge(
+            $this->varyHeaders,
+            ['Authorization', 'Cookie'],
+        ));
+
+        foreach ($headersToVary as $header) {
             foreach ($headers as $name => $value) {
                 if (strcasecmp($name, $header) === 0) {
                     $varyHeaders[strtolower($header)] = is_array($value)

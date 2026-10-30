@@ -17,3 +17,5 @@ repository's Composer autoloader and uses a fake or injected Guzzle
 - `cache.php` — a cached response using an injected Guzzle handler
 - `async.php` and `cancellation.php` — Matrix promise behavior
 - `streaming.php` — line-by-line stream consumption
+
+- `validation.php` — optional JSON Schema validation of a fake response
