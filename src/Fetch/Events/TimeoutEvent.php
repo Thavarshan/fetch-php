@@ -14,9 +14,14 @@ use Psr\Http\Message\RequestInterface;
  */
 final class TimeoutEvent extends FetchEvent
 {
+    /**
+     * Stable identifier used to register timeout listeners.
+     */
     public const NAME = 'request.timeout';
 
     /**
+     * Creates a timeout event with the request and timeout context.
+     *
      * @param  array<string, mixed>  $context
      */
     public function __construct(
@@ -30,6 +35,9 @@ final class TimeoutEvent extends FetchEvent
         parent::__construct($request, $correlationId, $timestamp, $context);
     }
 
+    /**
+     * Return the listener key for this event type.
+     */
     public function getName(): string
     {
         return self::NAME;

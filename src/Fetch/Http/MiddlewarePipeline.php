@@ -29,6 +29,8 @@ use React\Promise\PromiseInterface;
 final class MiddlewarePipeline
 {
     /**
+     * Creates an ordered middleware pipeline around the request executor.
+     *
      * @param  array<int, Middleware|callable>  $middleware  Ordered
      *                                                       outermost-first.
      */

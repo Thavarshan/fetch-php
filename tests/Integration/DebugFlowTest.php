@@ -22,14 +22,23 @@ use React\Promise\PromiseInterface;
 
 use function Matrix\Support\await;
 
+/**
+ * Checks debug capture through synchronous, cached, and mocked request flows.
+ */
 class DebugFlowTest extends TestCase
 {
+    /**
+     * Clears shared mock and recorder state before each test.
+     */
     protected function setUp(): void
     {
         MockServer::resetInstance();
         Recorder::resetInstance();
     }
 
+    /**
+     * Clears shared mock and recorder state after each test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();
@@ -150,6 +159,8 @@ class DebugFlowTest extends TestCase
     }
 
     /**
+     * Builds a client handler backed by queued mock responses.
+     *
      * @param  array<int, GuzzleResponse>|null  $responses
      */
     private function makeMockHandler(?array $responses = null): ClientHandler
@@ -162,12 +173,22 @@ class DebugFlowTest extends TestCase
             ),
         ];
 
-        $handler = new class($mockResponses) extends ClientHandler {
+        $handler = new
+        /**
+         * Provides a Guzzle mock client for the debug flow test.
+         */
+        class($mockResponses) extends ClientHandler {
+            /**
+             * Stores the queued Guzzle responses used by the test handler.
+             */
             public function __construct(private array $mockResponses)
             {
                 parent::__construct();
             }
 
+            /**
+             * Reuses a Guzzle client backed by queued mock responses.
+             */
             public function getHttpClient(): ClientInterface
             {
                 if ($this->httpClient === null) {

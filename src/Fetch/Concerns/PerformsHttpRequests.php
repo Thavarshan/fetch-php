@@ -23,6 +23,12 @@ use Psr\Http\Message\RequestInterface;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 
+/**
+ * Provides request, verb, async, streaming, and SSE entry points.
+ *
+ * The consuming handler supplies request configuration and collaborators; this
+ * trait normalizes inputs and delegates transport work to focused executors.
+ */
 trait PerformsHttpRequests
 {
     /**
@@ -378,7 +384,11 @@ trait PerformsHttpRequests
         );
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Normalizes query-related options before request dispatch.
+     *
+     * @param  array<string, mixed>  $options
+     */
     protected function withQueryOptions(
         RequestInterface $request,
         array $options,
@@ -386,6 +396,11 @@ trait PerformsHttpRequests
         return $this->requestBuilder->withQueryOptions($request, $options);
     }
 
+    /**
+     * Normalize a PSR response or FetchPHP response for pipeline consumers.
+     *
+     * @throws RuntimeException If the pipeline returns a non-response value
+     */
     protected function requireFetchResponse(mixed $response): ResponseInterface
     {
         if ($response instanceof ResponseInterface) {

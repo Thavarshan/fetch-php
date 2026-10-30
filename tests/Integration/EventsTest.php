@@ -24,8 +24,14 @@ use React\Promise\PromiseInterface;
 
 use function Matrix\Support\await;
 
+/**
+ * Exercises event ordering and context across successful and failed requests.
+ */
 class EventsTest extends TestCase
 {
+    /**
+     * Creates a handler that returns the supplied mock responses.
+     */
     private function handler(array $responses): ClientHandler
     {
         $stack = HandlerStack::create(new MockHandler($responses));

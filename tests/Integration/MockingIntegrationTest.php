@@ -13,8 +13,14 @@ use function fetch;
 use function get;
 use function post;
 
+/**
+ * Exercises MockServer interception through public request helpers.
+ */
 class MockingIntegrationTest extends TestCase
 {
+    /**
+     * Resets mock and recorder singletons before each integration test.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -22,6 +28,9 @@ class MockingIntegrationTest extends TestCase
         Recorder::resetInstance();
     }
 
+    /**
+     * Resets mock and recorder singletons after each integration test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();

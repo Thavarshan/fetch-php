@@ -45,6 +45,14 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use React\Promise\PromiseInterface;
 
+/**
+ * Facade that configures requests and composes the FetchPHP execution services.
+ *
+ * Each handler owns its request options, retry and validation policies, and
+ * transport collaborators. Request construction, coordination, execution, and
+ * promise operations are delegated to focused services; selected legacy pool
+ * and DNS utilities remain shared through {@see GlobalServices}.
+ */
 class ClientHandler implements ClientHandlerInterface
 {
     use ConfiguresRequests;
@@ -118,26 +126,53 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected ?CacheManager $cacheManager = null;
 
+    /**
+     * Applies the handler's schema and OpenAPI validation policy.
+     */
     private ValidationManager $validationManager;
 
+    /**
+     * Immutable defaults and per-request overrides for validation.
+     */
     private ValidationPolicy $validationPolicy;
 
+    /**
+     * Composes Matrix promises used by this handler's async API.
+     */
     private PromiseManager $promiseManager;
 
+    /**
+     * Holds legacy pool diagnostics and handler-local HTTP/2 settings.
+     */
     private ConnectionPoolManager $connectionPoolManager;
 
+    /**
+     * Builds PSR-7 requests and middleware body representations.
+     */
     private RequestBuilder $requestBuilder;
 
+    /**
+     * Optional caller-supplied asynchronous transport implementation.
+     */
     private ?AsyncTransport $asyncTransport;
 
+    /**
+     * cURL multi driver used by the default asynchronous transport.
+     */
     private ?CurlMultiHandler $curlMultiHandler = null;
 
+    /**
+     * Explicit header content type retained for body option normalization.
+     */
     private ContentType|string|null $explicitContentType = null;
 
+    /**
+     * Explicit serialization type supplied through the content_type option.
+     */
     private ContentType|string|null $explicitContentTypeOption = null;
 
     /**
-     * ClientHandler constructor.
+     * Create a handler with request configuration and optional collaborators.
      *
      * @param  ClientInterface|null  $httpClient  The HTTP client
      * @param  array<string, mixed>  $options  The options for the request
@@ -147,6 +182,13 @@ class ClientHandler implements ClientHandlerInterface
      * @param  bool  $isAsync  Whether the request is asynchronous
      * @param  LoggerInterface|null  $logger  Logger for request/response
      *                                        details
+     * @param  CacheManager|null  $cacheManager  Cache state for this handler
+     * @param  ValidationManager|null  $validationManager  Validation service
+     * @param  ValidationPolicy|null  $validationPolicy  Validation defaults
+     * @param  AsyncTransport|null  $asyncTransport  Async transport override
+     * @param  PromiseManager|null  $promiseManager  Promise operation service
+     * @param  ConnectionPoolManager|null  $connectionPoolManager  Legacy pool
+     * @param  RequestBuilder|null  $requestBuilder  Request construction
      */
     public function __construct(
         protected ?ClientInterface $httpClient = null,
@@ -351,7 +393,9 @@ class ClientHandler implements ClientHandlerInterface
         return self::createMockResponse($statusCode, $headers, $jsonData);
     }
 
-    /** Set whether requests on this handler use asynchronous transport. */
+    /**
+     * Set whether requests on this handler use asynchronous transport.
+     */
     public function async(?bool $async = true): ClientHandlerInterface
     {
         $this->isAsync = $async ?? true;
@@ -359,16 +403,25 @@ class ClientHandler implements ClientHandlerInterface
         return $this;
     }
 
+    /**
+     * Report whether request calls use asynchronous execution.
+     */
     public function isAsync(): bool
     {
         return $this->isAsync;
     }
 
+    /**
+     * Wrap a callable in a Matrix-managed asynchronous operation.
+     */
     public function wrapAsync(callable $callable): PromiseInterface
     {
         return $this->promiseManager->wrapAsync($callable);
     }
 
+    /**
+     * Await a promise and optionally limit the wait in seconds.
+     */
     public function awaitPromise(
         PromiseInterface $promise,
         ?float $timeout = null,
@@ -376,26 +429,41 @@ class ClientHandler implements ClientHandlerInterface
         return $this->promiseManager->awaitPromise($promise, $timeout);
     }
 
+    /**
+     * Resolve when every promise fulfills, preserving its input keys.
+     */
     public function all(array $promises): PromiseInterface
     {
         return $this->promiseManager->all($promises);
     }
 
+    /**
+     * Settle with the first input promise to settle.
+     */
     public function race(array $promises): PromiseInterface
     {
         return $this->promiseManager->race($promises);
     }
 
+    /**
+     * Fulfill with the first fulfilled promise or reject if all reject.
+     */
     public function any(array $promises): PromiseInterface
     {
         return $this->promiseManager->any($promises);
     }
 
+    /**
+     * Run promise-producing callables in order and collect their values.
+     */
     public function sequence(array $callables): PromiseInterface
     {
         return $this->promiseManager->sequence($callables);
     }
 
+    /**
+     * Send the configured request asynchronously and attach fulfillment.
+     */
     public function then(
         callable $onFulfilled,
         ?callable $onRejected = null,
@@ -405,6 +473,9 @@ class ClientHandler implements ClientHandlerInterface
         return $this->sendAsync()->then($onFulfilled, $onRejected);
     }
 
+    /**
+     * Send the configured request asynchronously and attach rejection.
+     */
     public function catch(callable $onRejected): PromiseInterface
     {
         $this->async();
@@ -412,6 +483,9 @@ class ClientHandler implements ClientHandlerInterface
         return $this->sendAsync()->catch($onRejected);
     }
 
+    /**
+     * Send the configured request asynchronously and attach settlement work.
+     */
     public function finally(callable $onFinally): PromiseInterface
     {
         $this->async();
@@ -419,16 +493,25 @@ class ClientHandler implements ClientHandlerInterface
         return $this->sendAsync()->finally($onFinally);
     }
 
+    /**
+     * Create an already fulfilled promise for the supplied value.
+     */
     public function resolve(mixed $value): PromiseInterface
     {
         return $this->promiseManager->resolve($value);
     }
 
+    /**
+     * Create a rejected promise with the supplied failure reason.
+     */
     public function reject(mixed $reason): PromiseInterface
     {
         return $this->promiseManager->reject($reason);
     }
 
+    /**
+     * Map promise-returning callbacks while preserving input keys.
+     */
     public function map(
         array $items,
         callable $callback,
@@ -492,6 +575,9 @@ class ClientHandler implements ClientHandlerInterface
         return $this;
     }
 
+    /**
+     * Replace the transport used for asynchronous requests.
+     */
     public function setAsyncTransport(AsyncTransport $asyncTransport): self
     {
         $this->asyncTransport = $asyncTransport;
@@ -499,7 +585,9 @@ class ClientHandler implements ClientHandlerInterface
         return $this;
     }
 
-    /** Configure a JSON Schema for outgoing JSON request bodies. */
+    /**
+     * Configure a JSON Schema for outgoing JSON request bodies.
+     */
     public function withRequestSchema(mixed $schema): static
     {
         $this->validationPolicy = new ValidationPolicy(
@@ -512,7 +600,9 @@ class ClientHandler implements ClientHandlerInterface
         return $this;
     }
 
-    /** Configure a JSON Schema for JSON response bodies. */
+    /**
+     * Configure a JSON Schema for JSON response bodies.
+     */
     public function withResponseSchema(mixed $schema): static
     {
         $this->validationPolicy = new ValidationPolicy(
@@ -525,7 +615,9 @@ class ClientHandler implements ClientHandlerInterface
         return $this;
     }
 
-    /** Configure an OpenAPI 3.0.x JSON or YAML file. */
+    /**
+     * Configure an OpenAPI 3.0.x JSON or YAML file.
+     */
     public function withOpenApiSpec(string $specPath): static
     {
         $this->validationPolicy = new ValidationPolicy(
@@ -538,7 +630,9 @@ class ClientHandler implements ClientHandlerInterface
         return $this;
     }
 
-    /** Enable or disable request and response contract validation. */
+    /**
+     * Enable or disable request and response contract validation.
+     */
     public function validateContracts(bool $validate = true): static
     {
         $this->validationPolicy = new ValidationPolicy(
@@ -551,11 +645,17 @@ class ClientHandler implements ClientHandlerInterface
         return $this;
     }
 
+    /**
+     * Return the validation service configured for this handler.
+     */
     public function getValidationManager(): ValidationManager
     {
         return $this->validationManager;
     }
 
+    /**
+     * Resolve validation defaults with optional per-request overrides.
+     */
     public function getValidationPolicy(
         ?RequestContext $context = null,
     ): ValidationPolicy {
@@ -733,12 +833,19 @@ class ClientHandler implements ClientHandlerInterface
         return $clone;
     }
 
-    /** @param array<mixed> $promises */
+    /**
+     * Rejects values that are not promises before aggregation.
+     *
+     * @param  array<mixed>  $promises
+     */
     protected function validatePromises(array $promises): void
     {
         $this->promiseManager->validatePromises($promises);
     }
 
+    /**
+     * Await a promise with a required timeout measured in seconds.
+     */
     protected function awaitWithTimeout(
         PromiseInterface $promise,
         float $timeout,
@@ -746,11 +853,17 @@ class ClientHandler implements ClientHandlerInterface
         return $this->promiseManager->awaitPromise($promise, $timeout);
     }
 
+    /**
+     * Create a promise that rejects after the given delay in seconds.
+     */
     protected function createTimeoutPromise(float $timeout): PromiseInterface
     {
         return $this->promiseManager->createTimeoutPromise($timeout);
     }
 
+    /**
+     * Return the configured transport or lazily create the Guzzle adapter.
+     */
     protected function getAsyncTransport(): AsyncTransport
     {
         if ($this->asyncTransport !== null) {
@@ -926,7 +1039,11 @@ class ClientHandler implements ClientHandlerInterface
         return $sanitizedOptions;
     }
 
-    /** @param array<int, mixed> $middleware */
+    /**
+     * Creates a coordinator with the configured request collaborators.
+     *
+     * @param  array<int, mixed>  $middleware
+     */
     private function createRequestCoordinator(
         RequestContext $context,
         ValidationPolicy $policy,
@@ -1076,6 +1193,9 @@ class ClientHandler implements ClientHandlerInterface
         );
     }
 
+    /**
+     * Copy handler-local pool and HTTP/2 settings when cloning configuration.
+     */
     public function __clone(): void
     {
         // The legacy pool settings and HTTP/2 options belong to the handler;

@@ -18,6 +18,8 @@ use RuntimeException;
 use SimpleXMLElement;
 
 /**
+ * Wraps a PSR-7 response with FetchPHP status, header, and body helpers.
+ *
  * @implements ArrayAccess<string, mixed>
  */
 class Response extends BaseResponse implements ArrayAccess, ResponseInterface
@@ -36,9 +38,16 @@ class Response extends BaseResponse implements ArrayAccess, ResponseInterface
      */
     protected ?DebugInfo $debugInfo = null;
 
-    /** @var array<string|int, mixed>|null */
+    /**
+     * Caches the response body after successful JSON decoding.
+     *
+     * @var array<string|int, mixed>|null
+     */
     private ?array $parsedBody = null;
 
+    /**
+     * Distinguishes invalid JSON from a successfully decoded JSON null.
+     */
     private bool $lastJsonDecodeFailed = false;
 
     /**

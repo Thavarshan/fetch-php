@@ -11,14 +11,23 @@ use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Exercises request fakes, stray-request guards, recording, and assertions.
+ */
 class MockServerTest extends TestCase
 {
+    /**
+     * Resets the mock server before each mock-server test.
+     */
     protected function setUp(): void
     {
         parent::setUp();
         MockServer::resetInstance();
     }
 
+    /**
+     * Resets the mock server after each mock-server test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();

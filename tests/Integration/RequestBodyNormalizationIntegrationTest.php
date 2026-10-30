@@ -15,6 +15,9 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Tests\TestCase;
 
+/**
+ * Verifies body precedence, form encoding, and content types end to end.
+ */
 final class RequestBodyNormalizationIntegrationTest extends TestCase
 {
     public function test_fluent_body_transitions_match_the_outgoing_request(
@@ -465,6 +468,8 @@ final class RequestBodyNormalizationIntegrationTest extends TestCase
     }
 
     /**
+     * Builds a handler with a Guzzle mock and shared request history.
+     *
      * @param  array<int, array<string, mixed>>  $history
      */
     private function createHandler(

@@ -16,6 +16,9 @@ use function Matrix\Support\await;
 use function React\Promise\reject;
 use function React\Promise\resolve;
 
+/**
+ * Exercises asynchronous retry attempts, cancellation, and failure propagation.
+ */
 class RetryStrategyAsyncTest extends TestCase
 {
     public function test_async_retries_preserve_attempt_counts(): void

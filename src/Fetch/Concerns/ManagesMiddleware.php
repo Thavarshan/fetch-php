@@ -23,6 +23,8 @@ use React\Promise\PromiseInterface;
 trait ManagesMiddleware
 {
     /**
+     * Stores middleware with its priority for ordered request execution.
+     *
      * @var array<int, array{middleware: Middleware|callable, priority: int,
      *     seq: int}>
      */

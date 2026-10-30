@@ -18,8 +18,14 @@ use PHPUnit\Framework\TestCase;
 
 use function Matrix\Support\await;
 
+/**
+ * Verifies handler cache configuration and sync/async cache behavior.
+ */
 class ClientHandlerCacheTest extends TestCase
 {
+    /**
+     * Builds a handler backed by the supplied Guzzle response queue.
+     */
     private function create_handler_with_mock_responses(
         array $responses,
     ): ClientHandler {

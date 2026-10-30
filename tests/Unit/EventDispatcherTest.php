@@ -10,8 +10,14 @@ use GuzzleHttp\Psr7\Request;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 
+/**
+ * Checks listener registration, priority ordering, and failure isolation.
+ */
 class EventDispatcherTest extends TestCase
 {
+    /**
+     * Creates a request event with stable data for listener tests.
+     */
     private function event(): RequestEvent
     {
         return new RequestEvent(
@@ -91,9 +97,19 @@ class EventDispatcherTest extends TestCase
     public function test_listener_exception_is_isolated_and_logged(): void
     {
         $logs = [];
-        $logger = new class($logs) extends AbstractLogger {
+        $logger = new
+        /**
+         * Collects event-dispatcher log messages in a shared test buffer.
+         */
+        class($logs) extends AbstractLogger {
+            /**
+             * Stores the log buffer shared with the anonymous test logger.
+             */
             public function __construct(private array &$logs) {}
 
+            /**
+             * Appends each logger message to the shared test buffer.
+             */
             public function log($level, $message, array $context = []): void
             {
                 $this->logs[] = (string) $message;

@@ -9,6 +9,9 @@ use Fetch\Testing\MockResponseSequence;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies ordered mock responses, exhaustion, looping, and defaults.
+ */
 class MockResponseSequenceTest extends TestCase
 {
     public function test_creates_empty_sequence(): void

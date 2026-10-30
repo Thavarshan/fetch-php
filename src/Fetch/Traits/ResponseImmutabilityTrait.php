@@ -7,6 +7,13 @@ namespace Fetch\Traits;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
+/**
+ * Preserves the consuming response class when Guzzle returns immutable copies.
+ *
+ * The host must extend a Guzzle response implementation and accept status,
+ * headers, body, protocol version, and reason phrase in its constructor. A
+ * `bodyContents` property, when present, is refreshed after {@see withBody()}.
+ */
 trait ResponseImmutabilityTrait
 {
     /**

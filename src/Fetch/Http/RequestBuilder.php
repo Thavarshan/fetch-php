@@ -16,11 +16,18 @@ use Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
 /**
- * Builds normalized request options and the PSR-7 request used by middleware.
+ * Builds transport options and the PSR-7 request exposed to middleware.
+ *
+ * The builder keeps both representations aligned as middleware changes
+ * headers, query parameters, and bodies. When validation needs a request body,
+ * it prepares a replayable copy while preserving seekable stream positions and
+ * restoring consumed non-seekable inputs for transport.
  */
 final class RequestBuilder
 {
     /**
+     * Applies configured body values to the outgoing request options.
+     *
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
@@ -43,6 +50,8 @@ final class RequestBuilder
     }
 
     /**
+     * Builds a PSR-7 request from the transport options.
+     *
      * @param  array<string, mixed>  $guzzleOptions
      * @return array{0: RequestInterface, 1: string|null}
      */
@@ -128,7 +137,11 @@ final class RequestBuilder
         return [$request->withBody($replayableBody), $options];
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Normalizes query-related options before request dispatch.
+     *
+     * @param  array<string, mixed>  $options
+     */
     public function withQueryOptions(
         RequestInterface $request,
         array $options,
@@ -183,7 +196,11 @@ final class RequestBuilder
             : $request;
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Encodes the configured initial body using its selected content type.
+     *
+     * @param  array<string, mixed>  $options
+     */
     public function encodeSeedBody(array $options): ?string
     {
         if (isset($options['body']) && is_string($options['body'])) {
@@ -249,6 +266,8 @@ final class RequestBuilder
     }
 
     /**
+     * Applies middleware request changes to Guzzle options.
+     *
      * @param  array<string, mixed>  $guzzleOptions
      * @return array<string, mixed>
      */
@@ -327,6 +346,8 @@ final class RequestBuilder
     }
 
     /**
+     * Builds the final options passed to the Guzzle transport.
+     *
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
@@ -375,6 +396,9 @@ final class RequestBuilder
         return $contents;
     }
 
+    /**
+     * Read a seekable body from its start and restore its original position.
+     */
     private function readFullStreamBody(StreamInterface $body): string
     {
         $position = $body->tell();

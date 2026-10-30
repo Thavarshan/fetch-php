@@ -13,8 +13,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * Exercises middleware ordering, request changes, and short-circuit results.
+ */
 class MiddlewarePipelineTest extends TestCase
 {
+    /**
+     * Creates a stable PSR-7 request for middleware pipeline tests.
+     */
     private function request(): RequestInterface
     {
         return new Request('GET', 'https://example.com');
@@ -105,7 +111,14 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_supports_middleware_objects(): void
     {
-        $middleware = new class implements Middleware {
+        $middleware = new
+        /**
+         * Adds a header through the middleware object contract.
+         */
+        class implements Middleware {
+            /**
+             * Adds a test header before calling the next middleware layer.
+             */
             public function handle(
                 RequestInterface $request,
                 callable $next,

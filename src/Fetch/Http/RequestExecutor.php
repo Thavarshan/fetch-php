@@ -13,11 +13,23 @@ use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 
+/**
+ * Performs synchronous Guzzle I/O and normalizes responses and failures.
+ */
 final class RequestExecutor
 {
+    /**
+     * Bind the executor to the Guzzle client used for synchronous requests.
+     */
     public function __construct(private readonly ClientInterface $client) {}
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Convert a PSR response and mark retryable statuses as request failures.
+     *
+     * @param  array<string, mixed>  $options
+     *
+     * @throws FetchRequestException When the response status is retryable
+     */
     public static function normalizeResponse(
         PsrResponseInterface $response,
         RetryStrategy $retryStrategy,
@@ -39,7 +51,11 @@ final class RequestExecutor
         return $normalized;
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Preserve request and response context in a FetchPHP request exception.
+     *
+     * @param  array<string, mixed>  $options
+     */
     public static function normalizeGuzzleException(
         GuzzleException $exception,
         string $method,
@@ -73,7 +89,13 @@ final class RequestExecutor
         );
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Execute with retries, normalizing Guzzle responses and exceptions.
+     *
+     * @param  array<string, mixed>  $options
+     * @param  callable(int, int, \Throwable, int): void|null  $onRetry
+     * @param  callable(): void|null  $onRequest
+     */
     public function execute(
         string $method,
         string $uri,

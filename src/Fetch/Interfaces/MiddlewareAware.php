@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
+/**
+ * Configures middleware applied around outgoing request processing.
+ */
 interface MiddlewareAware
 {
     /**

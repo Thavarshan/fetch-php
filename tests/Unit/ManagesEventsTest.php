@@ -13,11 +13,21 @@ use Fetch\Events\RetryEvent;
 use Fetch\Events\TimeoutEvent;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers lifecycle listener registration and hook-name normalization.
+ */
 class ManagesEventsTest extends TestCase
 {
+    /**
+     * Creates a minimal host object using the event-management trait.
+     */
     private function handler(): object
     {
-        return new class {
+        return new
+        /**
+         * Hosts the event-management trait without unrelated client behavior.
+         */
+        class {
             use ManagesEvents;
         };
     }

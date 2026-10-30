@@ -17,6 +17,9 @@ $errors = [];
 $warnings = [];
 $checks = 0;
 
+/**
+ * Make a filesystem path relative to the repository root for diagnostics.
+ */
 function rel(string $root, string $path): string
 {
     return ltrim(str_replace($root, '', $path), '/\\');

@@ -7,6 +7,9 @@ namespace Tests;
 use Fetch\Support\GlobalServices;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 
+/**
+ * Base fixture that resets shared FetchPHP services after each test.
+ */
 abstract class TestCase extends BaseTestCase
 {
     /**

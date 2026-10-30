@@ -10,6 +10,9 @@ use Fetch\Http\Response;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Checks immutable response copies retain FetchPHP response behavior.
+ */
 class ResponseImmutabilityTraitTest extends TestCase
 {
     public function test_immutability_when_changing_status(): void

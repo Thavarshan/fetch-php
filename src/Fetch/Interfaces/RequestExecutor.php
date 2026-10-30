@@ -9,9 +9,14 @@ use Fetch\Enum\Method;
 use Fetch\Http\EventSource;
 use React\Promise\PromiseInterface;
 
+/**
+ * Sends configured HTTP requests and returns responses or promises.
+ */
 interface RequestExecutor
 {
     /**
+     * Sends a request with the supplied method, URI, and options.
+     *
      * @param  array<string, mixed>  $options
      * @return Response|PromiseInterface<Response>
      */
@@ -24,6 +29,8 @@ interface RequestExecutor
     ): Response|PromiseInterface;
 
     /**
+     * Sends the supplied request through the configured request executor.
+     *
      * @param  array<string, mixed>  $options
      * @return Response|PromiseInterface<Response>
      */
@@ -34,11 +41,15 @@ interface RequestExecutor
     ): Response|PromiseInterface;
 
     /**
+     * Sends a HEAD request to the supplied URI.
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function head(string $uri): Response|PromiseInterface;
 
     /**
+     * Sends a GET request to the supplied URI and query parameters.
+     *
      * @param  array<string, mixed>  $queryParams
      * @return Response|PromiseInterface<Response>
      */
@@ -48,6 +59,8 @@ interface RequestExecutor
     ): Response|PromiseInterface;
 
     /**
+     * Sends a POST request to the supplied URI and body options.
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function post(
@@ -57,6 +70,8 @@ interface RequestExecutor
     ): Response|PromiseInterface;
 
     /**
+     * Sends a PUT request to the supplied URI and body options.
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function put(
@@ -66,6 +81,8 @@ interface RequestExecutor
     ): Response|PromiseInterface;
 
     /**
+     * Sends a PATCH request to the supplied URI and body options.
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function patch(
@@ -75,6 +92,8 @@ interface RequestExecutor
     ): Response|PromiseInterface;
 
     /**
+     * Sends a DELETE request to the supplied URI and body options.
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function delete(
@@ -84,6 +103,8 @@ interface RequestExecutor
     ): Response|PromiseInterface;
 
     /**
+     * Sends an OPTIONS request to the supplied URI.
+     *
      * @return Response|PromiseInterface<Response>
      */
     public function options(string $uri): Response|PromiseInterface;

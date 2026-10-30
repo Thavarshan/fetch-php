@@ -16,6 +16,12 @@ use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Immutable PSR-7 request with FetchPHP body and URI convenience factories.
+ *
+ * Guzzle supplies the underlying message implementation; the immutability
+ * trait preserves the custom request target when message methods return copies.
+ */
 class Request extends BaseRequest implements RequestInterface
 {
     use RequestImmutabilityTrait;

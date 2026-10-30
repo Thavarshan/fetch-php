@@ -11,12 +11,22 @@ use GuzzleHttp\Exception\GuzzleException;
 use React\Promise\PromiseInterface;
 use Throwable;
 
+/**
+ * Executes async requests through an AsyncTransport and RetryStrategy.
+ */
 final class AsyncRequestExecutor
 {
+    /**
+     * Bind this executor to the configured asynchronous transport.
+     */
     public function __construct(private readonly AsyncTransport $transport) {}
 
     /**
+     * Send a request asynchronously and normalize its result for FetchPHP.
+     *
      * @param  array<string, mixed>  $options
+     * @param  callable(int, int, Throwable, int): void|null  $onRetry
+     * @param  callable(): void|null  $onRequest
      * @return PromiseInterface<Response>
      */
     public function execute(

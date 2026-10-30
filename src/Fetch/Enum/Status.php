@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Fetch\Enum;
 
+/**
+ * Common HTTP response status codes, backed by their integer values.
+ *
+ * Helpers expose reason phrases and status categories for the cases included
+ * here; the enum is not intended to be an exhaustive registry of all codes.
+ */
 enum Status: int
 {
     // 1xx - Informational

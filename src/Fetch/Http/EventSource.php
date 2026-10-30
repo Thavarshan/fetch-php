@@ -48,6 +48,9 @@ class EventSource implements IteratorAggregate
      */
     protected ?int $reconnectionTime = null;
 
+    /**
+     * Attach the streamed response whose body contains server-sent events.
+     */
     public function __construct(
         protected readonly StreamedResponseInterface $response,
     ) {}

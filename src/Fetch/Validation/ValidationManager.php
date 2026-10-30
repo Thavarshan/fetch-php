@@ -10,12 +10,24 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Throwable;
 
+/**
+ * Coordinates optional JSON Schema and OpenAPI validation for requests.
+ */
 final class ValidationManager
 {
+    /**
+     * Lazily created when a schema policy requires validation.
+     */
     private ?ValidatorInterface $schemaValidator;
 
+    /**
+     * OpenAPI validator whose parsed validators are cached by specification.
+     */
     private OpenApiContractValidator $openApiValidator;
 
+    /**
+     * Inject validation adapters or create the built-in OpenAPI adapter.
+     */
     public function __construct(
         ?ValidatorInterface $schemaValidator = null,
         ?OpenApiContractValidator $openApiValidator = null,
@@ -70,6 +82,12 @@ final class ValidationManager
         return null;
     }
 
+    /**
+     * Validate a response body and its resolved OpenAPI operation.
+     *
+     * @throws ResponseValidationException When response data violates policy
+     * @throws ValidationConfigurationException When the operation is invalid
+     */
     public function validateResponse(
         ResponseInterface $response,
         ValidationPolicy $policy,
@@ -120,7 +138,11 @@ final class ValidationManager
         }
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Extracts the request data used by schema validation.
+     *
+     * @param  array<string, mixed>  $options
+     */
     private function requestData(
         array $options,
         RequestInterface $request,
@@ -159,6 +181,9 @@ final class ValidationManager
         return null;
     }
 
+    /**
+     * Decode JSON response data and restore seekable body position.
+     */
     private function responseData(ResponseInterface $response): mixed
     {
         if (
@@ -183,6 +208,9 @@ final class ValidationManager
         return $this->decodeJson($contents, 'response');
     }
 
+    /**
+     * Read a request body, restoring its position when the stream is seekable.
+     */
     private function readRequestBody(StreamInterface $body): string
     {
         $seekable = $body->isSeekable();
@@ -197,6 +225,9 @@ final class ValidationManager
         }
     }
 
+    /**
+     * Decode JSON or raise the request- or response-specific validation error.
+     */
     private function decodeJson(string $json, string $direction): mixed
     {
         try {
@@ -220,6 +251,9 @@ final class ValidationManager
         }
     }
 
+    /**
+     * Create the optional JSON Schema adapter on first use.
+     */
     private function schemaValidator(): ValidatorInterface
     {
         return $this->schemaValidator ??= new JsonSchemaValidator;

@@ -17,14 +17,30 @@ use function Matrix\Support\await;
 use function Matrix\Support\reject;
 use function Matrix\Support\resolve;
 
+/**
+ * Exercises the deprecated promise-trait compatibility behavior.
+ */
 class ManagesPromisesTest extends TestCase
 {
+    /**
+     * Handler subclass exposing the legacy async trait hooks.
+     */
     private $handler;
 
+    /**
+     * Creates a handler exposing async helpers to unit tests.
+     */
     protected function setUp(): void
     {
-        $this->handler = new class extends ClientHandler {
+        $this->handler = new
+        /**
+         * Exposes async methods through a deterministic client handler.
+         */
+        class extends ClientHandler {
             // Expose the sendAsync method for testing
+            /**
+             * Exposes the protected async method for test assertions.
+             */
             public function exposeSendAsync(): PromiseInterface
             {
                 return async(function () {
@@ -33,6 +49,9 @@ class ManagesPromisesTest extends TestCase
             }
 
             // Override sendAsync for testing
+            /**
+             * Returns a resolved or rejected promise from the test handler.
+             */
             protected function sendAsync(): PromiseInterface
             {
                 return async(function () {
@@ -218,7 +237,14 @@ class ManagesPromisesTest extends TestCase
 
     public function test_catch_method(): void
     {
-        $mockHandler = new class extends ClientHandler {
+        $mockHandler = new
+        /**
+         * Returns a rejected promise for the rejection-path assertion.
+         */
+        class extends ClientHandler {
+            /**
+             * Returns a resolved or rejected promise from the test handler.
+             */
             protected function sendAsync(): PromiseInterface
             {
                 return reject(new Exception('test error'));

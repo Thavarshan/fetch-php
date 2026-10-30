@@ -12,18 +12,37 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * Covers retry configuration, classification, and handler callbacks.
+ */
 class ManagesRetriesTest extends TestCase
 {
+    /**
+     * Handler subclass exposing retry helpers to the tests.
+     */
     private $handler;
 
+    /**
+     * Creates a handler exposing retry policy helpers to unit tests.
+     */
     protected function setUp(): void
     {
-        $this->handler = new class extends ClientHandler {
+        $this->handler = new
+        /**
+         * Exposes retry policy helpers through a client handler subclass.
+         */
+        class extends ClientHandler {
+            /**
+             * Exposes the retryability check for deterministic unit assertions.
+             */
             public function exposeIsRetryableError(\Throwable $e): bool
             {
                 return $this->isRetryableError($e);
             }
 
+            /**
+             * Exposes retry delay calculation for unit assertions.
+             */
             public function exposeCalculateBackoffDelay(
                 int $baseDelay,
                 int $attempt,
@@ -31,6 +50,9 @@ class ManagesRetriesTest extends TestCase
                 return $this->calculateBackoffDelay($baseDelay, $attempt);
             }
 
+            /**
+             * Exposes request retry execution for unit assertions.
+             */
             public function exposeRetryRequest(
                 callable $request,
             ): ResponseInterface {
@@ -140,8 +162,15 @@ class ManagesRetriesTest extends TestCase
         );
 
         // Create a test handler and manually configure it
-        $handler = new class extends ClientHandler {
+        $handler = new
+        /**
+         * Forces retryable failures while suppressing test-only log output.
+         */
+        class extends ClientHandler {
             // Override isRetryableError to always return true for the test
+            /**
+             * Marks every failure as retryable for the focused retry fixture.
+             */
             protected function isRetryableError(
                 \Throwable $e,
                 ?RequestContext $context = null,
@@ -150,12 +179,18 @@ class ManagesRetriesTest extends TestCase
             }
 
             // Expose the protected retryRequest method for testing
+            /**
+             * Exposes request retry execution for unit assertions.
+             */
             public function exposeRetryRequest(callable $request)
             {
                 return $this->retryRequest(null, $request);
             }
 
             // Override logRetry to avoid URI issues
+            /**
+             * Suppresses retry logs in the test-only handler.
+             */
             protected function logRetry(
                 int $attempt,
                 int $maxAttempts,

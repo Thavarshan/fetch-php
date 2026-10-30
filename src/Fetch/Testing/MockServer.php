@@ -10,6 +10,12 @@ use Fetch\Interfaces\Response as ResponseInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\Assert as PHPUnit;
 
+/**
+ * Process-wide request fakes, stray-request guards, and request recording.
+ *
+ * Matching requests are intercepted before transport execution. Tests should
+ * reset this singleton when their fake or recording state must be isolated.
+ */
 class MockServer
 {
     /**

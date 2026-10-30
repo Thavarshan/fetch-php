@@ -6,10 +6,19 @@ use Fetch\Enum\ContentType;
 use Fetch\Http\ClientHandler;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies fluent request options and body serialization configuration.
+ */
 class ConfiguresRequestsTest extends TestCase
 {
+    /**
+     * Handler whose fluent request configuration is inspected.
+     */
     private $handler;
 
+    /**
+     * Creates a fresh request handler for configuration assertions.
+     */
     protected function setUp(): void
     {
         $this->handler = new ClientHandler;

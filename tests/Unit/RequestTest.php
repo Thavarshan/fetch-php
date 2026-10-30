@@ -10,6 +10,9 @@ use Fetch\Http\Request;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies PSR-7 request factories, body encoding, and immutable copies.
+ */
 class RequestTest extends TestCase
 {
     public function test_create_with_json_body(): void

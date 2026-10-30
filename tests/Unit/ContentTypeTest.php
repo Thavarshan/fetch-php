@@ -5,6 +5,9 @@ namespace Tests\Unit;
 use Fetch\Enum\ContentType;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies MIME type conversion and content-type classifications.
+ */
 class ContentTypeTest extends TestCase
 {
     public function test_from_string(): void

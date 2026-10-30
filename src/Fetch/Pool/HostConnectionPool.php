@@ -55,7 +55,11 @@ class HostConnectionPool
         protected bool $ssl,
         protected PoolConfiguration $config,
     ) {
-        /** @var SplQueue<Connection> $queue */
+        /**
+         * Holds the queue of idle connections created for this host.
+         *
+         * @var SplQueue<Connection> $queue
+         */
         $queue = new SplQueue;
         $this->availableConnections = $queue;
 

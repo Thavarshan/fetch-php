@@ -6,6 +6,9 @@ namespace Fetch\Interfaces;
 
 use Fetch\Events\FetchEvent;
 
+/**
+ * Stores listeners and dispatches lifecycle events in defined order.
+ */
 interface EventDispatcher
 {
     /**

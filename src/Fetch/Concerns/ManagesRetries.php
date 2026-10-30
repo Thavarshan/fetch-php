@@ -12,6 +12,12 @@ use Fetch\Support\RetryDefaults;
 use Fetch\Support\RetryStrategy;
 use InvalidArgumentException;
 
+/**
+ * Exposes fluent retry configuration and delegates retry execution.
+ *
+ * A request context takes precedence over handler-level settings so retries
+ * remain isolated when one handler processes concurrent requests.
+ */
 trait ManagesRetries
 {
     /**
@@ -186,6 +192,9 @@ trait ManagesRetries
         });
     }
 
+    /**
+     * Build a retry strategy from request settings or handler defaults.
+     */
     protected function createRetryStrategy(
         ?RequestContext $context,
     ): RetryStrategy {
@@ -213,6 +222,9 @@ trait ManagesRetries
         );
     }
 
+    /**
+     * Log a retry and dispatch its lifecycle event when context is available.
+     */
     protected function notifyRetry(
         int $attempt,
         int $maxAttempts,

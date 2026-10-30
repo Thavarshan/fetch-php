@@ -21,6 +21,8 @@ use InvalidArgumentException;
 final class ServerSentEvent
 {
     /**
+     * Creates an event from its data, type, identifier, and retry delay.
+     *
      * @param  string  $data  The event data payload (multiple `data:` lines
      *                        joined with "\n").
      * @param  string  $type  The event type (from the `event:` field),

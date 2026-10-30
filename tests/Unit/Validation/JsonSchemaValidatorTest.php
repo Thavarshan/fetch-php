@@ -8,6 +8,9 @@ use Fetch\Validation\JsonSchemaValidator;
 use Fetch\Validation\ValidationConfigurationException;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers JSON Schema normalization, references, and validation errors.
+ */
 final class JsonSchemaValidatorTest extends TestCase
 {
     public function test_nested_schema_constraints(): void

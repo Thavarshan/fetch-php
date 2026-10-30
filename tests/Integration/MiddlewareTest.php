@@ -19,10 +19,19 @@ use React\Promise\PromiseInterface;
 
 use function Matrix\Support\await;
 
+/**
+ * Verifies middleware can modify, observe, or short-circuit request flows.
+ */
 class MiddlewareTest extends TestCase
 {
+    /**
+     * Guzzle mock transport backing the integration handler.
+     */
     private MockHandler $mock;
 
+    /**
+     * Builds a handler and retains its mock for response assertions.
+     */
     private function handler(array $responses): ClientHandler
     {
         $this->mock = new MockHandler($responses);

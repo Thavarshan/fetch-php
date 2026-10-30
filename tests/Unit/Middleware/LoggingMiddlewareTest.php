@@ -12,13 +12,29 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;
 
+/**
+ * Checks correlation IDs and request/response logging behavior.
+ */
 class LoggingMiddlewareTest extends TestCase
 {
+    /**
+     * Creates a logger that records entries for middleware assertions.
+     */
     private function collectingLogger(array &$logs): AbstractLogger
     {
-        return new class($logs) extends AbstractLogger {
+        return new
+        /**
+         * Collects structured log entries for middleware assertions.
+         */
+        class($logs) extends AbstractLogger {
+            /**
+             * Keeps the shared log buffer supplied by the test helper.
+             */
             public function __construct(private array &$logs) {}
 
+            /**
+             * Records a normalized log entry for later test assertions.
+             */
             public function log($level, $message, array $context = []): void
             {
                 $this->logs[] = [

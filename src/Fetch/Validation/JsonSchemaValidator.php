@@ -12,13 +12,28 @@ use Opis\JsonSchema\SchemaLoader;
 use Opis\JsonSchema\Validator;
 use Throwable;
 
+/**
+ * Validates data against JSON Schema using the optional Opis library.
+ */
 final class JsonSchemaValidator implements ValidatorInterface
 {
+    /**
+     * Configured Opis validator with local reference resolution only.
+     */
     private Validator $validator;
 
-    /** @var array<string> */
+    /**
+     * Lists schema identifiers allowed for local reference resolution.
+     *
+     * @var array<string>
+     */
     private array $trustedSchemaIds = [];
 
+    /**
+     * Create a validator configured to report multiple errors per payload.
+     *
+     * @throws ValidationDependencyException When opis/json-schema is absent
+     */
     public function __construct()
     {
         if (! class_exists(Validator::class)) {
@@ -63,6 +78,14 @@ final class JsonSchemaValidator implements ValidatorInterface
         $this->trustedSchemaIds[] = rtrim($id, '#');
     }
 
+    /**
+     * Validate data and translate Opis failures into FetchPHP errors.
+     *
+     * Associative arrays are normalized as JSON objects while list arrays
+     * remain JSON arrays. External references must be registered in memory.
+     *
+     * @throws ValidationConfigurationException For invalid or untrusted schemas
+     */
     public function validate(mixed $data, mixed $schema): ValidationResult
     {
         $normalizedSchema = $this->normalizeSchema($schema);
@@ -115,6 +138,9 @@ final class JsonSchemaValidator implements ValidatorInterface
         return new ValidationResult($errors);
     }
 
+    /**
+     * Convert supported schema inputs to objects or boolean schemas.
+     */
     private function normalizeSchema(mixed $schema): mixed
     {
         if (is_string($schema)) {
@@ -158,6 +184,9 @@ final class JsonSchemaValidator implements ValidatorInterface
         );
     }
 
+    /**
+     * Convert associative arrays recursively to JSON objects.
+     */
     private function normalizeData(mixed $data): mixed
     {
         if (! is_array($data)) {
@@ -172,6 +201,9 @@ final class JsonSchemaValidator implements ValidatorInterface
         return array_is_list($normalized) ? $normalized : (object) $normalized;
     }
 
+    /**
+     * Reject external schema references that were not caller-registered.
+     */
     private function assertReferencesAreTrusted(mixed $schema): void
     {
         if (is_object($schema)) {

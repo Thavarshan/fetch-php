@@ -6,6 +6,9 @@ use Fetch\Support\DebugInfo;
 use GuzzleHttp\Psr7\Response as Psr7Response;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers request debug snapshots, formatting, and sensitive-value redaction.
+ */
 class DebugInfoTest extends TestCase
 {
     public function test_create_with_basic_request_data(): void

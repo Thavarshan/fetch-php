@@ -10,6 +10,12 @@ use Fetch\Support\RequestOptions;
 use GuzzleHttp\Cookie\CookieJarInterface;
 use InvalidArgumentException;
 
+/**
+ * Provides fluent request-option mutation for the ClientHandler facade.
+ *
+ * The consuming handler owns mutable request options and explicit content-type
+ * state used to preserve body serialization choices.
+ */
 trait ConfiguresRequests
 {
     /**
@@ -548,6 +554,9 @@ trait ConfiguresRequests
         );
     }
 
+    /**
+     * Determine whether a content type selects multipart serialization.
+     */
     private function isMultipartContentType(mixed $contentType): bool
     {
         if ($contentType instanceof ContentType) {

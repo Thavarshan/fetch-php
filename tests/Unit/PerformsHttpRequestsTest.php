@@ -15,12 +15,24 @@ use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use PHPUnit\Framework\TestCase;
 use Tests\Mocks\TestableClientHandler;
 
+/**
+ * Covers request verbs, body options, error handling, and static entry points.
+ */
 class PerformsHttpRequestsTest extends TestCase
 {
+    /**
+     * Request handler configured with the Guzzle client mock.
+     */
     private $handler;
 
+    /**
+     * Guzzle client mock used to assert request execution.
+     */
     private $mockClient;
 
+    /**
+     * Creates a request handler with a mocked Guzzle client.
+     */
     protected function setUp(): void
     {
         $this->mockClient = $this->createMock(Client::class);

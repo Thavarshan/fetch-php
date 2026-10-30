@@ -25,6 +25,8 @@ use React\Promise\PromiseInterface;
 final class AddHeadersMiddleware implements Middleware
 {
     /**
+     * Creates middleware that adds configured headers to each request.
+     *
      * @param  array<string, string|string[]>  $headers  Header name =>
      *                                                   value(s).
      * @param  bool  $overwrite  Replace existing headers (true) or only add
@@ -35,6 +37,9 @@ final class AddHeadersMiddleware implements Middleware
         private readonly bool $overwrite = true,
     ) {}
 
+    /**
+     * Add configured headers before passing the request to the next layer.
+     */
     public function handle(
         RequestInterface $request,
         callable $next,

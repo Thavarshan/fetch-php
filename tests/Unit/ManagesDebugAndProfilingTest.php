@@ -6,10 +6,19 @@ use Fetch\Http\ClientHandler;
 use Fetch\Support\FetchProfiler;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies fluent debug and profiler configuration on the handler.
+ */
 class ManagesDebugAndProfilingTest extends TestCase
 {
+    /**
+     * Handler whose debug and profiler settings are asserted.
+     */
     private ClientHandler $handler;
 
+    /**
+     * Creates a fresh client handler for debug and profiling tests.
+     */
     protected function setUp(): void
     {
         $this->handler = new ClientHandler;

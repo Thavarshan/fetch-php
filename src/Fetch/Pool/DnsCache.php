@@ -20,10 +20,18 @@ class DnsCache
      */
     protected array $cache = [];
 
-    /** @var (Closure(string): array<int, string>)|null */
+    /**
+     * Resolves a host name to addresses when no cached entry is available.
+     *
+     * @var (Closure(string): array<int, string>)|null
+     */
     private ?Closure $resolver;
 
-    /** @var Closure(): int */
+    /**
+     * Provides the current timestamp used to expire cached DNS entries.
+     *
+     * @var Closure(): int
+     */
     private Closure $clock;
 
     /**

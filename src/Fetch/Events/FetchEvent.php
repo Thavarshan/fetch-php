@@ -16,6 +16,8 @@ use Psr\Http\Message\RequestInterface;
 abstract class FetchEvent
 {
     /**
+     * Creates a fetch event with its name and immutable context data.
+     *
      * @param  array<string, mixed>  $context
      */
     public function __construct(
@@ -30,22 +32,33 @@ abstract class FetchEvent
      */
     abstract public function getName(): string;
 
+    /**
+     * Return the PSR-7 request associated with this lifecycle event.
+     */
     public function getRequest(): RequestInterface
     {
         return $this->request;
     }
 
+    /**
+     * Return the identifier shared by events from one logical request.
+     */
     public function getCorrelationId(): string
     {
         return $this->correlationId;
     }
 
+    /**
+     * Return the event creation time as a Unix timestamp.
+     */
     public function getTimestamp(): float
     {
         return $this->timestamp;
     }
 
     /**
+     * Returns the context captured when this event was created.
+     *
      * @return array<string, mixed>
      */
     public function getContext(): array

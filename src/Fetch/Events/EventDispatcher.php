@@ -20,14 +20,24 @@ use Throwable;
 final class EventDispatcher implements EventDispatcherInterface
 {
     /**
+     * Stores registered listeners grouped by event and priority.
+     *
      * @var array<string, array<int, array<int, callable>>>
      */
     private array $listeners = [];
 
+    /**
+     * Create a dispatcher that optionally logs isolated listener failures.
+     */
     public function __construct(
         private readonly ?LoggerInterface $logger = null,
     ) {}
 
+    /**
+     * Register a listener; higher priorities run before lower priorities.
+     *
+     * @param  callable(FetchEvent): void  $listener
+     */
     public function addListener(
         string $eventName,
         callable $listener,
@@ -39,6 +49,9 @@ final class EventDispatcher implements EventDispatcherInterface
         krsort($this->listeners[$eventName]);
     }
 
+    /**
+     * Remove listeners for one event, or clear the complete registry.
+     */
     public function removeListeners(?string $eventName = null): void
     {
         if ($eventName === null) {
@@ -50,6 +63,9 @@ final class EventDispatcher implements EventDispatcherInterface
         unset($this->listeners[$eventName]);
     }
 
+    /**
+     * Dispatch an event and log listener failures without interrupting peers.
+     */
     public function dispatch(FetchEvent $event): void
     {
         $eventName = $event->getName();
@@ -73,12 +89,17 @@ final class EventDispatcher implements EventDispatcherInterface
         }
     }
 
+    /**
+     * Check whether listeners are registered for an event name.
+     */
     public function hasListeners(string $eventName): bool
     {
         return ! empty($this->listeners[$eventName]);
     }
 
     /**
+     * Returns listeners for an event name in their dispatch order.
+     *
      * @return array<int, callable>
      */
     public function getListeners(string $eventName): array

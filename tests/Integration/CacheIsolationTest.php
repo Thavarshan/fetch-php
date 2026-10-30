@@ -15,8 +15,14 @@ use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
 use Tests\TestCase;
 
+/**
+ * Exercises cache variation and isolation through the request path.
+ */
 final class CacheIsolationTest extends TestCase
 {
+    /**
+     * Resets the mock server after each cache-isolation test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();
@@ -89,6 +95,9 @@ final class CacheIsolationTest extends TestCase
         }
     }
 
+    /**
+     * Creates a handler with a fresh cache and queued mock responses.
+     */
     private function handler(): ClientHandler
     {
         MockServer::resetInstance();

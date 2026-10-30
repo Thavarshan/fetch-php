@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Fetch\Enum;
 
+/**
+ * Common HTTP media types represented by their MIME string values.
+ *
+ * Classification helpers describe the supported common groups; callers may
+ * still pass other content-type strings where the request API accepts them.
+ */
 enum ContentType: string
 {
     case JSON = 'application/json';

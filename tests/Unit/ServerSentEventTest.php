@@ -7,6 +7,9 @@ namespace Tests\Unit;
 use Fetch\Http\ServerSentEvent;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies SSE field defaults, JSON data, and event completion semantics.
+ */
 class ServerSentEventTest extends TestCase
 {
     public function test_defaults(): void

@@ -15,6 +15,9 @@ use GuzzleHttp\Psr7\Response as PsrResponse;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Exercises streamed responses and SSE parsing through configured transports.
+ */
 class StreamingTest extends TestCase
 {
     /**

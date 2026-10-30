@@ -9,8 +9,14 @@ use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockServer;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies global request helpers and their option normalization.
+ */
 class HelperFunctionsTest extends TestCase
 {
+    /**
+     * Resets the global fetch client and mock server before each test.
+     */
     protected function setUp(): void
     {
         // Reset the fetch client to avoid state between tests
@@ -18,6 +24,9 @@ class HelperFunctionsTest extends TestCase
         MockServer::resetInstance();
     }
 
+    /**
+     * Resets the global fetch client and mock server after each test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();

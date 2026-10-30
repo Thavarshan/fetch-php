@@ -115,7 +115,11 @@ final class GlobalServices
             self::initialize();
         }
 
-        /** @var ConnectionPool $pool */
+        /**
+         * Narrows the initialized shared pool to its concrete implementation.
+         *
+         * @var ConnectionPool $pool
+         */
         $pool = self::$connectionPool;
 
         return $pool;
@@ -142,7 +146,11 @@ final class GlobalServices
             self::initialize();
         }
 
-        /** @var DnsCache $cache */
+        /**
+         * Narrows the initialized shared DNS cache to its concrete type.
+         *
+         * @var DnsCache $cache
+         */
         $cache = self::$dnsCache;
 
         return $cache;

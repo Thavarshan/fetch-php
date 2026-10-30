@@ -17,6 +17,9 @@ use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
+/**
+ * Covers the PSR-18 adapter and FetchPHP client convenience methods.
+ */
 class ClientTest extends TestCase
 {
     public function test_client_forwards_loggers_to_custom_handlers(): void
@@ -43,10 +46,19 @@ class ClientTest extends TestCase
         self::assertSame([$initial, $replacement], $received);
     }
 
+    /**
+     * Handler mock used to verify PSR and convenience calls.
+     */
     private $mockHandler;
 
+    /**
+     * Client adapter under test, bound to the handler mock.
+     */
     private $client;
 
+    /**
+     * Creates a FetchPHP client with a mocked handler.
+     */
     protected function setUp(): void
     {
         $this->mockHandler = $this->createMock(ClientHandlerInterface::class);

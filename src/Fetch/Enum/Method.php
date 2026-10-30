@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Fetch\Enum;
 
+/**
+ * Common HTTP method tokens, backed by their uppercase wire representation.
+ *
+ * String conversion is case-normalized; the body helper reflects FetchPHP's
+ * supported convenience methods and does not define all HTTP semantics.
+ */
 enum Method: string
 {
     case GET = 'GET';

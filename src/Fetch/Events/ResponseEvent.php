@@ -12,9 +12,14 @@ use Psr\Http\Message\ResponseInterface;
  */
 final class ResponseEvent extends FetchEvent
 {
+    /**
+     * Stable identifier used to register response listeners.
+     */
     public const NAME = 'response.received';
 
     /**
+     * Creates a response event with the request and response context.
+     *
      * @param  array<string, mixed>  $context
      */
     public function __construct(
@@ -28,11 +33,17 @@ final class ResponseEvent extends FetchEvent
         parent::__construct($request, $correlationId, $timestamp, $context);
     }
 
+    /**
+     * Return the listener key for this event type.
+     */
     public function getName(): string
     {
         return self::NAME;
     }
 
+    /**
+     * Return the response received from the cache, mock, or transport.
+     */
     public function getResponse(): ResponseInterface
     {
         return $this->response;

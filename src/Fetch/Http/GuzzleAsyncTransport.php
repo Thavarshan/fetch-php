@@ -26,19 +26,44 @@ use function React\Promise\reject;
  */
 final class GuzzleAsyncTransport implements AsyncTransport
 {
+    /**
+     * Periodic event-loop driver while one or more requests are active.
+     */
     private ?TimerInterface $pump = null;
 
-    /** @var array<int, callable(Throwable): void> */
+    /**
+     * Tracks active requests so cancellation can reach their promises.
+     *
+     * @var array<int, callable(Throwable): void>
+     */
     private array $active = [];
 
+    /**
+     * Monotonically increasing key for active request cleanup callbacks.
+     */
     private int $nextId = 1;
 
+    /**
+     * Configure Guzzle queue processing and an optional cURL multi driver.
+     *
+     * Queue-only handlers must be explicitly enabled because pending I/O
+     * otherwise has no driver that can make progress.
+     */
     public function __construct(
         private readonly ClientInterface $client,
         private readonly ?CurlMultiHandler $curlMultiHandler = null,
         private readonly bool $supportsQueueOnlyHandlers = false,
     ) {}
 
+    /**
+     * Start an async request and bridge its settlement to a React promise.
+     *
+     * The active request is removed and the periodic pump is stopped when the
+     * promise settles or is cancelled.
+     *
+     * @param  array<string, mixed>  $options
+     * @return PromiseInterface<ResponseInterface>
+     */
     public function requestAsync(
         string $method,
         string $uri,
@@ -158,6 +183,9 @@ final class GuzzleAsyncTransport implements AsyncTransport
         return $deferred->promise();
     }
 
+    /**
+     * Start one shared loop timer to advance cURL and Guzzle's promise queue.
+     */
     private function startPump(): void
     {
         if ($this->pump instanceof TimerInterface) {
@@ -179,6 +207,9 @@ final class GuzzleAsyncTransport implements AsyncTransport
         });
     }
 
+    /**
+     * Stop the shared loop timer after the final active request settles.
+     */
     private function stopPumpWhenIdle(): void
     {
         if ($this->active !== [] || ! ($this->pump instanceof TimerInterface)) {

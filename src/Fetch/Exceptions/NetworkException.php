@@ -8,6 +8,9 @@ use Psr\Http\Client\NetworkExceptionInterface as NetworkContract;
 use Psr\Http\Message\RequestInterface;
 use Throwable;
 
+/**
+ * Reports a transport failure and retains the request that could not complete.
+ */
 class NetworkException extends ClientException implements NetworkContract
 {
     /**

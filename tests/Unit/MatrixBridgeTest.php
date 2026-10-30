@@ -6,6 +6,9 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies global async helpers delegate to Matrix 4 promise operations.
+ */
 class MatrixBridgeTest extends TestCase
 {
     public function test_global_matrix_helpers_bridge_to_matrix_four(): void

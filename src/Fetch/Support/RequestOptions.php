@@ -843,6 +843,8 @@ class RequestOptions
         // Empty array or already a list - return as-is
         if ($multipart === [] || array_is_list($multipart)) {
             /**
+             * Preserves the existing list shape for normalized multipart data.
+             *
              * @var array<int, array{
              *     name: string,
              *     contents: mixed,
@@ -888,7 +890,11 @@ class RequestOptions
         return $options;
     }
 
-    /** @param array<string, mixed> $headers */
+    /**
+     * Sets a header value while preserving the other request headers.
+     *
+     * @param  array<string, mixed>  $headers
+     */
     private static function setHeaderValue(
         array &$headers,
         string $name,
@@ -905,7 +911,11 @@ class RequestOptions
         $headers[$name] = $value;
     }
 
-    /** @param array<string, mixed> $headers */
+    /**
+     * Removes a header from the request options case-insensitively.
+     *
+     * @param  array<string, mixed>  $headers
+     */
     private static function removeHeader(array &$headers, string $name): void
     {
         foreach (array_keys($headers) as $header) {

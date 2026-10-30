@@ -18,7 +18,11 @@ foreach ($iterator as $file) {
     }
 }
 
-/** @return array{int, string} */
+/**
+ * Returns the process exit code and combined output from the command.
+ *
+ * @return array{int, string}
+ */
 $run = static function (array $command) use ($root): array {
     $process = proc_open(
         $command,

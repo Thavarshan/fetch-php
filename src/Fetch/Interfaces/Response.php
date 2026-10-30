@@ -11,6 +11,8 @@ use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use SimpleXMLElement;
 
 /**
+ * Defines the response data and convenience methods exposed by FetchPHP.
+ *
  * @extends ArrayAccess<string, mixed>
  */
 interface Response extends ArrayAccess, PsrResponseInterface
@@ -47,6 +49,8 @@ interface Response extends ArrayAccess, PsrResponseInterface
      * Create a response with no content.
      */
     /**
+     * Creates a response with no body and the supplied status and headers.
+     *
      * @param  array<string, array<int, string>|string>  $headers
      */
     public static function noContent(array $headers = []): self;
@@ -86,6 +90,8 @@ interface Response extends ArrayAccess, PsrResponseInterface
      * Get the body as a JSON-decoded array.
      */
     /**
+     * Returns the decoded response body as an array.
+     *
      * @return array<mixed>
      */
     public function array(bool $throwOnError = true): array;
@@ -201,6 +207,8 @@ interface Response extends ArrayAccess, PsrResponseInterface
      * Get the headers from the response as an array.
      */
     /**
+     * Returns response headers as normalized name-to-values entries.
+     *
      * @return array<string, array<int, string>>
      */
     public function headers(): array;

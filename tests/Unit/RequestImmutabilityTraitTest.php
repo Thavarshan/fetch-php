@@ -9,6 +9,9 @@ use Fetch\Http\Request;
 use GuzzleHttp\Psr7\Uri;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Checks immutable request copies preserve FetchPHP request behavior.
+ */
 class RequestImmutabilityTraitTest extends TestCase
 {
     public function test_immutability_when_adding_header(): void

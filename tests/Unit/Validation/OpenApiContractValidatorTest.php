@@ -11,6 +11,9 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Exercises local OpenAPI parsing and request/response contract checks.
+ */
 final class OpenApiContractValidatorTest extends TestCase
 {
     public function test_validates_request_path_and_response_body(): void
@@ -193,6 +196,9 @@ final class OpenApiContractValidatorTest extends TestCase
         });
     }
 
+    /**
+     * Runs a callback with a temporary OpenAPI document and removes it.
+     */
     private function withSpec(string $contents, callable $test): void
     {
         $path = tempnam(sys_get_temp_dir(), 'fetch-openapi-');
@@ -208,6 +214,9 @@ final class OpenApiContractValidatorTest extends TestCase
         }
     }
 
+    /**
+     * Returns the OpenAPI YAML fixture shared by contract tests.
+     */
     private function spec(): string
     {
         return <<<'YAML'

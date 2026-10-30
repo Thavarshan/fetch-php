@@ -12,8 +12,14 @@ use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers recording, exporting, importing, and replaying request fixtures.
+ */
 class RecorderTest extends TestCase
 {
+    /**
+     * Resets recorder and mock-server state before each test.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -21,6 +27,9 @@ class RecorderTest extends TestCase
         MockServer::resetInstance();
     }
 
+    /**
+     * Resets recorder and mock-server state after each test.
+     */
     protected function tearDown(): void
     {
         Recorder::resetInstance();

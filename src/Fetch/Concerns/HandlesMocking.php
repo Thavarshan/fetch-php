@@ -14,6 +14,13 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
+/**
+ * Routes matching requests through the in-process MockServer during tests.
+ *
+ * The consuming handler must provide the request options used to construct a
+ * PSR-7 request. A match bypasses the network transport; unmatched requests
+ * continue through the normal request pipeline.
+ */
 trait HandlesMocking
 {
     /**
@@ -103,6 +110,11 @@ trait HandlesMocking
         return new GuzzleRequest($method, $uri, $headers, $body);
     }
 
+    /**
+     * Read a request body for mock matching without advancing seekable streams.
+     *
+     * @throws RuntimeException If a resource stream cannot be read or restored
+     */
     private function copyBodyForMocking(mixed $body): mixed
     {
         if ($body instanceof StreamInterface) {

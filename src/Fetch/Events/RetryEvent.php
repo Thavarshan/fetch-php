@@ -12,9 +12,14 @@ use Throwable;
  */
 final class RetryEvent extends FetchEvent
 {
+    /**
+     * Stable identifier used to register retry listeners.
+     */
     public const NAME = 'request.retrying';
 
     /**
+     * Creates a retry event with the failed request and retry details.
+     *
      * @param  array<string, mixed>  $context
      */
     public function __construct(
@@ -30,21 +35,33 @@ final class RetryEvent extends FetchEvent
         parent::__construct($request, $correlationId, $timestamp, $context);
     }
 
+    /**
+     * Return the listener key for this event type.
+     */
     public function getName(): string
     {
         return self::NAME;
     }
 
+    /**
+     * Return the failure that triggered this retry.
+     */
     public function getPreviousException(): Throwable
     {
         return $this->previousException;
     }
 
+    /**
+     * Return the one-based current attempt number.
+     */
     public function getAttempt(): int
     {
         return $this->attempt;
     }
 
+    /**
+     * Return the configured maximum number of attempts.
+     */
     public function getMaxAttempts(): int
     {
         return $this->maxAttempts;
@@ -58,6 +75,9 @@ final class RetryEvent extends FetchEvent
         return $this->delay;
     }
 
+    /**
+     * Check whether the current attempt reaches the configured limit.
+     */
     public function isLastAttempt(): bool
     {
         return $this->attempt >= $this->maxAttempts;

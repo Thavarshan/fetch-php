@@ -8,6 +8,9 @@ use Fetch\Exceptions\NetworkException;
 use Fetch\Pool\DnsCache;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Exercises hostname caching, expiration, and cache invalidation.
+ */
 class DnsCacheTest extends TestCase
 {
     public function test_it_caches_resolutions_until_the_ttl_expires(): void

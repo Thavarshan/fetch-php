@@ -8,11 +8,21 @@ use Fetch\Concerns\ManagesMiddleware;
 use Fetch\Middleware\AddHeadersMiddleware;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies middleware stack ordering, removal, and conditional setup.
+ */
 class ManagesMiddlewareTest extends TestCase
 {
+    /**
+     * Creates a minimal host object using the middleware-management trait.
+     */
     private function handler(): object
     {
-        return new class {
+        return new
+        /**
+         * Hosts the middleware-management trait without unrelated behavior.
+         */
+        class {
             use ManagesMiddleware;
         };
     }

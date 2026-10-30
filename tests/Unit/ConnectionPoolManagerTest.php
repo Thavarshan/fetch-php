@@ -7,6 +7,9 @@ namespace Tests\Unit;
 use Fetch\Pool\ConnectionPoolManager;
 use Tests\TestCase;
 
+/**
+ * Checks legacy pool state sharing and handler-local HTTP/2 settings.
+ */
 class ConnectionPoolManagerTest extends TestCase
 {
     public function test_pool_is_shared_and_enablement_is_local(): void

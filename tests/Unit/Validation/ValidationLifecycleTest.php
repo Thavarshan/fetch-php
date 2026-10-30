@@ -35,6 +35,9 @@ use React\Promise\PromiseInterface;
 use function Matrix\Support\all;
 use function Matrix\Support\await;
 
+/**
+ * Covers validation across request, response, middleware, and async flows.
+ */
 final class ValidationLifecycleTest extends TestCase
 {
     public function test_adapter_errors_preserve_their_types(): void
@@ -71,12 +74,18 @@ final class ValidationLifecycleTest extends TestCase
         }
     }
 
+    /**
+     * Resets the mock server before each validation lifecycle test.
+     */
     protected function setUp(): void
     {
         parent::setUp();
         MockServer::resetInstance();
     }
 
+    /**
+     * Resets the mock server after each validation lifecycle test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();
@@ -620,9 +629,19 @@ final class ValidationLifecycleTest extends TestCase
             'response_events' => 0,
             'error_events' => 0,
         ];
-        $transport = new class($state) implements AsyncTransport {
+        $transport = new
+        /**
+         * Tracks dispatch and event counts for async middleware validation.
+         */
+        class($state) implements AsyncTransport {
+            /**
+             * Stores the shared counters observed by the fake async transport.
+             */
             public function __construct(private \stdClass $state) {}
 
+            /**
+             * Updates shared test counters and returns a controlled promise.
+             */
             public function requestAsync(
                 string $method,
                 string $uri,
@@ -710,9 +729,19 @@ final class ValidationLifecycleTest extends TestCase
             'response_events' => 0,
             'error_events' => 0,
         ];
-        $transport = new class($state) implements AsyncTransport {
+        $transport = new
+        /**
+         * Tracks dispatch and event counts for async short-circuit validation.
+         */
+        class($state) implements AsyncTransport {
+            /**
+             * Stores the shared counters observed by the fake async transport.
+             */
             public function __construct(private \stdClass $state) {}
 
+            /**
+             * Updates shared test counters and returns a controlled promise.
+             */
             public function requestAsync(
                 string $method,
                 string $uri,
@@ -961,9 +990,19 @@ final class ValidationLifecycleTest extends TestCase
             'maximum_active' => 0,
             'loop_progressed' => false,
         ];
-        $transport = new class($state) implements AsyncTransport {
+        $transport = new
+        /**
+         * Tracks active requests to verify concurrent event-loop progress.
+         */
+        class($state) implements AsyncTransport {
+            /**
+             * Stores the shared counters observed by the fake async transport.
+             */
             public function __construct(private \stdClass $state) {}
 
+            /**
+             * Updates shared test counters and returns a controlled promise.
+             */
             public function requestAsync(
                 string $method,
                 string $uri,
@@ -1003,9 +1042,19 @@ final class ValidationLifecycleTest extends TestCase
     public function test_cancellation_reaches_async_transport(): void
     {
         $state = (object) ['cancelled' => false];
-        $transport = new class($state) implements AsyncTransport {
+        $transport = new
+        /**
+         * Marks cancellation when the async transport promise is cancelled.
+         */
+        class($state) implements AsyncTransport {
+            /**
+             * Stores the shared counters observed by the fake async transport.
+             */
             public function __construct(private \stdClass $state) {}
 
+            /**
+             * Updates shared test counters and returns a controlled promise.
+             */
             public function requestAsync(
                 string $method,
                 string $uri,
@@ -1041,6 +1090,9 @@ final class ValidationLifecycleTest extends TestCase
         self::assertTrue($state->cancelled);
     }
 
+    /**
+     * Creates a client handler backed by the supplied Guzzle mock.
+     */
     private function handler(MockHandler $mock): ClientHandler
     {
         $client = new GuzzleClient([
@@ -1054,6 +1106,9 @@ final class ValidationLifecycleTest extends TestCase
         );
     }
 
+    /**
+     * Runs a callback with a temporary OpenAPI document and removes it.
+     */
     private function withOpenApiSpec(string $contents, callable $test): void
     {
         $path = tempnam(sys_get_temp_dir(), 'fetch-openapi-');
@@ -1069,7 +1124,11 @@ final class ValidationLifecycleTest extends TestCase
         }
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Returns the JSON Schema fixture used by validation lifecycle tests.
+     *
+     * @return array<string, mixed>
+     */
     private function userSchema(): array
     {
         return [

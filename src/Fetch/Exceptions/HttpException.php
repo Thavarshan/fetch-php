@@ -5,6 +5,9 @@ namespace Fetch\Exceptions;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 
+/**
+ * Represents an HTTP-level failure while retaining its response.
+ */
 class HttpException extends RuntimeException
 {
     /**
@@ -14,6 +17,9 @@ class HttpException extends RuntimeException
      */
     protected $response;
 
+    /**
+     * Return the response associated with this HTTP failure.
+     */
     public function getResponse(): ResponseInterface
     {
         return $this->response;

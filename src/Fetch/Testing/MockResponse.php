@@ -10,6 +10,12 @@ use Fetch\Interfaces\Response as ResponseInterface;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Throwable;
 
+/**
+ * Describes one deterministic response or exception for MockServer to return.
+ *
+ * Test callbacks can inspect the matched request and produce a response
+ * dynamically; fixed responses can be reused in a sequence.
+ */
 class MockResponse
 {
     /**

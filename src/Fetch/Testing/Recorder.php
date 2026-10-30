@@ -8,6 +8,12 @@ use Fetch\Http\Request;
 use Fetch\Interfaces\Response as ResponseInterface;
 use InvalidArgumentException;
 
+/**
+ * Process-wide recorder for request/response pairs and replay fixtures.
+ *
+ * Recordings remain in memory and can be exported as JSON or converted to
+ * MockServer fakes for deterministic replay.
+ */
 class Recorder
 {
     /**

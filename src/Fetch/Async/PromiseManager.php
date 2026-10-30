@@ -20,15 +20,35 @@ use function Matrix\Support\reject;
 use function Matrix\Support\resolve;
 use function Matrix\Support\timeout;
 
+/**
+ * Adapts Matrix promise operations to the execution contracts used by FetchPHP.
+ *
+ * The manager centralizes promise creation, awaiting, aggregation, and mapping
+ * for {@see \Fetch\Http\ClientHandler}. It does not itself send HTTP
+ * requests or guarantee that a wrapped callback performs nonblocking I/O.
+ */
 final class PromiseManager
 {
+    /**
+     * Maximum per-item concurrency accepted by {@see self::map()}.
+     */
     private const MAX_MAP_CONCURRENCY = 200;
 
+    /**
+     * Wrap a callable in a Matrix-managed asynchronous operation.
+     */
     public function wrapAsync(callable $callable): PromiseInterface
     {
         return async($callable);
     }
 
+    /**
+     * Run the event loop until a promise settles and return its fulfillment.
+     *
+     * @param  PromiseInterface<mixed>  $promise
+     *
+     * @throws RuntimeException When the optional timeout expires
+     */
     public function awaitPromise(
         PromiseInterface $promise,
         ?float $timeout = null,
@@ -49,6 +69,8 @@ final class PromiseManager
     }
 
     /**
+     * Waits for all promises and preserves the input keys in the results.
+     *
      * @param  array<PromiseInterface<mixed>>  $promises
      * @return PromiseInterface<array<mixed>>
      */
@@ -60,6 +82,8 @@ final class PromiseManager
     }
 
     /**
+     * Adopts the outcome of the first promise to settle.
+     *
      * @param  array<PromiseInterface<mixed>>  $promises
      * @return PromiseInterface<mixed>
      */
@@ -71,6 +95,8 @@ final class PromiseManager
     }
 
     /**
+     * Returns the first fulfilled promise or rejects when all fail.
+     *
      * @param  array<PromiseInterface<mixed>>  $promises
      * @return PromiseInterface<mixed>
      */
@@ -82,6 +108,8 @@ final class PromiseManager
     }
 
     /**
+     * Runs promise-producing callbacks in order, awaiting each result.
+     *
      * @param  array<callable(): PromiseInterface<mixed>>  $callables
      * @return PromiseInterface<array<mixed>>
      */
@@ -90,11 +118,17 @@ final class PromiseManager
         return $this->executeSequence($callables, []);
     }
 
+    /**
+     * Create an already fulfilled promise for the supplied value.
+     */
     public function resolve(mixed $value): PromiseInterface
     {
         return resolve($value);
     }
 
+    /**
+     * Create a rejected promise, wrapping string reasons in RuntimeException.
+     */
     public function reject(mixed $reason): PromiseInterface
     {
         return reject(
@@ -102,6 +136,9 @@ final class PromiseManager
         );
     }
 
+    /**
+     * Reject a promise after the given delay, measured in seconds.
+     */
     public function createTimeoutPromise(float $timeout): PromiseInterface
     {
         return delay($timeout)->then(static function () use ($timeout): never {
@@ -181,7 +218,11 @@ final class PromiseManager
         });
     }
 
-    /** @param array<mixed> $promises */
+    /**
+     * Rejects values that are not promises before aggregation.
+     *
+     * @param  array<mixed>  $promises
+     */
     public function validatePromises(array $promises): void
     {
         foreach ($promises as $index => $promise) {
@@ -200,6 +241,8 @@ final class PromiseManager
     }
 
     /**
+     * Runs promise-producing callbacks sequentially and collects results.
+     *
      * @param  array<callable(): PromiseInterface<mixed>>  $callables
      * @param  array<mixed>  $results
      * @return PromiseInterface<array<mixed>>

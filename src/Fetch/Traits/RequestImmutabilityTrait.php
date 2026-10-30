@@ -7,6 +7,13 @@ namespace Fetch\Traits;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Preserves the consuming request class when Guzzle returns immutable copies.
+ *
+ * The host must extend a Guzzle request implementation and provide a
+ * constructor compatible with the PSR-7 request fields plus an optional custom
+ * request target. A `customRequestTarget` property is carried across copies.
+ */
 trait RequestImmutabilityTrait
 {
     /**

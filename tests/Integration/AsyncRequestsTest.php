@@ -26,16 +26,32 @@ use function Matrix\Support\race;
 use function React\Promise\reject;
 use function React\Promise\resolve;
 
+/**
+ * Exercises async requests, concurrent execution, and mock interception.
+ */
 class AsyncRequestsTest extends TestCase
 {
+    /**
+     * Client using the deterministic async handler fixture.
+     */
     private $client;
 
+    /**
+     * Handler stub that resolves requests without network access.
+     */
     private $mockHandler;
 
+    /**
+     * Builds the client fixture with a deterministic mock handler.
+     */
     protected function setUp(): void
     {
         // Create a mock handler that returns predictable responses
-        $this->mockHandler = new class extends ClientHandler {
+        $this->mockHandler = new
+        /**
+         * Provides a deterministic handler for asynchronous request tests.
+         */
+        class extends ClientHandler {
             /**
              * Override sendRequest with compatible signature.
              */
@@ -78,6 +94,9 @@ class AsyncRequestsTest extends TestCase
         $this->client = new Client($this->mockHandler);
     }
 
+    /**
+     * Resets shared mock services after each asynchronous test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();
@@ -151,7 +170,14 @@ class AsyncRequestsTest extends TestCase
     {
         $handler = new ClientHandler;
         $handler->setAsyncTransport(
-            new class implements AsyncTransport {
+            new
+            /**
+             * Rejects requests to exercise asynchronous error-context handling.
+             */
+            class implements AsyncTransport {
+                /**
+                 * Returns the promise used by this async transport fixture.
+                 */
                 public function requestAsync(
                     string $method,
                     string $uri,
@@ -281,9 +307,19 @@ class AsyncRequestsTest extends TestCase
     public function test_async_request_respects_per_request_timeout(): void
     {
         $handler = new ClientHandler;
-        $transport = new class implements AsyncTransport {
+        $transport = new
+        /**
+         * Captures per-request timeouts and returns a synthetic response.
+         */
+        class implements AsyncTransport {
+            /**
+             * Timeout option observed by the fake async transport.
+             */
             public ?int $capturedTimeout = null;
 
+            /**
+             * Returns the controlled promise for this async transport fixture.
+             */
             public function requestAsync(
                 string $method,
                 string $uri,

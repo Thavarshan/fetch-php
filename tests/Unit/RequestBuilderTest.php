@@ -12,6 +12,9 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies request construction, option precedence, and middleware body views.
+ */
 class RequestBuilderTest extends TestCase
 {
     public function test_cookies_validate_without_auth(): void

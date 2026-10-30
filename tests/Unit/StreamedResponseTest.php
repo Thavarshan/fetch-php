@@ -13,8 +13,14 @@ use GuzzleHttp\Psr7\Response as PsrResponse;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers incremental body reads, line boundaries, and SSE conversion.
+ */
 class StreamedResponseTest extends TestCase
 {
+    /**
+     * Creates a streamed response from a body, headers, and status code.
+     */
     private function make(
         string $body,
         array $headers = [],

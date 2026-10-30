@@ -5,6 +5,9 @@ namespace Tests\Unit;
 use Fetch\Support\RequestOptions;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers normalization and precedence of Guzzle request options.
+ */
 class RequestOptionsTest extends TestCase
 {
     public function test_normalize_max_retries_to_retries(): void

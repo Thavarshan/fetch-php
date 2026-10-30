@@ -20,12 +20,21 @@ use React\Promise\PromiseInterface;
  */
 final class LoggingMiddleware implements Middleware
 {
+    /**
+     * Configure the logger, log level, and per-request correlation header.
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly string $level = LogLevel::INFO,
         private readonly string $correlationHeader = 'X-Correlation-ID',
     ) {}
 
+    /**
+     * Log request start and response completion in sync or async flows.
+     *
+     * The middleware logs the method, URI, correlation ID, status, and
+     * duration; it does not log request or response bodies or credentials.
+     */
     public function handle(
         RequestInterface $request,
         callable $next,
@@ -62,6 +71,9 @@ final class LoggingMiddleware implements Middleware
         return $result;
     }
 
+    /**
+     * Log response status and elapsed time with its request correlation ID.
+     */
     private function logResponse(
         ResponseInterface $response,
         string $correlationId,
@@ -74,6 +86,9 @@ final class LoggingMiddleware implements Middleware
         ]);
     }
 
+    /**
+     * Generate an opaque ID for correlating request and response log entries.
+     */
     private function generateCorrelationId(): string
     {
         return bin2hex(random_bytes(8));

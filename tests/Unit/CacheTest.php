@@ -12,10 +12,19 @@ use Fetch\Cache\MemoryCache;
 use Fetch\Http\Response;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers cache-control parsing, response storage, expiration, and cache keys.
+ */
 class CacheTest extends TestCase
 {
+    /**
+     * Temporary directory isolated to this file-cache test case.
+     */
     private string $testCacheDir;
 
+    /**
+     * Creates an isolated temporary directory for cache files.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -23,6 +32,9 @@ class CacheTest extends TestCase
             sys_get_temp_dir().'/fetch-cache-test-'.uniqid();
     }
 
+    /**
+     * Removes cache files created in the temporary test directory.
+     */
     protected function tearDown(): void
     {
         parent::tearDown();

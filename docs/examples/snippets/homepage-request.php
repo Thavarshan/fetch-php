@@ -14,7 +14,11 @@ if ($json === false) {
     throw new RuntimeException('The homepage response fixture is missing.');
 }
 
-/** @var array{id: int, name: string, role: string} $expected */
+/**
+ * Defines the expected user payload for the homepage response fixture.
+ *
+ * @var array{id: int, name: string, role: string} $expected
+ */
 $expected = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
 
 MockServer::fake([
@@ -22,7 +26,11 @@ MockServer::fake([
 ]);
 MockServer::preventStrayRequests();
 
-/** @var FetchResponse $response */
+/**
+ * Holds the response returned by the documented FetchPHP request.
+ *
+ * @var FetchResponse $response
+ */
 // @showcase
 $response = fetch(
     'https://api.example.test/v1/users/42',

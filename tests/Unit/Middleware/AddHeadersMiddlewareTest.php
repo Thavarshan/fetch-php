@@ -10,6 +10,9 @@ use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
+/**
+ * Covers header insertion and overwrite behavior in middleware.
+ */
 class AddHeadersMiddlewareTest extends TestCase
 {
     public function test_adds_headers(): void

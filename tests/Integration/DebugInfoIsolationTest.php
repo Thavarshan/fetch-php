@@ -14,6 +14,9 @@ use PHPUnit\Framework\TestCase;
 
 use function Matrix\Support\await;
 
+/**
+ * Verifies debug snapshots and timing remain isolated between responses.
+ */
 class DebugInfoIsolationTest extends TestCase
 {
     public function test_debug_info_is_attached_to_each_response(): void

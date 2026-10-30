@@ -7,6 +7,9 @@ namespace Tests\Unit;
 use Fetch\Enum\Method;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Checks HTTP method normalization and request-body support classification.
+ */
 class MethodTest extends TestCase
 {
     public function test_trace_and_connect_methods_are_supported(): void

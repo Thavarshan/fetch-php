@@ -66,6 +66,8 @@ use Throwable;
 final readonly class RequestCoordinatorHooks
 {
     /**
+     * Stores callbacks for request interception and response processing.
+     *
      * @param  MockRequestHook  $mockRequest
      * @param  \Closure(string, string): (string|null)  $startProfiling
      * @param  \Closure(string|null, string): void  $recordProfilingEvent

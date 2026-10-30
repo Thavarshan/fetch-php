@@ -14,6 +14,9 @@ use RuntimeException;
 use SimpleXMLElement;
 use stdClass;
 
+/**
+ * Covers response accessors, JSON decoding, streams, and status helpers.
+ */
 class ResponseTest extends TestCase
 {
     public function test_constructor_and_basic_accessors(): void
@@ -273,7 +276,11 @@ class ResponseTest extends TestCase
         $this->assertTrue($response->isStatus($status->value));
     }
 
-    /** @return iterable<string, array{string, Status}> */
+    /**
+     * Provides status-code fixtures for response helper tests.
+     *
+     * @return iterable<string, array{string, Status}>
+     */
     public static function status_helper_cases(): iterable
     {
         yield 'OK' => ['isOk', Status::OK];

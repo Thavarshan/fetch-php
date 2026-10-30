@@ -9,6 +9,9 @@ use Fetch\Testing\MockResponse;
 use Fetch\Testing\MockResponseSequence;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers fixed mock response construction and response execution.
+ */
 class MockResponseTest extends TestCase
 {
     public function test_creates_basic_mock_response(): void

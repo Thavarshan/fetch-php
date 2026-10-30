@@ -9,6 +9,9 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
+/**
+ * Reports a request failure and retains its request and optional response.
+ */
 class RequestException extends ClientException implements RequestContract
 {
     /**

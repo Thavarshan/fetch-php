@@ -444,31 +444,49 @@ final class RequestContext
 
     // Getters
 
+    /**
+     * Return the normalized HTTP method for this request.
+     */
     public function getMethod(): string
     {
         return $this->method;
     }
 
+    /**
+     * Return the URI stored in this immutable request context.
+     */
     public function getUri(): string
     {
         return $this->uri;
     }
 
+    /**
+     * Report whether the request uses asynchronous execution.
+     */
     public function isAsync(): bool
     {
         return $this->async;
     }
 
+    /**
+     * Return the configured request timeout in seconds.
+     */
     public function getTimeout(): int
     {
         return $this->timeout;
     }
 
+    /**
+     * Return the maximum number of retries configured for this request.
+     */
     public function getMaxRetries(): int
     {
         return $this->maxRetries;
     }
 
+    /**
+     * Return the initial retry delay in milliseconds.
+     */
     public function getRetryDelay(): int
     {
         return $this->retryDelay;
@@ -494,17 +512,25 @@ final class RequestContext
         return $this->retryableExceptions;
     }
 
+    /**
+     * Report whether caching is enabled in the request options.
+     */
     public function isCacheEnabled(): bool
     {
         return $this->cacheEnabled;
     }
 
+    /**
+     * Report whether debug capture is enabled in the request options.
+     */
     public function isDebugEnabled(): bool
     {
         return $this->debugEnabled;
     }
 
     /**
+     * Returns the request headers stored in this configuration object.
+     *
      * @return array<string, string|string[]>
      */
     public function getHeaders(): array

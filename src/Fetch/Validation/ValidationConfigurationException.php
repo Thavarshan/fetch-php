@@ -6,4 +6,7 @@ namespace Fetch\Validation;
 
 use InvalidArgumentException;
 
+/**
+ * Reports malformed or unsupported validation configuration.
+ */
 final class ValidationConfigurationException extends InvalidArgumentException {}

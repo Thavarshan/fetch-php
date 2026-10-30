@@ -29,12 +29,23 @@ use function Matrix\Support\reject;
 use function Matrix\Support\resolve;
 
 /**
- * Coordinates middleware, validation, cache/mock selection, execution, and
- *     lifecycle events.
+ * Coordinates the per-request pipeline after the handler normalizes options.
+ *
+ * It builds the PSR-7 request for middleware, merges middleware changes back
+ * into transport options, and validates the final request before dispatch.
+ * Core execution selects mock, cache, synchronous, or asynchronous handling;
+ * lifecycle hooks emit events and collect profiling and debug data.
+ *
+ * The coordinator is immutable after construction. Mutable state belongs to
+ * its cache, retry, transport, and profiling collaborators.
  */
 final class RequestCoordinator
 {
-    /** @param array<int, mixed> $middleware */
+    /**
+     * Stores the collaborators that process and execute outgoing requests.
+     *
+     * @param  array<int, mixed>  $middleware
+     */
     public function __construct(
         private readonly RequestBuilder $requestBuilder,
         private readonly ValidationManager $validationManager,
@@ -48,6 +59,8 @@ final class RequestCoordinator
     ) {}
 
     /**
+     * Runs middleware and dispatches the request through the selected executor.
+     *
      * @param  array<string, mixed>  $guzzleOptions
      * @return FetchResponseInterface|PromiseInterface<FetchResponseInterface>
      */
@@ -430,6 +443,8 @@ final class RequestCoordinator
     }
 
     /**
+     * Runs the request core after middleware and policy processing.
+     *
      * @param  array<string, mixed>  $guzzleOptions
      * @return FetchResponseInterface|PromiseInterface<FetchResponseInterface>
      */
@@ -602,6 +617,8 @@ final class RequestCoordinator
     }
 
     /**
+     * Checks the cache before sending and stores cacheable responses.
+     *
      * @param  array<string, mixed>  $options
      * @param  array<string, mixed>  $requestOptions
      * @param  array<string, mixed>|null  $cachedResult
@@ -699,7 +716,11 @@ final class RequestCoordinator
         }
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Sends the configured request synchronously and returns its response.
+     *
+     * @param  array<string, mixed>  $options
+     */
     private function executeSync(
         string $method,
         string $uri,
@@ -765,6 +786,8 @@ final class RequestCoordinator
     }
 
     /**
+     * Sends the configured request asynchronously and returns its promise.
+     *
      * @param  array<string, mixed>  $options
      * @return PromiseInterface<FetchResponseInterface>
      */
@@ -868,7 +891,11 @@ final class RequestCoordinator
             });
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Adds request diagnostics to the response when debugging is enabled.
+     *
+     * @param  array<string, mixed>  $options
+     */
     private function attachDebugInfo(
         string $method,
         string $uri,
@@ -983,6 +1010,9 @@ final class RequestCoordinator
         }
     }
 
+    /**
+     * Normalize middleware responses after resolving an optional promise.
+     */
     private function coerceMiddlewareResult(
         ResponseInterface|PromiseInterface $result,
     ): ResponseInterface|PromiseInterface {
@@ -997,6 +1027,9 @@ final class RequestCoordinator
         return $this->coerceResponseValue($result);
     }
 
+    /**
+     * Check whether validation needs the outgoing request body available.
+     */
     private function capturesRequestBody(): bool
     {
         return $this->validationPolicy->requestSchema !== null ||
@@ -1004,6 +1037,9 @@ final class RequestCoordinator
                 $this->validationPolicy->openApiSpec !== null);
     }
 
+    /**
+     * Convert PSR responses to FetchPHP responses and pass other values on.
+     */
     private function coerceResponseValue(mixed $response): mixed
     {
         if ($response instanceof FetchResponseInterface) {
@@ -1017,6 +1053,11 @@ final class RequestCoordinator
         return $response;
     }
 
+    /**
+     * Require middleware output to be a PSR or FetchPHP response.
+     *
+     * @throws RuntimeException If middleware returns a non-response value
+     */
     private function requireFetchResponse(
         mixed $response,
     ): FetchResponseInterface {

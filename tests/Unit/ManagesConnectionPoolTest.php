@@ -14,8 +14,14 @@ use PHPUnit\Framework\TestCase;
 
 use function Matrix\Support\await;
 
+/**
+ * Covers handler pool configuration and its diagnostic API.
+ */
 class ManagesConnectionPoolTest extends TestCase
 {
+    /**
+     * Resets standalone pool state after each connection-pool test.
+     */
     protected function tearDown(): void
     {
         parent::tearDown();

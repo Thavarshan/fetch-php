@@ -6,6 +6,12 @@ namespace Fetch\Testing;
 
 use OutOfBoundsException;
 
+/**
+ * Returns registered mock responses in order for successive matching requests.
+ *
+ * The sequence can be configured to repeat or provide a default when its
+ * registered responses are exhausted.
+ */
 class MockResponseSequence
 {
     /**

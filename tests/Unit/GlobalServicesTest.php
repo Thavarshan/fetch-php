@@ -8,14 +8,23 @@ use Fetch\Support\GlobalServices;
 use Fetch\Http\ClientHandler;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Checks lazy shared services, default options, and reset behavior.
+ */
 class GlobalServicesTest extends TestCase
 {
+    /**
+     * Resets global services before the test case starts.
+     */
     protected function setUp(): void
     {
         GlobalServices::reset();
         parent::setUp();
     }
 
+    /**
+     * Resets global services after the test case finishes.
+     */
     protected function tearDown(): void
     {
         GlobalServices::reset();

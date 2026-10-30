@@ -5,10 +5,19 @@ namespace Tests\Unit;
 use Fetch\Support\FetchProfiler;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers profiler activation and request lifecycle measurements.
+ */
 class FetchProfilerTest extends TestCase
 {
+    /**
+     * Profiler instance reset for each lifecycle scenario.
+     */
     private FetchProfiler $profiler;
 
+    /**
+     * Creates a fresh profiler for each profiling test.
+     */
     protected function setUp(): void
     {
         $this->profiler = new FetchProfiler;

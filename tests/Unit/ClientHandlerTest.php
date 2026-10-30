@@ -21,12 +21,24 @@ use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionProperty;
 
+/**
+ * Covers handler defaults, factories, settings, and service composition.
+ */
 class ClientHandlerTest extends TestCase
 {
+    /**
+     * Handler instance configured for the current test.
+     */
     private ClientHandler $handler;
 
+    /**
+     * Mock Guzzle client injected into the handler fixture.
+     */
     private $mockClient;
 
+    /**
+     * Creates a handler with a mocked Guzzle client for each test.
+     */
     protected function setUp(): void
     {
         MockServer::resetInstance();

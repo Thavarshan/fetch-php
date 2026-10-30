@@ -30,6 +30,13 @@ use Psr\Log\NullLogger;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 
+/**
+ * PSR-18 client adapter that exposes the FetchPHP request handler.
+ *
+ * It converts PSR-7 requests to handler options, delegates execution, and maps
+ * transport failures to the PSR-18 exception contracts. Convenience methods
+ * are also available for direct FetchPHP-style requests.
+ */
 class Client implements ClientInterface, LoggerAwareInterface
 {
     /**
@@ -532,6 +539,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Registers a listener for requests dispatched by this client.
+     *
      * @return $this
      */
     public function onRequest(callable $listener, int $priority = 0): self
@@ -542,6 +551,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Registers a listener for responses received by this client.
+     *
      * @return $this
      */
     public function onResponse(callable $listener, int $priority = 0): self
@@ -552,6 +563,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Registers a listener for request failures reported by this client.
+     *
      * @return $this
      */
     public function onError(callable $listener, int $priority = 0): self
@@ -562,6 +575,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Registers a listener for retries initiated by this client.
+     *
      * @return $this
      */
     public function onRetry(callable $listener, int $priority = 0): self
@@ -572,6 +587,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Registers a listener for request timeouts reported by this client.
+     *
      * @return $this
      */
     public function onTimeout(callable $listener, int $priority = 0): self
@@ -582,6 +599,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Registers a listener for redirects followed by this client.
+     *
      * @return $this
      */
     public function onRedirect(callable $listener, int $priority = 0): self

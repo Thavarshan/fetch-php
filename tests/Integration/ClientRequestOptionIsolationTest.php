@@ -17,6 +17,12 @@ use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use GuzzleHttp\Psr7\Request;
 use Tests\TestCase;
 
+/**
+ * Verifies per-request options do not leak across shared handler calls.
+ *
+ * The cases include PSR-18 calls made while the handler is in async mode,
+ * which must remain synchronous under that client contract.
+ */
 final class ClientRequestOptionIsolationTest extends TestCase
 {
     public function test_psr18_stays_sync_with_an_async_handler(): void
@@ -38,12 +44,18 @@ final class ClientRequestOptionIsolationTest extends TestCase
         self::assertTrue($handler->isAsync());
     }
 
+    /**
+     * Resets the global client and mock server before each test.
+     */
     protected function setUp(): void
     {
         MockServer::resetInstance();
         fetch_client(null, true);
     }
 
+    /**
+     * Resets global client state after each option-isolation test.
+     */
     protected function tearDown(): void
     {
         MockServer::resetInstance();

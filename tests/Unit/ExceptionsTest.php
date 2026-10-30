@@ -16,6 +16,9 @@ use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Client\RequestExceptionInterface;
 use RuntimeException;
 
+/**
+ * Verifies FetchPHP exceptions preserve PSR contracts and request context.
+ */
 class ExceptionsTest extends TestCase
 {
     public function test_client_exception_implements_psr_client_contract(): void

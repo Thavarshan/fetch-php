@@ -10,9 +10,14 @@ use Fetch\Http\StreamedResponse;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers parsing of Server-Sent Events and persistent stream fields.
+ */
 class EventSourceTest extends TestCase
 {
     /**
+     * Parses a string into server-sent event objects.
+     *
      * @return array<int, ServerSentEvent>
      */
     private function parse(string $body): array

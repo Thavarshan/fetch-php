@@ -11,5 +11,8 @@ use Fetch\Cache\CacheManager;
  */
 interface CacheableHandler
 {
+    /**
+     * Return the configured cache manager, or null when caching is absent.
+     */
     public function getCacheManager(): ?CacheManager;
 }

@@ -6,18 +6,37 @@ use Fetch\Http\ClientHandler;
 use Fetch\Support\RequestContext;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers URI normalization, base paths, queries, and legacy compatibility.
+ */
 class HandlesUrisTest extends TestCase
 {
+    /**
+     * Handler subclass exposing URI helpers to the tests.
+     */
     private $handler;
 
+    /**
+     * Creates a handler exposing protected URI helpers to these tests.
+     */
     protected function setUp(): void
     {
-        $this->handler = new class extends ClientHandler {
+        $this->handler = new
+        /**
+         * Exposes protected URI helpers through a minimal handler subclass.
+         */
+        class extends ClientHandler {
+            /**
+             * Exposes legacy URI resolution for direct unit assertions.
+             */
             public function exposeLegacyBuildFullUri(string $uri): string
             {
                 return $this->buildFullUri($uri);
             }
 
+            /**
+             * Exposes URI resolution using a normalized request context.
+             */
             public function exposeBuildFullUriFromContext(string $uri): string
             {
                 $options = array_merge($this->options, ['uri' => $uri]);
@@ -27,11 +46,17 @@ class HandlesUrisTest extends TestCase
                 );
             }
 
+            /**
+             * Exposes absolute-URL detection for direct unit assertions.
+             */
             public function exposeIsAbsoluteUrl(string $uri): bool
             {
                 return $this->isAbsoluteUrl($uri);
             }
 
+            /**
+             * Exposes query-string merging for direct unit assertions.
+             */
             public function exposeAppendQueryParameters(
                 string $uri,
                 array $params,

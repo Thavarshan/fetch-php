@@ -15,10 +15,19 @@ use RuntimeException;
  */
 final class ConnectionPoolManager
 {
+    /**
+     * HTTP/2 options local to this manager and its owning handler.
+     */
     private ?Http2Configuration $http2Config = null;
 
+    /**
+     * Legacy enablement flag; it does not configure request transport.
+     */
     private bool $poolingEnabled = false;
 
+    /**
+     * Initialize process-wide legacy pool services only when absent.
+     */
     public static function initialize(
         ?PoolConfiguration $configuration = null,
     ): void {
@@ -28,6 +37,8 @@ final class ConnectionPoolManager
     }
 
     /**
+     * Stores the supplied custom connection-pool configuration.
+     *
      * @param  array<string, mixed>|bool  $configuration
      *
      * @deprecated since 4.1.0 Pool settings do not affect request transport.
@@ -44,7 +55,11 @@ final class ConnectionPoolManager
         GlobalServices::configurePool($configuration);
     }
 
-    /** @param array<string, mixed>|bool $configuration */
+    /**
+     * Set handler-local HTTP/2 settings without changing shared pool state.
+     *
+     * @param  array<string, mixed>|bool  $configuration
+     */
     public function withHttp2(array|bool $configuration): void
     {
         $this->http2Config = is_bool($configuration)
@@ -52,6 +67,9 @@ final class ConnectionPoolManager
             : Http2Configuration::fromArray($configuration);
     }
 
+    /**
+     * Return the process-wide legacy pool when it has been initialized.
+     */
     public function getConnectionPool(): ?ConnectionPool
     {
         return GlobalServices::hasConnectionPool()
@@ -59,6 +77,9 @@ final class ConnectionPoolManager
             : null;
     }
 
+    /**
+     * Return the process-wide DNS cache when it has been initialized.
+     */
     public function getDnsCache(): ?DnsCache
     {
         return GlobalServices::hasDnsCache()
@@ -66,17 +87,27 @@ final class ConnectionPoolManager
             : null;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Return diagnostic counters from the shared legacy services.
+     *
+     * @return array<string, mixed>
+     */
     public function getDebugStats(): array
     {
         return GlobalServices::getStats();
     }
 
+    /**
+     * Return the HTTP/2 configuration attached to this manager.
+     */
     public function getHttp2Config(): ?Http2Configuration
     {
         return $this->http2Config;
     }
 
+    /**
+     * Report whether the legacy pool was enabled and is configured.
+     */
     public function isPoolingEnabled(): bool
     {
         if (! $this->poolingEnabled) {
@@ -86,18 +117,29 @@ final class ConnectionPoolManager
         return $this->getConnectionPool()?->isEnabled() ?? false;
     }
 
+    /**
+     * Report whether handler-local HTTP/2 settings are enabled.
+     */
     public function isHttp2Enabled(): bool
     {
         return $this->http2Config?->isEnabled() ?? false;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Return counters from the legacy pool, or an explicitly disabled state.
+     *
+     * @return array<string, mixed>
+     */
     public function getPoolStats(): array
     {
         return $this->getConnectionPool()?->getStats() ?? ['enabled' => false];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Return DNS-cache counters with its enabled state, when initialized.
+     *
+     * @return array<string, mixed>
+     */
     public function getDnsCacheStats(): array
     {
         $dnsCache = $this->getDnsCache();
@@ -107,16 +149,25 @@ final class ConnectionPoolManager
             : array_merge(['enabled' => true], $dnsCache->getStats());
     }
 
+    /**
+     * Clear one hostname entry or all entries in the shared DNS cache.
+     */
     public function clearDnsCache(?string $hostname = null): void
     {
         GlobalServices::clearDnsCache($hostname);
     }
 
+    /**
+     * Close connections owned by the legacy pool service.
+     */
     public function closeAllConnections(): void
     {
         GlobalServices::closeAllConnections();
     }
 
+    /**
+     * Reset shared legacy services while preserving their default options.
+     */
     public function reset(): void
     {
         GlobalServices::reset(preserveDefaults: true);
@@ -124,8 +175,12 @@ final class ConnectionPoolManager
     }
 
     /**
+     * Apply enabled HTTP/2 version and cURL options to a Guzzle option set.
+     *
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
+     *
+     * @throws RuntimeException When HTTP/2 is requested without cURL support
      */
     public function applyHttp2Options(array $options): array
     {
@@ -150,18 +205,28 @@ final class ConnectionPoolManager
         return $options;
     }
 
+    /**
+     * Check whether either shared legacy pool service has been initialized.
+     */
     public function isInitialized(): bool
     {
         return GlobalServices::hasConnectionPool() ||
             GlobalServices::hasDnsCache();
     }
 
-    /** @return array<int, mixed> */
+    /**
+     * Return cURL options derived from the local HTTP/2 configuration.
+     *
+     * @return array<int, mixed>
+     */
     public function getHttp2CurlOptions(): array
     {
         return $this->http2Config?->getCurlOptions() ?? [];
     }
 
+    /**
+     * Resolve a hostname through the legacy cache, returning null on failure.
+     */
     public function resolveHostname(string $hostname): ?string
     {
         $dnsCache = $this->getDnsCache();

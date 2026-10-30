@@ -6,4 +6,7 @@ namespace Fetch\Validation;
 
 use RuntimeException;
 
+/**
+ * Reports that an optional validation integration is not installed.
+ */
 final class ValidationDependencyException extends RuntimeException {}

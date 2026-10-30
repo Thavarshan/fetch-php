@@ -23,14 +23,34 @@ use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Yaml\Yaml;
 use Throwable;
 
+/**
+ * Validates PSR requests and responses against local OpenAPI 3.0.x specs.
+ */
 final class OpenApiContractValidator
 {
+    /**
+     * Rebuilt when the configured specification path changes.
+     */
     private ?LeagueRequestValidator $requestValidator = null;
 
+    /**
+     * Rebuilt alongside the request validator for a changed specification.
+     */
     private ?LeagueResponseValidator $responseValidator = null;
 
+    /**
+     * Path used to construct the cached validator pair.
+     */
     private ?string $loadedSpec = null;
 
+    /**
+     * Validate a request and return the matching OpenAPI operation address.
+     *
+     * @throws ValidationDependencyException If no YAML validator is available.
+     * @throws ValidationConfigurationException For unreadable or unsupported
+     *                                          specifications
+     * @throws ValidationException When the request violates the contract
+     */
     public function validateRequest(
         RequestInterface $request,
         string $specPath,
@@ -57,6 +77,11 @@ final class OpenApiContractValidator
         }
     }
 
+    /**
+     * Validate a response against the operation resolved for its request.
+     *
+     * @throws ValidationException When the response violates the contract
+     */
     public function validateResponse(
         OperationAddress $operation,
         ResponseInterface $response,
@@ -88,6 +113,9 @@ final class OpenApiContractValidator
         }
     }
 
+    /**
+     * Load and cache validators for one readable local OpenAPI 3.0.x file.
+     */
     private function load(string $specPath): void
     {
         if ($this->loadedSpec === $specPath) {
@@ -152,7 +180,11 @@ final class OpenApiContractValidator
         $this->loadedSpec = $specPath;
     }
 
-    /** @return array<mixed>|object */
+    /**
+     * Parse a JSON or YAML OpenAPI document without fetching remote resources.
+     *
+     * @return array<mixed>|object
+     */
     private function parseDocument(string $contents, string $path): array|object
     {
         try {
@@ -166,10 +198,18 @@ final class OpenApiContractValidator
 
         try {
             if (class_exists(Yaml::class)) {
-                /** @var mixed $document */
+                /**
+                 * Holds YAML-decoded content until its shape is validated.
+                 *
+                 * @var mixed $document
+                 */
                 $document = Yaml::parse($contents, Yaml::PARSE_OBJECT_FOR_MAP);
             } elseif (function_exists('yaml_parse')) {
-                /** @var mixed $document */
+                /**
+                 * Holds extension-decoded content before shape validation.
+                 *
+                 * @var mixed $document
+                 */
                 $document = yaml_parse($contents);
             } else {
                 throw new ValidationDependencyException(
@@ -195,6 +235,9 @@ final class OpenApiContractValidator
         return $document;
     }
 
+    /**
+     * Reject references that point outside the current specification file.
+     */
     private function assertInternalReferencesOnly(mixed $value): void
     {
         $items = is_object($value)
@@ -220,6 +263,9 @@ final class OpenApiContractValidator
         }
     }
 
+    /**
+     * Map a validator exception to a safe, structured contract error.
+     */
     private function toValidationError(
         Throwable $exception,
         string $direction,

@@ -7,6 +7,14 @@ namespace Fetch\Concerns;
 use Fetch\Support\RequestContext;
 use InvalidArgumentException;
 
+/**
+ * Resolves request URIs from absolute URLs, relative paths, and base URIs.
+ *
+ * The consuming handler provides request options and calls the context-based
+ * resolver so per-request URI state stays isolated during concurrent use.
+ * Validation checks URI syntax and base-URI requirements; it does not block
+ * private or otherwise internal hosts.
+ */
 trait HandlesUris
 {
     /**

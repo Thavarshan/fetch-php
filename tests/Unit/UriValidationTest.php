@@ -6,24 +6,46 @@ use Fetch\Http\ClientHandler;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Checks URI syntax and base-URI validation through handler helpers.
+ */
 class UriValidationTest extends TestCase
 {
+    /**
+     * Handler subclass exposing URI validation helpers.
+     */
     private ClientHandler $handler;
 
+    /**
+     * Creates a handler exposing protected URI validation helpers.
+     */
     protected function setUp(): void
     {
         // Create anonymous class to expose protected methods
-        $this->handler = new class extends ClientHandler {
+        $this->handler = new
+        /**
+         * Exposes protected URI validation helpers for unit tests.
+         */
+        class extends ClientHandler {
+            /**
+             * Exposes URI string validation for direct unit assertions.
+             */
             public function exposeValidateUriString(string $uri): void
             {
                 $this->validateUriString($uri);
             }
 
+            /**
+             * Exposes URI syntax checks for direct unit assertions.
+             */
             public function exposeIsValidUriString(string $uri): bool
             {
                 return $this->isValidUriString($uri);
             }
 
+            /**
+             * Exposes validation of a request URI and its configured base URI.
+             */
             public function exposeValidateUriInputs(
                 string $uri,
                 string $baseUri,

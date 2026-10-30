@@ -11,6 +11,9 @@ use Fetch\Pool\PoolConfiguration;
 use GuzzleHttp\ClientInterface;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Covers pool configuration, host pools, and connection lifecycle utilities.
+ */
 class ConnectionPoolTest extends TestCase
 {
     public function test_pool_configuration_defaults(): void

@@ -9,6 +9,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ValueError;
 
+/**
+ * Checks status metadata, enum coverage, and conversion of unknown codes.
+ */
 class StatusTest extends TestCase
 {
     #[DataProvider('status_cases')]

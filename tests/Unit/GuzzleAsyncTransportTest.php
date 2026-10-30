@@ -18,6 +18,9 @@ use PHPUnit\Framework\TestCase;
 
 use function Matrix\Support\await;
 
+/**
+ * Exercises Guzzle promise bridging, cancellation, and loop-driver behavior.
+ */
 class GuzzleAsyncTransportTest extends TestCase
 {
     public function test_curl_pump_settles_a_pending_request(): void

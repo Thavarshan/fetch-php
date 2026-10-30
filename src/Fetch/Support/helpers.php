@@ -268,6 +268,8 @@ if (! function_exists('request_method')) {
         }
 
         /**
+         * Holds the response or promise returned by fetch().
+         *
          * @var ResponseInterface|PromiseInterface<ResponseInterface> $response
          */
         $response = fetch($url, $options);
