@@ -288,6 +288,12 @@ paths:
     get:
       security:
         - sessionCookie: []
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Secure response

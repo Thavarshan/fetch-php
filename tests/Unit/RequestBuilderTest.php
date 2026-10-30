@@ -7,12 +7,33 @@ namespace Tests\Unit;
 use Fetch\Enum\ContentType;
 use Fetch\Http\RequestBuilder;
 use Fetch\Support\RequestContext;
+use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 
 class RequestBuilderTest extends TestCase
 {
+    public function test_cookie_headers_are_validated_without_auth_options(): void
+    {
+        $builder = new RequestBuilder;
+        $request = new Request('GET', 'https://example.test/secure');
+        $cookies = CookieJar::fromArray(['session' => 'fixture'], 'example.test');
+
+        $prepared = $builder->prepareValidationRequest(
+            $request,
+            ['cookies' => $cookies],
+        );
+
+        self::assertSame('session=fixture', $prepared->getHeaderLine('Cookie'));
+        self::assertFalse($prepared->hasHeader('Authorization'));
+        $otherHost = $builder->prepareValidationRequest(
+            new Request('GET', 'https://other.test/secure'),
+            ['cookies' => $cookies],
+        );
+        self::assertFalse($otherHost->hasHeader('Cookie'));
+    }
+
     public function test_json_body_options_are_built_without_mutating_input(): void
     {
         $builder = new RequestBuilder;

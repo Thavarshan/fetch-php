@@ -136,16 +136,20 @@ final class RequestBuilder
         $request = $this->withQueryOptions($request, $options);
         $auth = $options['auth'] ?? null;
 
-        if (! is_array($auth)
-            || ! isset($auth[0], $auth[1])
-            || ! is_string($auth[0])
-            || ! is_string($auth[1])) {
-            return $request;
-        }
-
-        $authType = isset($auth[2]) && is_string($auth[2]) ? strtolower($auth[2]) : 'basic';
-        if ($authType === 'basic') {
-            $request = $request->withHeader('Authorization', 'Basic '.base64_encode($auth[0].':'.$auth[1]));
+        if (is_array($auth)
+            && isset($auth[0], $auth[1])
+            && is_string($auth[0])
+            && is_string($auth[1])) {
+            $authType = isset($auth[2]) && is_string($auth[2])
+                ? strtolower($auth[2])
+                : 'basic';
+            if ($authType === 'basic') {
+                $credentials = base64_encode($auth[0].':'.$auth[1]);
+                $request = $request->withHeader(
+                    'Authorization',
+                    'Basic '.$credentials,
+                );
+            }
         }
 
         $cookies = $options['cookies'] ?? null;

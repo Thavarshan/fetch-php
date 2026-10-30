@@ -11,7 +11,6 @@ use Fetch\Exceptions\NetworkException;
 use Fetch\Exceptions\RequestException;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
 use Fetch\Interfaces\EventDispatcher;
-use Fetch\Interfaces\LoggerAwareHandler;
 use Fetch\Interfaces\Middleware;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
@@ -57,10 +56,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $this->handler = $handler ?? new ClientHandler(options: $options);
         $this->logger = $logger ?? new NullLogger;
 
-        // If handler supports logging, set the logger
-        if ($this->handler instanceof LoggerAwareHandler) {
-            $this->handler->setLogger($this->logger);
-        }
+        $this->handler->setLogger($this->logger);
     }
 
     /**
@@ -90,10 +86,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     {
         $this->logger = $logger;
 
-        // If handler supports logging, set the logger
-        if ($this->handler instanceof LoggerAwareHandler) {
-            $this->handler->setLogger($logger);
-        }
+        $this->handler->setLogger($logger);
     }
 
     /**

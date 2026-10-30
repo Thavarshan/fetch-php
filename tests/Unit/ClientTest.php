@@ -14,9 +14,33 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class ClientTest extends TestCase
 {
+    public function test_client_forwards_loggers_to_legacy_custom_handlers(): void
+    {
+        $handler = $this->createMock(ClientHandlerInterface::class);
+        $received = [];
+        $handler->expects($this->exactly(2))->method('setLogger')
+            ->willReturnCallback(function (LoggerInterface $logger) use (
+                &$received,
+                $handler,
+            ): ClientHandlerInterface {
+                $received[] = $logger;
+
+                return $handler;
+            });
+        $initial = new NullLogger;
+        $replacement = new NullLogger;
+
+        $client = new Client($handler, logger: $initial);
+        $client->setLogger($replacement);
+
+        self::assertSame([$initial, $replacement], $received);
+    }
+
     private $mockHandler;
 
     private $client;

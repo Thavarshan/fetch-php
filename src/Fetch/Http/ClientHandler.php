@@ -21,7 +21,6 @@ use Fetch\Enum\Method;
 use Fetch\Events\RedirectEvent;
 use Fetch\Interfaces\AsyncTransport;
 use Fetch\Interfaces\ClientHandler as ClientHandlerInterface;
-use Fetch\Interfaces\LoggerAwareHandler;
 use Fetch\Interfaces\Response as ResponseContract;
 use Fetch\Pool\ConnectionPoolManager;
 use Fetch\Support\Defaults;
@@ -46,7 +45,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use React\Promise\PromiseInterface;
 
-class ClientHandler implements ClientHandlerInterface, LoggerAwareHandler
+class ClientHandler implements ClientHandlerInterface
 {
     use ConfiguresRequests;
     use HandlesMocking;
