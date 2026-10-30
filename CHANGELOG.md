@@ -64,6 +64,10 @@ execution and validation in [#127], and documentation and release hardening in
 
 ### Security
 
+- Update the documentation toolchain to stable VitePress 1.6.4 and compatible
+  patched transitive dependencies. The production npm audit is clean; the
+  remaining Vite/esbuild development-server advisories require an upstream
+  stable-toolchain migration tracked in [#131].
 - Partition cached responses by final Authorization and Cookie headers,
   including middleware transformations, Basic-auth options, cookie jars, and
   custom cache keys. Credential partitions use hashes, preventing cached data
@@ -101,6 +105,7 @@ See the [upgrade guide] for code examples and transport migration details.
 [#118]: https://github.com/Thavarshan/fetch-php/pull/118
 [#127]: https://github.com/Thavarshan/fetch-php/pull/127
 [#130]: https://github.com/Thavarshan/fetch-php/pull/130
+[#131]: https://github.com/Thavarshan/fetch-php/issues/131
 [upgrade guide]: https://fetch-php.thavarshan.com/guide/upgrading
 
 ## [v3.8.1] - 2026-07-23

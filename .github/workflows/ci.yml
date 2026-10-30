@@ -49,6 +49,8 @@ jobs:
               - 'pint.json'
             docs:
               - 'docs/**'
+              - 'package.json'
+              - 'package-lock.json'
               - 'tools/check-doc-examples.php'
               - 'tools/check-markdown-links.mjs'
               - 'composer.json'
@@ -246,6 +248,9 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Audit production documentation dependencies
+        run: npm audit --omit=dev --audit-level=moderate
 
       - name: Build documentation
         run: npm run build
