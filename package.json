@@ -13,8 +13,5 @@
         "husky": "^9.1.7",
         "terser": "^5.39.2",
         "vitepress": "^1.6.4"
-    },
-    "dependencies": {
-        "lucide-vue-next": "^0.562.0"
     }
 }

@@ -1,11 +1,13 @@
 import { defineConfig } from 'vitepress';
-import fs from 'fs';
-import path from 'path';
+
+const siteUrl = 'https://fetch-php.thavarshan.com/';
+const siteTitle = 'FetchPHP';
+const siteDescription =
+    'A Guzzle-based HTTP client with a familiar fetch API for PHP.';
 
 export default defineConfig({
-    title: 'Fetch PHP',
-    description:
-        'Guides and API reference for the Guzzle-based Fetch PHP HTTP client.',
+    title: siteTitle,
+    description: siteDescription,
     base: '/',
     srcExclude: ['ai/**'],
     sitemap: {
@@ -14,48 +16,101 @@ export default defineConfig({
     lastUpdated: true,
     head: [
         ['link', { rel: 'icon', href: '/favicon.ico' }],
-        ['meta', { name: 'author', content: 'Jerome Thayananthajothy' }],
-        [
-            'meta',
-            {
-                property: 'og:title',
-                content: 'Fetch PHP documentation',
-            },
-        ],
-        [
-            'meta',
-            {
-                property: 'og:description',
-                content: 'Reference and guides for the Fetch PHP HTTP client.',
-            },
-        ],
+        ['link', { rel: 'manifest', href: '/site.webmanifest' }],
+        ['link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }],
         [
             'link',
-            { rel: 'canonical', href: 'https://fetch-php.thavarshan.com' },
+            {
+                rel: 'preload',
+                href: '/fonts/ibm-plex-sans-latin.woff2',
+                as: 'font',
+                type: 'font/woff2',
+                crossorigin: '',
+            },
         ],
+        ['meta', { name: 'author', content: 'Jerome Thayananthajothy' }],
+        ['meta', { name: 'twitter:card', content: 'summary' }],
     ],
-    titleTemplate: ':title | Fetch PHP',
+    transformPageData(pageData) {
+        const canonicalPath = pageData.relativePath
+            .replace(/(^|\/)index\.md$/, '$1')
+            .replace(/\.md$/, '');
+        const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
+        const existingHead = pageData.frontmatter.head ?? [];
+
+        pageData.frontmatter.head = [
+            ...existingHead.filter(([tag, attrs]) => {
+                if (tag === 'link' && attrs.rel === 'canonical') {
+                    return false;
+                }
+
+                return !(
+                    tag === 'meta' &&
+                    ['og:title', 'og:description', 'og:url'].includes(
+                        attrs.property,
+                    )
+                );
+            }),
+            ['link', { rel: 'canonical', href: canonicalUrl }],
+            [
+                'meta',
+                {
+                    property: 'og:site_name',
+                    content: siteTitle,
+                },
+            ],
+            [
+                'meta',
+                {
+                    property: 'og:type',
+                    content: 'website',
+                },
+            ],
+            [
+                'meta',
+                {
+                    property: 'og:title',
+                    content: pageData.title || siteTitle,
+                },
+            ],
+            [
+                'meta',
+                {
+                    property: 'og:description',
+                    content: pageData.description || siteDescription,
+                },
+            ],
+            ['meta', { property: 'og:url', content: canonicalUrl }],
+            [
+                'meta',
+                {
+                    name: 'twitter:title',
+                    content: pageData.title || siteTitle,
+                },
+            ],
+            [
+                'meta',
+                {
+                    name: 'twitter:description',
+                    content: pageData.description || siteDescription,
+                },
+            ],
+        ];
+    },
+    titleTemplate: ':title | FetchPHP',
     cleanUrls: true,
     themeConfig: {
-        logo: '/logo.png',
-        siteTitle: 'Fetch PHP',
+        siteTitle,
         nav: [
-            { text: 'Home', link: '/' },
             { text: 'Guide', link: '/guide/' },
-            { text: 'API Reference', link: '/api/' },
+            { text: 'API', link: '/api/' },
             { text: 'Examples', link: '/examples/' },
-            {
-                text: 'Changelog',
-                link: [
-                    'https://github.com/Thavarshan/fetch-php/blob/main/',
-                    'CHANGELOG.md',
-                ].join(''),
-            },
         ],
         sidebar: {
             '/guide/': [
                 {
                     text: 'Getting started',
+                    collapsible: true,
                     items: [
                         { text: 'Overview', link: '/guide/' },
                         { text: 'Installation', link: '/guide/installation' },
@@ -63,7 +118,8 @@ export default defineConfig({
                     ],
                 },
                 {
-                    text: 'Core usage',
+                    text: 'Requests and responses',
+                    collapsible: true,
                     items: [
                         {
                             text: 'Making requests',
@@ -89,7 +145,8 @@ export default defineConfig({
                     ],
                 },
                 {
-                    text: 'Advanced usage',
+                    text: 'Async and streaming',
+                    collapsible: true,
                     items: [
                         {
                             text: 'Async and Matrix',
@@ -99,12 +156,24 @@ export default defineConfig({
                             text: 'Promise operations',
                             link: '/guide/promise-operations',
                         },
+                        { text: 'Streaming and SSE', link: '/guide/streaming' },
+                    ],
+                },
+                {
+                    text: 'Request policies',
+                    collapsible: true,
+                    items: [
                         { text: 'Retries', link: '/guide/retry-handling' },
                         { text: 'HTTP caching', link: '/guide/http-caching' },
                         { text: 'Validation', link: '/guide/validation' },
                         { text: 'Middleware', link: '/guide/middleware' },
                         { text: 'Lifecycle events', link: '/guide/events' },
-                        { text: 'Streaming and SSE', link: '/guide/streaming' },
+                    ],
+                },
+                {
+                    text: 'Integration and operations',
+                    collapsible: true,
+                    items: [
                         { text: 'File uploads', link: '/guide/file-uploads' },
                         {
                             text: 'Connection pool and HTTP/2',
@@ -131,7 +200,8 @@ export default defineConfig({
             ],
             '/api/': [
                 {
-                    text: 'Reference',
+                    text: 'Functions',
+                    collapsible: true,
                     items: [
                         { text: 'Overview', link: '/api/' },
                         { text: 'Global functions', link: '/api/fetch' },
@@ -144,6 +214,7 @@ export default defineConfig({
                 },
                 {
                     text: 'Clients and messages',
+                    collapsible: true,
                     items: [
                         { text: 'Client', link: '/api/client' },
                         { text: 'ClientHandler', link: '/api/client-handler' },
@@ -154,6 +225,7 @@ export default defineConfig({
                 },
                 {
                     text: 'Contracts and support',
+                    collapsible: true,
                     items: [
                         {
                             text: 'Middleware and events',
@@ -165,6 +237,7 @@ export default defineConfig({
                 },
                 {
                     text: 'Enums',
+                    collapsible: true,
                     items: [
                         { text: 'Method', link: '/api/method-enum' },
                         { text: 'ContentType', link: '/api/content-type-enum' },
@@ -175,6 +248,7 @@ export default defineConfig({
             '/examples/': [
                 {
                     text: 'Examples',
+                    collapsible: true,
                     items: [
                         { text: 'Overview', link: '/examples/' },
                         {
@@ -208,6 +282,10 @@ export default defineConfig({
             message: 'Released under the MIT License.',
             copyright: 'Copyright © 2024-present Jerome Thayananthajothy',
         },
+        outline: {
+            level: [2, 3],
+            label: 'On this page',
+        },
         search: {
             provider: 'local',
         },
@@ -222,21 +300,18 @@ export default defineConfig({
                 'https://github.com/Thavarshan/fetch-php/edit/main/docs/:path',
             text: 'Edit this page on GitHub',
         },
+        docFooter: {
+            prev: 'Previous page',
+            next: 'Next page',
+        },
     },
-    buildEnd: async ({ outDir }) => {
-        const robotsTxt = [
-            'User-agent: *',
-            'Allow: /',
-            'Sitemap: https://fetch-php.thavarshan.com/sitemap.xml',
-        ].join('\n');
-
-        fs.writeFileSync(path.join(outDir, 'robots.txt'), robotsTxt);
+    markdown: {
+        theme: {
+            light: 'github-light',
+            dark: 'github-dark',
+        },
     },
     vite: {
-        build: {
-            minify: true,
-            cssMinify: true,
-        },
         server: {
             fs: {
                 strict: true,

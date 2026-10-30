@@ -17,8 +17,9 @@ configurable handler.
 - `fetch_client()` returns the shared `Fetch\Http\Client` facade. It implements
   PSR-18 and also has convenience methods such as `get()` and `post()`.
 - `$client->getHandler()` returns the `Fetch\Interfaces\ClientHandler` contract
-  for handler-only configuration such as `withCache()`, `retry()`, and
-  `withConnectionPool()`.
+  for handler-only configuration such as `withCache()` and `retry()`.
+- The pool and DNS APIs expose configuration, but are not connected to outgoing
+  request transport. See [connection pooling](/guide/connection-pooling).
 - `Fetch\Http\ClientHandler::create()` creates an independent handler;
   `createWithBaseUri()` and `createWithClient()` are factories.
 - `Fetch\Http\Client::createWithBaseUri()` creates a client facade with a
