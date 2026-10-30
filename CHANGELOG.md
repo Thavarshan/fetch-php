@@ -5,7 +5,8 @@
 ## [v4.0.1] - 2026-10-30
 
 Release-automation patch. PHP runtime behavior and the public API are unchanged
-from 4.0.0. For upgrades from 3.x, follow the [upgrade guide].
+from 4.0.0. For upgrades from 3.x, follow the
+[upgrade guide](https://fetch-php.thavarshan.com/guide/upgrading).
 
 ### Fixed
 
