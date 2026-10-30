@@ -10,6 +10,8 @@ use Fetch\Interfaces\AsyncTransport;
 use Fetch\Interfaces\Response as FetchResponseInterface;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RetryStrategy;
+use Fetch\Validation\ValidationConfigurationException;
+use Fetch\Validation\ValidationDependencyException;
 use Fetch\Validation\ValidationException;
 use Fetch\Validation\ValidationManager;
 use Fetch\Validation\ValidationPolicy;
@@ -844,7 +846,9 @@ final class RequestCoordinator
                 if (
                     $exception instanceof AsyncTransportException ||
                     $exception instanceof CancellationException ||
-                    $exception instanceof ValidationException
+                    $exception instanceof ValidationException ||
+                    $exception instanceof ValidationDependencyException ||
+                    $exception instanceof ValidationConfigurationException
                 ) {
                     throw $exception;
                 }

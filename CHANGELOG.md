@@ -63,6 +63,11 @@ execution and validation in [#127], and documentation and release hardening in
   the same query and materialized payload that the transport sends.
 - Run the actual offline PHPUnit suite from the commit hook instead of calling
   a nonexistent Laravel `artisan` command and masking its failure.
+- Preserve validation dependency/configuration exception types across sync and
+  async response paths. Keep syntax-check temporary files outside the project
+  so documentation checks and the width checker can run concurrently.
+- Include `composer.json` in release archives and verify essential package
+  files before publication.
 
 ### Security
 

@@ -16,6 +16,7 @@ use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions;
 use Fetch\Validation\ValidationConfigurationException;
+use Fetch\Validation\ValidationDependencyException;
 use Fetch\Validation\ValidationException;
 use Matrix\Exceptions\CancellationException;
 use Psr\Http\Message\RequestInterface;
@@ -554,6 +555,8 @@ trait PerformsHttpRequests
         if (
             $e instanceof AsyncTransportException ||
             $e instanceof ValidationException ||
+            $e instanceof ValidationDependencyException ||
+            $e instanceof ValidationConfigurationException ||
             $e instanceof CancellationException
         ) {
             return $e;

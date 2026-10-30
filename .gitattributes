@@ -22,8 +22,7 @@
 /tests export-ignore
 /.editorconfig export-ignore
 
-# Composer files
-/composer.json export-ignore
+# Keep the package manifest in archives; exclude the local generated lock.
 /composer.lock export-ignore
 
 # Other common configuration files

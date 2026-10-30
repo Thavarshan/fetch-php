@@ -14,6 +14,9 @@ use Fetch\Testing\MockServer;
 use Fetch\Validation\RequestValidationException;
 use Fetch\Validation\ResponseValidationException;
 use Fetch\Validation\ValidationConfigurationException;
+use Fetch\Validation\ValidationDependencyException;
+use Fetch\Validation\ValidationManager;
+use Fetch\Validation\ValidatorInterface;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Handler\MockHandler;
@@ -34,6 +37,40 @@ use function Matrix\Support\await;
 
 final class ValidationLifecycleTest extends TestCase
 {
+    public function test_adapter_errors_preserve_their_types(): void
+    {
+        foreach ([false, true] as $async) {
+            foreach ([
+                new ValidationDependencyException('Missing fixture adapter.'),
+                new ValidationConfigurationException('Invalid fixture schema.'),
+            ] as $failure) {
+                MockServer::fake([
+                    'GET https://example.test/schema' =>
+                        MockResponse::json(['id' => 42]),
+                ]);
+                $validator = $this->createMock(ValidatorInterface::class);
+                $validator->method('validate')->willThrowException($failure);
+                $handler = new ClientHandler(
+                    validationManager: new ValidationManager($validator),
+                );
+                $handler->withResponseSchema(['type' => 'object'])
+                    ->async($async);
+                $caught = null;
+
+                try {
+                    $response = $handler->get('https://example.test/schema');
+                    if ($response instanceof PromiseInterface) {
+                        await($response);
+                    }
+                } catch (\Throwable $exception) {
+                    $caught = $exception;
+                }
+
+                self::assertSame($failure, $caught);
+            }
+        }
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
