@@ -1,35 +1,46 @@
 ---
-title: Fetch PHP
-description: Guides and API reference for the Fetch PHP HTTP client.
+layout: home
+markdownStyles: false
+title: HTTP requests, the PHP way.
+description: A Guzzle-based HTTP client with a familiar fetch API for PHP 8.3+.
+hero:
+  text: HTTP requests, the PHP way.
+  tagline: >-
+    A familiar fetch-style API, built on Guzzle and designed for modern PHP.
+  actions:
+    - theme: brand
+      text: Get started
+      link: /guide/quickstart
+    - theme: alt
+      text: GitHub
+      link: https://github.com/Thavarshan/fetch-php
 ---
 
-# Fetch PHP
+## A familiar request API
 
-Fetch PHP is a Guzzle-based HTTP client for PHP 8.3+. This site explains its
-helper functions, client and handler APIs, request and response behavior, and
-optional facilities such as retries, caching, middleware, streaming, and Matrix
-promises.
+Make a request with the global helper, then work with a typed response. Requests
+are synchronous by default; async execution is available when you need it.
 
-> Buffered async requests use cURL multi on the ReactPHP event loop. Custom
-> clients need an explicit async transport. See
-> [Asynchronous requests](/guide/async-requests) for configuration and limits.
+```php
+$response = fetch('https://api.example.test/users');
 
-## Start here
+if ($response->successful()) {
+    $users = $response->json();
+}
+```
 
-- [Install the package](/guide/installation)
-- [Make your first request](/guide/quickstart)
-- [Choose a client entry point](/guide/making-requests)
-- [Read and inspect responses](/guide/working-with-responses)
+## Install with Composer
 
-## Guides
+```sh
+composer require jerome/fetch-php
+```
 
-- [Requests and options](/guide/making-requests)
-- [Authentication](/guide/authentication)
-- [Errors and status codes](/guide/error-handling)
-- [Retry behavior](/guide/retry-handling)
-- [Promises and Matrix](/guide/async-requests)
-- [Schema and contract validation](/guide/validation)
-- [Streaming and Server-Sent Events](/guide/streaming)
-- [Testing offline](/guide/testing)
+Use verb helpers or a PSR-18 client, configure requests fluently, and add
+retries, RFC 7234 caching, middleware, or opt-in schema validation as your
+application needs them. Buffered async requests use Matrix with the ReactPHP
+event loop and cURL multi transport.
 
-Browse the [complete guide index](/guide/) or the [API reference](/api/).
+Start with the [quickstart](/guide/quickstart), browse the [guides](/guide/),
+or go directly to the [API reference](/api/). Read the
+[changelog](https://github.com/Thavarshan/fetch-php/blob/main/CHANGELOG.md)
+for release notes.

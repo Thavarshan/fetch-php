@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Redesign the documentation as a reading-first VitePress site with a
+  code-led homepage, local fonts, page-specific metadata, and the native
+  navigation and code-copy controls. Correct the pool transport limitation and
+  use deterministic Node 24 builds on Netlify and in documentation CI.
+
 ## [v4.0.1] - 2026-10-30
 
 Release-automation patch. PHP runtime behavior and the public API are unchanged
