@@ -181,11 +181,21 @@ class ClientHandler implements ClientHandlerInterface
         // Track only caller-supplied Content-Type values. Inferred values are
         // replaced when a later body setter selects a different format.
         $defaultOptions = self::getDefaultOptions();
-        $this->explicitContentTypeOption =
-            FetchRequestOptions::getExplicitContentTypeOption($this->options) ??
-            FetchRequestOptions::getExplicitContentTypeOption(
-                $defaultOptions,
-            );
+        $hasConstructorContentTypeHeader = FetchRequestOptions::hasHeader(
+            $this->options['headers'] ?? [],
+            'Content-Type',
+        );
+        if (array_key_exists('content_type', $this->options)) {
+            $this->explicitContentTypeOption =
+                FetchRequestOptions::getExplicitContentTypeOption(
+                    $this->options,
+                );
+        } elseif (! $hasConstructorContentTypeHeader) {
+            $this->explicitContentTypeOption =
+                FetchRequestOptions::getExplicitContentTypeOption(
+                    $defaultOptions,
+                );
+        }
         $this->explicitContentType =
             FetchRequestOptions::getExplicitContentType($this->options) ??
             FetchRequestOptions::getExplicitContentType($defaultOptions);

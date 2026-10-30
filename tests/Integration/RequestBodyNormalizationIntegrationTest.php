@@ -434,6 +434,36 @@ final class RequestBodyNormalizationIntegrationTest extends TestCase
         );
     }
 
+    public function test_constructor_header_overrides_default_type_option(
+    ): void {
+        ClientHandler::setDefaultOptions([
+            'content_type' => ContentType::FORM_URLENCODED,
+        ]);
+
+        $history = [];
+        $stack = HandlerStack::create(new MockHandler([
+            new GuzzleResponse(200),
+        ]));
+        $stack->push(Middleware::history($history));
+        $handler = new ClientHandler(
+            new GuzzleClient(['handler' => $stack]),
+            ['headers' => ['Content-Type' => 'text/plain']],
+        );
+
+        $handler
+            ->withBody(['name' => 'Ada'], ContentType::JSON)
+            ->sendRequest(Method::POST, 'https://example.test/local-header');
+
+        self::assertSame(
+            '{"name":"Ada"}',
+            (string) $history[0]['request']->getBody(),
+        );
+        self::assertSame(
+            'text/plain',
+            $history[0]['request']->getHeaderLine('Content-Type'),
+        );
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $history
      */
