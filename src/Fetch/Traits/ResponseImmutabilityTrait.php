@@ -10,7 +10,8 @@ use Psr\Http\Message\StreamInterface;
 trait ResponseImmutabilityTrait
 {
     /**
-     * Return an instance with the specified status code and, optionally, reason phrase.
+     * Return an instance with the specified status code and, optionally, reason
+     *     phrase.
      */
     public function withStatus($code, $reasonPhrase = ''): static
     {
@@ -18,7 +19,8 @@ trait ResponseImmutabilityTrait
     }
 
     /**
-     * Return an instance with the specified header appended with the given value.
+     * Return an instance with the specified header appended with the given
+     *     value.
      */
     public function withAddedHeader($name, $value): static
     {
@@ -34,7 +36,8 @@ trait ResponseImmutabilityTrait
     }
 
     /**
-     * Return an instance with the provided value replacing the specified header.
+     * Return an instance with the provided value replacing the specified
+     *     header.
      */
     public function withHeader($name, $value): static
     {
@@ -75,7 +78,7 @@ trait ResponseImmutabilityTrait
             $new->getHeaders(),
             (string) $new->getBody(),
             $new->getProtocolVersion(),
-            $new->getReasonPhrase()
+            $new->getReasonPhrase(),
         );
     }
 }

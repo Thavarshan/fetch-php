@@ -23,8 +23,7 @@ class ManagesPromisesTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->handler = new class extends ClientHandler
-        {
+        $this->handler = new class extends ClientHandler {
             // Expose the sendAsync method for testing
             public function exposeSendAsync(): PromiseInterface
             {
@@ -106,7 +105,7 @@ class ManagesPromisesTest extends TestCase
         $this->assertEquals('quick result', $result);
     }
 
-    public function test_timeout_promise_uses_a_matrix_delay_and_preserves_legacy_exception(): void
+    public function test_timeout_preserves_legacy_exception(): void
     {
         $reflection = new ReflectionClass($this->handler);
         $method = $reflection->getMethod('createTimeoutPromise');
@@ -121,11 +120,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_all_with_promises(): void
     {
-        $promises = [
-            resolve('first'),
-            resolve('second'),
-            resolve('third'),
-        ];
+        $promises = [resolve('first'), resolve('second'), resolve('third')];
 
         $combinedPromise = $this->handler->all($promises);
         $this->assertInstanceOf(PromiseInterface::class, $combinedPromise);
@@ -136,11 +131,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_all_with_invalid_promises(): void
     {
-        $promises = [
-            resolve('first'),
-            'not a promise',
-            resolve('third'),
-        ];
+        $promises = [resolve('first'), 'not a promise', resolve('third')];
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Item at index 1 is not a promise');
@@ -228,8 +219,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_catch_method(): void
     {
-        $mockHandler = new class extends ClientHandler
-        {
+        $mockHandler = new class extends ClientHandler {
             protected function sendAsync(): PromiseInterface
             {
                 return reject(new Exception('test error'));
@@ -298,37 +288,57 @@ class ManagesPromisesTest extends TestCase
     public function test_map_with_items_under_concurrency_limit(): void
     {
         $items = [1, 2, 3];
-        $mapPromise = $this->handler->map($items, function ($item) {
-            return resolve($item * 2);
-        }, 5); // Concurrency higher than item count
+        $mapPromise = $this->handler->map(
+            $items,
+            function ($item) {
+                return resolve($item * 2);
+            },
+            5,
+        ); // Concurrency higher than item count
 
         $results = await($mapPromise);
         $this->assertEquals([2, 4, 6], $results);
     }
 
-    public function test_map_preserves_keys_and_passes_value_then_key_to_callbacks(): void
+    public function test_map_preserves_keys_and_callback_arguments(): void
     {
-        $results = await($this->handler->map(
-            ['first' => 'Ada', 7 => 'Grace'],
-            static fn (string $value, int|string $key): PromiseInterface => resolve($key.':'.$value),
-            1,
-        ));
+        $results = await(
+            $this->handler->map(
+                ['first' => 'Ada', 7 => 'Grace'],
+                static fn (
+                    string $value,
+                    int|string $key,
+                ): PromiseInterface => resolve($key.':'.$value),
+                1,
+            ),
+        );
 
         self::assertSame(['first' => 'first:Ada', 7 => '7:Grace'], $results);
     }
 
-    public function test_map_cancellation_stops_queued_callbacks_and_cancels_active_work(): void
+    public function test_map_cancellation_stops_queued_and_active_work(): void
     {
         $started = [];
         $activeCancelled = false;
-        $mapped = $this->handler->map(['first', 'second'], function (string $value) use (&$started, &$activeCancelled): PromiseInterface {
-            $started[] = $value;
+        $mapped = $this->handler->map(
+            ['first', 'second'],
+            function (string $value) use (
+                &$started,
+                &$activeCancelled,
+            ): PromiseInterface {
+                $started[] = $value;
 
-            return (new Deferred(static function () use (&$activeCancelled): void {
-                $activeCancelled = true;
-            }))->promise();
-        }, 1);
-        $observed = $mapped->catch(static fn (\Throwable $error): \Throwable => $error);
+                return (new Deferred(static function () use (
+                    &$activeCancelled,
+                ): void {
+                    $activeCancelled = true;
+                }))->promise();
+            },
+            1,
+        );
+        $observed = $mapped->catch(
+            static fn (\Throwable $error): \Throwable => $error,
+        );
 
         Loop::futureTick(static fn () => $mapped->cancel());
         $reason = await($observed);
@@ -345,9 +355,13 @@ class ManagesPromisesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Concurrency must be greater than 0');
 
-        $this->handler->map($items, function ($item) {
-            return resolve($item);
-        }, 0); // Invalid concurrency
+        $this->handler->map(
+            $items,
+            function ($item) {
+                return resolve($item);
+            },
+            0,
+        ); // Invalid concurrency
     }
 
     public function test_map_rejects_concurrency_above_safe_limit(): void
@@ -355,16 +369,26 @@ class ManagesPromisesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('exceeds the maximum allowed (200)');
 
-        $this->handler->map([1], static fn ($item) => resolve($item), PHP_INT_MAX);
+        $this->handler->map(
+            [1],
+            static fn ($item) => resolve($item),
+            PHP_INT_MAX,
+        );
     }
 
-    public function test_matrix_cancellation_reaches_active_mapped_promises(): void
+    public function test_cancellation_reaches_active_mapped_promises(): void
     {
         $sourceCancelled = false;
-        $deferred = new Deferred(static function () use (&$sourceCancelled): void {
+        $deferred = new Deferred(static function () use (
+            &$sourceCancelled,
+        ): void {
             $sourceCancelled = true;
         });
-        $mapped = $this->handler->map([1], static fn () => $deferred->promise(), 1);
+        $mapped = $this->handler->map(
+            [1],
+            static fn () => $deferred->promise(),
+            1,
+        );
         $observed = $mapped->catch(static fn (\Throwable $error) => $error);
 
         Loop::futureTick(static fn () => $mapped->cancel());
@@ -377,10 +401,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_validate_promises(): void
     {
-        $promises = [
-            resolve('first'),
-            resolve('second'),
-        ];
+        $promises = [resolve('first'), resolve('second')];
 
         // Use reflection to access protected method
         $reflection = new ReflectionClass($this->handler);
@@ -396,11 +417,7 @@ class ManagesPromisesTest extends TestCase
 
     public function test_validate_promises_with_invalid_item(): void
     {
-        $promises = [
-            resolve('first'),
-            'not a promise',
-            resolve('third'),
-        ];
+        $promises = [resolve('first'), 'not a promise', resolve('third')];
 
         // Use reflection to access protected method
         $reflection = new ReflectionClass($this->handler);

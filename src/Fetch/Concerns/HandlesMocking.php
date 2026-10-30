@@ -17,15 +17,19 @@ use RuntimeException;
 trait HandlesMocking
 {
     /**
-     * Check if a request should be mocked and return the mock response if applicable.
+     * Check if a request should be mocked and return the mock response if
+     * applicable.
      *
      * @param  string  $method  The HTTP method
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The request options
      * @return ResponseInterface|null The mock response or null if not mocked
      */
-    protected function handleMockRequest(string $method, string $uri, array $options): ?ResponseInterface
-    {
+    protected function handleMockRequest(
+        string $method,
+        string $uri,
+        array $options,
+    ): ?ResponseInterface {
         $mockServer = MockServer::getInstance();
         if (! $mockServer->isActive()) {
             return null;
@@ -64,8 +68,11 @@ trait HandlesMocking
      * @param  string  $uri  The full URI
      * @param  array<string, mixed>  $options  The request options
      */
-    protected function createPsrRequest(string $method, string $uri, array $options): RequestInterface
-    {
+    protected function createPsrRequest(
+        string $method,
+        string $uri,
+        array $options,
+    ): RequestInterface {
         $headers = $options['headers'] ?? [];
         $body = null;
 
@@ -77,11 +84,14 @@ trait HandlesMocking
             $body = Utils::streamFor(http_build_query($options['form_params']));
             $headers['Content-Type'] = 'application/x-www-form-urlencoded';
         } elseif (isset($options['body'])) {
-            $body = Utils::streamFor($this->copyBodyForMocking($options['body']));
+            $body = Utils::streamFor(
+                $this->copyBodyForMocking($options['body']),
+            );
         } elseif (isset($options['multipart'])) {
             // For multipart, we'll create a simple representation
             // In a real scenario, Guzzle handles the complex multipart encoding
-            $body = Utils::streamFor(''); // Empty for now, as multipart is complex
+            // Multipart matching uses an empty representative body.
+            $body = Utils::streamFor('');
         }
 
         // Append query parameters to URI if present
@@ -116,10 +126,15 @@ trait HandlesMocking
         $position = $seekable ? ftell($body) : false;
         $contents = stream_get_contents($body);
         if ($seekable && $position !== false && fseek($body, $position) !== 0) {
-            throw new RuntimeException('Unable to restore the request body stream position for mock matching.');
+            throw new RuntimeException(
+                'Unable to restore the request body stream position for '
+                    .'mock matching.',
+            );
         }
         if ($contents === false) {
-            throw new RuntimeException('Unable to read the request body stream for mock matching.');
+            throw new RuntimeException(
+                'Unable to read the request body stream for mock matching.',
+            );
         }
 
         return $contents;

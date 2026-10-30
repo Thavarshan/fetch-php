@@ -27,32 +27,58 @@ final class AsyncRequestExecutor
         ?callable $onRetry = null,
         ?callable $onRequest = null,
     ): PromiseInterface {
-        return $retryStrategy->executeAsync(function () use ($method, $uri, $options, $retryStrategy, $onRequest): PromiseInterface {
+        return $retryStrategy->executeAsync(function () use (
+            $method,
+            $uri,
+            $options,
+            $retryStrategy,
+            $onRequest,
+        ): PromiseInterface {
             if ($onRequest !== null) {
                 $onRequest();
             }
 
             try {
-                $promise = $this->transport->requestAsync($method, $uri, $options);
+                $promise = $this->transport->requestAsync(
+                    $method,
+                    $uri,
+                    $options,
+                );
             } catch (Throwable $exception) {
                 if ($exception instanceof GuzzleException) {
-                    throw RequestExecutor::normalizeGuzzleException($exception, $method, $uri, $options);
+                    throw RequestExecutor::normalizeGuzzleException(
+                        $exception,
+                        $method,
+                        $uri,
+                        $options,
+                    );
                 }
 
                 throw $exception;
             }
 
             return $promise
-                ->then(fn ($response) => RequestExecutor::normalizeResponse(
-                    $response,
-                    $retryStrategy,
+                ->then(
+                    fn ($response) => RequestExecutor::normalizeResponse(
+                        $response,
+                        $retryStrategy,
+                        $method,
+                        $uri,
+                        $options,
+                    ),
+                )
+                ->catch(function (Throwable $exception) use (
                     $method,
                     $uri,
                     $options,
-                ))
-                ->catch(function (Throwable $exception) use ($method, $uri, $options): never {
+                ): never {
                     if ($exception instanceof GuzzleException) {
-                        throw RequestExecutor::normalizeGuzzleException($exception, $method, $uri, $options);
+                        throw RequestExecutor::normalizeGuzzleException(
+                            $exception,
+                            $method,
+                            $uri,
+                            $options,
+                        );
                     }
 
                     throw $exception;

@@ -19,7 +19,11 @@ interface EventAware
      *
      * @param  callable  $listener  Receives a {@see FetchEvent} subclass.
      */
-    public function on(string $eventName, callable $listener, int $priority = 0): self;
+    public function on(
+        string $eventName,
+        callable $listener,
+        int $priority = 0,
+    ): self;
 
     /**
      * Register multiple listeners keyed by event name or hook alias.

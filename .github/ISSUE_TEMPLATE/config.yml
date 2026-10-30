@@ -10,7 +10,8 @@ contact_links:
 
   - name: 🐛 Security Issue
     url: https://github.com/Thavarshan/fetch-php/security
-    about: Please report security vulnerabilities privately through GitHub Security
+    about:
+      Please report security vulnerabilities privately through GitHub Security
 
   - name: 📧 Private Contact
     url: mailto:tjthavarshan@gmail.com

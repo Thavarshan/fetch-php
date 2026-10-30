@@ -26,10 +26,15 @@ final class LoggingMiddleware implements Middleware
         private readonly string $correlationHeader = 'X-Correlation-ID',
     ) {}
 
-    public function handle(RequestInterface $request, callable $next): ResponseInterface|PromiseInterface
-    {
+    public function handle(
+        RequestInterface $request,
+        callable $next,
+    ): ResponseInterface|PromiseInterface {
         $correlationId = $this->generateCorrelationId();
-        $request = $request->withHeader($this->correlationHeader, $correlationId);
+        $request = $request->withHeader(
+            $this->correlationHeader,
+            $correlationId,
+        );
 
         $start = microtime(true);
 
@@ -42,7 +47,10 @@ final class LoggingMiddleware implements Middleware
         $result = $next($request);
 
         if ($result instanceof PromiseInterface) {
-            return $result->then(function (ResponseInterface $response) use ($correlationId, $start): ResponseInterface {
+            return $result->then(function (ResponseInterface $response) use (
+                $correlationId,
+                $start,
+            ): ResponseInterface {
                 $this->logResponse($response, $correlationId, $start);
 
                 return $response;
@@ -54,8 +62,11 @@ final class LoggingMiddleware implements Middleware
         return $result;
     }
 
-    private function logResponse(ResponseInterface $response, string $correlationId, float $start): void
-    {
+    private function logResponse(
+        ResponseInterface $response,
+        string $correlationId,
+        float $start,
+    ): void {
         $this->logger->log($this->level, 'HTTP request completed', [
             'correlation_id' => $correlationId,
             'status_code' => $response->getStatusCode(),

@@ -1,6 +1,11 @@
 ---
 name: fetch-php-documentation-sync
-description: Keep Fetch PHP documentation aligned with the code — update the VitePress guide/API pages and README, verify examples against the real public API and CODE_MAP.md, fix stale snippets, and run the docs build. Use when a change alters behavior, options, or the public API, or when auditing docs for drift.
+description:
+    Keep Fetch PHP documentation aligned with the code — update the VitePress
+    guide/API pages and README, verify examples against the real public API and
+    CODE_MAP.md, fix stale snippets, and run the docs build. Use when a change
+    alters behavior, options, or the public API, or when auditing docs for
+    drift.
 ---
 
 # Fetch PHP documentation sync
@@ -27,26 +32,26 @@ auditing existing docs for drift.
 
 1. **Find every doc touching the changed surface**:
 
-   ```bash
-   grep -rn "methodOrOption" docs/ README.md
-   ```
+    ```bash
+    grep -rn "methodOrOption" docs/ README.md
+    ```
 
 2. **Verify each example against the real API** — signatures, option names,
    return types, and enum cases must match `src/Fetch` and `CODE_MAP.md`. Common
    drift: renamed options, changed defaults (retry/timeout/redirect/cache),
    helper signatures (`fetch`, `fetch_stream`, `fetch_sse`, verb helpers), and
    streaming/SSE consumption patterns.
-3. **Update `CODE_MAP.md`** if the public surface itself changed — it is the
-   map other docs and tests rely on.
+3. **Update `CODE_MAP.md`** if the public surface itself changed — it is the map
+   other docs and tests rely on.
 4. **Keep examples safe**: no real secrets/tokens/hosts; show TLS-on and
    redaction-aware patterns; don't demonstrate `verify => false` as a default.
 5. **Add a `CHANGELOG.md`** entry for user-visible changes.
 6. **Build**:
 
-   ```bash
-   npm run build
-   rm -rf docs/.vitepress/.temp   # remove generated temp before committing
-   ```
+    ```bash
+    npm run build
+    rm -rf docs/.vitepress/.temp   # remove generated temp before committing
+    ```
 
 ## Verification
 

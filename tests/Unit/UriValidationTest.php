@@ -13,8 +13,7 @@ class UriValidationTest extends TestCase
     protected function setUp(): void
     {
         // Create anonymous class to expose protected methods
-        $this->handler = new class extends ClientHandler
-        {
+        $this->handler = new class extends ClientHandler {
             public function exposeValidateUriString(string $uri): void
             {
                 $this->validateUriString($uri);
@@ -25,8 +24,10 @@ class UriValidationTest extends TestCase
                 return $this->isValidUriString($uri);
             }
 
-            public function exposeValidateUriInputs(string $uri, string $baseUri): void
-            {
+            public function exposeValidateUriInputs(
+                string $uri,
+                string $baseUri,
+            ): void {
                 $this->validateUriInputs($uri, $baseUri);
             }
         };
@@ -38,8 +39,12 @@ class UriValidationTest extends TestCase
         $this->handler->exposeValidateUriString('https://example.com');
         $this->handler->exposeValidateUriString('/api/users');
         $this->handler->exposeValidateUriString('/api/users?page=1');
-        $this->handler->exposeValidateUriString('http://example.com/path/to/resource');
-        $this->handler->exposeValidateUriString('/path/with-dashes_and_underscores');
+        $this->handler->exposeValidateUriString(
+            'http://example.com/path/to/resource',
+        );
+        $this->handler->exposeValidateUriString(
+            '/path/with-dashes_and_underscores',
+        );
 
         $this->assertTrue(true); // Assertion to confirm no exception
     }
@@ -63,12 +68,14 @@ class UriValidationTest extends TestCase
     public function test_validate_uri_string_rejects_uri_with_spaces(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('URI cannot contain whitespace. Did you mean to URL-encode it?');
+        $this->expectExceptionMessage(
+            'URI cannot contain whitespace. Did you mean to URL-encode it?',
+        );
 
         $this->handler->exposeValidateUriString('/api/users with spaces');
     }
 
-    public function test_validate_uri_string_rejects_uri_with_tab_characters(): void
+    public function test_validate_uri_rejects_tab_characters(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('URI cannot contain whitespace');
@@ -86,20 +93,28 @@ class UriValidationTest extends TestCase
 
     public function test_is_valid_uri_string_returns_true_for_valid_uris(): void
     {
-        $this->assertTrue($this->handler->exposeIsValidUriString('https://example.com'));
+        $this->assertTrue(
+            $this->handler->exposeIsValidUriString('https://example.com'),
+        );
         $this->assertTrue($this->handler->exposeIsValidUriString('/api/users'));
-        $this->assertTrue($this->handler->exposeIsValidUriString('/api/users?page=1'));
+        $this->assertTrue(
+            $this->handler->exposeIsValidUriString('/api/users?page=1'),
+        );
     }
 
-    public function test_is_valid_uri_string_returns_false_for_invalid_uris(): void
+    public function test_is_valid_uri_returns_false_for_invalid_values(): void
     {
         $this->assertFalse($this->handler->exposeIsValidUriString(''));
         $this->assertFalse($this->handler->exposeIsValidUriString('   '));
-        $this->assertFalse($this->handler->exposeIsValidUriString('/bad uri with spaces'));
-        $this->assertFalse($this->handler->exposeIsValidUriString("/uri\twith\ttabs"));
+        $this->assertFalse(
+            $this->handler->exposeIsValidUriString('/bad uri with spaces'),
+        );
+        $this->assertFalse(
+            $this->handler->exposeIsValidUriString("/uri\twith\ttabs"),
+        );
     }
 
-    public function test_validate_uri_inputs_rejects_empty_uri_and_base_uri(): void
+    public function test_validate_uri_rejects_empty_uri_and_base(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('URI cannot be empty');
@@ -107,10 +122,12 @@ class UriValidationTest extends TestCase
         $this->handler->exposeValidateUriInputs('', '');
     }
 
-    public function test_validate_uri_inputs_rejects_relative_uri_without_base_uri(): void
+    public function test_validate_uri_rejects_relative_uri_without_base(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Relative URI '/api/users' cannot be used without a base URI");
+        $this->expectExceptionMessage(
+            "Relative URI '/api/users' cannot be used without a base URI",
+        );
 
         $this->handler->exposeValidateUriInputs('/api/users', '');
     }
@@ -126,15 +143,21 @@ class UriValidationTest extends TestCase
     public function test_validate_uri_inputs_accepts_valid_absolute_uri(): void
     {
         // Should not throw
-        $this->handler->exposeValidateUriInputs('https://example.com/api/users', '');
+        $this->handler->exposeValidateUriInputs(
+            'https://example.com/api/users',
+            '',
+        );
 
         $this->assertTrue(true);
     }
 
-    public function test_validate_uri_inputs_accepts_valid_relative_uri_with_base(): void
+    public function test_validate_uri_accepts_relative_uri_with_base(): void
     {
         // Should not throw
-        $this->handler->exposeValidateUriInputs('/api/users', 'https://example.com');
+        $this->handler->exposeValidateUriInputs(
+            '/api/users',
+            'https://example.com',
+        );
 
         $this->assertTrue(true);
     }
@@ -144,14 +167,20 @@ class UriValidationTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('URI cannot contain whitespace');
 
-        $this->handler->exposeValidateUriInputs('/api/bad uri', 'https://example.com');
+        $this->handler->exposeValidateUriInputs(
+            '/api/bad uri',
+            'https://example.com',
+        );
     }
 
-    public function test_validate_uri_inputs_rejects_base_uri_with_whitespace(): void
+    public function test_validate_uri_rejects_base_uri_whitespace(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('URI cannot contain whitespace');
 
-        $this->handler->exposeValidateUriInputs('/api/users', 'https://example.com/bad base');
+        $this->handler->exposeValidateUriInputs(
+            '/api/users',
+            'https://example.com/bad base',
+        );
     }
 }

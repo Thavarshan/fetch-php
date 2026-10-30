@@ -17,9 +17,16 @@ interface ProfilerInterface
 
     public function startProfile(string $requestId): void;
 
-    public function recordEvent(string $requestId, string $event, ?float $timestamp = null): void;
+    public function recordEvent(
+        string $requestId,
+        string $event,
+        ?float $timestamp = null,
+    ): void;
 
-    public function endProfile(string $requestId, ?int $statusCode = null): void;
+    public function endProfile(
+        string $requestId,
+        ?int $statusCode = null,
+    ): void;
 
     /**
      * @return array<string, mixed>|null

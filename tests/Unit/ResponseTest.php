@@ -21,11 +21,14 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json'],
-            '{"name":"Test","value":123}'
+            '{"name":"Test","value":123}',
         );
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals(['Content-Type' => ['application/json']], $response->getHeaders());
+        $this->assertEquals(
+            ['Content-Type' => ['application/json']],
+            $response->getHeaders(),
+        );
         $this->assertEquals('{"name":"Test","value":123}', $response->body());
     }
 
@@ -34,13 +37,16 @@ class ResponseTest extends TestCase
         $baseResponse = new GuzzleResponse(
             204,
             ['X-Test-Header' => 'Test Value'],
-            'Test Body'
+            'Test Body',
         );
 
         $response = Response::createFromBase($baseResponse);
 
         $this->assertEquals(204, $response->getStatusCode());
-        $this->assertEquals(['X-Test-Header' => ['Test Value']], $response->getHeaders());
+        $this->assertEquals(
+            ['X-Test-Header' => ['Test Value']],
+            $response->getHeaders(),
+        );
         $this->assertEquals('Test Body', $response->body());
     }
 
@@ -49,7 +55,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json'],
-            '{"name":"Test","value":123,"items":[1,2,3]}'
+            '{"name":"Test","value":123,"items":[1,2,3]}',
         );
 
         // Test array decoding
@@ -79,15 +85,23 @@ class ResponseTest extends TestCase
 
     public function test_json_api_content_type_is_recognized_as_json(): void
     {
-        $response = new Response(200, ['Content-Type' => 'application/vnd.api+json; charset=utf-8'], '{"data":[]}');
+        $response = new Response(
+            200,
+            ['Content-Type' => 'application/vnd.api+json; charset=utf-8'],
+            '{"data":[]}',
+        );
 
         $this->assertTrue($response->hasJsonContent());
         $this->assertSame(['data' => []], $response->json());
     }
 
-    public function test_array_access_reuses_decoded_json_and_new_body_gets_fresh_cache(): void
+    public function test_array_access_reuses_json_cache_for_each_body(): void
     {
-        $response = new Response(200, ['Content-Type' => 'application/json'], '{"first":1}');
+        $response = new Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"first":1}',
+        );
         $this->assertSame(['first' => 1], $response->array());
         $this->assertSame(1, $response['first']);
 
@@ -102,7 +116,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json'],
-            '{"invalid json'
+            '{"invalid json',
         );
 
         $this->expectException(RuntimeException::class);
@@ -114,7 +128,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json'],
-            '{"invalid json'
+            '{"invalid json',
         );
 
         $result = $response->json(true, false);
@@ -129,7 +143,8 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/xml'],
-            '<?xml version="1.0"?><root><name>Test</name><value>123</value></root>'
+            '<?xml version="1.0"?>'.
+                '<root><name>Test</name><value>123</value></root>',
         );
 
         $xml = $response->xml();
@@ -143,7 +158,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/xml'],
-            '<?xml version="1.0"?><invalid>'
+            '<?xml version="1.0"?><invalid>',
         );
 
         $this->expectException(RuntimeException::class);
@@ -155,16 +170,20 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/xml'],
-            '<?xml version="1.0"?><invalid>'
+            '<?xml version="1.0"?><invalid>',
         );
 
         $result = $response->xml(0, false);
         $this->assertNull($result);
     }
 
-    public function test_suppressed_json_errors_do_not_hide_later_decoding_errors(): void
+    public function test_suppressed_errors_do_not_hide_later_errors(): void
     {
-        $response = new Response(200, ['Content-Type' => 'application/json'], '{invalid');
+        $response = new Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{invalid',
+        );
 
         $this->assertSame([], $response->array(false));
 
@@ -242,8 +261,10 @@ class ResponseTest extends TestCase
     }
 
     #[DataProvider('status_helper_cases')]
-    public function test_named_status_helpers_delegate_to_their_status_enum(string $method, Status $status): void
-    {
+    public function test_named_status_helpers_delegate_to_their_status_enum(
+        string $method,
+        Status $status,
+    ): void {
         $response = new Response($status->value);
 
         $this->assertTrue($response->{$method}());
@@ -259,17 +280,32 @@ class ResponseTest extends TestCase
         yield 'created' => ['isCreated', Status::CREATED];
         yield 'accepted' => ['isAccepted', Status::ACCEPTED];
         yield 'no content' => ['isNoContent', Status::NO_CONTENT];
-        yield 'moved permanently' => ['isMovedPermanently', Status::MOVED_PERMANENTLY];
+        yield 'moved permanently' => [
+            'isMovedPermanently',
+            Status::MOVED_PERMANENTLY,
+        ];
         yield 'found' => ['isFound', Status::FOUND];
         yield 'bad request' => ['isBadRequest', Status::BAD_REQUEST];
         yield 'unauthorized' => ['isUnauthorized', Status::UNAUTHORIZED];
         yield 'forbidden' => ['isForbidden', Status::FORBIDDEN];
         yield 'not found' => ['isNotFound', Status::NOT_FOUND];
         yield 'conflict' => ['isConflict', Status::CONFLICT];
-        yield 'unprocessable entity' => ['isUnprocessableEntity', Status::UNPROCESSABLE_ENTITY];
-        yield 'too many requests' => ['isTooManyRequests', Status::TOO_MANY_REQUESTS];
-        yield 'internal server error' => ['isInternalServerError', Status::INTERNAL_SERVER_ERROR];
-        yield 'service unavailable' => ['isServiceUnavailable', Status::SERVICE_UNAVAILABLE];
+        yield 'unprocessable entity' => [
+            'isUnprocessableEntity',
+            Status::UNPROCESSABLE_ENTITY,
+        ];
+        yield 'too many requests' => [
+            'isTooManyRequests',
+            Status::TOO_MANY_REQUESTS,
+        ];
+        yield 'internal server error' => [
+            'isInternalServerError',
+            Status::INTERNAL_SERVER_ERROR,
+        ];
+        yield 'service unavailable' => [
+            'isServiceUnavailable',
+            Status::SERVICE_UNAVAILABLE,
+        ];
     }
 
     public function test_to_string(): void
@@ -280,13 +316,10 @@ class ResponseTest extends TestCase
 
     public function test_header_accessors(): void
     {
-        $response = new Response(
-            200,
-            [
-                'Content-Type' => 'application/json',
-                'X-Test-Header' => 'Test Value',
-            ]
-        );
+        $response = new Response(200, [
+            'Content-Type' => 'application/json',
+            'X-Test-Header' => 'Test Value',
+        ]);
 
         $this->assertEquals('application/json', $response->contentType());
         $this->assertEquals('Test Value', $response->header('X-Test-Header'));
@@ -304,7 +337,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json'],
-            '{"name":"Test","value":123,"nested":{"prop":"value"}}'
+            '{"name":"Test","value":123,"nested":{"prop":"value"}}',
         );
 
         $this->assertTrue(isset($response['name']));
@@ -321,7 +354,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json'],
-            '{"name":"Test"}'
+            '{"name":"Test"}',
         );
 
         $this->expectException(RuntimeException::class);
@@ -352,7 +385,7 @@ class ResponseTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json'],
-            '{"name":"Test","value":123}'
+            '{"name":"Test","value":123}',
         );
 
         $this->assertEquals('Test', $response->get('name'));

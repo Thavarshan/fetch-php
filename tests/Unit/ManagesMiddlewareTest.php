@@ -12,8 +12,7 @@ class ManagesMiddlewareTest extends TestCase
 {
     private function handler(): object
     {
-        return new class
-        {
+        return new class {
             use ManagesMiddleware;
         };
     }
@@ -64,7 +63,7 @@ class ManagesMiddlewareTest extends TestCase
         $this->assertSame([$first, $second, $third], $handler->getMiddleware());
     }
 
-    public function test_middleware_replaces_stack_and_accepts_priority_pairs(): void
+    public function test_middleware_replaces_stack_with_priority_pairs(): void
     {
         $handler = $this->handler();
         $a = fn ($r, $n) => $n($r);
@@ -102,8 +101,14 @@ class ManagesMiddlewareTest extends TestCase
     {
         $handler = $this->handler();
 
-        $handler->when(true, fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r)));
-        $handler->when(false, fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r)));
+        $handler->when(
+            true,
+            fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r))
+        );
+        $handler->when(
+            false,
+            fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r)),
+        );
 
         $this->assertCount(1, $handler->getMiddleware());
     }
@@ -113,12 +118,11 @@ class ManagesMiddlewareTest extends TestCase
         $handler = $this->handler();
         $seen = null;
 
-        $handler->when(
-            fn ($h) => 'resolved',
-            function ($h, $value) use (&$seen) {
-                $seen = $value;
-            },
-        );
+        $handler->when(fn ($h) => 'resolved', function ($h, $value) use (
+            &$seen,
+        ) {
+            $seen = $value;
+        });
 
         $this->assertSame('resolved', $seen);
 
@@ -134,8 +138,14 @@ class ManagesMiddlewareTest extends TestCase
     {
         $handler = $this->handler();
 
-        $handler->unless(false, fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r)));
-        $handler->unless(true, fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r)));
+        $handler->unless(
+            false,
+            fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r)),
+        );
+        $handler->unless(
+            true,
+            fn ($h) => $h->addMiddleware(fn ($r, $n) => $n($r)),
+        );
 
         $this->assertCount(1, $handler->getMiddleware());
     }

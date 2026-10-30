@@ -21,7 +21,8 @@ final class ValidationManager
         ?OpenApiContractValidator $openApiValidator = null,
     ) {
         $this->schemaValidator = $schemaValidator;
-        $this->openApiValidator = $openApiValidator ?? new OpenApiContractValidator;
+        $this->openApiValidator =
+            $openApiValidator ?? new OpenApiContractValidator;
     }
 
     /**
@@ -35,10 +36,17 @@ final class ValidationManager
         ValidationPolicy $policy,
     ): ?object {
         if ($policy->requestSchema !== null) {
-            $result = $this->schemaValidator()->validate($this->requestData($options, $request), $policy->requestSchema);
+            $result = $this->schemaValidator()->validate(
+                $this->requestData($options, $request),
+                $policy->requestSchema,
+            );
             if (! $result->isValid()) {
                 throw new RequestValidationException(
-                    sprintf('The outgoing request failed schema validation with %d error(s).', $result->count()),
+                    sprintf(
+                        'The outgoing request failed schema validation with'
+                            .' %d error(s).',
+                        $result->count(),
+                    ),
                     $result,
                 );
             }
@@ -46,9 +54,16 @@ final class ValidationManager
 
         if ($policy->validateContracts && $policy->openApiSpec !== null) {
             try {
-                return $this->openApiValidator->validateRequest($request, $policy->openApiSpec);
+                return $this->openApiValidator->validateRequest(
+                    $request,
+                    $policy->openApiSpec,
+                );
             } catch (ValidationException $exception) {
-                throw new RequestValidationException($exception->getMessage(), $exception->result(), $exception);
+                throw new RequestValidationException(
+                    $exception->getMessage(),
+                    $exception->result(),
+                    $exception,
+                );
             }
         }
 
@@ -61,31 +76,55 @@ final class ValidationManager
         ?object $operation = null,
     ): void {
         if ($policy->responseSchema !== null) {
-            $result = $this->schemaValidator()->validate($this->responseData($response), $policy->responseSchema);
+            $result = $this->schemaValidator()->validate(
+                $this->responseData($response),
+                $policy->responseSchema,
+            );
             if (! $result->isValid()) {
                 throw new ResponseValidationException(
-                    sprintf('The response failed schema validation with %d error(s).', $result->count()),
+                    sprintf(
+                        'The response failed schema validation with %d '
+                            .'error(s).',
+                        $result->count(),
+                    ),
                     $result,
                 );
             }
         }
 
-        if ($policy->validateContracts && $policy->openApiSpec !== null && $operation !== null) {
-            if (! $operation instanceof OperationAddress) {
-                throw new ValidationConfigurationException('The OpenAPI operation could not be resolved for this response.');
+        if (
+            $policy->validateContracts &&
+            $policy->openApiSpec !== null &&
+            $operation !== null
+        ) {
+            if (! ($operation instanceof OperationAddress)) {
+                throw new ValidationConfigurationException(
+                    'The OpenAPI operation could not be resolved for this '
+                        .'response.',
+                );
             }
 
             try {
-                $this->openApiValidator->validateResponse($operation, $response, $policy->openApiSpec);
+                $this->openApiValidator->validateResponse(
+                    $operation,
+                    $response,
+                    $policy->openApiSpec,
+                );
             } catch (ValidationException $exception) {
-                throw new ResponseValidationException($exception->getMessage(), $exception->result(), $exception);
+                throw new ResponseValidationException(
+                    $exception->getMessage(),
+                    $exception->result(),
+                    $exception,
+                );
             }
         }
     }
 
     /** @param array<string, mixed> $options */
-    private function requestData(array $options, RequestInterface $request): mixed
-    {
+    private function requestData(
+        array $options,
+        RequestInterface $request,
+    ): mixed {
         if (array_key_exists('json', $options)) {
             return $options['json'];
         }
@@ -94,16 +133,27 @@ final class ValidationManager
             return $options['form_params'];
         }
 
-        if (str_contains(strtolower($request->getHeaderLine('Content-Type')), 'json')) {
+        if (
+            str_contains(
+                strtolower($request->getHeaderLine('Content-Type')),
+                'json',
+            )
+        ) {
             $body = $options['body'] ?? null;
             if (is_string($body)) {
                 return $this->decodeJson($body, 'request');
             }
             if ($body instanceof StreamInterface) {
-                return $this->decodeJson($this->readRequestBody($body), 'request');
+                return $this->decodeJson(
+                    $this->readRequestBody($body),
+                    'request',
+                );
             }
 
-            return $this->decodeJson($this->readRequestBody($request->getBody()), 'request');
+            return $this->decodeJson(
+                $this->readRequestBody($request->getBody()),
+                'request',
+            );
         }
 
         return null;
@@ -111,7 +161,12 @@ final class ValidationManager
 
     private function responseData(ResponseInterface $response): mixed
     {
-        if (! str_contains(strtolower($response->getHeaderLine('Content-Type')), 'json')) {
+        if (
+            ! str_contains(
+                strtolower($response->getHeaderLine('Content-Type')),
+                'json',
+            )
+        ) {
             return null;
         }
 
@@ -147,8 +202,15 @@ final class ValidationManager
         try {
             return json_decode($json, false, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $exception) {
-            $result = new ValidationResult([new ValidationError([], 'The JSON payload is malformed.', ['keyword' => 'json'])]);
-            $exceptionClass = $direction === 'request' ? RequestValidationException::class : ResponseValidationException::class;
+            $result = new ValidationResult([
+                new ValidationError([], 'The JSON payload is malformed.', [
+                    'keyword' => 'json',
+                ]),
+            ]);
+            $exceptionClass =
+                $direction === 'request'
+                    ? RequestValidationException::class
+                    : ResponseValidationException::class;
 
             throw new $exceptionClass(
                 sprintf('The %s payload is not valid JSON.', $direction),

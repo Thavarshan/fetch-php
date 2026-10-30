@@ -13,7 +13,9 @@ class MockResponseTest extends TestCase
 {
     public function test_creates_basic_mock_response(): void
     {
-        $response = MockResponse::create(200, 'Hello World', ['X-Custom' => 'value']);
+        $response = MockResponse::create(200, 'Hello World', [
+            'X-Custom' => 'value',
+        ]);
 
         $this->assertSame(200, $response->getStatus());
         $this->assertSame('Hello World', $response->getBody());
@@ -28,7 +30,10 @@ class MockResponseTest extends TestCase
         $this->assertSame(201, $response->getStatus());
         $this->assertSame(json_encode($data), $response->getBody());
         $this->assertArrayHasKey('Content-Type', $response->getHeaders());
-        $this->assertSame('application/json', $response->getHeaders()['Content-Type']);
+        $this->assertSame(
+            'application/json',
+            $response->getHeaders()['Content-Type'],
+        );
     }
 
     public function test_sets_delay(): void
@@ -52,7 +57,7 @@ class MockResponseTest extends TestCase
 
         $start = microtime(true);
         $executed = $response->execute();
-        $duration = (microtime(true) - $start) * 1000; // Convert to milliseconds
+        $duration = (microtime(true) - $start) * 1000;
 
         // Allow 2ms tolerance for timer precision issues on Windows
         $this->assertGreaterThanOrEqual(8, $duration);
@@ -126,23 +131,34 @@ class MockResponseTest extends TestCase
 
     public function test_creates_unprocessable_entity_response(): void
     {
-        $response = MockResponse::unprocessableEntity(['errors' => ['field' => 'required']]);
+        $response = MockResponse::unprocessableEntity([
+            'errors' => ['field' => 'required'],
+        ]);
 
-        $this->assertSame(Status::UNPROCESSABLE_ENTITY->value, $response->getStatus());
+        $this->assertSame(
+            Status::UNPROCESSABLE_ENTITY->value,
+            $response->getStatus(),
+        );
     }
 
     public function test_creates_server_error_response(): void
     {
         $response = MockResponse::serverError();
 
-        $this->assertSame(Status::INTERNAL_SERVER_ERROR->value, $response->getStatus());
+        $this->assertSame(
+            Status::INTERNAL_SERVER_ERROR->value,
+            $response->getStatus(),
+        );
     }
 
     public function test_creates_service_unavailable_response(): void
     {
         $response = MockResponse::serviceUnavailable();
 
-        $this->assertSame(Status::SERVICE_UNAVAILABLE->value, $response->getStatus());
+        $this->assertSame(
+            Status::SERVICE_UNAVAILABLE->value,
+            $response->getStatus(),
+        );
     }
 
     public function test_creates_sequence(): void

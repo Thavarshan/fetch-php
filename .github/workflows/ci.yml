@@ -8,9 +8,24 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
+  line-length:
+    name: Line Length
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Enforce 80-column project text
+        run: php tools/check-line-length.php
+
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -34,6 +49,10 @@ jobs:
               - 'pint.json'
             docs:
               - 'docs/**'
+              - 'tools/check-doc-examples.php'
+              - 'tools/check-markdown-links.mjs'
+              - 'composer.json'
+              - '.github/workflows/ci.yml'
               - 'README.md'
               - '*.md'
 
@@ -52,7 +71,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
+          extensions:
+            curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml,
+            tokenizer, intl
           coverage: none
           tools: composer:v2
 
@@ -65,7 +86,8 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run:
+          composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Run code style checks
         run: composer lint
@@ -100,7 +122,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
+          extensions:
+            curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml,
+            tokenizer, intl
           coverage: none
           tools: composer:v2
 
@@ -108,18 +132,27 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.composer/cache
-          key: ${{ runner.os }}-php${{ matrix.php }}-${{ matrix.stability }}-composer-${{ hashFiles('**/composer.lock') }}
+          key:
+            ${{ runner.os }}-php${{ matrix.php }}-${{ matrix.stability
+            }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-php${{ matrix.php }}-${{ matrix.stability }}-composer-
-            ${{ runner.os }}-php${{ matrix.php }}-composer-
+            ${{ runner.os }}-${{ matrix.php }}-${{ matrix.stability }}-composer-
+            ${{ runner.os }}-${{ matrix.php }}-composer-
 
       - name: Install dependencies
         if: matrix.stability != 'prefer-lowest'
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix' || '' }}
+        run:
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl
+          --ignore-platform-req=ext-posix' || '' }}
 
       - name: Install dependencies (prefer-lowest)
         if: matrix.stability == 'prefer-lowest'
-        run: composer update --no-interaction --prefer-dist --optimize-autoloader --prefer-lowest ${{ matrix.os == 'windows-latest' && '--ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix' || '' }}
+        run:
+          composer update --no-interaction --prefer-dist --optimize-autoloader
+          --prefer-lowest ${{ matrix.os == 'windows-latest' &&
+          '--ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix' ||
+          '' }}
 
       - name: Execute tests
         run: composer test
@@ -142,7 +175,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml, tokenizer, intl
+          extensions:
+            curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml,
+            tokenizer, intl
           coverage: xdebug
           tools: composer:v2
 
@@ -150,12 +185,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.composer/cache
-          key: ${{ runner.os }}-composer-coverage-${{ hashFiles('**/composer.lock') }}
+          key:
+            ${{ runner.os }}-composer-coverage-${{ hashFiles('**/composer.lock')
+            }}
           restore-keys: |
             ${{ runner.os }}-composer-coverage-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run:
+          composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Execute tests with coverage
         run: composer test:coverage
@@ -186,6 +224,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions:
+            curl, mbstring, json, openssl, gd, pcntl, xml, dom, simplexml,
+            tokenizer, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run:
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -197,6 +249,14 @@ jobs:
 
       - name: Build documentation
         run: npm run build
+
+      - name: Check documentation PHP examples
+        run: composer docs:examples
+
+      - name: Analyse documentation PHP examples
+        run:
+          ./vendor/bin/phpstan analyse --no-progress
+          --configuration=phpstan.neon docs/examples/snippets
 
       - name: Check for broken links
         run: npm run check-links

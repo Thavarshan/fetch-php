@@ -17,7 +17,11 @@ class EventSourceTest extends TestCase
      */
     private function parse(string $body): array
     {
-        $response = new StreamedResponse(200, ['Content-Type' => 'text/event-stream'], Utils::streamFor($body));
+        $response = new StreamedResponse(
+            200,
+            ['Content-Type' => 'text/event-stream'],
+            Utils::streamFor($body),
+        );
 
         return iterator_to_array((new EventSource($response))->events(), false);
     }
@@ -147,7 +151,11 @@ class EventSourceTest extends TestCase
 
     public function test_tracks_last_event_id_and_reconnection_time(): void
     {
-        $response = new StreamedResponse(200, [], Utils::streamFor("retry: 2500\nid: abc\ndata: x\n\n"));
+        $response = new StreamedResponse(
+            200,
+            [],
+            Utils::streamFor("retry: 2500\nid: abc\ndata: x\n\n"),
+        );
         $source = new EventSource($response);
 
         iterator_to_array($source->events(), false);

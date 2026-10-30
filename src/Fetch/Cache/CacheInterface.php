@@ -25,7 +25,11 @@ interface CacheInterface
      * @param  int|null  $ttl  Time to live in seconds
      * @return bool True if the item was stored, false otherwise
      */
-    public function set(string $key, CachedResponse $cachedResponse, ?int $ttl = null): bool;
+    public function set(
+        string $key,
+        CachedResponse $cachedResponse,
+        ?int $ttl = null,
+    ): bool;
 
     /**
      * Delete a cached response by key.

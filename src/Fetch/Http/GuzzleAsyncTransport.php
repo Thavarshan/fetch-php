@@ -21,7 +21,8 @@ use Throwable;
 use function React\Promise\reject;
 
 /**
- * Explicitly bridges Guzzle's promise queue and optional cURL multi driver to React promises.
+ * Explicitly bridges Guzzle's promise queue and optional cURL multi driver to
+ * React promises.
  */
 final class GuzzleAsyncTransport implements AsyncTransport
 {
@@ -38,12 +39,22 @@ final class GuzzleAsyncTransport implements AsyncTransport
         private readonly bool $supportsQueueOnlyHandlers = false,
     ) {}
 
-    public function requestAsync(string $method, string $uri, array $options): PromiseInterface
-    {
-        if ($this->curlMultiHandler === null && ! $this->supportsQueueOnlyHandlers) {
-            return reject(new AsyncTransportException(
-                'Guzzle async requests need a CurlMultiHandler or an explicit AsyncTransport. Queue-only Guzzle handlers are supported only when explicitly enabled.'
-            ));
+    public function requestAsync(
+        string $method,
+        string $uri,
+        array $options,
+    ): PromiseInterface {
+        if (
+            $this->curlMultiHandler === null &&
+            ! $this->supportsQueueOnlyHandlers
+        ) {
+            return reject(
+                new AsyncTransportException(
+                    'Guzzle async requests need a CurlMultiHandler or an '
+                        .'explicit AsyncTransport. Queue-only Guzzle handlers '
+                        .'are supported only when explicitly enabled.',
+                ),
+            );
         }
 
         $guzzlePromise = $this->client->requestAsync($method, $uri, $options);
@@ -54,7 +65,10 @@ final class GuzzleAsyncTransport implements AsyncTransport
             $this->stopPumpWhenIdle();
         };
 
-        $deferred = new Deferred(function (callable $resolve, callable $reject) use ($guzzlePromise, &$settled, $release): void {
+        $deferred = new Deferred(function (
+            callable $resolve,
+            callable $reject,
+        ) use ($guzzlePromise, &$settled, $release): void {
             if (! $settled) {
                 $settled = true;
                 $release();
@@ -64,7 +78,12 @@ final class GuzzleAsyncTransport implements AsyncTransport
             $reject(new CancellationException);
         });
 
-        $this->active[$id] = function (Throwable $exception) use ($deferred, &$settled, $release, $guzzlePromise): void {
+        $this->active[$id] = function (Throwable $exception) use (
+            $deferred,
+            &$settled,
+            $release,
+            $guzzlePromise,
+        ): void {
             if ($settled) {
                 return;
             }
@@ -76,26 +95,38 @@ final class GuzzleAsyncTransport implements AsyncTransport
         };
 
         $guzzlePromise->then(
-            function (ResponseInterface $response) use ($deferred, &$settled, $release): void {
+            function (ResponseInterface $response) use (
+                $deferred,
+                &$settled,
+                $release,
+            ): void {
                 if (! $settled) {
                     $settled = true;
                     $release();
                     $deferred->resolve($response);
                 }
             },
-            function (Throwable $exception) use ($deferred, &$settled, $release): void {
+            function (Throwable $exception) use (
+                $deferred,
+                &$settled,
+                $release,
+            ): void {
                 if (! $settled) {
                     $settled = true;
                     $release();
                     $deferred->reject($exception);
                 }
-            }
+            },
         );
 
         if ($this->curlMultiHandler !== null) {
             $this->startPump();
         } else {
-            Loop::futureTick(function () use ($guzzlePromise, &$settled, $id): void {
+            Loop::futureTick(function () use (
+                $guzzlePromise,
+                &$settled,
+                $id,
+            ): void {
                 if ($settled) {
                     return;
                 }
@@ -108,10 +139,18 @@ final class GuzzleAsyncTransport implements AsyncTransport
                     return;
                 }
 
-                if ($guzzlePromise->getState() === GuzzlePromiseInterface::PENDING) {
-                    ($this->active[$id] ?? static fn () => null)(new AsyncTransportException(
-                        'The configured Guzzle client has pending async I/O but no event-loop driver. Inject an AsyncTransport or a GuzzleAsyncTransport with its CurlMultiHandler.'
-                    ));
+                if (
+                    $guzzlePromise->getState() ===
+                    GuzzlePromiseInterface::PENDING
+                ) {
+                    ($this->active[$id] ?? static fn () => null)(
+                        new AsyncTransportException(
+                            'The configured Guzzle client has pending async'
+                                .' I/O but no event-loop driver. Inject an '
+                                .'AsyncTransport or a GuzzleAsyncTransport '
+                                .'with its CurlMultiHandler.',
+                        ),
+                    );
                 }
             });
         }
@@ -142,7 +181,7 @@ final class GuzzleAsyncTransport implements AsyncTransport
 
     private function stopPumpWhenIdle(): void
     {
-        if ($this->active !== [] || ! $this->pump instanceof TimerInterface) {
+        if ($this->active !== [] || ! ($this->pump instanceof TimerInterface)) {
             return;
         }
 

@@ -19,7 +19,8 @@ class CacheTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->testCacheDir = sys_get_temp_dir().'/fetch-cache-test-'.uniqid();
+        $this->testCacheDir =
+            sys_get_temp_dir().'/fetch-cache-test-'.uniqid();
     }
 
     protected function tearDown(): void
@@ -68,7 +69,9 @@ class CacheTest extends TestCase
 
     public function test_parse_cache_control_stale_directives(): void
     {
-        $cc = CacheControl::parse('max-age=3600, stale-while-revalidate=300, stale-if-error=86400');
+        $cc = CacheControl::parse(
+            'max-age=3600, stale-while-revalidate=300, stale-if-error=86400',
+        );
 
         $this->assertEquals(300, $cc->getStaleWhileRevalidate());
         $this->assertEquals(86400, $cc->getStaleIfError());
@@ -91,13 +94,15 @@ class CacheTest extends TestCase
         $this->assertFalse($cc->shouldCache($response, false));
     }
 
-    public function test_cache_control_should_not_cache_private_in_shared(): void
+    public function test_shared_cache_rejects_private_responses(): void
     {
         $cc = CacheControl::parse('private, max-age=3600');
         $response = new Response(200, [], 'test');
 
-        $this->assertTrue($cc->shouldCache($response, false)); // Private cache is OK
-        $this->assertFalse($cc->shouldCache($response, true)); // Shared cache should not cache
+        // Private cache is OK.
+        $this->assertTrue($cc->shouldCache($response, false));
+        // Shared cache should not cache.
+        $this->assertFalse($cc->shouldCache($response, true));
     }
 
     public function test_cache_control_get_ttl(): void
@@ -158,8 +163,12 @@ class CacheTest extends TestCase
     {
         $gen = new CacheKeyGenerator;
 
-        $key1 = $gen->generate('GET', 'https://api.example.com/users', ['query' => ['page' => 1]]);
-        $key2 = $gen->generate('GET', 'https://api.example.com/users', ['query' => ['page' => 2]]);
+        $key1 = $gen->generate('GET', 'https://api.example.com/users', [
+            'query' => ['page' => 1],
+        ]);
+        $key2 = $gen->generate('GET', 'https://api.example.com/users', [
+            'query' => ['page' => 2],
+        ]);
 
         $this->assertNotEquals($key1, $key2);
     }
@@ -179,8 +188,12 @@ class CacheTest extends TestCase
     {
         $response = new Response(
             200,
-            ['Content-Type' => 'application/json', 'ETag' => '"abc123"', 'Last-Modified' => 'Thu, 01 Jan 2020 00:00:00 GMT'],
-            '{"data": "test"}'
+            [
+                'Content-Type' => 'application/json',
+                'ETag' => '"abc123"',
+                'Last-Modified' => 'Thu, 01 Jan 2020 00:00:00 GMT',
+            ],
+            '{"data": "test"}',
         );
 
         $cached = CachedResponse::fromResponse($response, 3600);
@@ -188,7 +201,10 @@ class CacheTest extends TestCase
         $this->assertEquals(200, $cached->getStatusCode());
         $this->assertEquals('{"data": "test"}', $cached->getBody());
         $this->assertEquals('"abc123"', $cached->getETag());
-        $this->assertEquals('Thu, 01 Jan 2020 00:00:00 GMT', $cached->getLastModified());
+        $this->assertEquals(
+            'Thu, 01 Jan 2020 00:00:00 GMT',
+            $cached->getLastModified(),
+        );
     }
 
     public function test_cached_response_is_fresh(): void
@@ -208,7 +224,7 @@ class CacheTest extends TestCase
             headers: [],
             body: 'test',
             createdAt: time() - 3601,
-            expiresAt: time() - 1
+            expiresAt: time() - 1,
         );
 
         $this->assertFalse($cached->isFresh());
@@ -222,12 +238,13 @@ class CacheTest extends TestCase
             statusCode: 200,
             headers: [],
             body: 'test',
-            createdAt: $createdAt
+            createdAt: $createdAt,
         );
 
         $age = $cached->getAge();
         $this->assertGreaterThanOrEqual(100, $age);
-        $this->assertLessThanOrEqual(102, $age); // Allow 2 seconds for test execution
+        // Allow 2 seconds for test execution.
+        $this->assertLessThanOrEqual(102, $age);
     }
 
     public function test_cached_response_serialize_and_deserialize(): void
@@ -235,7 +252,7 @@ class CacheTest extends TestCase
         $response = new Response(
             200,
             ['Content-Type' => 'application/json', 'ETag' => '"abc123"'],
-            '{"data": "test"}'
+            '{"data": "test"}',
         );
         $cached = CachedResponse::fromResponse($response, 3600);
 
@@ -243,7 +260,10 @@ class CacheTest extends TestCase
         $restored = CachedResponse::fromArray($data);
 
         $this->assertNotNull($restored);
-        $this->assertEquals($cached->getStatusCode(), $restored->getStatusCode());
+        $this->assertEquals(
+            $cached->getStatusCode(),
+            $restored->getStatusCode(),
+        );
         $this->assertEquals($cached->getBody(), $restored->getBody());
         $this->assertEquals($cached->getETag(), $restored->getETag());
     }
@@ -256,7 +276,7 @@ class CacheTest extends TestCase
             headers: [],
             body: 'test',
             createdAt: time() - 3630,
-            expiresAt: time() - 30
+            expiresAt: time() - 30,
         );
 
         // Should be usable if stale period is 60 seconds
@@ -334,23 +354,30 @@ class CacheTest extends TestCase
         $this->assertEquals(2, $cache->count());
     }
 
-    public function test_memory_cache_expired_items_retained_for_stale_handling(): void
+    public function test_expired_items_remain_for_stale_handling(): void
     {
         $cache = new MemoryCache;
 
-        // Create an already expired cached response with TTL of 0 (immediate expiration)
+        // Create an already expired cached response with TTL of 0 (immediate
+        // expiration)
         $cached = new CachedResponse(
             statusCode: 200,
             headers: [],
             body: 'test',
             createdAt: time() - 100,
-            expiresAt: time() - 1 // Already expired
+            expiresAt: time() - 1, // Already expired
         );
 
-        // Set with a very short TTL (but the cache uses its own TTL calculation)
-        // Cache now retains expired items to allow stale-if-error / stale-while-revalidate handling
-        $cache->set('expired-key', $cached, -1); // TTL of -1 means already expired
-        $this->assertInstanceOf(CachedResponse::class, $cache->get('expired-key'));
+        // Set with a very short TTL (but the cache uses its own TTL
+        // calculation)
+        // Cache now retains expired items to allow stale-if-error /
+        // stale-while-revalidate handling
+        // A TTL of -1 means the item has already expired.
+        $cache->set('expired-key', $cached, -1);
+        $this->assertInstanceOf(
+            CachedResponse::class,
+            $cache->get('expired-key'),
+        );
         $this->assertTrue($cache->has('expired-key'));
     }
 
@@ -364,12 +391,15 @@ class CacheTest extends TestCase
             headers: [],
             body: 'expired',
             createdAt: time() - 100,
-            expiresAt: time() - 1
+            expiresAt: time() - 1,
         );
         $cache->set('expired', $expired, -1);
 
         // Add a fresh item
-        $fresh = CachedResponse::fromResponse(new Response(200, [], 'fresh'), 3600);
+        $fresh = CachedResponse::fromResponse(
+            new Response(200, [], 'fresh'),
+            3600,
+        );
         $cache->set('fresh', $fresh, 3600);
 
         $pruned = $cache->prune();
@@ -444,7 +474,7 @@ class CacheTest extends TestCase
             headers: [],
             body: 'test',
             createdAt: time() - 100,
-            expiresAt: time() - 1 // Already expired
+            expiresAt: time() - 1, // Already expired
         );
 
         $cache->set('expired-key', $cached);
@@ -461,14 +491,20 @@ class CacheTest extends TestCase
             headers: [],
             body: 'expired',
             createdAt: time() - 100,
-            expiresAt: time() - 1
+            expiresAt: time() - 1,
         );
         // Directly write to bypass expiration check in set
         $key = hash('sha256', 'expired').'.cache';
-        file_put_contents($this->testCacheDir.'/'.$key, json_encode($expired->toArray()));
+        file_put_contents(
+            $this->testCacheDir.'/'.$key,
+            json_encode($expired->toArray()),
+        );
 
         // Add a fresh item
-        $fresh = CachedResponse::fromResponse(new Response(200, [], 'fresh'), 3600);
+        $fresh = CachedResponse::fromResponse(
+            new Response(200, [], 'fresh'),
+            3600,
+        );
         $cache->set('fresh', $fresh);
 
         $pruned = $cache->prune();

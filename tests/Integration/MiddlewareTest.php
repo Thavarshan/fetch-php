@@ -29,25 +29,37 @@ class MiddlewareTest extends TestCase
         $stack = HandlerStack::create($this->mock);
         $guzzle = new GuzzleClient(['handler' => $stack]);
 
-        return (new ClientHandler)->setHttpClient($guzzle, new GuzzleAsyncTransport($guzzle, supportsQueueOnlyHandlers: true));
+        return (new ClientHandler)->setHttpClient(
+            $guzzle,
+            new GuzzleAsyncTransport($guzzle, supportsQueueOnlyHandlers: true),
+        );
     }
 
     public function test_middleware_injects_header_into_real_request(): void
     {
         $handler = $this->handler([new PsrResponse(200, [], 'ok')]);
-        $handler->addMiddleware(new AddHeadersMiddleware(['X-Api-Version' => '2.1']));
+        $handler->addMiddleware(
+            new AddHeadersMiddleware(['X-Api-Version' => '2.1']),
+        );
 
         $handler->get('https://example.com/users');
 
-        $this->assertSame('2.1', $this->mock->getLastRequest()->getHeaderLine('X-Api-Version'));
+        $this->assertSame(
+            '2.1',
+            $this->mock->getLastRequest()->getHeaderLine('X-Api-Version'),
+        );
     }
 
-    public function test_middleware_can_short_circuit_without_hitting_transport(): void
+    public function test_middleware_short_circuits_without_transport(): void
     {
         // No responses queued: if the transport is touched, MockHandler throws.
         $handler = $this->handler([]);
         $handler->addMiddleware(
-            fn (RequestInterface $request, callable $next) => new PsrResponse(418, [], 'cached')
+            fn (RequestInterface $request, callable $next) => new PsrResponse(
+                418,
+                [],
+                'cached',
+            ),
         );
 
         $response = $handler->get('https://example.com/teapot');
@@ -59,7 +71,10 @@ class MiddlewareTest extends TestCase
     public function test_middleware_can_inspect_and_replace_response(): void
     {
         $handler = $this->handler([new PsrResponse(200, [], 'body')]);
-        $handler->addMiddleware(function (RequestInterface $request, callable $next) {
+        $handler->addMiddleware(function (
+            RequestInterface $request,
+            callable $next,
+        ) {
             $response = $next($request);
 
             return $response->withHeader('X-Wrapped', 'yes');
@@ -75,13 +90,19 @@ class MiddlewareTest extends TestCase
         $handler = $this->handler([new PsrResponse(200)]);
         $order = [];
 
-        $handler->addMiddleware(function (RequestInterface $r, callable $n) use (&$order) {
+        $handler->addMiddleware(function (
+            RequestInterface $r,
+            callable $n,
+        ) use (&$order) {
             $order[] = 'low';
 
             return $n($r);
         }, 1);
 
-        $handler->addMiddleware(function (RequestInterface $r, callable $n) use (&$order) {
+        $handler->addMiddleware(function (
+            RequestInterface $r,
+            callable $n,
+        ) use (&$order) {
             $order[] = 'high';
 
             return $n($r);
@@ -96,12 +117,17 @@ class MiddlewareTest extends TestCase
     {
         $handler = $this->handler([new PsrResponse(200)]);
         $handler->addMiddleware(
-            fn (RequestInterface $request, callable $next) => $next($request->withBody(Utils::streamFor('rewritten')))
+            fn (RequestInterface $request, callable $next) => $next(
+                $request->withBody(Utils::streamFor('rewritten')),
+            ),
         );
 
         $handler->post('https://example.com/x', ['original' => true]);
 
-        $this->assertSame('rewritten', (string) $this->mock->getLastRequest()->getBody());
+        $this->assertSame(
+            'rewritten',
+            (string) $this->mock->getLastRequest()->getBody(),
+        );
     }
 
     public function test_middleware_applies_in_async_mode(): void
@@ -116,7 +142,10 @@ class MiddlewareTest extends TestCase
         $response = await($result);
 
         $this->assertInstanceOf(ResponseInterface::class, $response);
-        $this->assertSame('yes', $this->mock->getLastRequest()->getHeaderLine('X-Async'));
+        $this->assertSame(
+            'yes',
+            $this->mock->getLastRequest()->getHeaderLine('X-Async'),
+        );
     }
 
     public function test_when_conditionally_adds_middleware(): void
@@ -124,16 +153,29 @@ class MiddlewareTest extends TestCase
         $handler = $this->handler([new PsrResponse(200), new PsrResponse(200)]);
 
         $handler
-            ->when(true, fn (ClientHandler $h) => $h->addMiddleware(new AddHeadersMiddleware(['X-On' => '1'])))
-            ->unless(true, fn (ClientHandler $h) => $h->addMiddleware(new AddHeadersMiddleware(['X-Off' => '1'])));
+            ->when(
+                true,
+                fn (ClientHandler $h) => $h->addMiddleware(
+                    new AddHeadersMiddleware(['X-On' => '1']),
+                ),
+            )
+            ->unless(
+                true,
+                fn (ClientHandler $h) => $h->addMiddleware(
+                    new AddHeadersMiddleware(['X-Off' => '1']),
+                ),
+            );
 
         $handler->get('https://example.com/x');
 
-        $this->assertSame('1', $this->mock->getLastRequest()->getHeaderLine('X-On'));
+        $this->assertSame(
+            '1',
+            $this->mock->getLastRequest()->getHeaderLine('X-On'),
+        );
         $this->assertFalse($this->mock->getLastRequest()->hasHeader('X-Off'));
     }
 
-    public function test_without_middleware_removes_registered_middleware(): void
+    public function test_removing_middleware_clears_the_stack(): void
     {
         $handler = $this->handler([new PsrResponse(200)]);
         $handler->addMiddleware(new AddHeadersMiddleware(['X-Gone' => '1']));

@@ -11,7 +11,8 @@ use React\Promise\PromiseInterface;
 /**
  * Compatibility shim for consumers that composed this trait directly.
  *
- * @deprecated Use Fetch\Async\PromiseManager in new integrations. ClientHandler no longer uses this trait.
+ * @deprecated Use Fetch\Async\PromiseManager in new integrations. ClientHandler
+ *     no longer uses this trait.
  */
 trait ManagesPromises
 {
@@ -39,8 +40,10 @@ trait ManagesPromises
         return $this->promiseManager()->wrapAsync($callable);
     }
 
-    public function awaitPromise(PromiseInterface $promise, ?float $timeout = null): mixed
-    {
+    public function awaitPromise(
+        PromiseInterface $promise,
+        ?float $timeout = null,
+    ): mixed {
         return $this->promiseManager()->awaitPromise($promise, $timeout);
     }
 
@@ -68,8 +71,10 @@ trait ManagesPromises
         return $this->promiseManager()->sequence($callables);
     }
 
-    public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface
-    {
+    public function then(
+        callable $onFulfilled,
+        ?callable $onRejected = null,
+    ): PromiseInterface {
         $this->async();
 
         return $this->sendAsync()->then($onFulfilled, $onRejected);
@@ -100,13 +105,18 @@ trait ManagesPromises
     }
 
     /** @param array<int|string, mixed> $items */
-    public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
-    {
+    public function map(
+        array $items,
+        callable $callback,
+        int $concurrency = 5,
+    ): PromiseInterface {
         return $this->promiseManager()->map($items, $callback, $concurrency);
     }
 
-    protected function awaitWithTimeout(PromiseInterface $promise, float $timeout): mixed
-    {
+    protected function awaitWithTimeout(
+        PromiseInterface $promise,
+        float $timeout,
+    ): mixed {
         return $this->promiseManager()->awaitPromise($promise, $timeout);
     }
 
@@ -116,15 +126,20 @@ trait ManagesPromises
     }
 
     /** @param array<callable(): PromiseInterface<mixed>> $callables */
-    protected function executeSequence(array $callables, array $results): PromiseInterface
-    {
+    protected function executeSequence(
+        array $callables,
+        array $results,
+    ): PromiseInterface {
         if ($callables === []) {
             return $this->promiseManager()->resolve($results);
         }
 
         $callable = array_shift($callables);
 
-        return $callable()->then(function (mixed $result) use ($callables, $results): PromiseInterface {
+        return $callable()->then(function (mixed $result) use (
+            $callables,
+            $results,
+        ): PromiseInterface {
             $results[] = $result;
 
             return $this->executeSequence($callables, $results);
@@ -138,8 +153,11 @@ trait ManagesPromises
     }
 
     /** @param array<int|string, mixed> $items */
-    protected function mapBatched(array $items, callable $callback, int $concurrency): PromiseInterface
-    {
+    protected function mapBatched(
+        array $items,
+        callable $callback,
+        int $concurrency,
+    ): PromiseInterface {
         return $this->promiseManager()->map($items, $callback, $concurrency);
     }
 

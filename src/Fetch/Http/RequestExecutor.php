@@ -26,7 +26,9 @@ final class RequestExecutor
         array $options,
     ): ResponseContract {
         $normalized = Response::createFromBase($response);
-        if ($retryStrategy->isRetryableStatusCode($normalized->getStatusCode())) {
+        if (
+            $retryStrategy->isRetryableStatusCode($normalized->getStatusCode())
+        ) {
             throw new FetchRequestException(
                 'Retryable status: '.$normalized->getStatusCode(),
                 new GuzzleRequest($method, $uri, $options['headers'] ?? []),
@@ -46,7 +48,12 @@ final class RequestExecutor
     ): FetchRequestException {
         if ($exception instanceof GuzzleRequestException) {
             return new FetchRequestException(
-                sprintf('Request %s %s failed: %s', $method, $uri, $exception->getMessage()),
+                sprintf(
+                    'Request %s %s failed: %s',
+                    $method,
+                    $uri,
+                    $exception->getMessage(),
+                ),
                 $exception->getRequest(),
                 $exception->getResponse(),
                 $exception,
@@ -54,7 +61,12 @@ final class RequestExecutor
         }
 
         return new FetchRequestException(
-            sprintf('Request %s %s failed: %s', $method, $uri, $exception->getMessage()),
+            sprintf(
+                'Request %s %s failed: %s',
+                $method,
+                $uri,
+                $exception->getMessage(),
+            ),
             new GuzzleRequest($method, $uri, $options['headers'] ?? []),
             null,
             $exception,
@@ -70,7 +82,13 @@ final class RequestExecutor
         ?callable $onRetry = null,
         ?callable $onRequest = null,
     ): ResponseContract {
-        return $retryStrategy->execute(function () use ($method, $uri, $options, $retryStrategy, $onRequest): ResponseContract {
+        return $retryStrategy->execute(function () use (
+            $method,
+            $uri,
+            $options,
+            $retryStrategy,
+            $onRequest,
+        ): ResponseContract {
             if ($onRequest !== null) {
                 $onRequest();
             }
@@ -78,12 +96,25 @@ final class RequestExecutor
             try {
                 $response = $this->client->request($method, $uri, $options);
             } catch (GuzzleException $exception) {
-                throw self::normalizeGuzzleException($exception, $method, $uri, $options);
+                throw self::normalizeGuzzleException(
+                    $exception,
+                    $method,
+                    $uri,
+                    $options,
+                );
             }
 
             $normalized = Response::createFromBase($response);
-            if ($retryStrategy->isRetryableStatusCode($normalized->getStatusCode())) {
-                $request = new GuzzleRequest($method, $uri, $options['headers'] ?? []);
+            if (
+                $retryStrategy->isRetryableStatusCode(
+                    $normalized->getStatusCode(),
+                )
+            ) {
+                $request = new GuzzleRequest(
+                    $method,
+                    $uri,
+                    $options['headers'] ?? [],
+                );
                 throw new FetchRequestException(
                     'Retryable status: '.$normalized->getStatusCode(),
                     $request,

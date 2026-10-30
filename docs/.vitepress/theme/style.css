@@ -1,8 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@\
+400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root {
     --vp-font-family-base: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-    --vp-font-family-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    --vp-font-family-mono:
+        'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
         'Liberation Mono', monospace;
 
     --fp-bg: #f6f8fb;
@@ -164,8 +166,6 @@ body {
     height: 36px;
 }
 
- 
-
 .VPNavBarTitle .title,
 .VPNavBarMenuLink,
 .VPNavBarSearch,
@@ -223,12 +223,19 @@ body {
     border: 1px solid var(--fp-border);
     text-decoration: none;
     color: var(--vp-c-text-1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
     cursor: pointer;
 }
 
 .nav-action.primary {
-    background: linear-gradient(135deg, var(--fp-brand), var(--fp-brand-strong));
+    background: linear-gradient(
+        135deg,
+        var(--fp-brand),
+        var(--fp-brand-strong)
+    );
     color: #fff;
     border-color: transparent;
     box-shadow: var(--fp-shadow-sm);
@@ -299,12 +306,19 @@ body {
     font-weight: 600;
     text-decoration: none;
     border: 1px solid transparent;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
     cursor: pointer;
 }
 
 .button.primary {
-    background: linear-gradient(135deg, var(--fp-brand), var(--fp-brand-strong));
+    background: linear-gradient(
+        135deg,
+        var(--fp-brand),
+        var(--fp-brand-strong)
+    );
     color: #fff;
     box-shadow: var(--fp-shadow-md);
 }
@@ -495,7 +509,10 @@ body {
     background: var(--fp-bg-alt);
     border: 1px solid var(--fp-border);
     box-shadow: var(--fp-shadow-sm);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .feature-card h3 {
@@ -578,7 +595,9 @@ body {
     font-weight: 600;
     color: var(--vp-c-text-2);
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
 }
 
 .code-tab[aria-selected='true'] {
@@ -601,7 +620,9 @@ body {
     border-radius: 999px;
     font-size: 0.8rem;
     cursor: pointer;
-    transition: border-color 0.2s ease, transform 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        transform 0.2s ease;
 }
 
 .code-copy:hover {
@@ -815,7 +836,9 @@ body {
 [data-reveal] {
     opacity: 0;
     transform: translateY(8px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transition:
+        opacity 0.6s ease,
+        transform 0.6s ease;
 }
 
 [data-reveal].is-visible {

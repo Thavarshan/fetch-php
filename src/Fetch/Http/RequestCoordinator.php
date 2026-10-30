@@ -26,7 +26,10 @@ use Throwable;
 use function Matrix\Support\reject;
 use function Matrix\Support\resolve;
 
-/** Coordinates middleware, validation, cache/mock selection, execution, and lifecycle events. */
+/**
+ * Coordinates middleware, validation, cache/mock selection, execution, and
+ *     lifecycle events.
+ */
 final class RequestCoordinator
 {
     /** @param array<int, mixed> $middleware */
@@ -46,31 +49,76 @@ final class RequestCoordinator
      * @param  array<string, mixed>  $guzzleOptions
      * @return FetchResponseInterface|PromiseInterface<FetchResponseInterface>
      */
-    public function send(string $method, string $uri, array $guzzleOptions, RequestContext $context): FetchResponseInterface|PromiseInterface
-    {
+    public function send(
+        string $method,
+        string $uri,
+        array $guzzleOptions,
+        RequestContext $context,
+    ): FetchResponseInterface|PromiseInterface {
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
         $requestId = ($this->hooks->startProfiling)($method, $uri);
-        $guzzleOptions = $this->requestBuilder->normalizeStreamBody($guzzleOptions);
+        $guzzleOptions = $this->requestBuilder->normalizeStreamBody(
+            $guzzleOptions,
+        );
         $captureStreamBody = $this->capturesRequestBody();
-        [$psrRequest, $seedBody] = $this->requestBuilder->buildMiddlewareRequest($method, $uri, $guzzleOptions, $captureStreamBody);
-        $guzzleOptions = $this->requestBuilder->replaceConsumedNonSeekableBody($guzzleOptions, $seedBody);
+        [
+            $psrRequest,
+            $seedBody,
+        ] = $this->requestBuilder->buildMiddlewareRequest(
+            $method,
+            $uri,
+            $guzzleOptions,
+            $captureStreamBody,
+        );
+        $guzzleOptions = $this->requestBuilder->replaceConsumedNonSeekableBody(
+            $guzzleOptions,
+            $seedBody,
+        );
         $initialBody = $psrRequest->getBody();
         $coreDispatched = false;
         $lastMiddlewareRequest = $psrRequest;
 
-        $core = function (RequestInterface $request) use ($guzzleOptions, $seedBody, $initialBody, $context, $startTime, $startMemory, $requestId, &$coreDispatched): FetchResponseInterface|PromiseInterface {
+        $core = function (RequestInterface $request) use (
+            $guzzleOptions,
+            $seedBody,
+            $initialBody,
+            $context,
+            $startTime,
+            $startMemory,
+            $requestId,
+            &$coreDispatched,
+        ): FetchResponseInterface|PromiseInterface {
             $coreDispatched = true;
-            $mergedOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody, $initialBody);
+            $mergedOptions = $this->requestBuilder->mergeMiddlewareRequest(
+                $request,
+                $guzzleOptions,
+                $seedBody,
+                $initialBody,
+            );
 
             try {
                 if ($this->capturesRequestBody()) {
-                    [$request, $mergedOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $mergedOptions);
+                    [
+                        $request,
+                        $mergedOptions,
+                    ] = $this->requestBuilder->makeRequestBodyReplayable(
+                        $request,
+                        $mergedOptions,
+                    );
                 }
 
-                $request = $this->requestBuilder->prepareValidationRequest($request, $mergedOptions);
+                $request = $this->requestBuilder->prepareValidationRequest(
+                    $request,
+                    $mergedOptions,
+                );
+                $mergedOptions['headers'] = $request->getHeaders();
                 unset($mergedOptions['query']);
-                $operation = $this->validationManager->validateRequest($request, $mergedOptions, $this->validationPolicy);
+                $operation = $this->validationManager->validateRequest(
+                    $request,
+                    $mergedOptions,
+                    $this->validationPolicy,
+                );
             } catch (Throwable $exception) {
                 if ($context->isAsync()) {
                     return reject($exception);
@@ -91,19 +139,34 @@ final class RequestCoordinator
             );
         };
 
-        $result = $this->middleware === []
-            ? $core($psrRequest)
-            : $this->coerceMiddlewareResult((new MiddlewarePipeline($this->middleware))->handle(
-                $psrRequest,
-                $core,
-                static function (RequestInterface $request) use (&$lastMiddlewareRequest): void {
-                    $lastMiddlewareRequest = $request;
-                },
-            ));
+        $result =
+            $this->middleware === []
+                ? $core($psrRequest)
+                : $this->coerceMiddlewareResult(
+                    (new MiddlewarePipeline($this->middleware))->handle(
+                        $psrRequest,
+                        $core,
+                        static function (RequestInterface $request) use (
+                            &$lastMiddlewareRequest,
+                        ): void {
+                            $lastMiddlewareRequest = $request;
+                        },
+                    ),
+                );
 
         if ($result instanceof PromiseInterface) {
             return $result->then(
-                function (mixed $response) use (&$coreDispatched, &$lastMiddlewareRequest, $guzzleOptions, $seedBody, $initialBody, $context, $startTime, $startMemory, $requestId): FetchResponseInterface|PromiseInterface {
+                function (mixed $response) use (
+                    &$coreDispatched,
+                    &$lastMiddlewareRequest,
+                    $guzzleOptions,
+                    $seedBody,
+                    $initialBody,
+                    $context,
+                    $startTime,
+                    $startMemory,
+                    $requestId,
+                ): FetchResponseInterface|PromiseInterface {
                     if ($coreDispatched) {
                         return $this->requireFetchResponse($response);
                     }
@@ -120,7 +183,16 @@ final class RequestCoordinator
                         $requestId,
                     );
                 },
-                function (Throwable $exception) use (&$coreDispatched, &$lastMiddlewareRequest, $guzzleOptions, $seedBody, $initialBody, $context, $startTime, $requestId): never {
+                function (Throwable $exception) use (
+                    &$coreDispatched,
+                    &$lastMiddlewareRequest,
+                    $guzzleOptions,
+                    $seedBody,
+                    $initialBody,
+                    $context,
+                    $startTime,
+                    $requestId,
+                ): never {
                     if ($coreDispatched) {
                         throw $exception;
                     }
@@ -157,7 +229,8 @@ final class RequestCoordinator
     }
 
     /**
-     * Complete a middleware response after the pipeline settles without dispatching its core.
+     * Complete a middleware response after the pipeline settles without
+     * dispatching its core.
      *
      * @param  array<string, mixed>  $guzzleOptions
      * @return FetchResponseInterface|PromiseInterface<FetchResponseInterface>
@@ -174,14 +247,33 @@ final class RequestCoordinator
         ?string $requestId,
     ): FetchResponseInterface|PromiseInterface {
         try {
-            $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody, $initialBody);
+            $shortCircuitOptions =
+                $this->requestBuilder->mergeMiddlewareRequest(
+                    $request,
+                    $guzzleOptions,
+                    $seedBody,
+                    $initialBody,
+                );
             if ($this->capturesRequestBody()) {
-                [$request, $shortCircuitOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $shortCircuitOptions);
+                [
+                    $request,
+                    $shortCircuitOptions,
+                ] = $this->requestBuilder->makeRequestBodyReplayable(
+                    $request,
+                    $shortCircuitOptions,
+                );
             }
 
-            $request = $this->requestBuilder->prepareValidationRequest($request, $shortCircuitOptions);
+            $request = $this->requestBuilder->prepareValidationRequest(
+                $request,
+                $shortCircuitOptions,
+            );
             unset($shortCircuitOptions['query']);
-            $operation = $this->validationManager->validateRequest($request, $shortCircuitOptions, $this->validationPolicy);
+            $operation = $this->validationManager->validateRequest(
+                $request,
+                $shortCircuitOptions,
+                $this->validationPolicy,
+            );
         } catch (Throwable $exception) {
             if ($context->isAsync()) {
                 return reject($exception);
@@ -192,23 +284,68 @@ final class RequestCoordinator
 
         $method = $request->getMethod();
         $uri = (string) $request->getUri();
-        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $shortCircuitOptions['headers'] ?? []);
+        $eventRequest = ($this->hooks->eventRequest)(
+            $method,
+            $uri,
+            $shortCircuitOptions['headers'] ?? [],
+        );
         ($this->hooks->emitRequestEvent)($eventRequest, $context, $startTime);
 
-        $complete = function (mixed $response) use ($method, $uri, $shortCircuitOptions, $context, $operation, $eventRequest, $startTime, $startMemory, $requestId): FetchResponseInterface {
+        $complete = function (mixed $response) use (
+            $method,
+            $uri,
+            $shortCircuitOptions,
+            $context,
+            $operation,
+            $eventRequest,
+            $startTime,
+            $startMemory,
+            $requestId,
+        ): FetchResponseInterface {
             $finalResponse = $this->requireFetchResponse($response);
-            $this->validationManager->validateResponse($finalResponse, $this->validationPolicy, $operation);
+            $this->validationManager->validateResponse(
+                $finalResponse,
+                $this->validationPolicy,
+                $operation,
+            );
             ($this->hooks->recordProfilingEvent)($requestId, 'response_start');
-            ($this->hooks->endProfiling)($requestId, $finalResponse->getStatusCode());
-            $this->attachDebugInfo($method, $uri, $shortCircuitOptions, $finalResponse, $startTime, $startMemory);
-            ($this->hooks->emitResponseEvent)($eventRequest, $finalResponse, $context, $startTime);
+            ($this->hooks->endProfiling)(
+                $requestId,
+                $finalResponse->getStatusCode(),
+            );
+            $this->attachDebugInfo(
+                $method,
+                $uri,
+                $shortCircuitOptions,
+                $finalResponse,
+                $startTime,
+                $startMemory,
+            );
+            ($this->hooks->emitResponseEvent)(
+                $eventRequest,
+                $finalResponse,
+                $context,
+                $startTime,
+            );
 
             return $finalResponse;
         };
 
-        $fail = function (Throwable $exception) use ($method, $uri, $context, $eventRequest, $startTime, $requestId): never {
+        $fail = function (Throwable $exception) use (
+            $method,
+            $uri,
+            $context,
+            $eventRequest,
+            $startTime,
+            $requestId,
+        ): never {
             ($this->hooks->endProfiling)($requestId, null);
-            ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);
+            ($this->hooks->emitErrorEvent)(
+                $eventRequest,
+                $exception,
+                $context,
+                $startTime,
+            );
 
             throw ($this->hooks->withErrorContext)($exception, $method, $uri);
         };
@@ -229,7 +366,8 @@ final class RequestCoordinator
     }
 
     /**
-     * Propagate a middleware failure that occurs before the core request is dispatched.
+     * Propagate a middleware failure that occurs before the core request is
+     * dispatched.
      *
      * @param  array<string, mixed>  $guzzleOptions
      */
@@ -243,21 +381,48 @@ final class RequestCoordinator
         float $startTime,
         ?string $requestId,
     ): never {
-        $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody, $initialBody);
+        $shortCircuitOptions = $this->requestBuilder->mergeMiddlewareRequest(
+            $request,
+            $guzzleOptions,
+            $seedBody,
+            $initialBody,
+        );
         if ($this->capturesRequestBody()) {
-            [$request, $shortCircuitOptions] = $this->requestBuilder->makeRequestBodyReplayable($request, $shortCircuitOptions);
+            [
+                $request,
+                $shortCircuitOptions,
+            ] = $this->requestBuilder->makeRequestBodyReplayable(
+                $request,
+                $shortCircuitOptions,
+            );
         }
 
-        $request = $this->requestBuilder->prepareValidationRequest($request, $shortCircuitOptions);
+        $request = $this->requestBuilder->prepareValidationRequest(
+            $request,
+            $shortCircuitOptions,
+        );
         unset($shortCircuitOptions['query']);
-        $this->validationManager->validateRequest($request, $shortCircuitOptions, $this->validationPolicy);
+        $this->validationManager->validateRequest(
+            $request,
+            $shortCircuitOptions,
+            $this->validationPolicy,
+        );
 
         $method = $request->getMethod();
         $uri = (string) $request->getUri();
-        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $shortCircuitOptions['headers'] ?? []);
+        $eventRequest = ($this->hooks->eventRequest)(
+            $method,
+            $uri,
+            $shortCircuitOptions['headers'] ?? [],
+        );
         ($this->hooks->emitRequestEvent)($eventRequest, $context, $startTime);
         ($this->hooks->endProfiling)($requestId, null);
-        ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);
+        ($this->hooks->emitErrorEvent)(
+            $eventRequest,
+            $exception,
+            $context,
+            $startTime,
+        );
 
         throw ($this->hooks->withErrorContext)($exception, $method, $uri);
     }
@@ -276,14 +441,26 @@ final class RequestCoordinator
         ?string $requestId,
         ?object $operation,
     ): FetchResponseInterface|PromiseInterface {
-        $eventRequest = ($this->hooks->eventRequest)($method, $uri, $guzzleOptions['headers'] ?? []);
+        $eventRequest = ($this->hooks->eventRequest)(
+            $method,
+            $uri,
+            $guzzleOptions['headers'] ?? [],
+        );
         ($this->hooks->emitRequestEvent)($eventRequest, $context, $startTime);
 
         if (($this->hooks->hasRedirectListeners)()) {
-            $guzzleOptions = ($this->hooks->attachRedirectListener)($guzzleOptions, $eventRequest, $context);
+            $guzzleOptions = ($this->hooks->attachRedirectListener)(
+                $guzzleOptions,
+                $eventRequest,
+                $context,
+            );
         }
 
-        $mockResponse = ($this->hooks->mockRequest)($method, $uri, $guzzleOptions);
+        $mockResponse = ($this->hooks->mockRequest)(
+            $method,
+            $uri,
+            $guzzleOptions,
+        );
         if ($mockResponse !== null) {
             return $this->completeImmediateResponse(
                 $mockResponse,
@@ -300,9 +477,18 @@ final class RequestCoordinator
         }
 
         $cachedResult = null;
-        $requestOptionsWithAsync = array_merge($context->toArray(), ['async' => $context->isAsync()]);
+        $requestOptionsWithAsync = array_replace(
+            $context->toArray(),
+            $guzzleOptions,
+            ['async' => $context->isAsync()],
+        );
+        unset($requestOptionsWithAsync['query']);
         if ($this->cacheManager !== null) {
-            $cachedResult = $this->cacheManager->getCachedResponse($method, $uri, $requestOptionsWithAsync);
+            $cachedResult = $this->cacheManager->getCachedResponse(
+                $method,
+                $uri,
+                $requestOptionsWithAsync,
+            );
             if ($cachedResult['response'] !== null) {
                 return $this->completeImmediateResponse(
                     $cachedResult['response'],
@@ -319,24 +505,64 @@ final class RequestCoordinator
             }
 
             if ($cachedResult['cached'] !== null) {
-                $guzzleOptions = $this->cacheManager->addConditionalHeaders($guzzleOptions, $cachedResult['cached']);
+                $guzzleOptions = $this->cacheManager->addConditionalHeaders(
+                    $guzzleOptions,
+                    $cachedResult['cached'],
+                );
             }
         }
 
         ($this->hooks->logRequest)($method, $uri, $guzzleOptions);
 
         if ($context->isAsync()) {
-            return $this->executeAsync($method, $uri, $guzzleOptions, $startTime, $startMemory, $requestId, $context)
-                ->then(function (FetchResponseInterface $response) use ($eventRequest, $context, $startTime, $operation): FetchResponseInterface {
-                    $this->validationManager->validateResponse($response, $this->validationPolicy, $operation);
-                    ($this->hooks->emitResponseEvent)($eventRequest, $response, $context, $startTime);
+            return $this->executeAsync(
+                $method,
+                $uri,
+                $guzzleOptions,
+                $startTime,
+                $startMemory,
+                $requestId,
+                $context,
+            )
+                ->then(function (FetchResponseInterface $response) use (
+                    $eventRequest,
+                    $context,
+                    $startTime,
+                    $operation,
+                ): FetchResponseInterface {
+                    $this->validationManager->validateResponse(
+                        $response,
+                        $this->validationPolicy,
+                        $operation,
+                    );
+                    ($this->hooks->emitResponseEvent)(
+                        $eventRequest,
+                        $response,
+                        $context,
+                        $startTime,
+                    );
 
                     return $response;
                 })
-                ->catch(function (Throwable $exception) use ($method, $uri, $eventRequest, $context, $startTime): never {
-                    ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);
+                ->catch(function (Throwable $exception) use (
+                    $method,
+                    $uri,
+                    $eventRequest,
+                    $context,
+                    $startTime,
+                ): never {
+                    ($this->hooks->emitErrorEvent)(
+                        $eventRequest,
+                        $exception,
+                        $context,
+                        $startTime,
+                    );
 
-                    throw ($this->hooks->withErrorContext)($exception, $method, $uri);
+                    throw ($this->hooks->withErrorContext)(
+                        $exception,
+                        $method,
+                        $uri,
+                    );
                 });
         }
 
@@ -353,11 +579,21 @@ final class RequestCoordinator
                 $context,
                 $operation,
             );
-            ($this->hooks->emitResponseEvent)($eventRequest, $response, $context, $startTime);
+            ($this->hooks->emitResponseEvent)(
+                $eventRequest,
+                $response,
+                $context,
+                $startTime,
+            );
 
             return $response;
         } catch (Throwable $exception) {
-            ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);
+            ($this->hooks->emitErrorEvent)(
+                $eventRequest,
+                $exception,
+                $context,
+                $startTime,
+            );
 
             throw ($this->hooks->withErrorContext)($exception, $method, $uri);
         }
@@ -381,13 +617,38 @@ final class RequestCoordinator
         ?object $operation,
     ): FetchResponseInterface {
         try {
-            $response = $this->executeSync($method, $uri, $options, $startTime, $startMemory, $requestId, $context);
-            if ($response->getStatusCode() === 304 && $cachedResult !== null && isset($cachedResult['cached']) && $this->cacheManager !== null) {
-                $response = $this->cacheManager->handleNotModified($cachedResult['cached'], $response);
+            $response = $this->executeSync(
+                $method,
+                $uri,
+                $options,
+                $startTime,
+                $startMemory,
+                $requestId,
+                $context,
+            );
+            if (
+                $response->getStatusCode() === 304 &&
+                $cachedResult !== null &&
+                isset($cachedResult['cached']) &&
+                $this->cacheManager !== null
+            ) {
+                $response = $this->cacheManager->handleNotModified(
+                    $cachedResult['cached'],
+                    $response,
+                );
             }
 
-            $this->validationManager->validateResponse($response, $this->validationPolicy, $operation);
-            $this->cacheManager?->cacheResponse($method, $uri, $response, $requestOptions);
+            $this->validationManager->validateResponse(
+                $response,
+                $this->validationPolicy,
+                $operation,
+            );
+            $this->cacheManager?->cacheResponse(
+                $method,
+                $uri,
+                $response,
+                $requestOptions,
+            );
 
             return $response;
         } catch (Throwable $exception) {
@@ -395,13 +656,38 @@ final class RequestCoordinator
                 throw $exception;
             }
 
-            if ($cachedResult !== null && isset($cachedResult['cached']) && $this->cacheManager !== null) {
-                $staleResponse = $this->cacheManager->handleStaleIfError($cachedResult['cached'], $method, $uri);
+            if (
+                $cachedResult !== null &&
+                isset($cachedResult['cached']) &&
+                $this->cacheManager !== null
+            ) {
+                $staleResponse = $this->cacheManager->handleStaleIfError(
+                    $cachedResult['cached'],
+                    $method,
+                    $uri,
+                );
                 if ($staleResponse !== null) {
-                    $this->validationManager->validateResponse($staleResponse, $this->validationPolicy, $operation);
-                    ($this->hooks->recordProfilingEvent)($requestId, 'response_start');
-                    ($this->hooks->endProfiling)($requestId, $staleResponse->getStatusCode());
-                    $this->attachDebugInfo($method, $uri, $options, $staleResponse, $startTime, $startMemory);
+                    $this->validationManager->validateResponse(
+                        $staleResponse,
+                        $this->validationPolicy,
+                        $operation,
+                    );
+                    ($this->hooks->recordProfilingEvent)(
+                        $requestId,
+                        'response_start',
+                    );
+                    ($this->hooks->endProfiling)(
+                        $requestId,
+                        $staleResponse->getStatusCode(),
+                    );
+                    $this->attachDebugInfo(
+                        $method,
+                        $uri,
+                        $options,
+                        $staleResponse,
+                        $startTime,
+                        $startMemory,
+                    );
 
                     return $staleResponse;
                 }
@@ -429,17 +715,41 @@ final class RequestCoordinator
                 $uri,
                 $options,
                 $this->retryStrategy,
-                function (int $attempt, int $maxAttempts, Throwable $exception, int $delay) use ($context): void {
-                    ($this->hooks->notifyRetry)($attempt, $maxAttempts, $exception, $delay, $context);
+                function (
+                    int $attempt,
+                    int $maxAttempts,
+                    Throwable $exception,
+                    int $delay,
+                ) use ($context): void {
+                    ($this->hooks->notifyRetry)(
+                        $attempt,
+                        $maxAttempts,
+                        $exception,
+                        $delay,
+                        $context,
+                    );
                 },
                 function () use ($requestId): void {
-                    ($this->hooks->recordProfilingEvent)($requestId, 'request_sent');
+                    ($this->hooks->recordProfilingEvent)(
+                        $requestId,
+                        'request_sent',
+                    );
                 },
             );
             $duration = microtime(true) - $startTime;
             ($this->hooks->recordProfilingEvent)($requestId, 'response_start');
-            ($this->hooks->endProfiling)($requestId, $response->getStatusCode());
-            $this->attachDebugInfo($method, $uri, $options, $response, $startTime, $startMemory);
+            ($this->hooks->endProfiling)(
+                $requestId,
+                $response->getStatusCode(),
+            );
+            $this->attachDebugInfo(
+                $method,
+                $uri,
+                $options,
+                $response,
+                $startTime,
+                $startMemory,
+            );
             if ($response instanceof Response) {
                 ($this->hooks->logResponse)($response, $duration);
             }
@@ -452,7 +762,10 @@ final class RequestCoordinator
         }
     }
 
-    /** @param array<string, mixed> $options @return PromiseInterface<FetchResponseInterface> */
+    /**
+     * @param  array<string, mixed>  $options
+     * @return PromiseInterface<FetchResponseInterface>
+     */
     private function executeAsync(
         string $method,
         string $uri,
@@ -464,38 +777,91 @@ final class RequestCoordinator
     ): PromiseInterface {
         $requestId ??= ($this->hooks->startProfiling)($method, $uri);
 
-        return (new AsyncRequestExecutor($this->asyncTransport))->execute(
-            $method,
-            $uri,
-            $options,
-            $this->retryStrategy,
-            function (int $attempt, int $maxAttempts, Throwable $exception, int $delay) use ($context): void {
-                ($this->hooks->notifyRetry)($attempt, $maxAttempts, $exception, $delay, $context);
-            },
-            function () use ($requestId): void {
-                ($this->hooks->recordProfilingEvent)($requestId, 'request_sent');
-            },
-        )->then(function (FetchResponseInterface $response) use ($method, $uri, $options, $startTime, $startMemory, $requestId): FetchResponseInterface {
-            $duration = microtime(true) - $startTime;
-            ($this->hooks->recordProfilingEvent)($requestId, 'response_start');
-            ($this->hooks->endProfiling)($requestId, $response->getStatusCode());
-            $this->attachDebugInfo($method, $uri, $options, $response, $startTime, $startMemory);
-            if ($response instanceof Response) {
-                ($this->hooks->logResponse)($response, $duration);
-            }
+        return (new AsyncRequestExecutor($this->asyncTransport))
+            ->execute(
+                $method,
+                $uri,
+                $options,
+                $this->retryStrategy,
+                function (
+                    int $attempt,
+                    int $maxAttempts,
+                    Throwable $exception,
+                    int $delay,
+                ) use ($context): void {
+                    ($this->hooks->notifyRetry)(
+                        $attempt,
+                        $maxAttempts,
+                        $exception,
+                        $delay,
+                        $context,
+                    );
+                },
+                function () use ($requestId): void {
+                    ($this->hooks->recordProfilingEvent)(
+                        $requestId,
+                        'request_sent',
+                    );
+                },
+            )
+            ->then(function (FetchResponseInterface $response) use (
+                $method,
+                $uri,
+                $options,
+                $startTime,
+                $startMemory,
+                $requestId,
+            ): FetchResponseInterface {
+                $duration = microtime(true) - $startTime;
+                ($this->hooks->recordProfilingEvent)(
+                    $requestId,
+                    'response_start',
+                );
+                ($this->hooks->endProfiling)(
+                    $requestId,
+                    $response->getStatusCode(),
+                );
+                $this->attachDebugInfo(
+                    $method,
+                    $uri,
+                    $options,
+                    $response,
+                    $startTime,
+                    $startMemory,
+                );
+                if ($response instanceof Response) {
+                    ($this->hooks->logResponse)($response, $duration);
+                }
 
-            return $response;
-        })->catch(function (Throwable $exception) use ($method, $uri, $requestId): never {
-            ($this->hooks->endProfiling)($requestId, null);
-            if ($exception instanceof AsyncTransportException || $exception instanceof CancellationException || $exception instanceof ValidationException) {
-                throw $exception;
-            }
+                return $response;
+            })
+            ->catch(function (Throwable $exception) use (
+                $method,
+                $uri,
+                $requestId,
+            ): never {
+                ($this->hooks->endProfiling)($requestId, null);
+                if (
+                    $exception instanceof AsyncTransportException ||
+                    $exception instanceof CancellationException ||
+                    $exception instanceof ValidationException
+                ) {
+                    throw $exception;
+                }
 
-            ($this->hooks->logAsyncFailure)($method, $uri, $exception);
-            $wrapped = ($this->hooks->withErrorContext)($exception, $method, $uri);
+                ($this->hooks->logAsyncFailure)($method, $uri, $exception);
+                $wrapped = ($this->hooks->withErrorContext)(
+                    $exception,
+                    $method,
+                    $uri,
+                );
 
-            throw new AsyncException($wrapped->getMessage(), (int) $wrapped->getCode(), $wrapped);
-        });
+                throw new AsyncException(
+                    $wrapped->getMessage(),
+                    (int) $wrapped->getCode(),
+                    $wrapped,
+                );
+            });
     }
 
     /** @param array<string, mixed> $options */
@@ -523,7 +889,8 @@ final class RequestCoordinator
     }
 
     /**
-     * Complete mock and cache responses through the same validation and event lifecycle.
+     * Complete mock and cache responses through the same validation and event
+     * lifecycle.
      *
      * @param  array<string, mixed>  $options
      * @return FetchResponseInterface|PromiseInterface<FetchResponseInterface>
@@ -540,20 +907,63 @@ final class RequestCoordinator
         int $startMemory,
         ?string $requestId,
     ): FetchResponseInterface|PromiseInterface {
-        $complete = function (mixed $value) use ($response, $method, $uri, $options, $context, $operation, $eventRequest, $startTime, $startMemory, $requestId): FetchResponseInterface {
-            $finalResponse = $value instanceof ResponseInterface ? $value : $response;
-            $this->validationManager->validateResponse($finalResponse, $this->validationPolicy, $operation);
+        $complete = function (mixed $value) use (
+            $response,
+            $method,
+            $uri,
+            $options,
+            $context,
+            $operation,
+            $eventRequest,
+            $startTime,
+            $startMemory,
+            $requestId,
+        ): FetchResponseInterface {
+            $finalResponse =
+                $value instanceof ResponseInterface ? $value : $response;
+            $this->validationManager->validateResponse(
+                $finalResponse,
+                $this->validationPolicy,
+                $operation,
+            );
             ($this->hooks->recordProfilingEvent)($requestId, 'response_start');
-            ($this->hooks->endProfiling)($requestId, $finalResponse->getStatusCode());
-            $this->attachDebugInfo($method, $uri, $options, $finalResponse, $startTime, $startMemory);
-            ($this->hooks->emitResponseEvent)($eventRequest, $finalResponse, $context, $startTime);
+            ($this->hooks->endProfiling)(
+                $requestId,
+                $finalResponse->getStatusCode(),
+            );
+            $this->attachDebugInfo(
+                $method,
+                $uri,
+                $options,
+                $finalResponse,
+                $startTime,
+                $startMemory,
+            );
+            ($this->hooks->emitResponseEvent)(
+                $eventRequest,
+                $finalResponse,
+                $context,
+                $startTime,
+            );
 
             return $this->requireFetchResponse($finalResponse);
         };
 
-        $fail = function (Throwable $exception) use ($method, $uri, $context, $eventRequest, $startTime, $requestId): never {
+        $fail = function (Throwable $exception) use (
+            $method,
+            $uri,
+            $context,
+            $eventRequest,
+            $startTime,
+            $requestId,
+        ): never {
             ($this->hooks->endProfiling)($requestId, null);
-            ($this->hooks->emitErrorEvent)($eventRequest, $exception, $context, $startTime);
+            ($this->hooks->emitErrorEvent)(
+                $eventRequest,
+                $exception,
+                $context,
+                $startTime,
+            );
 
             throw ($this->hooks->withErrorContext)($exception, $method, $uri);
         };
@@ -569,10 +979,15 @@ final class RequestCoordinator
         }
     }
 
-    private function coerceMiddlewareResult(ResponseInterface|PromiseInterface $result): ResponseInterface|PromiseInterface
-    {
+    private function coerceMiddlewareResult(
+        ResponseInterface|PromiseInterface $result,
+    ): ResponseInterface|PromiseInterface {
         if ($result instanceof PromiseInterface) {
-            return $result->then(fn (mixed $response): mixed => $this->coerceResponseValue($response));
+            return $result->then(
+                fn (mixed $response): mixed => $this->coerceResponseValue(
+                    $response,
+                ),
+            );
         }
 
         return $this->coerceResponseValue($result);
@@ -580,8 +995,9 @@ final class RequestCoordinator
 
     private function capturesRequestBody(): bool
     {
-        return $this->validationPolicy->requestSchema !== null
-            || ($this->validationPolicy->validateContracts && $this->validationPolicy->openApiSpec !== null);
+        return $this->validationPolicy->requestSchema !== null ||
+            ($this->validationPolicy->validateContracts &&
+                $this->validationPolicy->openApiSpec !== null);
     }
 
     private function coerceResponseValue(mixed $response): mixed
@@ -597,8 +1013,9 @@ final class RequestCoordinator
         return $response;
     }
 
-    private function requireFetchResponse(mixed $response): FetchResponseInterface
-    {
+    private function requireFetchResponse(
+        mixed $response,
+    ): FetchResponseInterface {
         if ($response instanceof FetchResponseInterface) {
             return $response;
         }
@@ -607,6 +1024,8 @@ final class RequestCoordinator
             return Response::createFromBase($response);
         }
 
-        throw new RuntimeException('The request pipeline did not return an HTTP response.');
+        throw new RuntimeException(
+            'The request pipeline did not return an HTTP response.',
+        );
     }
 }

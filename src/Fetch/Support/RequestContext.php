@@ -165,8 +165,10 @@ final class RequestContext
         $this->cacheOptions = $cacheOptions;
         $this->debugOptions = $debugOptions;
         // Use provided values or defaults - empty array means "use defaults"
-        $this->retryableStatusCodes = $retryableStatusCodes ?: self::DEFAULT_RETRYABLE_STATUS_CODES;
-        $this->retryableExceptions = $retryableExceptions ?: self::DEFAULT_RETRYABLE_EXCEPTIONS;
+        $this->retryableStatusCodes =
+            $retryableStatusCodes ?: self::DEFAULT_RETRYABLE_STATUS_CODES;
+        $this->retryableExceptions =
+            $retryableExceptions ?: self::DEFAULT_RETRYABLE_EXCEPTIONS;
     }
 
     /**
@@ -180,7 +182,8 @@ final class RequestContext
     /**
      * Create a context from an options array.
      *
-     * This method handles the various option formats used throughout the library.
+     * This method handles the various option formats used throughout the
+     *     library.
      *
      * @param  array<string, mixed>  $options
      */
@@ -226,22 +229,34 @@ final class RequestContext
         unset($options['headers']);
 
         // Extract known properties
-        // Note: Options should be normalized via RequestOptions::normalizeOptionKeys before this point
+        // Note: Options should be normalized via
+        // RequestOptions::normalizeOptionKeys before this point
         // so 'max_retries' should already be converted to 'retries'
         $uri = (string) ($options['uri'] ?? '');
         $async = (bool) ($options['async'] ?? false);
         $timeout = (int) ($options['timeout'] ?? 30);
-        $maxRetries = (int) ($options['retries'] ?? $options['max_retries'] ?? 1); // Fallback for safety
+        $maxRetries =
+            // Fallback for safety.
+            (int) ($options['retries'] ?? ($options['max_retries'] ?? 1));
         $retryDelay = (int) ($options['retry_delay'] ?? 100);
 
         // Extract retryable configuration
         $retryableStatusCodes = [];
-        if (isset($options['retry_status_codes']) && is_array($options['retry_status_codes'])) {
-            $retryableStatusCodes = array_map('intval', $options['retry_status_codes']);
+        if (
+            isset($options['retry_status_codes']) &&
+            is_array($options['retry_status_codes'])
+        ) {
+            $retryableStatusCodes = array_map(
+                'intval',
+                $options['retry_status_codes'],
+            );
         }
 
         $retryableExceptions = [];
-        if (isset($options['retry_exceptions']) && is_array($options['retry_exceptions'])) {
+        if (
+            isset($options['retry_exceptions']) &&
+            is_array($options['retry_exceptions'])
+        ) {
             $retryableExceptions = $options['retry_exceptions'];
         }
 
@@ -252,10 +267,11 @@ final class RequestContext
             $options['async'],
             $options['timeout'],
             $options['retries'],
-            $options['max_retries'], // Clean up legacy key if it somehow got through
+            // Clean up legacy key if it somehow got through.
+            $options['max_retries'],
             $options['retry_delay'],
             $options['retry_status_codes'],
-            $options['retry_exceptions']
+            $options['retry_exceptions'],
         );
 
         return new self(
@@ -272,7 +288,7 @@ final class RequestContext
             cacheOptions: $cacheOptions,
             debugOptions: $debugOptions,
             retryableStatusCodes: $retryableStatusCodes,
-            retryableExceptions: $retryableExceptions
+            retryableExceptions: $retryableExceptions,
         );
     }
 
@@ -300,7 +316,8 @@ final class RequestContext
      */
     public function withMethod(string|Method $method): self
     {
-        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodStr =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
         return $this->cloneWith(['method' => $methodStr]);
     }
@@ -343,17 +360,20 @@ final class RequestContext
     /**
      * Create a copy with custom retryable status codes.
      *
-     * @param  array<int>  $statusCodes  HTTP status codes that should trigger a retry
+     * @param  array<int>  $statusCodes  HTTP status codes that should trigger a
+     *                                   retry
      */
     public function withRetryableStatusCodes(array $statusCodes): self
     {
-        return $this->cloneWith(['retryableStatusCodes' => array_map('intval', $statusCodes)]);
+        return $this->cloneWith([
+            'retryableStatusCodes' => array_map('intval', $statusCodes),
+        ]);
     }
 
     /**
      * Create a copy with custom retryable exception types.
      *
-     * @param  array<class-string<\Throwable>>  $exceptions  Exception class names that should trigger a retry
+     * @param  array<class-string<\Throwable>>  $exceptions
      */
     public function withRetryableExceptions(array $exceptions): self
     {
@@ -406,7 +426,9 @@ final class RequestContext
      */
     public function withHeaders(array $headers): self
     {
-        return $this->cloneWith(['headers' => array_merge($this->headers, $headers)]);
+        return $this->cloneWith([
+            'headers' => array_merge($this->headers, $headers),
+        ]);
     }
 
     /**
@@ -559,7 +581,11 @@ final class RequestContext
      */
     public function isIdempotentMethod(): bool
     {
-        return in_array($this->method, ['GET', 'HEAD', 'PUT', 'DELETE', 'OPTIONS'], true);
+        return in_array(
+            $this->method,
+            ['GET', 'HEAD', 'PUT', 'DELETE', 'OPTIONS'],
+            true,
+        );
     }
 
     /**
@@ -569,9 +595,7 @@ final class RequestContext
      */
     public function shouldUseCache(): bool
     {
-        return $this->cacheEnabled
-            && ! $this->async
-            && $this->isSafeMethod();
+        return $this->cacheEnabled && ! $this->async && $this->isSafeMethod();
     }
 
     /**
@@ -594,7 +618,9 @@ final class RequestContext
         ];
 
         // Add retry configuration if not using defaults
-        if ($this->retryableStatusCodes !== self::DEFAULT_RETRYABLE_STATUS_CODES) {
+        if (
+            $this->retryableStatusCodes !== self::DEFAULT_RETRYABLE_STATUS_CODES
+        ) {
             $result['retry_status_codes'] = $this->retryableStatusCodes;
         }
 
@@ -604,12 +630,17 @@ final class RequestContext
 
         // Add cache options if enabled
         if ($this->cacheEnabled) {
-            $result['cache'] = array_merge(['enabled' => true], $this->cacheOptions);
+            $result['cache'] = array_merge(
+                ['enabled' => true],
+                $this->cacheOptions,
+            );
         }
 
         // Add debug options if enabled
         if ($this->debugEnabled) {
-            $result['debug'] = empty($this->debugOptions) ? true : $this->debugOptions;
+            $result['debug'] = empty($this->debugOptions)
+                ? true
+                : $this->debugOptions;
         }
 
         // Merge in additional options
@@ -629,10 +660,25 @@ final class RequestContext
 
         // Standard Guzzle options to include
         $standardOptions = [
-            'json', 'form_params', 'multipart', 'body',
-            'query', 'auth', 'verify', 'proxy', 'cookies', 'allow_redirects',
-            'cert', 'ssl_key', 'stream', 'connect_timeout', 'read_timeout',
-            'sink', 'version', 'decode_content', 'curl',
+            'json',
+            'form_params',
+            'multipart',
+            'body',
+            'query',
+            'auth',
+            'verify',
+            'proxy',
+            'cookies',
+            'allow_redirects',
+            'cert',
+            'ssl_key',
+            'stream',
+            'connect_timeout',
+            'read_timeout',
+            'sink',
+            'version',
+            'decode_content',
+            'curl',
         ];
 
         // Copy standard options if set
@@ -682,8 +728,10 @@ final class RequestContext
             options: $overrides['options'] ?? $this->options,
             cacheOptions: $overrides['cacheOptions'] ?? $this->cacheOptions,
             debugOptions: $overrides['debugOptions'] ?? $this->debugOptions,
-            retryableStatusCodes: $overrides['retryableStatusCodes'] ?? $this->retryableStatusCodes,
-            retryableExceptions: $overrides['retryableExceptions'] ?? $this->retryableExceptions,
+            retryableStatusCodes: $overrides['retryableStatusCodes'] ??
+                $this->retryableStatusCodes,
+            retryableExceptions: $overrides['retryableExceptions'] ??
+                $this->retryableExceptions,
         );
     }
 }

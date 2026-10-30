@@ -9,5 +9,9 @@ use React\Promise\PromiseInterface;
 interface AsyncTransport
 {
     /** @param array<string, mixed> $options */
-    public function requestAsync(string $method, string $uri, array $options): PromiseInterface;
+    public function requestAsync(
+        string $method,
+        string $uri,
+        array $options,
+    ): PromiseInterface;
 }

@@ -6,6 +6,9 @@ on:
   pull_request:
     types: [opened]
 
+permissions:
+  contents: read
+
 jobs:
   auto-assign:
     runs-on: ubuntu-latest
@@ -25,7 +28,9 @@ jobs:
           numOfAssignee: 1
 
       - name: Auto-assign PR
-        if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'Thavarshan'
+        if:
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.user.login == 'Thavarshan'
         uses: pozil/auto-assign-issue@v2
         with:
           assignees: Thavarshan

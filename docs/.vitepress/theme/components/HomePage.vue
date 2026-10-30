@@ -34,47 +34,70 @@ const badges = [
 const features = [
     {
         title: 'Familiar API',
-        description: 'Write requests in PHP the same way you do in JavaScript with fetch(), async, and await.',
+        description: [
+            'Write requests in PHP the same way you do in JavaScript with',
+            'fetch(), async, and await.',
+        ].join(' '),
         icon: Code2,
     },
     {
         title: 'Promise-Based Async',
-        description: 'Promise-first API with then(), catch(), finally(), and helpers for concurrency.',
+        description: [
+            'Promise-first API with then(), catch(), finally(), and helpers',
+            'for concurrency.',
+        ].join(' '),
         icon: Zap,
     },
     {
         title: 'Fluent Interface',
-        description: 'Chain config and requests for readable, composable HTTP code.',
+        description:
+            'Chain config and requests for readable, composable HTTP code.',
         icon: Workflow,
     },
     {
         title: 'Helper Functions',
-        description: 'Global helpers like fetch(), get(), post() for quick calls.',
+        description:
+            'Global helpers like fetch(), get(), post() for quick calls.',
         icon: Wrench,
     },
     {
         title: 'PSR Compatible',
-        description: 'Implements PSR-7 (HTTP Messages), PSR-18 (HTTP Client), and PSR-3 (Logging) standards.',
+        description: [
+            'Implements PSR-7 (HTTP Messages), PSR-18 (HTTP Client), and',
+            'PSR-3 (Logging) standards.',
+        ].join(' '),
         icon: ShieldCheck,
     },
     {
         title: 'Powerful Responses',
-        description: 'Rich response helpers for json(), text(), array(), object(), and status checks.',
+        description: [
+            'Rich response helpers for json(), text(), array(), object(),',
+            'and status checks.',
+        ].join(' '),
         icon: Braces,
     },
     {
         title: 'RFC 7234 Caching',
-        description: 'Sync-only cache with ETag/Last-Modified revalidation, stale-while-revalidate, and stale-if-error support.',
+        description: [
+            'Sync-only cache with ETag/Last-Modified revalidation,',
+            'stale-while-revalidate, and stale-if-error support.',
+        ].join(' '),
         icon: Database,
     },
     {
         title: 'Pooling & HTTP/2',
-        description: 'Shared connection pooling, DNS cache, and optional HTTP/2 with validation and stats for debugging.',
+        description: [
+            'Shared connection pooling, DNS cache, and optional HTTP/2 with',
+            'validation and stats for debugging.',
+        ].join(' '),
         icon: Network,
     },
     {
         title: 'Debug & Profiling',
-        description: 'Unified debug snapshots and optional profiler with timing, memory, and connection stats; configurable log level.',
+        description: [
+            'Unified debug snapshots and optional profiler with timing,',
+            'memory, and connection stats; configurable log level.',
+        ].join(' '),
         icon: Gauge,
     },
 ];
@@ -91,22 +114,32 @@ const trustedTags = [
 const productionHighlights = [
     {
         title: 'Built on Guzzle',
-        description: 'Proven HTTP engine with retries, middleware, and transport control.',
+        description: [
+            'Proven HTTP engine with retries, middleware, and transport',
+            'control.',
+        ].join(' '),
         icon: Layers,
     },
     {
         title: 'Connection Pooling',
-        description: 'Reusable sockets and DNS cache for lower latency across requests.',
+        description:
+            'Reusable sockets and DNS cache for lower latency across requests.',
         icon: Network,
     },
     {
         title: 'HTTP/2 Ready',
-        description: 'Optional HTTP/2 for faster multiplexed connections when curl supports it.',
+        description: [
+            'Optional HTTP/2 for faster multiplexed connections when curl',
+            'supports it.',
+        ].join(' '),
         icon: Globe,
     },
     {
         title: 'Observability',
-        description: 'Debug snapshots, structured logging, and profiler hooks built-in.',
+        description: [
+            'Debug snapshots, structured logging, and profiler hooks',
+            'built-in.',
+        ].join(' '),
         icon: Gauge,
     },
 ];
@@ -132,21 +165,34 @@ const stats = [
                 <p class="eyebrow">Fetch PHP</p>
                 <h1>Write fetch() in PHP</h1>
                 <p class="lead">
-                    A modern HTTP client that mirrors the JavaScript fetch API while staying native to
-                    PHP 8.3+. Compose requests fluently, run async flows, and ship production-grade
-                    HTTP without the ceremony.
+                    A modern HTTP client that mirrors the JavaScript fetch API
+                    while staying native to PHP 8.3+. Compose requests fluently,
+                    run async flows, and ship production-grade HTTP without the
+                    ceremony.
                 </p>
                 <div class="hero-actions">
-                    <a class="button primary" :href="withBase('/guide/quickstart')">
+                    <a
+                        class="button primary"
+                        :href="withBase('/guide/quickstart')"
+                    >
                         Get Started
                         <Icon :icon="ArrowUpRight" :size="16" />
                     </a>
-                    <a class="button ghost" href="https://github.com/Thavarshan/fetch-php" target="_blank" rel="noreferrer">
+                    <a
+                        class="button ghost"
+                        href="https://github.com/Thavarshan/fetch-php"
+                        target="_blank"
+                        rel="noreferrer"
+                    >
                         View on GitHub
                     </a>
                 </div>
                 <div class="badge-row">
-                    <span v-for="badge in badges" :key="badge.label" class="badge">
+                    <span
+                        v-for="badge in badges"
+                        :key="badge.label"
+                        class="badge"
+                    >
                         <Icon :icon="badge.icon" :size="14" />
                         {{ badge.label }}
                     </span>
@@ -160,12 +206,18 @@ const stats = [
             <div class="hero-panel">
                 <div class="glow"></div>
                 <div class="panel-card">
-                    <img class="panel-logo" :src="withBase('/logo.png')" alt="Fetch PHP logo" />
+                    <img
+                        class="panel-logo"
+                        :src="withBase('/logo.png')"
+                        alt="Fetch PHP logo"
+                    />
                     <div class="panel-header">
                         <Icon :icon="Rocket" />
                         <div>
                             <p class="panel-title">Quickstart</p>
-                            <p class="panel-subtitle">Install and ship in minutes</p>
+                            <p class="panel-subtitle">
+                                Install and ship in minutes
+                            </p>
                         </div>
                     </div>
                     <div class="panel-code">
@@ -173,9 +225,18 @@ const stats = [
                         <code>composer require jerome/fetch-php</code>
                     </div>
                     <ul class="panel-list">
-                        <li><Icon :icon="CheckCircle2" :size="16" /> Drop-in global fetch() helper</li>
-                        <li><Icon :icon="CheckCircle2" :size="16" /> Async helpers included</li>
-                        <li><Icon :icon="CheckCircle2" :size="16" /> PSR compliant out of the box</li>
+                        <li>
+                            <Icon :icon="CheckCircle2" :size="16" /> Drop-in
+                            global fetch() helper
+                        </li>
+                        <li>
+                            <Icon :icon="CheckCircle2" :size="16" /> Async
+                            helpers included
+                        </li>
+                        <li>
+                            <Icon :icon="CheckCircle2" :size="16" /> PSR
+                            compliant out of the box
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -185,12 +246,18 @@ const stats = [
             <div>
                 <p class="section-title">Trusted by PHP teams</p>
                 <p class="section-subtitle">
-                    Fetch PHP is designed for teams shipping APIs, SaaS backends, and internal tools
-                    who want a modern HTTP experience without sacrificing PHP standards.
+                    Fetch PHP is designed for teams shipping APIs, SaaS
+                    backends, and internal tools who want a modern HTTP
+                    experience without sacrificing PHP standards.
                 </p>
             </div>
             <div class="trusted-tags">
-                <span v-for="tag in trustedTags" :key="tag" class="trusted-pill">{{ tag }}</span>
+                <span
+                    v-for="tag in trustedTags"
+                    :key="tag"
+                    class="trusted-pill"
+                    >{{ tag }}</span
+                >
             </div>
         </section>
 
@@ -200,7 +267,11 @@ const stats = [
                 <h2>Modern DX, serious production guarantees</h2>
             </div>
             <div class="feature-grid">
-                <article v-for="feature in features" :key="feature.title" class="feature-card">
+                <article
+                    v-for="feature in features"
+                    :key="feature.title"
+                    class="feature-card"
+                >
                     <div class="feature-icon">
                         <Icon :icon="feature.icon" :size="22" />
                     </div>
@@ -215,13 +286,23 @@ const stats = [
                 <p class="section-title">Copy/paste ready</p>
                 <h2>Same mental model as JavaScript</h2>
                 <p>
-                    Use the Matrix async helpers to keep promise-based workflows familiar. The
-                    response helpers map directly to fetch(), so JSON parsing feels identical.
+                    Use the Matrix async helpers to keep promise-based workflows
+                    familiar. The response helpers map directly to fetch(), so
+                    JSON parsing feels identical.
                 </p>
                 <ul class="checklist">
-                    <li><Icon :icon="CheckCircle2" :size="16" /> Promise chaining or async/await</li>
-                    <li><Icon :icon="CheckCircle2" :size="16" /> Fluent request builder</li>
-                    <li><Icon :icon="CheckCircle2" :size="16" /> Test utilities built-in</li>
+                    <li>
+                        <Icon :icon="CheckCircle2" :size="16" /> Promise
+                        chaining or async/await
+                    </li>
+                    <li>
+                        <Icon :icon="CheckCircle2" :size="16" /> Fluent request
+                        builder
+                    </li>
+                    <li>
+                        <Icon :icon="CheckCircle2" :size="16" /> Test utilities
+                        built-in
+                    </li>
                 </ul>
             </div>
             <CodeDemo />
@@ -234,7 +315,11 @@ const stats = [
                     <h2>Designed for production from day one</h2>
                 </div>
                 <div class="stat-grid">
-                    <div v-for="stat in stats" :key="stat.label" class="stat-card">
+                    <div
+                        v-for="stat in stats"
+                        :key="stat.label"
+                        class="stat-card"
+                    >
                         <Icon :icon="stat.icon" :size="18" />
                         <div>
                             <p class="stat-value">{{ stat.value }}</p>
@@ -244,7 +329,11 @@ const stats = [
                 </div>
             </div>
             <div class="production-grid">
-                <article v-for="item in productionHighlights" :key="item.title" class="production-card">
+                <article
+                    v-for="item in productionHighlights"
+                    :key="item.title"
+                    class="production-card"
+                >
                     <Icon :icon="item.icon" :size="20" />
                     <div>
                         <h3>{{ item.title }}</h3>
@@ -288,8 +377,8 @@ const stats = [
                 <p class="section-title">Ready to ship?</p>
                 <h2>Fetch PHP gives your team a clean HTTP foundation</h2>
                 <p class="section-subtitle">
-                    Install with Composer, then dive into the guide for async patterns, retries, and
-                    advanced configuration.
+                    Install with Composer, then dive into the guide for async
+                    patterns, retries, and advanced configuration.
                 </p>
             </div>
             <div class="cta-actions">
@@ -298,8 +387,14 @@ const stats = [
                     <code>composer require jerome/fetch-php</code>
                 </div>
                 <div class="cta-links">
-                    <a class="button primary" :href="withBase('/guide/quickstart')">Get Started</a>
-                    <a class="button ghost" :href="withBase('/guide/')">Explore the Docs</a>
+                    <a
+                        class="button primary"
+                        :href="withBase('/guide/quickstart')"
+                        >Get Started</a
+                    >
+                    <a class="button ghost" :href="withBase('/guide/')"
+                        >Explore the Docs</a
+                    >
                 </div>
             </div>
         </section>

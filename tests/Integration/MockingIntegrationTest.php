@@ -32,7 +32,9 @@ class MockingIntegrationTest extends TestCase
     public function test_mocks_simple_get_request(): void
     {
         MockServer::fake([
-            'https://api.example.com/users' => MockResponse::json(['users' => ['John', 'Jane']]),
+            'https://api.example.com/users' => MockResponse::json([
+                'users' => ['John', 'Jane'],
+            ]),
         ]);
 
         $response = get('https://api.example.com/users');
@@ -44,10 +46,14 @@ class MockingIntegrationTest extends TestCase
     public function test_mocks_post_request(): void
     {
         MockServer::fake([
-            'POST https://api.example.com/users' => MockResponse::created(['id' => 123]),
+            'POST https://api.example.com/users' => MockResponse::created([
+                'id' => 123,
+            ]),
         ]);
 
-        $response = post('https://api.example.com/users', ['name' => 'John Doe']);
+        $response = post('https://api.example.com/users', [
+            'name' => 'John Doe',
+        ]);
 
         $this->assertSame(201, $response->status());
         $this->assertSame(['id' => 123], $response->json());
@@ -56,7 +62,9 @@ class MockingIntegrationTest extends TestCase
     public function test_mocks_with_wildcard_pattern(): void
     {
         MockServer::fake([
-            'https://api.example.com/users/*' => MockResponse::json(['user' => 'found']),
+            'https://api.example.com/users/*' => MockResponse::json([
+                'user' => 'found',
+            ]),
         ]);
 
         $response1 = get('https://api.example.com/users/123');
@@ -101,7 +109,10 @@ class MockingIntegrationTest extends TestCase
         $unauthenticatedResponse = get('https://api.example.com/protected');
 
         $this->assertSame(200, $authenticatedResponse->status());
-        $this->assertSame(['authenticated' => true], $authenticatedResponse->json());
+        $this->assertSame(
+            ['authenticated' => true],
+            $authenticatedResponse->json(),
+        );
         $this->assertSame(401, $unauthenticatedResponse->status());
     }
 
@@ -166,8 +177,12 @@ class MockingIntegrationTest extends TestCase
     {
         // First, make some "real" requests with mocked responses
         MockServer::fake([
-            'https://api.example.com/users' => MockResponse::json(['users' => ['John']]),
-            'POST https://api.example.com/users' => MockResponse::created(['id' => 1]),
+            'https://api.example.com/users' => MockResponse::json([
+                'users' => ['John'],
+            ]),
+            'POST https://api.example.com/users' => MockResponse::created([
+                'id' => 1,
+            ]),
         ]);
 
         Recorder::start();
@@ -197,7 +212,9 @@ class MockingIntegrationTest extends TestCase
     public function test_exports_and_imports_recordings(): void
     {
         MockServer::fake([
-            'https://api.example.com/users' => MockResponse::json(['users' => []]),
+            'https://api.example.com/users' => MockResponse::json([
+                'users' => [],
+            ]),
         ]);
 
         Recorder::start();
@@ -222,7 +239,9 @@ class MockingIntegrationTest extends TestCase
     public function test_fake_with_delay(): void
     {
         MockServer::fake([
-            'https://api.example.com/slow' => MockResponse::ok('Done')->delay(50),
+            'https://api.example.com/slow' => MockResponse::ok('Done')->delay(
+                50,
+            ),
         ]);
 
         $start = microtime(true);
@@ -237,7 +256,9 @@ class MockingIntegrationTest extends TestCase
     public function test_fake_with_exception(): void
     {
         MockServer::fake([
-            'https://api.example.com/error' => MockResponse::ok()->throw(new \RuntimeException('Network error')),
+            'https://api.example.com/error' => MockResponse::ok()->throw(
+                new \RuntimeException('Network error'),
+            ),
         ]);
 
         $this->expectException(\RuntimeException::class);
@@ -249,8 +270,14 @@ class MockingIntegrationTest extends TestCase
     public function test_multiple_patterns_with_priority(): void
     {
         MockServer::fake([
-            'https://api.example.com/users/123' => MockResponse::json(['id' => 123, 'specific' => true]),
-            'https://api.example.com/users/*' => MockResponse::json(['id' => 999, 'wildcard' => true]),
+            'https://api.example.com/users/123' => MockResponse::json([
+                'id' => 123,
+                'specific' => true,
+            ]),
+            'https://api.example.com/users/*' => MockResponse::json([
+                'id' => 999,
+                'wildcard' => true,
+            ]),
         ]);
 
         // Exact match should take priority
@@ -281,9 +308,9 @@ class MockingIntegrationTest extends TestCase
         $this->assertSame(200, $response->status());
 
         MockServer::assertSent(function ($request) {
-            return $request->hasHeader('Authorization')
-                && $request->hasHeader('Accept')
-                && $request->getMethod() === 'POST';
+            return $request->hasHeader('Authorization') &&
+                $request->hasHeader('Accept') &&
+                $request->getMethod() === 'POST';
         });
     }
 
@@ -293,15 +320,22 @@ class MockingIntegrationTest extends TestCase
             '*' => MockResponse::json(['result' => 'ok']),
         ]);
 
-        post('https://api.example.com/users', ['name' => 'John'], [
-            'headers' => ['X-Custom' => 'value'],
-        ]);
+        post(
+            'https://api.example.com/users',
+            ['name' => 'John'],
+            [
+                'headers' => ['X-Custom' => 'value'],
+            ],
+        );
 
         $recorded = MockServer::recorded();
 
         $this->assertCount(1, $recorded);
         $this->assertSame('POST', $recorded[0]['request']->getMethod());
-        $this->assertSame('https://api.example.com/users', (string) $recorded[0]['request']->getUri());
+        $this->assertSame(
+            'https://api.example.com/users',
+            (string) $recorded[0]['request']->getUri(),
+        );
         $this->assertSame(['result' => 'ok'], $recorded[0]['response']->json());
     }
 }

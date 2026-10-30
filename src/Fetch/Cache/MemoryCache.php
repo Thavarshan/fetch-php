@@ -50,15 +50,22 @@ class MemoryCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    public function set(string $key, CachedResponse $response, ?int $ttl = null): bool
-    {
+    public function set(
+        string $key,
+        CachedResponse $response,
+        ?int $ttl = null,
+    ): bool {
         // Ensure we don't exceed max items
-        if (count($this->cache) >= $this->maxItems && ! isset($this->cache[$key])) {
+        if (
+            count($this->cache) >= $this->maxItems &&
+            ! isset($this->cache[$key])
+        ) {
             $this->evictOldest();
         }
 
         // Determine the effective TTL
-        // ttl=null means use default, ttl=0 means no expiration, negative means already expired
+        // ttl=null means use default, ttl=0 means no expiration, negative means
+        // already expired
         $effectiveTtl = $ttl ?? $this->defaultTtl;
 
         // Handle negative TTL (already expired)

@@ -1,6 +1,10 @@
 ---
 name: phpunit-test-engineer
-description: Writes and repairs PHPUnit 11 tests for Fetch PHP — unit vs integration placement, MockServer/Mockery, snake_case methods, deterministic async/timing, and offline execution. Use to add coverage, write a regression test, or fix a flaky/failing test.
+description:
+    Writes and repairs PHPUnit 11 tests for Fetch PHP — unit vs integration
+    placement, MockServer/Mockery, snake_case methods, deterministic
+    async/timing, and offline execution. Use to add coverage, write a regression
+    test, or fix a flaky/failing test.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: inherit
 ---

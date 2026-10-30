@@ -20,8 +20,9 @@ final class ConnectionPoolManager
 
     private bool $poolingEnabled = false;
 
-    public static function initialize(?PoolConfiguration $configuration = null): void
-    {
+    public static function initialize(
+        ?PoolConfiguration $configuration = null,
+    ): void {
         if (! GlobalServices::hasConnectionPool()) {
             GlobalServices::initialize($configuration);
         }
@@ -50,12 +51,16 @@ final class ConnectionPoolManager
 
     public function getConnectionPool(): ?ConnectionPool
     {
-        return GlobalServices::hasConnectionPool() ? GlobalServices::getConnectionPool() : null;
+        return GlobalServices::hasConnectionPool()
+            ? GlobalServices::getConnectionPool()
+            : null;
     }
 
     public function getDnsCache(): ?DnsCache
     {
-        return GlobalServices::hasDnsCache() ? GlobalServices::getDnsCache() : null;
+        return GlobalServices::hasDnsCache()
+            ? GlobalServices::getDnsCache()
+            : null;
     }
 
     /** @return array<string, mixed> */
@@ -126,7 +131,10 @@ final class ConnectionPoolManager
         }
 
         if (! defined('CURL_HTTP_VERSION_2_0')) {
-            throw new RuntimeException('HTTP/2 requested but CURL_HTTP_VERSION_2_0 is not available in this environment.');
+            throw new RuntimeException(
+                'HTTP/2 requested but CURL_HTTP_VERSION_2_0 is not '
+                    .'available in this environment.',
+            );
         }
 
         $curlOptions = $this->http2Config?->getCurlOptions() ?? [];
@@ -141,7 +149,8 @@ final class ConnectionPoolManager
 
     public function isInitialized(): bool
     {
-        return GlobalServices::hasConnectionPool() || GlobalServices::hasDnsCache();
+        return GlobalServices::hasConnectionPool() ||
+            GlobalServices::hasDnsCache();
     }
 
     /** @return array<int, mixed> */

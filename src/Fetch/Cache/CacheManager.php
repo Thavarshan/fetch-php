@@ -22,12 +22,16 @@ use Psr\Log\NullLogger;
  * **Design Decisions:**
  *
  * 1. **Caching only for safe methods by default**: GET and HEAD are cacheable.
- *    POST/PUT/PATCH/DELETE are not cached unless explicitly opted in with body hashing.
+ *    POST/PUT/PATCH/DELETE are not cached unless explicitly opted in with body
+ *     hashing.
  *
- * 2. **Async requests bypass cache**: Asynchronous requests do not check or store
- *    cached responses. This is intentional to avoid blocking on cache operations.
+ * 2. **Async requests bypass cache**: Asynchronous requests do not check or
+ *     store
+ *    cached responses. This is intentional to avoid blocking on cache
+ *     operations.
  *
- * 3. **RFC 7234 compliance**: Respects Cache-Control headers, ETag, Last-Modified,
+ * 3. **RFC 7234 compliance**: Respects Cache-Control headers, ETag,
+ *     Last-Modified,
  *    and other standard caching directives.
  *
  * @see https://tools.ietf.org/html/rfc7234 HTTP/1.1 Caching
@@ -80,7 +84,8 @@ final class CacheManager
     /**
      * Create a new cache manager.
      *
-     * @param  CacheInterface|null  $cache  Cache backend (defaults to MemoryCache)
+     * @param  CacheInterface|null  $cache  Cache backend (defaults to
+     *                                      MemoryCache)
      * @param  array<string, mixed>  $options  Cache options
      * @param  LoggerInterface|null  $logger  Logger for events
      * @param  string  $logLevel  Log level for cache events
@@ -156,8 +161,11 @@ final class CacheManager
      * @param  bool  $isAsync  Whether the request is async
      * @param  array<string, mixed>  $requestOptions  Per-request options
      */
-    public function shouldUseCache(string $method, bool $isAsync, array $requestOptions = []): bool
-    {
+    public function shouldUseCache(
+        string $method,
+        bool $isAsync,
+        array $requestOptions = [],
+    ): bool {
         if (! $this->isEnabled()) {
             return false;
         }
@@ -194,11 +202,21 @@ final class CacheManager
      * @param  string  $method  HTTP method
      * @param  string  $uri  Request URI
      * @param  array<string, mixed>  $requestOptions  Request options
-     * @return array{response: Response|null, cached: CachedResponse|null, status: string}
+     * @return array{response: Response|null, cached: CachedResponse|null,
+     *     status: string}
      */
-    public function getCachedResponse(string $method, string $uri, array $requestOptions = []): array
-    {
-        if (! $this->shouldUseCache($method, $requestOptions['async'] ?? false, $requestOptions)) {
+    public function getCachedResponse(
+        string $method,
+        string $uri,
+        array $requestOptions = [],
+    ): array {
+        if (
+            ! $this->shouldUseCache(
+                $method,
+                $requestOptions['async'] ?? false,
+                $requestOptions,
+            )
+        ) {
             $this->logEvent('BYPASS', $method, $uri);
 
             return ['response' => null, 'cached' => null, 'status' => 'BYPASS'];
@@ -207,10 +225,17 @@ final class CacheManager
         // Check for force refresh
         $cacheConfig = $requestOptions['cache'] ?? [];
 
-        if (is_array($cacheConfig) && ($cacheConfig['force_refresh'] ?? false)) {
+        if (
+            is_array($cacheConfig) &&
+            ($cacheConfig['force_refresh'] ?? false)
+        ) {
             $this->logEvent('REFRESH', $method, $uri);
 
-            return ['response' => null, 'cached' => null, 'status' => 'REFRESH'];
+            return [
+                'response' => null,
+                'cached' => null,
+                'status' => 'REFRESH',
+            ];
         }
 
         $key = $this->generateKey($method, $uri, $requestOptions);
@@ -225,30 +250,47 @@ final class CacheManager
         // Check if fresh
         if ($cached->isFresh()) {
             // Respect no-cache: must revalidate every time
-            $cachedCacheControl = CacheControl::parse($cached->getHeaders()['Cache-Control'][0] ?? '');
+            $cachedCacheControl = CacheControl::parse(
+                $cached->getHeaders()['Cache-Control'][0] ?? '',
+            );
 
             if ($cachedCacheControl->hasNoCache()) {
                 $this->logEvent('REVALIDATE', $method, $uri);
 
-                return ['response' => null, 'cached' => $cached, 'status' => 'REVALIDATE'];
+                return [
+                    'response' => null,
+                    'cached' => $cached,
+                    'status' => 'REVALIDATE',
+                ];
             }
 
             $response = $this->createResponseFromCached($cached);
             $response = $response->withHeader('X-Cache-Status', 'HIT');
             $this->logEvent('HIT', $method, $uri);
 
-            return ['response' => $response, 'cached' => $cached, 'status' => 'HIT'];
+            return [
+                'response' => $response,
+                'cached' => $cached,
+                'status' => 'HIT',
+            ];
         }
 
         // Check for stale-while-revalidate
         $staleWhileRevalidate = $this->options['stale_while_revalidate'] ?? 0;
 
-        if ($staleWhileRevalidate > 0 && $cached->isUsableAsStale($staleWhileRevalidate)) {
+        if (
+            $staleWhileRevalidate > 0 &&
+            $cached->isUsableAsStale($staleWhileRevalidate)
+        ) {
             $response = $this->createResponseFromCached($cached);
             $response = $response->withHeader('X-Cache-Status', 'STALE');
             $this->logEvent('STALE', $method, $uri);
 
-            return ['response' => $response, 'cached' => $cached, 'status' => 'STALE'];
+            return [
+                'response' => $response,
+                'cached' => $cached,
+                'status' => 'STALE',
+            ];
         }
 
         $this->logEvent('EXPIRED', $method, $uri);
@@ -270,14 +312,27 @@ final class CacheManager
         ResponseInterface $response,
         array $requestOptions = [],
     ): void {
-        if (! $this->shouldUseCache($method, $requestOptions['async'] ?? false, $requestOptions)) {
+        if (
+            ! $this->shouldUseCache(
+                $method,
+                $requestOptions['async'] ?? false,
+                $requestOptions,
+            )
+        ) {
             return;
         }
 
         // Parse Cache-Control headers
         $cacheControl = CacheControl::fromResponse($response);
 
-        if (! $this->shouldStoreResponse($method, $response, $cacheControl, $requestOptions)) {
+        if (
+            ! $this->shouldStoreResponse(
+                $method,
+                $response,
+                $cacheControl,
+                $requestOptions,
+            )
+        ) {
             return;
         }
 
@@ -302,8 +357,10 @@ final class CacheManager
      * @param  CachedResponse|null  $cached  Cached response to revalidate
      * @return array<string, mixed> Modified options
      */
-    public function addConditionalHeaders(array $options, ?CachedResponse $cached): array
-    {
+    public function addConditionalHeaders(
+        array $options,
+        ?CachedResponse $cached,
+    ): array {
         if ($cached === null) {
             return $options;
         }
@@ -339,14 +396,21 @@ final class CacheManager
         CachedResponse $cached,
         ResponseInterface $notModifiedResponse,
     ): Response {
-        // Create a new response with the cached body but potentially updated headers
+        // Create a new response with the cached body but potentially updated
+        // headers
         $headers = $cached->getHeaders();
 
         // Update headers from the 304 response (except content-related ones)
         foreach ($notModifiedResponse->getHeaders() as $name => $values) {
             $lower = strtolower($name);
 
-            if (in_array($lower, ['content-length', 'content-encoding', 'transfer-encoding'], true)) {
+            if (
+                in_array(
+                    $lower,
+                    ['content-length', 'content-encoding', 'transfer-encoding'],
+                    true,
+                )
+            ) {
                 continue;
             }
             $headers[$name] = $values;
@@ -366,8 +430,11 @@ final class CacheManager
      *
      * @param  CachedResponse|null  $cached  The cached response
      */
-    public function handleStaleIfError(?CachedResponse $cached, string $method, string $uri): ?Response
-    {
+    public function handleStaleIfError(
+        ?CachedResponse $cached,
+        string $method,
+        string $uri,
+    ): ?Response {
         if ($cached === null) {
             return null;
         }
@@ -394,8 +461,12 @@ final class CacheManager
      *
      * @param  array<string, mixed>  $requestOptions
      */
-    public function cacheResponse(string $method, string $uri, ResponseInterface $response, array $requestOptions = []): void
-    {
+    public function cacheResponse(
+        string $method,
+        string $uri,
+        ResponseInterface $response,
+        array $requestOptions = [],
+    ): void {
         $this->storeResponse($method, $uri, $response, $requestOptions);
     }
 
@@ -404,13 +475,19 @@ final class CacheManager
      *
      * @param  array<string, mixed>  $options
      */
-    public function generateKey(string $method, string $uri, array $options = []): string
-    {
+    public function generateKey(
+        string $method,
+        string $uri,
+        array $options = [],
+    ): string {
         // Check for custom cache key
         $cacheConfig = $options['cache'] ?? [];
 
         if (is_array($cacheConfig) && isset($cacheConfig['key'])) {
-            return $this->keyGenerator->generateCustom($cacheConfig['key']);
+            return $this->keyGenerator->generateCustom(
+                $cacheConfig['key'],
+                $options,
+            );
         }
 
         return $this->keyGenerator->generate($method, $uri, $options);
@@ -429,8 +506,11 @@ final class CacheManager
      *
      * @param  array<string, mixed>  $options
      */
-    public function delete(string $method, string $uri, array $options = []): bool
-    {
+    public function delete(
+        string $method,
+        string $uri,
+        array $options = [],
+    ): bool {
         $key = $this->generateKey($method, $uri, $options);
 
         return $this->cache->delete($key);
@@ -478,16 +558,18 @@ final class CacheManager
         // Check respect_headers setting
         $cacheConfig = $requestOptions['cache'] ?? [];
         $respectHeaders = is_array($cacheConfig)
-            ? ($cacheConfig['respect_headers'] ?? ($this->options['respect_cache_headers'] ?? true))
-            : ($this->options['respect_cache_headers'] ?? true);
+            ? $cacheConfig['respect_headers'] ??
+                ($this->options['respect_cache_headers'] ?? true)
+            : $this->options['respect_cache_headers'] ?? true;
 
         if (! $respectHeaders) {
             return true;
         }
 
         $isShared = is_array($cacheConfig)
-            ? ($cacheConfig['is_shared_cache'] ?? ($this->options['is_shared_cache'] ?? false))
-            : ($this->options['is_shared_cache'] ?? false);
+            ? $cacheConfig['is_shared_cache'] ??
+                ($this->options['is_shared_cache'] ?? false)
+            : $this->options['is_shared_cache'] ?? false;
 
         return $cacheControl->shouldCache($response, $isShared);
     }

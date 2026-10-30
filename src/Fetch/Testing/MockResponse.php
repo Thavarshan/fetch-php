@@ -46,8 +46,11 @@ class MockResponse
      * @param  mixed  $body  Response body
      * @param  array<string, string|array<string>>  $headers  Response headers
      */
-    public function __construct(int $status = 200, mixed $body = '', array $headers = [])
-    {
+    public function __construct(
+        int $status = 200,
+        mixed $body = '',
+        array $headers = [],
+    ) {
         $this->status = $status;
         $this->body = $body;
         $this->headers = $headers;
@@ -60,8 +63,11 @@ class MockResponse
      * @param  mixed  $body  Response body
      * @param  array<string, string|array<string>>  $headers  Response headers
      */
-    public static function create(int $status = 200, mixed $body = '', array $headers = []): self
-    {
+    public static function create(
+        int $status = 200,
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         return new self($status, $body, $headers);
     }
 
@@ -72,11 +78,18 @@ class MockResponse
      * @param  int  $status  HTTP status code
      * @param  array<string, string|array<string>>  $headers  Additional headers
      */
-    public static function json(array|object $data, int $status = 200, array $headers = []): self
-    {
+    public static function json(
+        array|object $data,
+        int $status = 200,
+        array $headers = [],
+    ): self {
         $headers['Content-Type'] = 'application/json';
 
-        return new self($status, json_encode($data, JSON_THROW_ON_ERROR), $headers);
+        return new self(
+            $status,
+            json_encode($data, JSON_THROW_ON_ERROR),
+            $headers,
+        );
     }
 
     /**
@@ -124,8 +137,10 @@ class MockResponse
      *
      * @param  array<string, string|array<string>>  $headers
      */
-    public static function badRequest(mixed $body = '', array $headers = []): self
-    {
+    public static function badRequest(
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         return new self(Status::BAD_REQUEST->value, $body, $headers);
     }
 
@@ -134,8 +149,10 @@ class MockResponse
      *
      * @param  array<string, string|array<string>>  $headers
      */
-    public static function unauthorized(mixed $body = '', array $headers = []): self
-    {
+    public static function unauthorized(
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         return new self(Status::UNAUTHORIZED->value, $body, $headers);
     }
 
@@ -144,8 +161,10 @@ class MockResponse
      *
      * @param  array<string, string|array<string>>  $headers
      */
-    public static function forbidden(mixed $body = '', array $headers = []): self
-    {
+    public static function forbidden(
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         return new self(Status::FORBIDDEN->value, $body, $headers);
     }
 
@@ -164,8 +183,10 @@ class MockResponse
      *
      * @param  array<string, string|array<string>>  $headers
      */
-    public static function unprocessableEntity(mixed $body = '', array $headers = []): self
-    {
+    public static function unprocessableEntity(
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         return new self(Status::UNPROCESSABLE_ENTITY->value, $body, $headers);
     }
 
@@ -174,8 +195,10 @@ class MockResponse
      *
      * @param  array<string, string|array<string>>  $headers
      */
-    public static function serverError(mixed $body = '', array $headers = []): self
-    {
+    public static function serverError(
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         return new self(Status::INTERNAL_SERVER_ERROR->value, $body, $headers);
     }
 
@@ -184,8 +207,10 @@ class MockResponse
      *
      * @param  array<string, string|array<string>>  $headers
      */
-    public static function serviceUnavailable(mixed $body = '', array $headers = []): self
-    {
+    public static function serviceUnavailable(
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         return new self(Status::SERVICE_UNAVAILABLE->value, $body, $headers);
     }
 
@@ -254,7 +279,8 @@ class MockResponse
     }
 
     /**
-     * Execute the mock response (apply delay, throw exception, or return response).
+     * Execute the mock response (apply delay, throw exception, or return
+     *     response).
      *
      * @throws Throwable
      */
@@ -271,10 +297,12 @@ class MockResponse
         }
 
         // Convert body to string if it's not already
-        $body = is_string($this->body) ? $this->body : json_encode($this->body, JSON_THROW_ON_ERROR);
+        $body = is_string($this->body)
+            ? $this->body
+            : json_encode($this->body, JSON_THROW_ON_ERROR);
 
         return Response::createFromBase(
-            new GuzzleResponse($this->status, $this->headers, $body)
+            new GuzzleResponse($this->status, $this->headers, $body),
         );
     }
 }

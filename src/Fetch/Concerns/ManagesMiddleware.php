@@ -17,11 +17,14 @@ use React\Promise\PromiseInterface;
  * has a stable, predictable order: higher priority runs first (outermost), and
  * ties break by insertion order. The trait also provides fluent conditional
  * configuration (`when`/`unless`) in the spirit of Laravel's Conditionable.
+ *
+ * @phpstan-import-type CoreHandler from MiddlewarePipeline
  */
 trait ManagesMiddleware
 {
     /**
-     * @var array<int, array{middleware: Middleware|callable, priority: int, seq: int}>
+     * @var array<int, array{middleware: Middleware|callable, priority: int,
+     *     seq: int}>
      */
     protected array $middlewareStack = [];
 
@@ -33,11 +36,12 @@ trait ManagesMiddleware
     /**
      * Append a middleware to the stack.
      *
-     * @param  Middleware|callable(RequestInterface, callable): mixed  $middleware
      * @return $this
      */
-    public function addMiddleware(Middleware|callable $middleware, int $priority = 0): static
-    {
+    public function addMiddleware(
+        Middleware|callable $middleware,
+        int $priority = 0,
+    ): static {
         $this->middlewareStack[] = [
             'middleware' => $middleware,
             'priority' => $priority,
@@ -50,7 +54,10 @@ trait ManagesMiddleware
     /**
      * Replace the entire middleware stack.
      *
-     * @param  array<int, Middleware|callable|array{0: Middleware|callable, 1?: int}>  $middleware
+     * @param  array<int, Middleware|callable|array{
+     *     0: Middleware|callable,
+     *     1?: int
+     * }>  $middleware
      * @return $this
      */
     public function middleware(array $middleware): static
@@ -87,10 +94,14 @@ trait ManagesMiddleware
             return $this;
         }
 
-        $this->middlewareStack = array_values(array_filter(
-            $this->middlewareStack,
-            fn (array $entry): bool => ! ($entry['middleware'] instanceof $class),
-        ));
+        $this->middlewareStack = array_values(
+            array_filter(
+                $this->middlewareStack,
+                fn (array $entry): bool => ! (
+                    $entry['middleware'] instanceof $class
+                ),
+            ),
+        );
 
         return $this;
     }
@@ -116,13 +127,17 @@ trait ManagesMiddleware
     /**
      * Apply the given callback to the handler when the condition is truthy.
      *
-     * @param  mixed  $condition  A boolean, or a callable resolved with the handler.
+     * @param  mixed  $condition  A boolean, or a callable resolved with the
+     *                            handler.
      * @param  callable(static, mixed): mixed  $callback
      * @param  callable(static, mixed): mixed|null  $default
      * @return $this
      */
-    public function when(mixed $condition, callable $callback, ?callable $default = null): static
-    {
+    public function when(
+        mixed $condition,
+        callable $callback,
+        ?callable $default = null,
+    ): static {
         $value = is_callable($condition) ? $condition($this) : $condition;
 
         if ($value) {
@@ -137,13 +152,17 @@ trait ManagesMiddleware
     /**
      * Apply the given callback to the handler when the condition is falsy.
      *
-     * @param  mixed  $condition  A boolean, or a callable resolved with the handler.
+     * @param  mixed  $condition  A boolean, or a callable resolved with the
+     *                            handler.
      * @param  callable(static, mixed): mixed  $callback
      * @param  callable(static, mixed): mixed|null  $default
      * @return $this
      */
-    public function unless(mixed $condition, callable $callback, ?callable $default = null): static
-    {
+    public function unless(
+        mixed $condition,
+        callable $callback,
+        ?callable $default = null,
+    ): static {
         $value = is_callable($condition) ? $condition($this) : $condition;
 
         if (! $value) {
@@ -170,25 +189,37 @@ trait ManagesMiddleware
 
         usort(
             $entries,
-            fn (array $a, array $b): int => ($b['priority'] <=> $a['priority']) ?: ($a['seq'] <=> $b['seq']),
+            fn (array $a, array $b): int => $b['priority'] <=> $a['priority'] ?:
+            $a['seq'] <=> $b['seq'],
         );
 
-        return array_map(static fn (array $entry) => $entry['middleware'], $entries);
+        return array_map(
+            static fn (array $entry) => $entry['middleware'],
+            $entries,
+        );
     }
 
     /**
-     * Run a request through the middleware pipeline around the given core handler.
+     * Run a request through the middleware pipeline around the given core
+     * handler.
      *
-     * @param  callable(RequestInterface): (ResponseInterface|PromiseInterface)  $core
+     * @param  CoreHandler  $core
      */
-    protected function runThroughMiddleware(RequestInterface $request, callable $core, ?callable $onRequest = null): ResponseInterface|PromiseInterface
-    {
+    protected function runThroughMiddleware(
+        RequestInterface $request,
+        callable $core,
+        ?callable $onRequest = null,
+    ): ResponseInterface|PromiseInterface {
         $resolved = $this->resolveMiddleware();
 
         if ($resolved === []) {
             return $core($request);
         }
 
-        return (new MiddlewarePipeline($resolved))->handle($request, $core, $onRequest);
+        return (new MiddlewarePipeline($resolved))->handle(
+            $request,
+            $core,
+            $onRequest,
+        );
     }
 }

@@ -17,13 +17,15 @@ trait HandlesUris
      *
      * @throws InvalidArgumentException If the URI is invalid
      *
-     * @deprecated since 3.8.2 Use buildFullUriFromContext(); removal is planned for 4.0.
+     * @deprecated since 3.8.2 Use buildFullUriFromContext(); removal is planned
+     *     for 4.0.
      */
     protected function buildFullUri(string $uri): string
     {
         trigger_error(
-            'buildFullUri() is deprecated; use buildFullUriFromContext() instead.',
-            E_USER_DEPRECATED
+            'buildFullUri() is deprecated; '
+                .'use buildFullUriFromContext() instead.',
+            E_USER_DEPRECATED,
         );
 
         // Get base URI and query parameters from options
@@ -85,7 +87,10 @@ trait HandlesUris
             : $this->joinUriPaths($baseUri, $uri);
 
         // Add query parameters if any
-        return $this->appendQueryParameters($fullUri, is_array($queryParams) ? $queryParams : []);
+        return $this->appendQueryParameters(
+            $fullUri,
+            is_array($queryParams) ? $queryParams : [],
+        );
     }
 
     /**
@@ -99,7 +104,9 @@ trait HandlesUris
     {
         $uri = $this->options['uri'] ?? '';
 
-        return $this->buildFullUriFromContext(RequestContext::fromOptions($this->options)->withUri($uri));
+        return $this->buildFullUriFromContext(
+            RequestContext::fromOptions($this->options)->withUri($uri),
+        );
     }
 
     /**
@@ -131,7 +138,7 @@ trait HandlesUris
         if (! $this->isAbsoluteUrl($uri) && empty($baseUri)) {
             throw new InvalidArgumentException(
                 "Relative URI '{$uri}' cannot be used without a base URI. ".
-                'Set a base URI using the baseUri() method.'
+                    'Set a base URI using the baseUri() method.',
             );
         }
 
@@ -152,13 +159,15 @@ trait HandlesUris
     {
         // Check for empty or whitespace-only URI
         if (empty(trim($uri))) {
-            throw new InvalidArgumentException('URI cannot be empty or whitespace');
+            throw new InvalidArgumentException(
+                'URI cannot be empty or whitespace',
+            );
         }
 
         // Check for whitespace characters (common mistake)
         if (preg_match('/\s/', $uri)) {
             throw new InvalidArgumentException(
-                'URI cannot contain whitespace. Did you mean to URL-encode it?'
+                'URI cannot contain whitespace. Did you mean to URL-encode it?',
             );
         }
     }
@@ -210,8 +219,10 @@ trait HandlesUris
      * @param  array<string, mixed>  $queryParams  The query parameters
      * @return string The URI with query parameters
      */
-    protected function appendQueryParameters(string $uri, array $queryParams): string
-    {
+    protected function appendQueryParameters(
+        string $uri,
+        array $queryParams,
+    ): string {
         if (empty($queryParams)) {
             return $uri;
         }
@@ -260,7 +271,9 @@ trait HandlesUris
         // Check if the URI already has query parameters
         $parsedUrl = parse_url($uri);
 
-        return isset($parsedUrl['query']) && ! empty($parsedUrl['query']) ? '&' : '?';
+        return isset($parsedUrl['query']) && ! empty($parsedUrl['query'])
+            ? '&'
+            : '?';
     }
 
     /**

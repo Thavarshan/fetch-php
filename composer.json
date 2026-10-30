@@ -47,9 +47,9 @@
         "tightenco/duster": "3.3.0"
     },
     "suggest": {
-        "opis/json-schema": "^2.6 to validate JSON request and response schemas.",
-        "league/openapi-psr7-validator": "^0.24 to validate OpenAPI 3.0.x request and response contracts.",
-        "symfony/yaml": "^6.0|^7.0 to validate YAML OpenAPI documents when ext-yaml is unavailable."
+        "opis/json-schema": "^2.6 for JSON Schema validation.",
+        "league/openapi-psr7-validator": "^0.24 for OpenAPI 3.0.x validation.",
+        "symfony/yaml": "^6.0|^7.0 for YAML OpenAPI files without ext-yaml."
     },
     "autoload-dev": {
         "psr-4": {
@@ -57,13 +57,17 @@
         }
     },
     "scripts": {
-        "lint": "duster lint src",
+        "lint": [
+            "duster lint src",
+            "php tools/check-line-length.php"
+        ],
         "fix": "duster fix src",
         "test": "phpunit --no-coverage",
         "test:unit": "phpunit --no-coverage tests/Unit",
         "test:integration": "phpunit --no-coverage tests/Integration",
-        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-html=coverage --coverage-text --coverage-xml=coverage --coverage-clover=coverage/clover.xml",
+        "test:coverage": "sh tools/test-coverage.sh",
         "analyse": "phpstan analyse",
+        "docs:examples": "php tools/check-doc-examples.php",
         "ai:validate": "php tools/validate-ai-config.php",
         "check": [
             "@analyse",

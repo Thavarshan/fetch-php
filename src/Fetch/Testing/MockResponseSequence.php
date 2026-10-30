@@ -47,8 +47,11 @@ class MockResponseSequence
      * @param  mixed  $body  Response body
      * @param  array<string, string|array<string>>  $headers  Response headers
      */
-    public function push(int $status = 200, mixed $body = '', array $headers = []): self
-    {
+    public function push(
+        int $status = 200,
+        mixed $body = '',
+        array $headers = [],
+    ): self {
         $this->responses[] = MockResponse::create($status, $body, $headers);
 
         return $this;
@@ -61,8 +64,11 @@ class MockResponseSequence
      * @param  int  $status  HTTP status code
      * @param  array<string, string|array<string>>  $headers  Additional headers
      */
-    public function pushJson(array|object $data, int $status = 200, array $headers = []): self
-    {
+    public function pushJson(
+        array|object $data,
+        int $status = 200,
+        array $headers = [],
+    ): self {
         $this->responses[] = MockResponse::json($data, $status, $headers);
 
         return $this;
@@ -122,7 +128,9 @@ class MockResponseSequence
                 return $this->defaultResponse;
             }
 
-            throw new OutOfBoundsException('No more responses in the sequence.');
+            throw new OutOfBoundsException(
+                'No more responses in the sequence.',
+            );
         }
 
         if ($this->currentIndex >= count($this->responses)) {
@@ -131,7 +139,9 @@ class MockResponseSequence
             } elseif ($this->defaultResponse !== null) {
                 return $this->defaultResponse;
             } else {
-                throw new OutOfBoundsException('No more responses in the sequence.');
+                throw new OutOfBoundsException(
+                    'No more responses in the sequence.',
+                );
             }
         }
 
@@ -146,9 +156,9 @@ class MockResponseSequence
      */
     public function hasMore(): bool
     {
-        return $this->currentIndex < count($this->responses)
-            || $this->shouldLoop
-            || $this->defaultResponse !== null;
+        return $this->currentIndex < count($this->responses) ||
+            $this->shouldLoop ||
+            $this->defaultResponse !== null;
     }
 
     /**

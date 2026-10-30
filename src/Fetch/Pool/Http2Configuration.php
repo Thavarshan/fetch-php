@@ -32,11 +32,13 @@ class Http2Configuration
      * @param  int  $windowSize  Window size for flow control
      * @param  int  $headerTableSize  Header compression table size
      * @param  bool  $enableServerPush  Whether server push is enabled
-     * @param  bool  $streamPrioritization  Whether stream prioritization is enabled
+     * @param  bool  $streamPrioritization  Whether stream prioritization is
+     *                                      enabled
      */
     public function __construct(
         protected bool $enabled = true,
-        protected int $maxConcurrentStreams = self::DEFAULT_MAX_CONCURRENT_STREAMS,
+        protected int $maxConcurrentStreams =
+            self::DEFAULT_MAX_CONCURRENT_STREAMS,
         protected int $windowSize = self::DEFAULT_WINDOW_SIZE,
         protected int $headerTableSize = self::DEFAULT_HEADER_TABLE_SIZE,
         protected bool $enableServerPush = false,
@@ -53,11 +55,15 @@ class Http2Configuration
     {
         return new static(
             enabled: (bool) ($config['enabled'] ?? true),
-            maxConcurrentStreams: (int) ($config['max_concurrent_streams'] ?? self::DEFAULT_MAX_CONCURRENT_STREAMS),
-            windowSize: (int) ($config['window_size'] ?? self::DEFAULT_WINDOW_SIZE),
-            headerTableSize: (int) ($config['header_table_size'] ?? self::DEFAULT_HEADER_TABLE_SIZE),
+            maxConcurrentStreams: (int) ($config['max_concurrent_streams'] ??
+                self::DEFAULT_MAX_CONCURRENT_STREAMS),
+            windowSize: (int) ($config['window_size'] ??
+                self::DEFAULT_WINDOW_SIZE),
+            headerTableSize: (int) ($config['header_table_size'] ??
+                self::DEFAULT_HEADER_TABLE_SIZE),
             enableServerPush: (bool) ($config['enable_server_push'] ?? false),
-            streamPrioritization: (bool) ($config['stream_prioritization'] ?? false),
+            streamPrioritization: (bool) ($config['stream_prioritization'] ??
+                false),
         );
     }
 

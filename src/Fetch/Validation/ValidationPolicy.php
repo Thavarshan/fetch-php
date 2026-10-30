@@ -19,16 +19,18 @@ final readonly class ValidationPolicy
     {
         return new self(
             requestSchema: $options['request_schema'] ?? $this->requestSchema,
-            responseSchema: $options['response_schema'] ?? $this->responseSchema,
+            responseSchema: $options['response_schema'] ??
+                $this->responseSchema,
             openApiSpec: $options['openapi_spec'] ?? $this->openApiSpec,
-            validateContracts: (bool) ($options['validate_contracts'] ?? $this->validateContracts),
+            validateContracts: (bool) ($options['validate_contracts'] ??
+                $this->validateContracts),
         );
     }
 
     public function isEnabled(): bool
     {
-        return $this->requestSchema !== null
-            || $this->responseSchema !== null
-            || ($this->validateContracts && $this->openApiSpec !== null);
+        return $this->requestSchema !== null ||
+            $this->responseSchema !== null ||
+            ($this->validateContracts && $this->openApiSpec !== null);
     }
 }

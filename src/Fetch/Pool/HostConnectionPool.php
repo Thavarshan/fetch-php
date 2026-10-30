@@ -103,8 +103,11 @@ class HostConnectionPool
         $connection->decrementActiveRequests();
 
         // Only keep connections that are still reusable and within limits
-        if ($connection->isReusable($this->config->getKeepAliveTimeout())
-            && $this->availableConnections->count() < $this->config->getMaxIdlePerHost()) {
+        if (
+            $connection->isReusable($this->config->getKeepAliveTimeout()) &&
+            $this->availableConnections->count() <
+                $this->config->getMaxIdlePerHost()
+        ) {
             $this->availableConnections->enqueue($connection);
         } else {
             $connection->close();
@@ -135,8 +138,8 @@ class HostConnectionPool
             'total_borrowed' => $this->totalBorrowed,
             'total_returned' => $this->totalReturned,
             'success_rate' => $this->totalBorrowed > 0
-                ? $this->totalReturned / $this->totalBorrowed
-                : 1.0,
+                    ? $this->totalReturned / $this->totalBorrowed
+                    : 1.0,
         ];
     }
 
@@ -185,7 +188,9 @@ class HostConnectionPool
 
         return new GuzzleClient([
             'base_uri' => $baseUri,
-            RequestOptions::CONNECT_TIMEOUT => $this->config->getConnectionTimeout(),
+            RequestOptions::CONNECT_TIMEOUT => (
+                $this->config->getConnectionTimeout()
+            ),
             RequestOptions::HTTP_ERRORS => false,
             // Configure TCP keep-alive for connection health monitoring
             'curl' => [
@@ -203,13 +208,14 @@ class HostConnectionPool
     {
         $warmupCount = min(
             $this->config->getWarmupConnections(),
-            $this->config->getMaxPerHost()
+            $this->config->getMaxPerHost(),
         );
 
         for ($i = 0; $i < $warmupCount; $i++) {
             try {
                 $connection = $this->createConnection();
-                $connection->decrementActiveRequests(); // Was incremented in createConnection
+                // Was incremented in createConnection.
+                $connection->decrementActiveRequests();
                 $this->availableConnections->enqueue($connection);
             } catch (\Throwable) {
                 // Warmup failure is not critical - stop warming up but continue

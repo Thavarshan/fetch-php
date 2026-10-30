@@ -81,15 +81,22 @@ class PoolConfiguration
     {
         return new static(
             enabled: (bool) ($config['enabled'] ?? true),
-            maxConnections: (int) ($config['max_connections'] ?? self::DEFAULT_MAX_CONNECTIONS),
-            maxPerHost: (int) ($config['max_per_host'] ?? self::DEFAULT_MAX_PER_HOST),
-            maxIdlePerHost: (int) ($config['max_idle_per_host'] ?? self::DEFAULT_MAX_IDLE_PER_HOST),
-            keepAliveTimeout: (int) ($config['keep_alive_timeout'] ?? self::DEFAULT_KEEP_ALIVE_TIMEOUT),
-            connectionTimeout: (int) ($config['connection_timeout'] ?? self::DEFAULT_CONNECTION_TIMEOUT),
+            maxConnections: (int) ($config['max_connections'] ??
+                self::DEFAULT_MAX_CONNECTIONS),
+            maxPerHost: (int) ($config['max_per_host'] ??
+                self::DEFAULT_MAX_PER_HOST),
+            maxIdlePerHost: (int) ($config['max_idle_per_host'] ??
+                self::DEFAULT_MAX_IDLE_PER_HOST),
+            keepAliveTimeout: (int) ($config['keep_alive_timeout'] ??
+                self::DEFAULT_KEEP_ALIVE_TIMEOUT),
+            connectionTimeout: (int) ($config['connection_timeout'] ??
+                self::DEFAULT_CONNECTION_TIMEOUT),
             strategy: (string) ($config['strategy'] ?? 'least_connections'),
             connectionWarmup: (bool) ($config['connection_warmup'] ?? false),
-            warmupConnections: (int) ($config['warmup_connections'] ?? self::DEFAULT_WARMUP_CONNECTIONS),
-            dnsCacheTtl: (int) ($config['dns_cache_ttl'] ?? self::DEFAULT_DNS_CACHE_TTL),
+            warmupConnections: (int) ($config['warmup_connections'] ??
+                self::DEFAULT_WARMUP_CONNECTIONS),
+            dnsCacheTtl: (int) ($config['dns_cache_ttl'] ??
+                self::DEFAULT_DNS_CACHE_TTL),
         );
     }
 

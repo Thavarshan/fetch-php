@@ -24,28 +24,32 @@ use React\Promise\PromiseInterface;
 
 if (! function_exists('fetch')) {
     /**
-     * Perform an HTTP request similar to JavaScript's fetch API.
+     * Perform an HTTP request similar to JavaScript's fetch API. Returns a
+     * response, promise, client, or handler for method chaining.
+     * Accepts a URL or PSR-7 request and optional request options.
      *
-     * @param  string|RequestInterface|null  $resource  URL to fetch or a pre-configured Request object
-     * @param  array<string, mixed>|null  $options  Request options including:
-     *                                              - method: HTTP method (string|Method enum)
-     *                                              - headers: Request headers (array)
-     *                                              - body: Request body (mixed)
-     *                                              - json: JSON data to send as body (array, takes precedence over body)
-     *                                              - form: Form data to send as body (array, takes precedence if no json)
-     *                                              - multipart: Multipart form data (array, takes precedence if no json/form)
-     *                                              - query: Query parameters (array)
-     *                                              - base_uri: Base URI (string)
-     *                                              - timeout: Request timeout in seconds (int)
-     *                                              - retries: Number of retries (int)
-     *                                              - auth: Basic auth credentials [username, password] (array)
-     *                                              - token: Bearer token (string)
-     * @return ResponseInterface|PromiseInterface<ResponseInterface>|ClientHandlerInterface|Client Response, promise, client, or handler for method chaining
+     * Request options:
+     * - method: HTTP method (string or Method enum)
+     * - headers: Request headers (array)
+     * - body: Request body (mixed)
+     * - json: JSON data; takes precedence over body
+     * - form: Form data; takes precedence when json is absent
+     * - multipart: Form data; takes precedence when json and form are absent
+     * - query: Query parameters (array)
+     * - base_uri: Base URI (string)
+     * - timeout: Request timeout in seconds (int)
+     * - retries: Number of retries (int)
+     * - auth: Basic auth credentials [username, password] (array)
+     * - token: Bearer token (string)
+     *
+     * @param  array<string, mixed>|null  $options
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function fetch(string|RequestInterface|null $resource = null, ?array $options = []): ResponseInterface|PromiseInterface|ClientHandlerInterface|Client
-    {
+    function fetch(
+        string|RequestInterface|null $resource = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface|ClientHandlerInterface|Client {
         $options = $options ?? [];
 
         // If a Request object is provided, we can't use options with it
@@ -65,7 +69,11 @@ if (! function_exists('fetch')) {
 
         // Handle base URI if provided
         if (isset($options['base_uri'])) {
-            return handle_request_with_base_uri($resource, $options, $processedOptions);
+            return handle_request_with_base_uri(
+                $resource,
+                $options,
+                $processedOptions,
+            );
         }
 
         // No base URI, use direct fetch with options
@@ -86,7 +94,8 @@ if (! function_exists('process_request_options')) {
 
         // Method (default to GET)
         $method = $options['method'] ?? Method::GET;
-        $methodValue = $method instanceof Method ? $method->value : (string) $method;
+        $methodValue =
+            $method instanceof Method ? $method->value : (string) $method;
         $processedOptions['method'] = $methodValue;
 
         // Headers
@@ -111,8 +120,20 @@ if (! function_exists('process_request_options')) {
 
         // Copy other direct pass options
         $directPassOptions = [
-            'timeout', 'connect_timeout', 'retries', 'retry_delay', 'auth', 'token',
-            'proxy', 'cookies', 'allow_redirects', 'cert', 'ssl_key', 'stream', 'progress', 'debug',
+            'timeout',
+            'connect_timeout',
+            'retries',
+            'retry_delay',
+            'auth',
+            'token',
+            'proxy',
+            'cookies',
+            'allow_redirects',
+            'cert',
+            'ssl_key',
+            'stream',
+            'progress',
+            'debug',
         ];
 
         foreach ($directPassOptions as $opt) {
@@ -137,17 +158,21 @@ if (! function_exists('extract_body_and_content_type')) {
         $options = RequestOptions::normalizeBodyOptions($options);
         $body = null;
         $contentType = null;
-        $rawContentType = $options['content_type'] ?? $options['headers']['Content-Type'] ?? null;
+        $rawContentType =
+            $options['content_type'] ??
+            ($options['headers']['Content-Type'] ?? null);
 
         if (is_array($rawContentType)) {
             $rawContentType = $rawContentType[0] ?? null;
         }
 
-        $normalizedContentType = $rawContentType instanceof ContentType || is_string($rawContentType)
-            ? ContentType::normalizeContentType($rawContentType)
-            : null;
+        $normalizedContentType =
+            $rawContentType instanceof ContentType || is_string($rawContentType)
+                ? ContentType::normalizeContentType($rawContentType)
+                : null;
 
-        // RequestOptions owns normalization and body precedence for all entry points.
+        // RequestOptions owns normalization and body precedence for all entry
+        // points.
         if (isset($options['json'])) {
             $body = $options['json'];
             $contentType = $normalizedContentType ?? ContentType::JSON;
@@ -173,29 +198,25 @@ if (! function_exists('handle_request_with_base_uri')) {
      * @param  string  $resource  URL to fetch
      * @param  array<string, mixed>  $options  Original options
      * @param  array<string, mixed>  $processedOptions  Processed options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> The response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
-    function handle_request_with_base_uri(string $resource, array $options, array $processedOptions): ResponseInterface|PromiseInterface
-    {
+    function handle_request_with_base_uri(
+        string $resource,
+        array $options,
+        array $processedOptions,
+    ): ResponseInterface|PromiseInterface {
         $client = fetch_client();
-        $handler = $client->getHandler();
-        if (isset($options['base_uri']) && is_string($options['base_uri'])) {
-            $handler->baseUri($options['base_uri']);
-        }
-        $handler->withOptions($processedOptions);
+        $requestOptions = array_merge($processedOptions, [
+            'base_uri' => $options['base_uri'],
+        ]);
 
-        // Extract body and content type if not already processed
-        [$body, $contentType] = extract_body_and_content_type($options);
-
-        if ($body !== null) {
-            if ($contentType !== null) {
-                $handler->withBody($body, $contentType);
-            } else {
-                $handler->withBody($body);
-            }
-        }
-
-        return $handler->sendRequest($processedOptions['method'], $resource);
+        return $client
+            ->getHandler()
+            ->sendRequest(
+                $processedOptions['method'],
+                $resource,
+                $requestOptions,
+            );
     }
 }
 
@@ -228,11 +249,15 @@ if (! function_exists('fetch_client')) {
                     try {
                         $handler = $handler->withClonedOptions($options);
                     } catch (Throwable $e) {
-                        // More specific error message for options application failures
+                        // More specific error message for options application
+                        // failures
                         throw new RuntimeException(
-                            sprintf('Failed to apply options to client: %s', $e->getMessage()),
+                            sprintf(
+                                'Failed to apply options to client: %s',
+                                $e->getMessage(),
+                            ),
                             0,
-                            $e
+                            $e,
                         );
                     }
                 }
@@ -252,7 +277,7 @@ if (! function_exists('fetch_client')) {
             throw new RuntimeException(
                 sprintf('Error configuring fetch client: %s', $e->getMessage()),
                 0,
-                $e
+                $e,
             );
         }
     }
@@ -266,13 +291,19 @@ if (! function_exists('request_method')) {
      * @param  string  $url  URL to fetch
      * @param  mixed  $data  Request data (for body or query parameters)
      * @param  array<string, mixed>|null  $options  Additional request options
-     * @param  bool  $dataIsQuery  Whether data is used as query parameters (true) or request body (false)
+     * @param  bool  $dataIsQuery  Whether data is used as query parameters
+     *                             (true) or request body (false)
      * @return ResponseInterface|PromiseInterface The response or promise
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function request_method(string $method, string $url, mixed $data = null, ?array $options = [], bool $dataIsQuery = false): ResponseInterface|PromiseInterface
-    {
+    function request_method(
+        string $method,
+        string $url,
+        mixed $data = null,
+        ?array $options = [],
+        bool $dataIsQuery = false,
+    ): ResponseInterface|PromiseInterface {
         $options = $options ?? [];
         $options['method'] = $method;
 
@@ -286,14 +317,17 @@ if (! function_exists('request_method')) {
             }
         }
 
-        /** @var ResponseInterface|PromiseInterface<ResponseInterface> $response */
+        /**
+         * @var ResponseInterface|PromiseInterface<ResponseInterface> $response
+         */
         $response = fetch($url, $options);
 
         return $response;
     }
 }
 
-// We'll keep these convenience functions for PHP developers who prefer a more traditional API
+// We'll keep these convenience functions for PHP developers who prefer a more
+// traditional API
 if (! function_exists('get')) {
     /**
      * Perform a GET request.
@@ -305,8 +339,11 @@ if (! function_exists('get')) {
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function get(string $url, ?array $query = null, ?array $options = []): ResponseInterface|PromiseInterface
-    {
+    function get(
+        string $url,
+        ?array $query = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
         return request_method('GET', $url, $query, $options, true);
     }
 }
@@ -322,8 +359,11 @@ if (! function_exists('post')) {
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function post(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
-    {
+    function post(
+        string $url,
+        mixed $data = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
         return request_method('POST', $url, $data, $options);
     }
 }
@@ -339,8 +379,11 @@ if (! function_exists('put')) {
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function put(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
-    {
+    function put(
+        string $url,
+        mixed $data = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
         return request_method('PUT', $url, $data, $options);
     }
 }
@@ -356,8 +399,11 @@ if (! function_exists('patch')) {
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function patch(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
-    {
+    function patch(
+        string $url,
+        mixed $data = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
         return request_method('PATCH', $url, $data, $options);
     }
 }
@@ -373,8 +419,11 @@ if (! function_exists('delete')) {
      *
      * @throws ClientExceptionInterface If a client exception occurs
      */
-    function delete(string $url, mixed $data = null, ?array $options = []): ResponseInterface|PromiseInterface
-    {
+    function delete(
+        string $url,
+        mixed $data = null,
+        ?array $options = [],
+    ): ResponseInterface|PromiseInterface {
         return request_method('DELETE', $url, $data, $options);
     }
 }
@@ -388,16 +437,20 @@ if (! function_exists('fetch_stream')) {
      * produces them — the PHP equivalent of JavaScript's `response.body`.
      *
      * ```php
-     * foreach (fetch_stream('https://example.com/large-file')->lines() as $line) {
+     * foreach (fetch_stream('https://example.com/large-file')->lines() as
+     *     $line) {
      *     // process each line as it arrives
      * }
      * ```
      *
      * @param  string  $url  URL to fetch
-     * @param  array<string, mixed>|null  $options  Additional request options (method defaults to GET)
+     * @param  array<string, mixed>|null  $options  Additional request options
+     *                                              (method defaults to GET)
      */
-    function fetch_stream(string $url, ?array $options = []): StreamedResponseInterface
-    {
+    function fetch_stream(
+        string $url,
+        ?array $options = [],
+    ): StreamedResponseInterface {
         $options = $options ?? [];
         $method = $options['method'] ?? Method::GET;
         unset($options['method']);
@@ -425,7 +478,8 @@ if (! function_exists('fetch_sse')) {
      * ```
      *
      * @param  string  $url  URL to fetch
-     * @param  array<string, mixed>|null  $options  Additional request options (method defaults to GET)
+     * @param  array<string, mixed>|null  $options  Additional request options
+     *                                              (method defaults to GET)
      */
     function fetch_sse(string $url, ?array $options = []): EventSource
     {
@@ -497,7 +551,8 @@ if (! function_exists('any') && function_exists('\\Matrix\\Support\\any')) {
 
 if (! function_exists('race') && function_exists('\\Matrix\\Support\\race')) {
     /**
-     * Executes multiple promises concurrently and returns the first to complete.
+     * Executes multiple promises concurrently and returns the first to
+     *     complete.
      *
      * @param  array<PromiseInterface>  $promises  Array of promises
      * @return PromiseInterface Promise that resolves with the first result
@@ -521,8 +576,11 @@ if (! function_exists('map') && function_exists('\\Matrix\\Support\\map')) {
      *
      * @see map()
      */
-    function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
-    {
+    function map(
+        array $items,
+        callable $callback,
+        int $concurrency = 5,
+    ): PromiseInterface {
         return \Matrix\Support\map($items, $callback, $concurrency);
     }
 }
@@ -535,16 +593,28 @@ if (! function_exists('batch') && function_exists('\\Matrix\\Support\\batch')) {
      * @template TOutput
      *
      * @param  array<array-key, TInput>  $items  Items to process
-     * @param  callable(list<TInput>): (iterable<array-key, TOutput>|PromiseInterface<iterable<array-key, TOutput>>)  $callback  Batch callback
+     * @param  callable(list<TInput>): (iterable<array-key,
+     *     TOutput>|PromiseInterface<iterable<array-key, TOutput>>)  $callback
+     *     Batch callback
      * @param  int  $batchSize  Number of items per batch
      * @param  int  $concurrency  Maximum number of concurrent batches
-     * @return PromiseInterface<list<TOutput>> Promise that resolves with flattened results
+     * @return PromiseInterface<list<TOutput>> Promise that resolves with
+     *                                         flattened results
      *
      * @see batch()
      */
-    function batch(array $items, callable $callback, int $batchSize = 10, int $concurrency = 5): PromiseInterface
-    {
-        return \Matrix\Support\batch($items, $callback, $batchSize, $concurrency);
+    function batch(
+        array $items,
+        callable $callback,
+        int $batchSize = 10,
+        int $concurrency = 5,
+    ): PromiseInterface {
+        return \Matrix\Support\batch(
+            $items,
+            $callback,
+            $batchSize,
+            $concurrency,
+        );
     }
 }
 
@@ -554,20 +624,33 @@ if (! function_exists('retry') && function_exists('\\Matrix\\Support\\retry')) {
      *
      * @param  callable  $callable  The operation to retry
      * @param  int  $attempts  Maximum number of attempts
-     * @param  callable|int  $delay  Delay between retries (ms) or delay function
+     * @param  callable|int  $delay  Delay between retries (ms) or delay
+     *                               function
      * @return PromiseInterface Promise that resolves with the result
      *
      * @see retry()
      */
-    function retry(callable $callable, int $attempts = 3, callable|int $delay = 100): PromiseInterface
-    {
+    function retry(
+        callable $callable,
+        int $attempts = 3,
+        callable|int $delay = 100,
+    ): PromiseInterface {
         $backoff = is_int($delay)
-            ? static fn (int $_attempt, Throwable $_error): float => $delay / 1000
-            : static function (int $attempt, Throwable $error) use ($delay): float {
+            ? static fn (int $_attempt, Throwable $_error): float => $delay /
+                1000
+            : static function (int $attempt, Throwable $error) use (
+                $delay,
+            ): float {
                 $delayMilliseconds = $delay($attempt, $error);
 
-                if (! is_int($delayMilliseconds) && ! is_float($delayMilliseconds)) {
-                    throw new InvalidArgumentException('Retry delay callback must return a number of milliseconds.');
+                if (
+                    ! is_int($delayMilliseconds) &&
+                    ! is_float($delayMilliseconds)
+                ) {
+                    throw new InvalidArgumentException(
+                        'Retry delay callback must return a number '
+                            .'of milliseconds.',
+                    );
                 }
 
                 return $delayMilliseconds / 1000;

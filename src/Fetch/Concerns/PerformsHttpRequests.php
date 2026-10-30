@@ -29,8 +29,10 @@ trait PerformsHttpRequests
      *
      * @param  string  $method  The HTTP method to use
      * @param  string  $uri  The URI to request
-     * @param  array<string, mixed>  $options  Additional options for the request
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or promise
+     * @param  array<string, mixed>  $options  Additional options for the
+     *                                         request
+     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or
+     *                                                               promise
      */
     public static function handle(
         string $method,
@@ -61,8 +63,10 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $queryParams  Optional query parameters
      * @return ResponseInterface|PromiseInterface The response or promise
      */
-    public function get(string $uri, array $queryParams = []): ResponseInterface|PromiseInterface
-    {
+    public function get(
+        string $uri,
+        array $queryParams = [],
+    ): ResponseInterface|PromiseInterface {
         $options = [];
         if (! empty($queryParams)) {
             $options['query'] = $queryParams;
@@ -84,7 +88,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::POST, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::POST,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -100,7 +109,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::PUT, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::PUT,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -116,7 +130,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::PATCH, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::PATCH,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -132,7 +151,12 @@ trait PerformsHttpRequests
         mixed $body = null,
         ContentType|string $contentType = ContentType::JSON,
     ): ResponseInterface|PromiseInterface {
-        return $this->sendRequestWithBody(Method::DELETE, $uri, $body, $contentType);
+        return $this->sendRequestWithBody(
+            Method::DELETE,
+            $uri,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -200,9 +224,12 @@ trait PerformsHttpRequests
     /**
      * Send an HTTP request.
      *
-     * This method is now stateless per-request: it builds an immutable RequestContext
-     * from merged options and passes it through the execution stack without mutating
-     * the handler's shared state. This makes the handler safe for concurrent usage.
+     * This method is now stateless per-request: it builds an immutable
+     * RequestContext
+     * from merged options and passes it through the execution stack without
+     * mutating
+     * the handler's shared state. This makes the handler safe for concurrent
+     * usage.
      *
      * @param  Method|string  $method  The HTTP method
      * @param  string  $uri  The URI to request
@@ -214,7 +241,8 @@ trait PerformsHttpRequests
         string $uri,
         array $options = [],
     ): ResponseInterface|PromiseInterface {
-        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodStr =
+            $method instanceof Method ? $method->value : strtoupper($method);
         $requestOptions = RequestOptions::merge(
             $this->options,
             ['async' => $this->isAsync],
@@ -229,12 +257,11 @@ trait PerformsHttpRequests
         $policy = $this->getValidationPolicy($context);
         $middleware = $this->resolveMiddleware();
 
-        return $this->createRequestCoordinator($context, $policy, $middleware)->send(
-            $methodStr,
-            $fullUri,
-            $context->toGuzzleOptions(),
+        return $this->createRequestCoordinator(
             $context,
-        );
+            $policy,
+            $middleware,
+        )->send($methodStr, $fullUri, $context->toGuzzleOptions(), $context);
     }
 
     /**
@@ -245,7 +272,8 @@ trait PerformsHttpRequests
      * @param  mixed  $body  Request body
      * @param  string|ContentType  $contentType  Content type of the request
      * @param  array<string, mixed>  $options  Additional request options
-     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or promise
+     * @return ResponseInterface|PromiseInterface<ResponseInterface> Response or
+     *                                                               promise
      */
     public function request(
         string|Method $method,
@@ -257,7 +285,11 @@ trait PerformsHttpRequests
         $mergedOptions = RequestOptions::merge($this->options, $options);
 
         if ($body !== null) {
-            $mergedOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
+            $mergedOptions = $this->applyBodyOptions(
+                $mergedOptions,
+                $body,
+                $contentType,
+            );
         }
 
         return $this->sendRequest($method, $uri, $mergedOptions);
@@ -266,9 +298,11 @@ trait PerformsHttpRequests
     /**
      * Get the effective timeout for the request.
      *
-     * Supports per-request timeout via RequestContext, with handler defaults as fallback.
+     * Supports per-request timeout via RequestContext, with handler defaults as
+     * fallback.
      *
-     * @param  RequestContext|null  $context  Optional request context for per-request override
+     * @param  RequestContext|null  $context  Optional request context for
+     *                                        per-request override
      * @return int The timeout in seconds
      */
     public function getEffectiveTimeout(?RequestContext $context = null): int
@@ -279,7 +313,10 @@ trait PerformsHttpRequests
         }
 
         // Next check options array
-        if (isset($this->options['timeout']) && is_int($this->options['timeout'])) {
+        if (
+            isset($this->options['timeout']) &&
+            is_int($this->options['timeout'])
+        ) {
             return $this->options['timeout'];
         }
 
@@ -303,14 +340,23 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $guzzleOptions
      * @return array{0: RequestInterface, 1: string|null}
      */
-    protected function buildMiddlewareRequest(string $method, string $uri, array $guzzleOptions): array
-    {
-        return $this->requestBuilder->buildMiddlewareRequest($method, $uri, $guzzleOptions);
+    protected function buildMiddlewareRequest(
+        string $method,
+        string $uri,
+        array $guzzleOptions,
+    ): array {
+        return $this->requestBuilder->buildMiddlewareRequest(
+            $method,
+            $uri,
+            $guzzleOptions,
+        );
     }
 
     /** @param array<string, mixed> $options */
-    protected function withQueryOptions(RequestInterface $request, array $options): RequestInterface
-    {
+    protected function withQueryOptions(
+        RequestInterface $request,
+        array $options,
+    ): RequestInterface {
         return $this->requestBuilder->withQueryOptions($request, $options);
     }
 
@@ -324,7 +370,9 @@ trait PerformsHttpRequests
             return Response::createFromBase($response);
         }
 
-        throw new RuntimeException('The request pipeline did not return an HTTP response.');
+        throw new RuntimeException(
+            'The request pipeline did not return an HTTP response.',
+        );
     }
 
     /**
@@ -350,9 +398,16 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $guzzleOptions
      * @return array<string, mixed>
      */
-    protected function mergeRequestIntoOptions(RequestInterface $request, array $guzzleOptions, ?string $seedBody): array
-    {
-        return $this->requestBuilder->mergeMiddlewareRequest($request, $guzzleOptions, $seedBody);
+    protected function mergeRequestIntoOptions(
+        RequestInterface $request,
+        array $guzzleOptions,
+        ?string $seedBody,
+    ): array {
+        return $this->requestBuilder->mergeMiddlewareRequest(
+            $request,
+            $guzzleOptions,
+            $seedBody,
+        );
     }
 
     /**
@@ -365,14 +420,16 @@ trait PerformsHttpRequests
         string $uri,
         array $options = [],
     ): StreamedResponseInterface {
-        $methodStr = $method instanceof Method ? $method->value : strtoupper($method);
+        $methodStr =
+            $method instanceof Method ? $method->value : strtoupper($method);
 
         // Streaming is inherently synchronous: force async off for this path.
-        $requestOptions = RequestOptions::merge(
-            $this->options,
-            $options,
-            ['method' => $methodStr, 'uri' => $uri, 'async' => false, 'stream' => true],
-        );
+        $requestOptions = RequestOptions::merge($this->options, $options, [
+            'method' => $methodStr,
+            'uri' => $uri,
+            'async' => false,
+            'stream' => true,
+        ]);
 
         RequestOptions::validate($requestOptions);
 
@@ -380,7 +437,8 @@ trait PerformsHttpRequests
         $fullUri = $this->buildFullUriFromContext($context);
         if ($this->getValidationPolicy($context)->isEnabled()) {
             throw new ValidationConfigurationException(
-                'Streaming and SSE responses cannot be schema-validated without buffering; disable validation for this request.'
+                'Streaming and SSE responses cannot be schema-validated '
+                    .'without buffering; disable validation for this request.',
             );
         }
 
@@ -394,11 +452,9 @@ trait PerformsHttpRequests
         try {
             $this->recordProfilingEvent($requestId, 'request_sent');
 
-            $streamedResponse = (new StreamingRequestExecutor($this->getHttpClient()))->execute(
-                $methodStr,
-                $fullUri,
-                $guzzleOptions,
-            );
+            $streamedResponse = (new StreamingRequestExecutor(
+                $this->getHttpClient(),
+            ))->execute($methodStr, $fullUri, $guzzleOptions);
 
             $this->recordProfilingEvent($requestId, 'response_start');
             $this->endProfiling($requestId, $streamedResponse->getStatusCode());
@@ -421,9 +477,16 @@ trait PerformsHttpRequests
      * @param  ContentType|string  $contentType  The content type
      * @return array<string, mixed> New options array with body applied
      */
-    protected function applyBodyOptions(array $options, mixed $body, ContentType|string $contentType): array
-    {
-        return $this->requestBuilder->applyBodyOptions($options, $body, $contentType);
+    protected function applyBodyOptions(
+        array $options,
+        mixed $body,
+        ContentType|string $contentType,
+    ): array {
+        return $this->requestBuilder->applyBodyOptions(
+            $options,
+            $body,
+            $contentType,
+        );
     }
 
     /**
@@ -449,7 +512,11 @@ trait PerformsHttpRequests
         }
 
         $mergedOptions = RequestOptions::merge($this->options, $options);
-        $bodyOptions = $this->applyBodyOptions($mergedOptions, $body, $contentType);
+        $bodyOptions = $this->applyBodyOptions(
+            $mergedOptions,
+            $body,
+            $contentType,
+        );
 
         return $this->sendRequest($method, $uri, $bodyOptions);
     }
@@ -457,34 +524,56 @@ trait PerformsHttpRequests
     /**
      * Prepare options for Guzzle using the request context.
      *
-     * This method now prefers the explicit RequestContext parameter for stateless
-     * operation. When context is not provided, it falls back to building a context
+     * This method now prefers the explicit RequestContext parameter for
+     * stateless
+     * operation. When context is not provided, it falls back to building a
+     * context
      * from handler options (for backwards compatibility).
      *
-     * @param  RequestContext|null  $context  Optional explicit context (preferred)
+     * @param  RequestContext|null  $context  Optional explicit context
+     *                                        (preferred)
      * @return array<string, mixed>
      */
-    protected function prepareGuzzleOptions(?RequestContext $context = null): array
-    {
-        return $this->requestBuilder->prepareGuzzleOptions($this->options, $context);
+    protected function prepareGuzzleOptions(
+        ?RequestContext $context = null,
+    ): array {
+        return $this->requestBuilder->prepareGuzzleOptions(
+            $this->options,
+            $context,
+        );
     }
 
     /**
      * Add request context to exceptions while preserving the original chain.
      */
-    protected function withErrorContext(\Throwable $e, string $method, string $uri): \Throwable
-    {
-        if ($e instanceof AsyncTransportException || $e instanceof ValidationException || $e instanceof CancellationException) {
+    protected function withErrorContext(
+        \Throwable $e,
+        string $method,
+        string $uri,
+    ): \Throwable {
+        if (
+            $e instanceof AsyncTransportException ||
+            $e instanceof ValidationException ||
+            $e instanceof CancellationException
+        ) {
             return $e;
         }
 
-        $contextMessage = sprintf('Request %s %s failed', strtoupper($method), $uri);
+        $contextMessage = sprintf(
+            'Request %s %s failed',
+            strtoupper($method),
+            $uri,
+        );
 
         // Avoid double-wrapping if the exception already contains context
         if (str_contains($e->getMessage(), $contextMessage)) {
             return $e;
         }
 
-        return new RuntimeException($contextMessage.': '.$e->getMessage(), (int) $e->getCode(), $e);
+        return new RuntimeException(
+            $contextMessage.': '.$e->getMessage(),
+            (int) $e->getCode(),
+            $e,
+        );
     }
 }

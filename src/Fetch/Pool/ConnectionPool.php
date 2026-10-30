@@ -42,9 +42,7 @@ class ConnectionPool
      *
      * @param  PoolConfiguration  $config  Pool configuration
      */
-    public function __construct(
-        protected PoolConfiguration $config,
-    ) {}
+    public function __construct(protected PoolConfiguration $config) {}
 
     /**
      * Create a pool from a configuration array.
@@ -65,8 +63,11 @@ class ConnectionPool
      * @param  bool  $ssl  Whether SSL is enabled
      * @return Connection A connection to use
      */
-    public function getConnection(string $host, int $port = 80, bool $ssl = false): Connection
-    {
+    public function getConnection(
+        string $host,
+        int $port = 80,
+        bool $ssl = false,
+    ): Connection {
         $key = $this->getPoolKey($host, $port, $ssl);
 
         if (! isset($this->pools[$key])) {

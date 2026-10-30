@@ -1,6 +1,10 @@
 ---
 name: fetch-php-test-development
-description: Write and run PHPUnit 11 tests for Fetch PHP following repo conventions — unit vs integration placement, Mockery and MockServer, snake_case test methods, deterministic async/timing tests, and offline (no-network) execution. Use when adding or fixing tests, or when a change needs coverage.
+description:
+    Write and run PHPUnit 11 tests for Fetch PHP following repo conventions —
+    unit vs integration placement, Mockery and MockServer, snake_case test
+    methods, deterministic async/timing tests, and offline (no-network)
+    execution. Use when adding or fixing tests, or when a change needs coverage.
 ---
 
 # Fetch PHP test development
@@ -10,7 +14,7 @@ Follow the Testing section of [AGENTS.md](../../../AGENTS.md).
 ## When to use
 
 Adding coverage for a feature/fix, writing a regression test, or making an
-existing test deterministic. For diagnosing *why* a test fails, use
+existing test deterministic. For diagnosing _why_ a test fails, use
 `fetch-php-debug-failure`.
 
 ## Conventions
@@ -18,9 +22,9 @@ existing test deterministic. For diagnosing *why* a test fails, use
 - **PHPUnit 11**, namespace `Tests\`. Files end in `*Test.php`.
 - **Test methods are `snake_case`** (`public function test_it_does_x(): void`) —
   enforced by `pint.json`; camelCase will fail `composer lint`.
-- Placement: `tests/Unit/` for isolated class behavior, `tests/Integration/`
-  for cross-component flows (events, middleware, streaming, concurrency).
-  Reusable fakes go in `tests/Mocks/` (excluded from the suite and PHPStan).
+- Placement: `tests/Unit/` for isolated class behavior, `tests/Integration/` for
+  cross-component flows (events, middleware, streaming, concurrency). Reusable
+  fakes go in `tests/Mocks/` (excluded from the suite and PHPStan).
 - Extend `Tests\TestCase` when you touch global state — it resets
   `GlobalServices` in `tearDown`. Also reset `MockServer::resetInstance()` and
   `fetch_client(reset: true)` when used. `src/Fetch/Support` is excluded from

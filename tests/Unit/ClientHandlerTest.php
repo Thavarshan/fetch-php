@@ -40,14 +40,21 @@ class ClientHandlerTest extends TestCase
         $handler = new ClientHandler;
 
         $this->assertInstanceOf(ClientHandler::class, $handler);
-        $this->assertEquals(ClientHandler::DEFAULT_TIMEOUT, $handler->getOptions()['timeout']);
-        $this->assertEquals(Method::GET->value, $handler->getOptions()['method']);
+        $this->assertEquals(
+            ClientHandler::DEFAULT_TIMEOUT,
+            $handler->getOptions()['timeout'],
+        );
+        $this->assertEquals(
+            Method::GET->value,
+            $handler->getOptions()['method'],
+        );
         $this->assertIsArray($handler->getOptions()['headers']);
     }
 
     public function test_constructor_with_custom_values(): void
     {
-        // Fix: The error was related to URI validation, so we need to set a base URI
+        // Fix: The error was related to URI validation, so we need to set a
+        // base URI
         // We'll first set options that don't trigger URI validation
         $options = [
             'headers' => ['X-Custom' => 'test'],
@@ -66,7 +73,7 @@ class ClientHandlerTest extends TestCase
             $maxRetries,
             $retryDelay,
             $isAsync,
-            $mockLogger
+            $mockLogger,
         );
 
         // Now set the base URI after construction
@@ -87,7 +94,10 @@ class ClientHandlerTest extends TestCase
         $handler = ClientHandler::create();
 
         $this->assertInstanceOf(ClientHandler::class, $handler);
-        $this->assertEquals(ClientHandler::DEFAULT_TIMEOUT, $handler->getOptions()['timeout']);
+        $this->assertEquals(
+            ClientHandler::DEFAULT_TIMEOUT,
+            $handler->getOptions()['timeout'],
+        );
     }
 
     public function test_create_with_base_uri_factory(): void
@@ -121,7 +131,10 @@ class ClientHandlerTest extends TestCase
         $this->assertArrayHasKey('headers', $defaultOptions);
         $this->assertArrayHasKey('timeout', $defaultOptions);
         $this->assertEquals(Method::GET->value, $defaultOptions['method']);
-        $this->assertEquals(ClientHandler::DEFAULT_TIMEOUT, $defaultOptions['timeout']);
+        $this->assertEquals(
+            ClientHandler::DEFAULT_TIMEOUT,
+            $defaultOptions['timeout'],
+        );
     }
 
     public function test_set_default_options(): void
@@ -142,7 +155,8 @@ class ClientHandlerTest extends TestCase
             $updatedOptions = ClientHandler::getDefaultOptions();
             $this->assertFalse($updatedOptions['verify']);
 
-            // Fix: The timeout value doesn't seem to be getting updated in the default options
+            // Fix: The timeout value doesn't seem to be getting updated in the
+            // default options
             // Let's check if it's in the options array at all
             $this->assertArrayHasKey('timeout', $updatedOptions);
 
@@ -163,9 +177,9 @@ class ClientHandlerTest extends TestCase
         $response = ClientHandler::createMockResponse(
             201,
             ['X-Test' => 'value'],
-            'Test body',  // Fix: Ensure we provide a string body, not null
+            'Test body', // Fix: Ensure we provide a string body, not null
             '1.1',
-            'Created'
+            'Created',
         );
 
         $this->assertInstanceOf(Response::class, $response);
@@ -179,12 +193,17 @@ class ClientHandlerTest extends TestCase
     public function test_create_json_response(): void
     {
         $data = ['name' => 'Test', 'id' => 123];
-        $response = ClientHandler::createJsonResponse($data, 200, ['X-Test' => 'value']);
+        $response = ClientHandler::createJsonResponse($data, 200, [
+            'X-Test' => 'value',
+        ]);
 
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('value', $response->getHeaderLine('X-Test'));
-        $this->assertEquals(ContentType::JSON->value, $response->getHeaderLine('Content-Type'));
+        $this->assertEquals(
+            ContentType::JSON->value,
+            $response->getHeaderLine('Content-Type'),
+        );
 
         // Check body content
         $body = $response->getBody()->getContents();
@@ -199,20 +218,28 @@ class ClientHandlerTest extends TestCase
 
         // Test auto-creation of client
         $handlerWithoutClient = new ClientHandler;
-        $this->assertInstanceOf(ClientInterface::class, $handlerWithoutClient->getHttpClient());
+        $this->assertInstanceOf(
+            ClientInterface::class,
+            $handlerWithoutClient->getHttpClient(),
+        );
     }
 
-    public function test_default_client_routes_streaming_requests_to_guzzles_stream_handler(): void
+    public function test_default_streaming_uses_guzzles_stream_handler(): void
     {
         if (! extension_loaded('curl')) {
-            $this->markTestSkipped('This routing is configured only when cURL is available.');
+            $this->markTestSkipped(
+                'This routing is configured only when cURL is available.',
+            );
         }
 
         $client = (new ClientHandler)->getHttpClient();
         $stack = $client->getConfig('handler');
         self::assertInstanceOf(HandlerStack::class, $stack);
 
-        $handlerProperty = new ReflectionProperty(HandlerStack::class, 'handler');
+        $handlerProperty = new ReflectionProperty(
+            HandlerStack::class,
+            'handler',
+        );
         $router = $handlerProperty->getValue($stack);
         self::assertInstanceOf(Closure::class, $router);
 
@@ -244,7 +271,9 @@ class ClientHandlerTest extends TestCase
         $this->assertIsArray($headers);
 
         // Add a header and test again
-        $this->handler = $this->handler->withClonedOptions(['headers' => ['X-Test' => 'value']]);
+        $this->handler = $this->handler->withClonedOptions([
+            'headers' => ['X-Test' => 'value'],
+        ]);
         $headers = $this->handler->getHeaders();
         $this->assertEquals('value', $headers['X-Test']);
     }
@@ -255,7 +284,9 @@ class ClientHandlerTest extends TestCase
         $this->assertFalse($this->handler->hasHeader('X-Test'));
 
         // Add a header and test again
-        $this->handler = $this->handler->withClonedOptions(['headers' => ['X-Test' => 'value']]);
+        $this->handler = $this->handler->withClonedOptions([
+            'headers' => ['X-Test' => 'value'],
+        ]);
         $this->assertTrue($this->handler->hasHeader('X-Test'));
     }
 
@@ -270,7 +301,9 @@ class ClientHandlerTest extends TestCase
         $this->assertFalse($this->handler->hasOption('non_existent'));
 
         // Add an option and test again
-        $this->handler = $this->handler->withClonedOptions(['custom_option' => 'value']);
+        $this->handler = $this->handler->withClonedOptions([
+            'custom_option' => 'value',
+        ]);
         $this->assertTrue($this->handler->hasOption('custom_option'));
     }
 
@@ -326,19 +359,25 @@ class ClientHandlerTest extends TestCase
         // Fix: Add missing namespace for ReflectionMethod
         // Create a mock logger that expects the logRetry call
         $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockLogger->expects($this->once())
-            ->method('info')
-            ->with(
-                $this->equalTo('Retrying request'),
-                $this->callback(function ($context) {
-                    return isset($context['attempt']) &&
-                           isset($context['max_attempts']) &&
-                           isset($context['error']);
-                })
-            );
+        $mockLogger->expects($this->once())->method('info')->with(
+            $this->equalTo('Retrying request'),
+            $this->callback(function ($context) {
+                return isset($context['attempt']) &&
+                    isset($context['max_attempts']) &&
+                    isset($context['error']);
+            }),
+        );
 
         // Create handler with the mock logger
-        $handler = new ClientHandler(null, [], null, null, null, false, $mockLogger);
+        $handler = new ClientHandler(
+            null,
+            [],
+            null,
+            null,
+            null,
+            false,
+            $mockLogger,
+        );
         $handler->baseUri('https://example.com');
 
         // Call logRetry via reflection
@@ -352,25 +391,33 @@ class ClientHandlerTest extends TestCase
         // Fix: Add missing namespace for ReflectionMethod
         // Create a mock logger that expects the logRequest call
         $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockLogger->expects($this->once())
-            ->method('log')
-            ->with(
-                $this->equalTo('debug'),
-                $this->equalTo('Sending HTTP request'),
-                $this->callback(function ($context) {
-                    return isset($context['method']) &&
-                        isset($context['uri']) &&
-                        isset($context['options']);
-                })
-            );
+        $mockLogger->expects($this->once())->method('log')->with(
+            $this->equalTo('debug'),
+            $this->equalTo('Sending HTTP request'),
+            $this->callback(function ($context) {
+                return isset($context['method']) &&
+                    isset($context['uri']) &&
+                    isset($context['options']);
+            }),
+        );
 
         // Create handler with the mock logger
-        $handler = new ClientHandler(null, [], null, null, null, false, $mockLogger);
+        $handler = new ClientHandler(
+            null,
+            [],
+            null,
+            null,
+            null,
+            false,
+            $mockLogger,
+        );
 
         // Call logRequest via reflection
         $reflection = new ReflectionMethod($handler, 'logRequest');
         $reflection->setAccessible(true);
-        $reflection->invoke($handler, 'GET', 'https://example.com', ['headers' => ['Authorization' => 'Bearer token']]);
+        $reflection->invoke($handler, 'GET', 'https://example.com', [
+            'headers' => ['Authorization' => 'Bearer token'],
+        ]);
     }
 
     public function test_log_response(): void
@@ -378,21 +425,27 @@ class ClientHandlerTest extends TestCase
         // Fix: Add missing namespace for ReflectionMethod
         // Create a mock logger that expects the logResponse call
         $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockLogger->expects($this->once())
-            ->method('log')
-            ->with(
-                $this->equalTo('debug'),
-                $this->equalTo('Received HTTP response'),
-                $this->callback(function ($context) {
-                    return isset($context['status_code']) &&
-                        isset($context['reason']) &&
-                        isset($context['duration']) &&
-                        isset($context['content_length']);
-                })
-            );
+        $mockLogger->expects($this->once())->method('log')->with(
+            $this->equalTo('debug'),
+            $this->equalTo('Received HTTP response'),
+            $this->callback(function ($context) {
+                return isset($context['status_code']) &&
+                    isset($context['reason']) &&
+                    isset($context['duration']) &&
+                    isset($context['content_length']);
+            }),
+        );
 
         // Create handler with the mock logger
-        $handler = new ClientHandler(null, [], null, null, null, false, $mockLogger);
+        $handler = new ClientHandler(
+            null,
+            [],
+            null,
+            null,
+            null,
+            false,
+            $mockLogger,
+        );
 
         // Create a response
         $response = ClientHandler::createMockResponse(200, [], 'Test body');
@@ -407,10 +460,17 @@ class ClientHandlerTest extends TestCase
     {
         // Fix: Ensure we provide a string body in createMockResponse
         // Create a response with Content-Length header
-        $response = ClientHandler::createMockResponse(200, ['Content-Length' => '42'], '');
+        $response = ClientHandler::createMockResponse(
+            200,
+            ['Content-Length' => '42'],
+            '',
+        );
 
         // Call getResponseContentLength via reflection
-        $reflection = new ReflectionMethod($this->handler, 'getResponseContentLength');
+        $reflection = new ReflectionMethod(
+            $this->handler,
+            'getResponseContentLength',
+        );
         $reflection->setAccessible(true);
         $length = $reflection->invoke($this->handler, $response);
 
@@ -421,10 +481,17 @@ class ClientHandlerTest extends TestCase
     {
         // Fix: Add missing namespace for ReflectionMethod
         // Create a response without Content-Length header but with body
-        $response = ClientHandler::createMockResponse(200, [], 'Test body content');
+        $response = ClientHandler::createMockResponse(
+            200,
+            [],
+            'Test body content',
+        );
 
         // Call getResponseContentLength via reflection
-        $reflection = new ReflectionMethod($this->handler, 'getResponseContentLength');
+        $reflection = new ReflectionMethod(
+            $this->handler,
+            'getResponseContentLength',
+        );
         $reflection->setAccessible(true);
         $length = $reflection->invoke($this->handler, $response);
 
@@ -449,7 +516,10 @@ class ClientHandlerTest extends TestCase
         $sanitized = $reflection->invoke($this->handler, $options);
 
         // Check authorization data is redacted
-        $this->assertEquals('[REDACTED]', $sanitized['headers']['Authorization']);
+        $this->assertEquals(
+            '[REDACTED]',
+            $sanitized['headers']['Authorization'],
+        );
         $this->assertEquals('[REDACTED]', $sanitized['auth']);
 
         // Check non-sensitive data is preserved
@@ -474,7 +544,10 @@ class ClientHandlerTest extends TestCase
 
         $this->assertEquals('[REDACTED]', $sanitized['headers']['X-API-Key']);
         $this->assertEquals('[REDACTED]', $sanitized['headers']['Cookie']);
-        $this->assertEquals(['[REDACTED]', '[REDACTED]'], $sanitized['headers']['Set-Cookie']);
+        $this->assertEquals(
+            ['[REDACTED]', '[REDACTED]'],
+            $sanitized['headers']['Set-Cookie'],
+        );
         $this->assertEquals(15, $sanitized['timeout']);
     }
 }

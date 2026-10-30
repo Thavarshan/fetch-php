@@ -31,39 +31,58 @@ final class OpenApiContractValidator
 
     private ?string $loadedSpec = null;
 
-    public function validateRequest(RequestInterface $request, string $specPath): OperationAddress
-    {
+    public function validateRequest(
+        RequestInterface $request,
+        string $specPath,
+    ): OperationAddress {
         $this->load($specPath);
 
         try {
             if ($this->requestValidator === null) {
-                throw new ValidationConfigurationException('The OpenAPI request validator was not initialized.');
+                throw new ValidationConfigurationException(
+                    'The OpenAPI request validator was not initialized.',
+                );
             }
 
             return $this->requestValidator->validate($request);
         } catch (Throwable $exception) {
             throw new ValidationException(
-                'The request does not satisfy the configured OpenAPI 3.0 contract.',
-                new ValidationResult([$this->toValidationError($exception, 'request')]),
+                'The request does not satisfy the configured OpenAPI 3.0 '
+                    .'contract.',
+                new ValidationResult([
+                    $this->toValidationError($exception, 'request'),
+                ]),
                 $exception,
             );
         }
     }
 
-    public function validateResponse(OperationAddress $operation, ResponseInterface $response, string $specPath): void
-    {
+    public function validateResponse(
+        OperationAddress $operation,
+        ResponseInterface $response,
+        string $specPath,
+    ): void {
         $this->load($specPath);
 
         try {
             if ($this->responseValidator === null) {
-                throw new ValidationConfigurationException('The OpenAPI response validator was not initialized.');
+                throw new ValidationConfigurationException(
+                    'The OpenAPI response validator was not initialized.',
+                );
             }
 
             $this->responseValidator->validate($operation, $response);
         } catch (Throwable $exception) {
             throw new ValidationException(
-                'The response does not satisfy the configured OpenAPI 3.0 contract.',
-                new ValidationResult([$this->toValidationError($exception, 'response', $response->getStatusCode())]),
+                'The response does not satisfy the configured OpenAPI 3.0 '
+                    .'contract.',
+                new ValidationResult([
+                    $this->toValidationError(
+                        $exception,
+                        'response',
+                        $response->getStatusCode(),
+                    ),
+                ]),
                 $exception,
             );
         }
@@ -77,17 +96,23 @@ final class OpenApiContractValidator
 
         if (! class_exists(ValidatorBuilder::class)) {
             throw new ValidationDependencyException(
-                'OpenAPI contract validation requires league/openapi-psr7-validator:^0.24. Install it to use OpenApiContractValidator.'
+                'OpenAPI contract validation requires '
+                    .'league/openapi-psr7-validator:^0.24. Install it to use '
+                    .'OpenApiContractValidator.',
             );
         }
 
         if (! is_file($specPath) || ! is_readable($specPath)) {
-            throw new ValidationConfigurationException('The OpenAPI specification must be a readable local file.');
+            throw new ValidationConfigurationException(
+                'The OpenAPI specification must be a readable local file.',
+            );
         }
 
         $contents = file_get_contents($specPath);
         if (! is_string($contents)) {
-            throw new ValidationConfigurationException('The OpenAPI specification could not be read.');
+            throw new ValidationConfigurationException(
+                'The OpenAPI specification could not be read.',
+            );
         }
 
         $document = $this->parseDocument($contents, $specPath);
@@ -97,11 +122,15 @@ final class OpenApiContractValidator
             default => null,
         };
         if (! is_string($version)) {
-            throw new ValidationConfigurationException('The OpenAPI document must declare an openapi version.');
+            throw new ValidationConfigurationException(
+                'The OpenAPI document must declare an openapi version.',
+            );
         }
 
         if (preg_match('/^3\.0\.\d+$/', $version) !== 1) {
-            throw new ValidationConfigurationException('Only OpenAPI 3.0.x specifications are supported.');
+            throw new ValidationConfigurationException(
+                'Only OpenAPI 3.0.x specifications are supported.',
+            );
         }
 
         $this->assertInternalReferencesOnly($document);
@@ -112,7 +141,10 @@ final class OpenApiContractValidator
             $requestValidator = $builder->getRequestValidator();
             $responseValidator = $builder->getResponseValidator();
         } catch (Throwable $exception) {
-            throw new ValidationConfigurationException('The OpenAPI 3.0 specification is invalid.', previous: $exception);
+            throw new ValidationConfigurationException(
+                'The OpenAPI 3.0 specification is invalid.',
+                previous: $exception,
+            );
         }
 
         $this->requestValidator = $requestValidator;
@@ -141,17 +173,23 @@ final class OpenApiContractValidator
                 $document = yaml_parse($contents);
             } else {
                 throw new ValidationDependencyException(
-                    'YAML OpenAPI files require symfony/yaml or ext-yaml; install symfony/yaml to enable YAML support.'
+                    'YAML OpenAPI files require symfony/yaml or ext-yaml; '
+                        .'install symfony/yaml to enable YAML support.',
                 );
             }
         } catch (ValidationDependencyException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            throw new ValidationConfigurationException('The OpenAPI specification is not valid JSON or YAML.', previous: $exception);
+            throw new ValidationConfigurationException(
+                'The OpenAPI specification is not valid JSON or YAML.',
+                previous: $exception,
+            );
         }
 
         if (! is_array($document) && ! is_object($document)) {
-            throw new ValidationConfigurationException('The OpenAPI specification must contain an object document.');
+            throw new ValidationConfigurationException(
+                'The OpenAPI specification must contain an object document.',
+            );
         }
 
         return $document;
@@ -159,12 +197,20 @@ final class OpenApiContractValidator
 
     private function assertInternalReferencesOnly(mixed $value): void
     {
-        $items = is_object($value) ? get_object_vars($value) : (is_array($value) ? $value : []);
+        $items = is_object($value)
+            ? get_object_vars($value)
+            : (is_array($value)
+                ? $value
+                : []);
 
         foreach ($items as $key => $item) {
-            if ($key === '$ref' && (! is_string($item) || ! str_starts_with($item, '#'))) {
+            if (
+                $key === '$ref' &&
+                (! is_string($item) || ! str_starts_with($item, '#'))
+            ) {
                 throw new ValidationConfigurationException(
-                    'External OpenAPI references are disabled; use references within the specification document.'
+                    'External OpenAPI references are disabled; use '
+                        .'references within the specification document.',
                 );
             }
 
@@ -174,12 +220,19 @@ final class OpenApiContractValidator
         }
     }
 
-    private function toValidationError(Throwable $exception, string $direction, ?int $statusCode = null): ValidationError
-    {
+    private function toValidationError(
+        Throwable $exception,
+        string $direction,
+        ?int $statusCode = null,
+    ): ValidationError {
         $path = [$direction];
         $operation = null;
 
-        for ($cause = $exception; $cause !== null; $cause = $cause->getPrevious()) {
+        for (
+            $cause = $exception;
+            $cause !== null;
+            $cause = $cause->getPrevious()
+        ) {
             if ($cause instanceof InvalidBody) {
                 $path[0] = 'body';
             } elseif ($cause instanceof InvalidHeaders) {
@@ -204,7 +257,10 @@ final class OpenApiContractValidator
                 $operation = $cause->getAddress();
             }
 
-            if ($cause instanceof SchemaMismatch && $cause->dataBreadCrumb() !== null) {
+            if (
+                $cause instanceof SchemaMismatch &&
+                $cause->dataBreadCrumb() !== null
+            ) {
                 foreach ($cause->dataBreadCrumb()->buildChain() as $segment) {
                     if ($segment !== null) {
                         $path[] = $segment;
@@ -225,6 +281,10 @@ final class OpenApiContractValidator
             $constraint['status_code'] = $statusCode;
         }
 
-        return new ValidationError($path, sprintf('The OpenAPI %s contract validation failed.', $direction), $constraint);
+        return new ValidationError(
+            $path,
+            sprintf('The OpenAPI %s contract validation failed.', $direction),
+            $constraint,
+        );
     }
 }

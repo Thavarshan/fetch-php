@@ -8,8 +8,8 @@ import { withBase } from 'vitepress';
             <div>
                 <p class="footer-title">Fetch PHP</p>
                 <p class="footer-text">
-                    MIT licensed. Built for PHP teams who want the JavaScript fetch API feel without
-                    the ceremony.
+                    MIT licensed. Built for PHP teams who want the JavaScript
+                    fetch API feel without the ceremony.
                 </p>
             </div>
             <div class="footer-meta">
@@ -21,7 +21,11 @@ import { withBase } from 'vitepress';
             <div class="footer-links">
                 <a :href="withBase('/guide/')">Guide</a>
                 <a :href="withBase('/api/')">API Reference</a>
-                <a href="https://github.com/Thavarshan/fetch-php" target="_blank" rel="noreferrer">
+                <a
+                    href="https://github.com/Thavarshan/fetch-php"
+                    target="_blank"
+                    rel="noreferrer"
+                >
                     GitHub
                 </a>
             </div>

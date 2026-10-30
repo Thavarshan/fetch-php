@@ -64,14 +64,18 @@ class FetchProfilerTest extends TestCase
         $timestamp = 1234567890.123;
 
         $this->profiler->startProfile('test-request');
-        $this->profiler->recordEvent('test-request', 'custom_event', $timestamp);
+        $this->profiler->recordEvent(
+            'test-request',
+            'custom_event',
+            $timestamp,
+        );
 
         $profile = $this->profiler->getProfile('test-request');
 
         $this->assertEquals($timestamp, $profile['events']['custom_event']);
     }
 
-    public function test_record_event_does_nothing_for_nonexistent_request(): void
+    public function test_record_event_ignores_unknown_request(): void
     {
         $this->profiler->recordEvent('nonexistent', 'event');
 
@@ -118,13 +122,25 @@ class FetchProfilerTest extends TestCase
         $dnsStart = microtime(true);
         $this->profiler->recordEvent('test-request', 'dns_start', $dnsStart);
         usleep(5000);
-        $this->profiler->recordEvent('test-request', 'dns_end', $dnsStart + 0.005);
+        $this->profiler->recordEvent(
+            'test-request',
+            'dns_end',
+            $dnsStart + 0.005,
+        );
 
         // Simulate connection
         $connectStart = microtime(true);
-        $this->profiler->recordEvent('test-request', 'connect_start', $connectStart);
+        $this->profiler->recordEvent(
+            'test-request',
+            'connect_start',
+            $connectStart,
+        );
         usleep(5000);
-        $this->profiler->recordEvent('test-request', 'connect_end', $connectStart + 0.005);
+        $this->profiler->recordEvent(
+            'test-request',
+            'connect_end',
+            $connectStart + 0.005,
+        );
 
         $this->profiler->endProfile('test-request', 200);
 
@@ -205,8 +221,14 @@ class FetchProfilerTest extends TestCase
 
     public function test_generate_request_id(): void
     {
-        $requestId1 = FetchProfiler::generateRequestId('GET', 'https://example.com/api');
-        $requestId2 = FetchProfiler::generateRequestId('GET', 'https://example.com/api');
+        $requestId1 = FetchProfiler::generateRequestId(
+            'GET',
+            'https://example.com/api',
+        );
+        $requestId2 = FetchProfiler::generateRequestId(
+            'GET',
+            'https://example.com/api',
+        );
 
         // IDs should be unique even for the same method/uri
         $this->assertNotEquals($requestId1, $requestId2);

@@ -9,14 +9,15 @@ on:
     types: [created]
 
 permissions:
-  issues: write
-  pull-requests: write
-  discussions: write
+  contents: read
 
 jobs:
   welcome:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
+    permissions:
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Welcome new contributors
@@ -26,7 +27,8 @@ jobs:
             const { owner, repo } = context.repo;
 
             // Check if user has contributed before
-            const contributions = await github.rest.search.issuesAndPullRequests({
+            const contributions = await github.rest
+              .search.issuesAndPullRequests({
               q: `author:${context.payload.sender.login} repo:${owner}/${repo}`,
               per_page: 1
             });
@@ -34,32 +36,44 @@ jobs:
             const isFirstTime = contributions.data.total_count <= 1;
 
             if (isFirstTime) {
-              let message = "";
+              let message = '';
 
               if (context.eventName === 'issues') {
-                message = `👋 Thanks for opening your first issue here!
-
-                We appreciate you taking the time to report this. A maintainer will take a look and respond as soon as possible.
-
-                In the meantime, please make sure you've provided all the necessary information and consider checking our [documentation](https://fetch-php.thavarshan.com) if you haven't already.`;
+                message = [
+                  '👋 Thanks for opening your first issue here!',
+                  '',
+                  'We appreciate you taking the time to report this. A ' +
+                    'maintainer will take a look and respond as soon as ' +
+                    'possible.',
+                  '',
+                  "In the meantime, please make sure you've provided all the",
+                  'necessary information and consider checking our ' +
+                    '[documentation](https://fetch-php.thavarshan.com) ' +
+                    "if you haven't already.",
+                ].join('\n');
               } else if (context.eventName === 'pull_request_target') {
-                message = `🎉 Thanks for your first pull request!
-
-                We appreciate your contribution to Fetch PHP. A maintainer will review your changes and provide feedback soon.
-
-                Please make sure:
-                - [ ] Tests pass
-                - [ ] Code follows our style guidelines
-                - [ ] Documentation is updated if needed
-
-                Don't worry if this is your first contribution - we're here to help! 🚀`;
+                message = [
+                  '🎉 Thanks for your first pull request!',
+                  '',
+                  'We appreciate your contribution to Fetch PHP. A maintainer',
+                  'will review your changes and provide feedback soon.',
+                  '',
+                  'Please make sure:',
+                  '- [ ] Tests pass',
+                  '- [ ] Code follows our style guidelines',
+                  '- [ ] Documentation is updated if needed',
+                  '',
+                  "Don't worry if this is your first contribution - we're here",
+                  'to help! 🚀',
+                ].join('\n');
               }
 
               if (message) {
                 await github.rest.issues.createComment({
                   owner,
                   repo,
-                  issue_number: context.payload.number || context.payload.issue.number,
+                  issue_number:
+                    context.payload.number || context.payload.issue.number,
                   body: message
                 });
               }
@@ -68,6 +82,9 @@ jobs:
   auto-label:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
+    permissions:
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Auto-label issues and PRs
@@ -75,32 +92,42 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const title = context.payload.issue?.title || context.payload.pull_request?.title || '';
-            const body = context.payload.issue?.body || context.payload.pull_request?.body || '';
-            const issueNumber = context.payload.issue?.number || context.payload.pull_request?.number;
+            const title = context.payload.issue?.title ||
+              context.payload.pull_request?.title || '';
+            const body = context.payload.issue?.body ||
+              context.payload.pull_request?.body || '';
+            const issueNumber = context.payload.issue?.number ||
+              context.payload.pull_request?.number;
 
             if (!issueNumber) return;
 
             const labels = [];
 
             // Auto-label based on title/content
-            if (title.toLowerCase().includes('docs') || title.toLowerCase().includes('documentation')) {
+            if (title.toLowerCase().includes('docs') ||
+              title.toLowerCase().includes('documentation')) {
               labels.push('documentation');
             }
 
-            if (title.toLowerCase().includes('performance') || body.toLowerCase().includes('slow') || body.toLowerCase().includes('performance')) {
+            if (title.toLowerCase().includes('performance') ||
+              body.toLowerCase().includes('slow') ||
+              body.toLowerCase().includes('performance')) {
               labels.push('performance');
             }
 
-            if (title.toLowerCase().includes('security') || body.toLowerCase().includes('security') || body.toLowerCase().includes('vulnerability')) {
+            if (title.toLowerCase().includes('security') ||
+              body.toLowerCase().includes('security') ||
+              body.toLowerCase().includes('vulnerability')) {
               labels.push('security');
             }
 
-            if (title.toLowerCase().includes('breaking') || body.toLowerCase().includes('breaking change')) {
+            if (title.toLowerCase().includes('breaking') ||
+              body.toLowerCase().includes('breaking change')) {
               labels.push('breaking-change');
             }
 
-            if (body.toLowerCase().includes('composer') || body.toLowerCase().includes('dependency')) {
+            if (body.toLowerCase().includes('composer') ||
+              body.toLowerCase().includes('dependency')) {
               labels.push('dependencies');
             }
 
@@ -119,24 +146,32 @@ jobs:
             }
 
   thank-you:
+    permissions:
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
-    if: github.event.action == 'labeled' && contains(github.event.label.name, 'good first issue')
+    if:
+      github.event.action == 'labeled' &&
+      contains(github.event.label.name, 'good first issue')
 
     steps:
       - name: Thank contributor for easy issues
         uses: actions/github-script@v7
         with:
           script: |
-            const message = `🌟 This issue has been marked as a "good first issue"!
-
-            This means it's a great opportunity for newcomers to contribute to Fetch PHP.
-
-            **New contributors welcome!**
-            - Check out our [Contributing Guide](CONTRIBUTING.md)
-            - Join our discussions if you have questions
-            - Don't hesitate to ask for help if you need it
-
-            Thank you for helping make this project more accessible! 🙏`;
+            const message = [
+              '🌟 This issue has been marked as a "good first issue"!',
+              '',
+              'This means it\'s a great opportunity for newcomers ' +
+                'to contribute to Fetch PHP.',
+              '',
+              '**New contributors welcome!**',
+              '- Check out our [Contributing Guide](CONTRIBUTING.md)',
+              '- Join our discussions if you have questions',
+              "- Do not hesitate to ask for help if you need it",
+              '',
+              'Thank you for helping make this project more accessible! 🙏',
+            ].join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -146,6 +181,8 @@ jobs:
             });
 
   discussion-welcome:
+    permissions:
+      discussions: write
     runs-on: ubuntu-latest
     if: github.event.action == 'created' && github.event.discussion
 
@@ -156,24 +193,33 @@ jobs:
           script: |
             // Check if user has participated in discussions before
             const discussions = await github.rest.search.issuesAndPullRequests({
-              q: `author:${context.payload.sender.login} repo:${context.repo.owner}/${context.repo.repo} type:discussion`,
+              q: `author:${context.payload.sender.login} ` +
+                `repo:${context.repo.owner}/${context.repo.repo} ` +
+                'type:discussion',
               per_page: 1
             });
 
             const isFirstDiscussion = discussions.data.total_count <= 1;
 
             if (isFirstDiscussion) {
-              const message = `👋 Welcome to Fetch PHP discussions!
-
-              Thanks for starting this discussion. This is a great place to:
-              - Ask questions about using the library
-              - Share ideas for new features
-              - Get help with implementation
-              - Connect with other users
-
-              A maintainer or community member will respond soon. Happy coding! 🚀`;
+              const message = [
+                '👋 Welcome to Fetch PHP discussions!',
+                '',
+                'Thanks for starting this discussion. This is a great place ' +
+                  'to:',
+                '- Ask questions about using the library',
+                '- Share ideas for new features',
+                '- Get help with implementation',
+                '- Connect with other users',
+                '',
+                'A maintainer or community member will respond soon.',
+                'Happy coding! 🚀',
+              ].join('\n');
 
               // Note: GitHub's REST API doesn't support discussion comments yet
               // This would need to use GraphQL API or wait for REST API support
-              console.log('Would post welcome message to discussion:', message);
+              console.log(
+                'Would post welcome message to discussion:',
+                message,
+              );
             }

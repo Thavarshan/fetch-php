@@ -20,22 +20,34 @@ use function Matrix\Support\await;
 
 class ClientHandlerCacheTest extends TestCase
 {
-    private function create_handler_with_mock_responses(array $responses): ClientHandler
-    {
+    private function create_handler_with_mock_responses(
+        array $responses,
+    ): ClientHandler {
         MockServer::resetInstance();
         Recorder::resetInstance();
         $mock = new MockHandler($responses);
         $handlerStack = HandlerStack::create($mock);
         $client = new GuzzleClient(['handler' => $handlerStack]);
 
-        return ClientHandler::createWithClient($client, new GuzzleAsyncTransport($client, supportsQueueOnlyHandlers: true));
+        return ClientHandler::createWithClient(
+            $client,
+            new GuzzleAsyncTransport($client, supportsQueueOnlyHandlers: true),
+        );
     }
 
     public function test_async_requests_bypass_cache(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"first"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"second"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"first"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"second"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -94,8 +106,16 @@ class ClientHandlerCacheTest extends TestCase
     public function test_caches_get_requests(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"first"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"second"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"first"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"second"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -115,7 +135,11 @@ class ClientHandlerCacheTest extends TestCase
     public function test_cache_miss_returns_successful_response(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"test"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"test"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -132,8 +156,16 @@ class ClientHandlerCacheTest extends TestCase
     public function test_does_not_cache_post_requests_by_default(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"first"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"second"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"first"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"second"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -152,8 +184,19 @@ class ClientHandlerCacheTest extends TestCase
     public function test_respects_no_store_cache_control(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json', 'Cache-Control' => 'no-store'], '{"data":"first"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"second"}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'Cache-Control' => 'no-store',
+                ],
+                '{"data":"first"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"second"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -173,7 +216,11 @@ class ClientHandlerCacheTest extends TestCase
     {
         $cache = new MemoryCache;
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"test"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"test"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -189,8 +236,16 @@ class ClientHandlerCacheTest extends TestCase
     public function test_force_refresh_bypasses_cache(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"first"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"second"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"first"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"second"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -202,15 +257,25 @@ class ClientHandlerCacheTest extends TestCase
         $this->assertEquals('{"data":"first"}', $response1->body());
 
         // Second request with force_refresh - should bypass cache
-        $response2 = $handler->sendRequest('GET', '/users', ['cache' => ['force_refresh' => true]]);
+        $response2 = $handler->sendRequest('GET', '/users', [
+            'cache' => ['force_refresh' => true],
+        ]);
         $this->assertEquals('{"data":"second"}', $response2->body());
     }
 
     public function test_different_query_params_different_cache_keys(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"page":1}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"page":2}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"page":1}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"page":2}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -229,10 +294,14 @@ class ClientHandlerCacheTest extends TestCase
     public function test_handles_etag_conditional_requests(): void
     {
         $responses = [
-            new GuzzleResponse(200, [
-                'Content-Type' => 'application/json',
-                'ETag' => '"version1"',
-            ], '{"data":"original"}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'ETag' => '"version1"',
+                ],
+                '{"data":"original"}',
+            ),
             new GuzzleResponse(304, [], ''), // Not Modified
         ];
 
@@ -256,14 +325,24 @@ class ClientHandlerCacheTest extends TestCase
         // 206 Partial Content is cacheable by default
         // Let's configure the cache to NOT cache 206 and test it
         $responses = [
-            new GuzzleResponse(206, ['Content-Type' => 'application/json'], '{"partial":"data"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"success"}'),
+            new GuzzleResponse(
+                206,
+                ['Content-Type' => 'application/json'],
+                '{"partial":"data"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"success"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
         $handler->baseUri('https://api.example.com');
         // Configure cache to NOT cache 206
-        $handler->withCache(null, ['cache_status_codes' => [200, 203, 204, 300, 301]]);
+        $handler->withCache(null, [
+            'cache_status_codes' => [200, 203, 204, 300, 301],
+        ]);
 
         // First request - 206 response (not cacheable by our config)
         $response1 = $handler->get('/users');
@@ -278,9 +357,21 @@ class ClientHandlerCacheTest extends TestCase
     public function test_cache_with_custom_vary_headers(): void
     {
         $responses = [
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"lang":"en"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"lang":"fr"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"lang":"en-cached"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"lang":"en"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"lang":"fr"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"lang":"en-cached"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -288,26 +379,40 @@ class ClientHandlerCacheTest extends TestCase
         $handler->withCache(null, ['vary_headers' => ['Accept-Language']]);
 
         // Request with English
-        $response1 = $handler->withHeaders(['Accept-Language' => 'en'])->get('/content');
+        $response1 = $handler
+            ->withHeaders(['Accept-Language' => 'en'])
+            ->get('/content');
         $this->assertEquals('{"lang":"en"}', $response1->body());
 
         // Request with French - different cache key due to vary header
         $handler2 = $this->create_handler_with_mock_responses([
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"lang":"fr"}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"lang":"fr"}',
+            ),
         ]);
         $handler2->baseUri('https://api.example.com');
-        $handler2->withCache($handler->getCache(), ['vary_headers' => ['Accept-Language']]);
-        $response2 = $handler2->withHeaders(['Accept-Language' => 'fr'])->get('/content');
+        $handler2->withCache($handler->getCache(), [
+            'vary_headers' => ['Accept-Language'],
+        ]);
+        $response2 = $handler2
+            ->withHeaders(['Accept-Language' => 'fr'])
+            ->get('/content');
         $this->assertEquals('{"lang":"fr"}', $response2->body());
     }
 
     public function test_cache_respects_max_age_from_response(): void
     {
         $responses = [
-            new GuzzleResponse(200, [
-                'Content-Type' => 'application/json',
-                'Cache-Control' => 'max-age=7200',
-            ], '{"data":"cached"}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'Cache-Control' => 'max-age=7200',
+                ],
+                '{"data":"cached"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -318,19 +423,28 @@ class ClientHandlerCacheTest extends TestCase
         $this->assertEquals('{"data":"cached"}', $response->body());
     }
 
-    public function test_cache_respects_no_store_when_respect_headers_enabled(): void
+    public function test_cache_obeys_no_store_when_enabled(): void
     {
         $responses = [
-            new GuzzleResponse(200, [
-                'Content-Type' => 'application/json',
-                'Cache-Control' => 'no-store',
-            ], '{"data":"first"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"second"}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'Cache-Control' => 'no-store',
+                ],
+                '{"data":"first"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"second"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
         $handler->baseUri('https://api.example.com');
-        // With respect_cache_headers=true (default), no-store should be respected
+        // With respect_cache_headers=true (default), no-store should be
+        // respected
         $handler->withCache(null, ['respect_cache_headers' => true]);
 
         $response1 = $handler->get('/users');
@@ -344,11 +458,19 @@ class ClientHandlerCacheTest extends TestCase
     public function test_stale_while_revalidate_serves_stale_copy(): void
     {
         $responses = [
-            new GuzzleResponse(200, [
-                'Content-Type' => 'application/json',
-                'Cache-Control' => 'max-age=0, stale-while-revalidate=60',
-            ], '{"data":"stale-capable"}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"data":"fresh"}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'Cache-Control' => 'max-age=0, stale-while-revalidate=60',
+                ],
+                '{"data":"stale-capable"}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"data":"fresh"}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -367,17 +489,28 @@ class ClientHandlerCacheTest extends TestCase
         // Second request should return stale response while revalidating
         $second = $handler->get('/stale');
         $this->assertEquals('{"data":"stale-capable"}', $second->body());
-        $this->assertContains($second->getHeaderLine('X-Cache-Status'), ['STALE', 'HIT']);
+        $this->assertContains($second->getHeaderLine('X-Cache-Status'), [
+            'STALE',
+            'HIT',
+        ]);
     }
 
     public function test_stale_if_error_serves_cached_body_on_failure(): void
     {
         $responses = [
-            new GuzzleResponse(200, [
-                'Content-Type' => 'application/json',
-                'Cache-Control' => 'max-age=0',
-            ], '{"data":"seed"}'),
-            new GuzzleResponse(500, ['Content-Type' => 'application/json'], '{"error":true}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'Cache-Control' => 'max-age=0',
+                ],
+                '{"data":"seed"}',
+            ),
+            new GuzzleResponse(
+                500,
+                ['Content-Type' => 'application/json'],
+                '{"error":true}',
+            ),
         ];
 
         $handler = $this->create_handler_with_mock_responses($responses);
@@ -396,17 +529,24 @@ class ClientHandlerCacheTest extends TestCase
 
         $second = $handler->get('/stale-if-error');
         $this->assertEquals('{"data":"seed"}', $second->body());
-        $this->assertContains($second->getHeaderLine('X-Cache-Status'), ['STALE-IF-ERROR', 'HIT']);
+        $this->assertContains($second->getHeaderLine('X-Cache-Status'), [
+            'STALE-IF-ERROR',
+            'HIT',
+        ]);
     }
 
     public function test_revalidation_with_last_modified_header(): void
     {
         $responses = [
-            new GuzzleResponse(200, [
-                'Content-Type' => 'application/json',
-                'Cache-Control' => 'no-cache',
-                'Last-Modified' => 'Wed, 21 Oct 2015 07:28:00 GMT',
-            ], '{"data":"first"}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'Cache-Control' => 'no-cache',
+                    'Last-Modified' => 'Wed, 21 Oct 2015 07:28:00 GMT',
+                ],
+                '{"data":"first"}',
+            ),
             new GuzzleResponse(304, [], ''),
         ];
 
@@ -422,16 +562,21 @@ class ClientHandlerCacheTest extends TestCase
         $this->assertEquals('{"data":"first"}', $second->body());
     }
 
-    public function test_cache_requires_revalidation_with_no_cache_directive(): void
+    public function test_cache_obeys_no_cache_revalidation(): void
     {
-        // no-cache means the response may be cached but must be revalidated before use
+        // no-cache means the response may be cached but must be revalidated
+        // before use
         // This is different from no-store which forbids caching entirely
         $responses = [
-            new GuzzleResponse(200, [
-                'Content-Type' => 'application/json',
-                'Cache-Control' => 'no-cache',
-                'ETag' => '"abc123"',
-            ], '{"data":"first"}'),
+            new GuzzleResponse(
+                200,
+                [
+                    'Content-Type' => 'application/json',
+                    'Cache-Control' => 'no-cache',
+                    'ETag' => '"abc123"',
+                ],
+                '{"data":"first"}',
+            ),
             // Second request should include conditional headers and may get 304
             new GuzzleResponse(304, [], ''),
         ];

@@ -23,7 +23,8 @@ function rel(string $root, string $path): string
 }
 
 /**
- * Minimal front-matter reader: returns [frontmatterAssoc, body] or [null, body].
+ * Minimal front-matter reader: returns [frontmatterAssoc, body] or [null,
+ *     body].
  * Supports `key: value` and simple `key:` + `- item` YAML lists. No YAML dep.
  *
  * @return array{0: array<string, mixed>|null, 1: string}
@@ -36,23 +37,64 @@ function read_front_matter(string $contents): array
 
     $data = [];
     $currentListKey = null;
-    foreach (preg_split('/\R/', $m[1]) as $line) {
+    $currentTextKey = null;
+    $lines = preg_split('/\R/', $m[1]) ?: [];
+
+    foreach ($lines as $index => $line) {
         if (trim($line) === '') {
             continue;
         }
-        if (preg_match('/^\s*-\s+(.*)$/', $line, $lm) && $currentListKey !== null) {
+
+        if (
+            preg_match('/^\s*-\s+(.*)$/', $line, $lm) &&
+            $currentListKey !== null
+        ) {
             $data[$currentListKey][] = trim($lm[1], " \"'");
 
             continue;
         }
+
+        if (
+            $currentTextKey !== null &&
+            preg_match('/^\s+\S/', $line) &&
+            ! preg_match('/^\s*-\s+/', $line)
+        ) {
+            $data[$currentTextKey] .= ' '.trim($line);
+
+            continue;
+        }
+
         if (preg_match('/^([A-Za-z0-9_-]+):\s*(.*)$/', $line, $km)) {
             $key = $km[1];
             $value = trim($km[2]);
             if ($value === '') {
-                $currentListKey = $key;
-                $data[$key] = [];
+                $currentListKey = null;
+                $currentTextKey = null;
+
+                for ($next = $index + 1; $next < count($lines); $next++) {
+                    if (trim($lines[$next]) === '') {
+                        continue;
+                    }
+
+                    if (preg_match('/^\s*-\s+/', $lines[$next])) {
+                        $currentListKey = $key;
+                        $data[$key] = [];
+                    } elseif (preg_match('/^\s+\S/', $lines[$next])) {
+                        $currentTextKey = $key;
+                        $data[$key] = '';
+                    } else {
+                        $data[$key] = '';
+                    }
+
+                    break;
+                }
+
+                if (! array_key_exists($key, $data)) {
+                    $data[$key] = '';
+                }
             } else {
                 $currentListKey = null;
+                $currentTextKey = null;
                 $data[$key] = trim($value, " \"'");
             }
         }
@@ -70,7 +112,7 @@ $required = [
     'CODE_MAP.md',
     'README.md',
     '.claude/settings.json',
-    '.claude/hooks/guard-destructive.sh',
+    '.claude/hooks/guard',
     'docs/ai/README.md',
     'docs/ai/SOURCES.md',
     'tools/validate-ai-config.php',
@@ -88,7 +130,8 @@ foreach ($required as $file) {
 $checks++;
 $claude = @file_get_contents("$root/CLAUDE.md") ?: '';
 if (! preg_match('/(^|\s)@(\.\/)?AGENTS\.md(\s|$)/m', $claude)) {
-    $errors[] = 'CLAUDE.md must import the canonical instructions with `@AGENTS.md`.';
+    $errors[] =
+        'CLAUDE.md must import the canonical instructions with `@AGENTS.md`.';
 }
 
 $agents = @file_get_contents("$root/AGENTS.md") ?: '';
@@ -110,7 +153,9 @@ if (is_dir($skillsDir)) {
 
             continue;
         }
-        [$fm, $body] = read_front_matter((string) file_get_contents($skillFile));
+        [$fm, $body] = read_front_matter(
+            (string) file_get_contents($skillFile),
+        );
         if ($fm === null) {
             $errors[] = "Skill '$dirName' SKILL.md has no YAML front matter";
 
@@ -126,14 +171,26 @@ if (is_dir($skillsDir)) {
         } elseif (strlen($fm['description']) > 1024) {
             $errors[] = "Skill '$dirName' description exceeds 1024 characters";
         }
-        if (is_string($name) && ! preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $name)) {
-            $errors[] = "Skill '$dirName' name '$name' must be lowercase alphanumeric with single hyphens";
+        if (
+            is_string($name) &&
+            ! preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $name)
+        ) {
+            $errors[] = sprintf(
+                "Skill '%s' name '%s' must be lowercase alphanumeric "
+                    .'with single hyphens',
+                $dirName,
+                $name,
+            );
         }
         if (is_string($name) && strlen($name) > 64) {
             $errors[] = "Skill '$dirName' name exceeds 64 characters";
         }
         if ($name !== $dirName) {
-            $errors[] = "Skill '$dirName' name '$name' must match its directory name";
+            $errors[] = sprintf(
+                "Skill '%s' name '%s' must match its directory name",
+                $dirName,
+                $name,
+            );
         }
         if (isset($skillNames[$name])) {
             $errors[] = "Duplicate skill name '$name'";
@@ -141,14 +198,23 @@ if (is_dir($skillsDir)) {
         $skillNames[$name] = true;
         $bodyHash = md5(preg_replace('/\s+/', ' ', trim($body)) ?? '');
         if (isset($skillBodies[$bodyHash])) {
-            $warnings[] = "Skill '$dirName' body is identical to '{$skillBodies[$bodyHash]}' (possible drift/copy)";
+            $warnings[] = sprintf(
+                "Skill '%s' body is identical to '%s' (possible drift/copy)",
+                $dirName,
+                $skillBodies[$bodyHash],
+            );
         }
         $skillBodies[$bodyHash] = $dirName;
 
-        // Sync check: referenced in AGENTS.md so Codex/AGENTS.md-aware tools find it.
+        // Sync check: referenced in AGENTS.md so Codex/AGENTS.md-aware tools
+        // find it.
         $checks++;
         if (strpos($agents, (string) $dirName) === false) {
-            $errors[] = "Skill '$dirName' is not referenced in AGENTS.md (Claude/Codex skill discovery would drift)";
+            $errors[] = sprintf(
+                "Skill '%s' is not referenced in AGENTS.md "
+                    .'(Claude/Codex skill discovery would drift)',
+                $dirName,
+            );
         }
     }
 }
@@ -161,7 +227,12 @@ if (preg_match_all('/`(fetch-php-[a-z0-9-]+)`/', $agents, $mm)) {
     foreach (array_unique($mm[1]) as $mentioned) {
         $checks++;
         if (! isset($skillNames[$mentioned])) {
-            $errors[] = "AGENTS.md references skill '$mentioned' which has no .claude/skills/$mentioned/SKILL.md";
+            $errors[] = sprintf(
+                "AGENTS.md references skill '%s' without a matching "
+                    .'.claude/skills/%s/SKILL.md file',
+                $mentioned,
+                $mentioned,
+            );
         }
     }
 }
@@ -199,7 +270,11 @@ foreach (glob("$root/.claude/rules/*.md") ?: [] as $file) {
     $checks++;
     [$fm] = read_front_matter((string) file_get_contents($file));
     $base = rel($root, $file);
-    if ($fm !== null && array_key_exists('paths', $fm) && ! is_array($fm['paths'])) {
+    if (
+        $fm !== null &&
+        array_key_exists('paths', $fm) &&
+        ! is_array($fm['paths'])
+    ) {
         $errors[] = "Rule $base has a 'paths' field that is not a YAML list";
     }
 }
@@ -207,7 +282,15 @@ foreach (glob("$root/.claude/rules/*.md") ?: [] as $file) {
 // ---------------------------------------------------------------------------
 // 6. JSON config files parse.
 // ---------------------------------------------------------------------------
-foreach (['.claude/settings.json', '.claude/settings.local.json', 'composer.json', 'package.json', 'context7.json'] as $json) {
+foreach (
+    [
+        '.claude/settings.json',
+        '.claude/settings.local.json',
+        'composer.json',
+        'package.json',
+        'context7.json',
+    ] as $json
+) {
     $path = "$root/$json";
     if (! is_file($path)) {
         continue;
@@ -224,11 +307,25 @@ foreach (['.claude/settings.json', '.claude/settings.local.json', 'composer.json
 // ---------------------------------------------------------------------------
 $surface = array_merge(
     ['AGENTS.md', 'CLAUDE.md', '.claude/settings.json'],
-    array_map(fn ($f) => rel($root, $f), glob("$root/.claude/skills/*/SKILL.md") ?: []),
-    array_map(fn ($f) => rel($root, $f), glob("$root/.claude/rules/*.md") ?: []),
-    array_map(fn ($f) => rel($root, $f), glob("$root/.claude/agents/*.md") ?: []),
+    array_map(
+        fn ($f) => rel($root, $f),
+        glob("$root/.claude/skills/*/SKILL.md") ?: [],
+    ),
+    array_map(
+        fn ($f) => rel($root, $f),
+        glob("$root/.claude/rules/*.md") ?: [],
+    ),
+    array_map(
+        fn ($f) => rel($root, $f),
+        glob("$root/.claude/agents/*.md") ?: [],
+    ),
 );
-$pathPatterns = ['#/home/[a-z0-9._-]+/#i', '#/Users/[a-z0-9._-]+/#i', '#[A-Z]:\\\\Users\\\\#i', '#/root/#'];
+$pathPatterns = [
+    '#/home/[a-z0-9._-]+/#i',
+    '#/Users/[a-z0-9._-]+/#i',
+    '#[A-Z]:\\\\Users\\\\#i',
+    '#/root/#',
+];
 $secretPatterns = [
     '/AKIA[0-9A-Z]{16}/',
     '/ghp_[A-Za-z0-9]{36}/',
@@ -261,7 +358,9 @@ foreach ($surface as $file) {
 $checks++;
 $sources = @file_get_contents("$root/docs/ai/SOURCES.md") ?: '';
 if (strlen(trim($sources)) < 200) {
-    $warnings[] = 'docs/ai/SOURCES.md looks empty — external sources should be attributed there.';
+    $warnings[] =
+        'docs/ai/SOURCES.md looks empty — external sources should be '
+            .'attributed there.';
 }
 
 // ---------------------------------------------------------------------------
@@ -284,5 +383,9 @@ if ($errors === []) {
     exit(0);
 }
 
-echo "\n".count($errors).' error(s), '.count($warnings)." warning(s).\n";
+echo "\n".
+    count($errors).
+    ' error(s), '.
+    count($warnings).
+    " warning(s).\n";
 exit(1);

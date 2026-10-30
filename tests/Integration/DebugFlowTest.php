@@ -49,7 +49,10 @@ class DebugFlowTest extends TestCase
         $debug = $handler->getLastDebugInfo();
         $this->assertNotNull($debug);
         $this->assertSame('GET', $debug->getRequestData()['method']);
-        $this->assertSame('https://example.com/users', $debug->getRequestData()['uri']);
+        $this->assertSame(
+            'https://example.com/users',
+            $debug->getRequestData()['uri'],
+        );
         $this->assertSame(200, $debug->getResponse()?->getStatusCode());
         $this->assertArrayHasKey('total_time', $debug->getTimings());
     }
@@ -57,8 +60,16 @@ class DebugFlowTest extends TestCase
     public function test_debug_info_for_cached_response(): void
     {
         $handler = $this->makeMockHandler([
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"cached":1}'),
-            new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"cached":2}'),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"cached":1}',
+            ),
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"cached":2}',
+            ),
         ]);
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
@@ -73,7 +84,10 @@ class DebugFlowTest extends TestCase
         $debug = $handler->getLastDebugInfo();
         $this->assertNotNull($debug);
         $this->assertSame('GET', $debug->getRequestData()['method']);
-        $this->assertSame('https://api.example.com/cached', $debug->getRequestData()['uri']);
+        $this->assertSame(
+            'https://api.example.com/cached',
+            $debug->getRequestData()['uri'],
+        );
     }
 
     public function test_debug_info_for_mocked_response(): void
@@ -82,7 +96,9 @@ class DebugFlowTest extends TestCase
         $handler->withDebug(true);
 
         MockServer::fake([
-            'https://example.com/mock' => MockResponse::json(['mocked' => true]),
+            'https://example.com/mock' => MockResponse::json([
+                'mocked' => true,
+            ]),
         ]);
 
         $client = new Client($handler);
@@ -91,7 +107,10 @@ class DebugFlowTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $debug = $handler->getLastDebugInfo();
         $this->assertNotNull($debug);
-        $this->assertSame('https://example.com/mock', $debug->getRequestData()['uri']);
+        $this->assertSame(
+            'https://example.com/mock',
+            $debug->getRequestData()['uri'],
+        );
         $this->assertSame(200, $debug->getResponse()?->getStatusCode());
     }
 
@@ -104,7 +123,10 @@ class DebugFlowTest extends TestCase
         $client = new Client($handler);
         $client->get('https://example.com/no-debug');
 
-        $this->assertNull($handler->getLastDebugInfo(), 'Debug info should not be recorded when disabled');
+        $this->assertNull(
+            $handler->getLastDebugInfo(),
+            'Debug info should not be recorded when disabled',
+        );
         $this->assertCount(1, $profiler->getAllProfiles());
     }
 
@@ -121,7 +143,10 @@ class DebugFlowTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $debug = $handler->getLastDebugInfo();
         $this->assertNotNull($debug);
-        $this->assertSame('https://example.com/async', $debug->getRequestData()['uri']);
+        $this->assertSame(
+            'https://example.com/async',
+            $debug->getRequestData()['uri'],
+        );
     }
 
     /**
@@ -129,10 +154,15 @@ class DebugFlowTest extends TestCase
      */
     private function makeMockHandler(?array $responses = null): ClientHandler
     {
-        $mockResponses = $responses ?? [new GuzzleResponse(200, ['Content-Type' => 'application/json'], '{"ok":true}')];
+        $mockResponses = $responses ?? [
+            new GuzzleResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                '{"ok":true}',
+            ),
+        ];
 
-        $handler = new class($mockResponses) extends ClientHandler
-        {
+        $handler = new class($mockResponses) extends ClientHandler {
             public function __construct(private array $mockResponses)
             {
                 parent::__construct();
@@ -143,14 +173,22 @@ class DebugFlowTest extends TestCase
                 if ($this->httpClient === null) {
                     $mock = new MockHandler($this->mockResponses);
                     $stack = HandlerStack::create($mock);
-                    $this->httpClient = new GuzzleClient(['handler' => $stack, 'http_errors' => false]);
+                    $this->httpClient = new GuzzleClient([
+                        'handler' => $stack,
+                        'http_errors' => false,
+                    ]);
                 }
 
                 return $this->httpClient;
             }
         };
 
-        $handler->setAsyncTransport(new GuzzleAsyncTransport($handler->getHttpClient(), supportsQueueOnlyHandlers: true));
+        $handler->setAsyncTransport(
+            new GuzzleAsyncTransport(
+                $handler->getHttpClient(),
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
 
         return $handler;
     }

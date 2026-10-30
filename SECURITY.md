@@ -12,7 +12,8 @@ We actively support the following versions of Fetch PHP with security updates:
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Fetch PHP, please follow responsible disclosure:
+If you discover a security vulnerability in Fetch PHP, please follow responsible
+disclosure:
 
 ### How to Report
 

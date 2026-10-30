@@ -68,7 +68,9 @@ class MockServer
     /**
      * Set up fake responses for specific URL patterns.
      *
-     * @param  array<string, MockResponse|MockResponseSequence|Closure>|Closure|null  $patterns  URL patterns and their responses
+     * @param  array<string,
+     *     MockResponse|MockResponseSequence|Closure>|Closure|null  $patterns
+     *     URL patterns and their responses
      */
     public static function fake(array|Closure|null $patterns = null): void
     {
@@ -162,37 +164,43 @@ class MockServer
      * @param  string|Closure  $pattern  URL pattern or callback
      * @param  int|null  $times  Expected number of times (null = at least once)
      */
-    public static function assertSent(string|Closure $pattern, ?int $times = null): void
-    {
+    public static function assertSent(
+        string|Closure $pattern,
+        ?int $times = null,
+    ): void {
         $instance = self::getInstance();
         $matches = [];
 
         if ($pattern instanceof Closure) {
-            $matches = array_filter($instance->recorded, function ($record) use ($pattern) {
+            $matches = array_filter($instance->recorded, function (
+                $record,
+            ) use ($pattern) {
                 return $pattern($record['request'], $record['response']);
             });
         } else {
-            $matches = array_filter($instance->recorded, function ($record) use ($pattern, $instance) {
+            $matches = array_filter($instance->recorded, function (
+                $record,
+            ) use ($pattern, $instance) {
                 $url = (string) $record['request']->getUri();
                 $method = $record['request']->getMethod();
 
-                return $instance->matchesPattern("{$method} {$url}", $pattern)
-                    || $instance->matchesPattern($url, $pattern);
+                return $instance->matchesPattern(
+                    "{$method} {$url}",
+                    $pattern,
+                ) || $instance->matchesPattern($url, $pattern);
             });
         }
 
         $count = count($matches);
 
         if ($times === null) {
-            PHPUnit::assertTrue(
-                $count > 0,
-                'Expected request was not sent.'
-            );
+            PHPUnit::assertTrue($count > 0, 'Expected request was not sent.');
         } else {
             PHPUnit::assertSame(
                 $times,
                 $count,
-                "Expected request to be sent {$times} time(s), but was sent {$count} time(s)."
+                "Expected request to be sent {$times} time(s), ".
+                    "but was sent {$count} time(s).",
             );
         }
     }
@@ -208,24 +216,26 @@ class MockServer
         $matches = [];
 
         if ($pattern instanceof Closure) {
-            $matches = array_filter($instance->recorded, function ($record) use ($pattern) {
+            $matches = array_filter($instance->recorded, function (
+                $record,
+            ) use ($pattern) {
                 return $pattern($record['request'], $record['response']);
             });
         } else {
-            $matches = array_filter($instance->recorded, function ($record) use ($pattern, $instance) {
+            $matches = array_filter($instance->recorded, function (
+                $record,
+            ) use ($pattern, $instance) {
                 $url = (string) $record['request']->getUri();
                 $method = $record['request']->getMethod();
 
-                return $instance->matchesPattern("{$method} {$url}", $pattern)
-                    || $instance->matchesPattern($url, $pattern);
+                return $instance->matchesPattern(
+                    "{$method} {$url}",
+                    $pattern,
+                ) || $instance->matchesPattern($url, $pattern);
             });
         }
 
-        PHPUnit::assertCount(
-            0,
-            $matches,
-            'Unexpected request was sent.'
-        );
+        PHPUnit::assertCount(0, $matches, 'Unexpected request was sent.');
     }
 
     /**
@@ -238,7 +248,9 @@ class MockServer
         PHPUnit::assertCount(
             $count,
             $instance->recorded,
-            "Expected {$count} request(s) to be sent, but ".count($instance->recorded).' were sent.'
+            "Expected {$count} request(s) to be sent, but ".
+                count($instance->recorded).
+                ' were sent.',
         );
     }
 
@@ -273,9 +285,13 @@ class MockServer
 
         // If no match found
         if ($response === null) {
-            if ($this->preventStrayRequests && ! $this->isAllowedStrayRequest($url)) {
+            if (
+                $this->preventStrayRequests &&
+                ! $this->isAllowedStrayRequest($url)
+            ) {
                 throw new InvalidArgumentException(
-                    "No fake response registered for [{$method} {$url}] and stray requests are prevented."
+                    "No fake response registered for [{$method} {$url}] ".
+                        'and stray requests are prevented.',
                 );
             }
 
@@ -283,9 +299,10 @@ class MockServer
         }
 
         // Execute the response
-        $executedResponse = $response instanceof MockResponse
-            ? $response->execute()
-            : $response;
+        $executedResponse =
+            $response instanceof MockResponse
+                ? $response->execute()
+                : $response;
 
         // Record the request/response if recording is enabled
         if ($this->recording) {
@@ -298,13 +315,16 @@ class MockServer
         return $executedResponse;
     }
 
-    /** Determine whether request interception, stray-request checks, or recording is active. */
+    /**
+     * Determine whether request interception, stray-request checks, or
+     *     recording is active.
+     */
     public function isActive(): bool
     {
-        return $this->fakes !== []
-            || $this->callback !== null
-            || $this->preventStrayRequests
-            || $this->recording;
+        return $this->fakes !== [] ||
+            $this->callback !== null ||
+            $this->preventStrayRequests ||
+            $this->recording;
     }
 
     /**
@@ -323,8 +343,11 @@ class MockServer
     /**
      * Find a matching response for the given request.
      */
-    protected function findMatchingResponse(Request $request, string $url, string $method): MockResponse|ResponseInterface|null
-    {
+    protected function findMatchingResponse(
+        Request $request,
+        string $url,
+        string $method,
+    ): MockResponse|ResponseInterface|null {
         // Try callback first
         if ($this->callback !== null) {
             $response = ($this->callback)($request);
@@ -363,8 +386,9 @@ class MockServer
     /**
      * Get the response from a fake (handles sequences and closures).
      */
-    protected function getResponseFromFake(mixed $fake): MockResponse|ResponseInterface|null
-    {
+    protected function getResponseFromFake(
+        mixed $fake,
+    ): MockResponse|ResponseInterface|null {
         if ($fake instanceof MockResponseSequence) {
             return $fake->next();
         }
@@ -381,8 +405,9 @@ class MockServer
     /**
      * Normalize a response (convert arrays to JSON responses).
      */
-    protected function normalizeResponse(mixed $response): MockResponse|ResponseInterface|null
-    {
+    protected function normalizeResponse(
+        mixed $response,
+    ): MockResponse|ResponseInterface|null {
         if (is_array($response)) {
             return MockResponse::json($response);
         }
@@ -397,7 +422,7 @@ class MockServer
     {
         // Convert wildcard pattern to regex
         $regex = preg_quote($pattern, '/');
-        $regex = str_replace('\*', '.*', $regex);
+        $regex = str_replace("\*", '.*', $regex);
         $regex = '/^'.$regex.'$/';
 
         return (bool) preg_match($regex, $url);

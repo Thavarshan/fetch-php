@@ -16,7 +16,8 @@ use Psr\Http\Message\ResponseInterface;
  * **Design Decisions:**
  *
  * 1. **Null-safe operations**: All methods handle the case where profiling
- *    is disabled or no profiler is configured, avoiding null checks in calling code.
+ *    is disabled or no profiler is configured, avoiding null checks in calling
+ *     code.
  *
  * 2. **Request ID based**: Each request gets a unique ID for tracking through
  *    its lifecycle (start → events → end).
@@ -108,7 +109,8 @@ final class ProfilerBridge
      *
      * @param  string  $method  HTTP method
      * @param  string  $uri  Request URI
-     * @return string|null Request ID for tracking, or null if profiling is disabled
+     * @return string|null Request ID for tracking, or null if profiling is
+     *                     disabled
      */
     public function startRequest(string $method, string $uri): ?string
     {
@@ -126,11 +128,16 @@ final class ProfilerBridge
      * Record an event during request execution.
      *
      * @param  string|null  $requestId  Request ID from startRequest()
-     * @param  string  $event  Event name (e.g., 'request_sent', 'response_start')
+     * @param  string  $event  Event name (e.g., 'request_sent',
+     *                         'response_start')
      */
     public function recordEvent(?string $requestId, string $event): void
     {
-        if ($requestId === null || $this->profiler === null || ! $this->profiler->isEnabled()) {
+        if (
+            $requestId === null ||
+            $this->profiler === null ||
+            ! $this->profiler->isEnabled()
+        ) {
             return;
         }
 
@@ -143,9 +150,15 @@ final class ProfilerBridge
      * @param  string|null  $requestId  Request ID from startRequest()
      * @param  int|null  $statusCode  HTTP status code (null for errors)
      */
-    public function endRequest(?string $requestId, ?int $statusCode = null): void
-    {
-        if ($requestId === null || $this->profiler === null || ! $this->profiler->isEnabled()) {
+    public function endRequest(
+        ?string $requestId,
+        ?int $statusCode = null,
+    ): void {
+        if (
+            $requestId === null ||
+            $this->profiler === null ||
+            ! $this->profiler->isEnabled()
+        ) {
             return;
         }
 
@@ -183,7 +196,7 @@ final class ProfilerBridge
             $response,
             $timings,
             $connectionStats,
-            $memoryUsage
+            $memoryUsage,
         );
     }
 
@@ -229,7 +242,7 @@ final class ProfilerBridge
             $response,
             $timings,
             $connectionStats,
-            $memoryUsage
+            $memoryUsage,
         );
     }
 

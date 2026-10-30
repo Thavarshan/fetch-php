@@ -9,17 +9,26 @@ use Tests\TestCase;
 
 class ConnectionPoolManagerTest extends TestCase
 {
-    public function test_pool_infrastructure_is_shared_while_enablement_is_handler_local(): void
+    public function test_pool_is_shared_and_enablement_is_local(): void
     {
         $first = new ConnectionPoolManager;
         $second = new ConnectionPoolManager;
 
-        $first->withConnectionPool(['enabled' => true, 'max_connections' => 27]);
+        $first->withConnectionPool([
+            'enabled' => true,
+            'max_connections' => 27,
+        ]);
 
         self::assertTrue($first->isPoolingEnabled());
         self::assertFalse($second->isPoolingEnabled());
-        self::assertSame($first->getConnectionPool(), $second->getConnectionPool());
-        self::assertSame(27, $second->getConnectionPool()?->getConfig()->getMaxConnections());
+        self::assertSame(
+            $first->getConnectionPool(),
+            $second->getConnectionPool(),
+        );
+        self::assertSame(
+            27,
+            $second->getConnectionPool()?->getConfig()->getMaxConnections(),
+        );
 
         $second->withConnectionPool(true);
 

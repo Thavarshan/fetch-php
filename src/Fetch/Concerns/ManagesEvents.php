@@ -23,9 +23,11 @@ use Throwable;
 /**
  * Adds a request/response lifecycle event system to a client handler.
  *
- * Exposes fluent `on*` registration helpers and drives an {@see EventDispatcher}
+ * Exposes fluent `on*` registration helpers and drives an {@see
+ *     EventDispatcher}
  * that fires {@see FetchEvent}s at each stage of a request. Dispatch is fully
- * lazy and guarded: when no listener is registered for an event, no event object
+ * lazy and guarded: when no listener is registered for an event, no event
+ *     object
  * is even constructed, so the overhead is a single array check on the hot path.
  */
 trait ManagesEvents
@@ -50,9 +52,16 @@ trait ManagesEvents
      *
      * @return $this
      */
-    public function on(string $eventName, callable $listener, int $priority = 0): static
-    {
-        $this->getEventDispatcher()->addListener($eventName, $listener, $priority);
+    public function on(
+        string $eventName,
+        callable $listener,
+        int $priority = 0,
+    ): static {
+        $this->getEventDispatcher()->addListener(
+            $eventName,
+            $listener,
+            $priority,
+        );
 
         return $this;
     }
@@ -149,7 +158,8 @@ trait ManagesEvents
      */
     protected function hasEventListeners(string $eventName): bool
     {
-        return $this->eventDispatcher !== null && $this->eventDispatcher->hasListeners($eventName);
+        return $this->eventDispatcher !== null &&
+            $this->eventDispatcher->hasListeners($eventName);
     }
 
     /**
@@ -175,118 +185,163 @@ trait ManagesEvents
      *
      * @param  array<string, string|string[]>  $headers
      */
-    protected function eventRequest(string $method, string $uri, array $headers = []): RequestInterface
-    {
+    protected function eventRequest(
+        string $method,
+        string $uri,
+        array $headers = [],
+    ): RequestInterface {
         return new GuzzleRequest($method, $uri, $headers);
     }
 
     /**
      * Dispatch the `request.sending` event.
      */
-    protected function emitRequestEvent(RequestInterface $request, RequestContext $context, float $timestamp): void
-    {
+    protected function emitRequestEvent(
+        RequestInterface $request,
+        RequestContext $context,
+        float $timestamp,
+    ): void {
         if (! $this->hasEventListeners(RequestEvent::NAME)) {
             return;
         }
 
-        $this->dispatchEvent(new RequestEvent(
-            $request,
-            $this->eventCorrelationId($context),
-            $timestamp,
-            [],
-            $context->toArray(),
-        ));
+        $this->dispatchEvent(
+            new RequestEvent(
+                $request,
+                $this->eventCorrelationId($context),
+                $timestamp,
+                [],
+                $context->toArray(),
+            ),
+        );
     }
 
     /**
      * Dispatch the `response.received` event.
      */
-    protected function emitResponseEvent(RequestInterface $request, PsrResponseInterface $response, RequestContext $context, float $startTime): void
-    {
+    protected function emitResponseEvent(
+        RequestInterface $request,
+        PsrResponseInterface $response,
+        RequestContext $context,
+        float $startTime,
+    ): void {
         if (! $this->hasEventListeners(ResponseEvent::NAME)) {
             return;
         }
 
         $now = microtime(true);
 
-        $this->dispatchEvent(new ResponseEvent(
-            $request,
-            $response,
-            $this->eventCorrelationId($context),
-            $now,
-            $now - $startTime,
-        ));
+        $this->dispatchEvent(
+            new ResponseEvent(
+                $request,
+                $response,
+                $this->eventCorrelationId($context),
+                $now,
+                $now - $startTime,
+            ),
+        );
     }
 
     /**
      * Dispatch the `error.occurred` event, plus `request.timeout` when the
      * failure is a timeout.
      */
-    protected function emitErrorEvent(RequestInterface $request, Throwable $exception, RequestContext $context, float $startTime, ?PsrResponseInterface $response = null, int $attempt = 1): void
-    {
+    protected function emitErrorEvent(
+        RequestInterface $request,
+        Throwable $exception,
+        RequestContext $context,
+        float $startTime,
+        ?PsrResponseInterface $response = null,
+        int $attempt = 1,
+    ): void {
         $now = microtime(true);
 
         if ($this->hasEventListeners(ErrorEvent::NAME)) {
-            $this->dispatchEvent(new ErrorEvent(
-                $request,
-                $exception,
-                $this->eventCorrelationId($context),
-                $now,
-                $attempt,
-                $response,
-            ));
+            $this->dispatchEvent(
+                new ErrorEvent(
+                    $request,
+                    $exception,
+                    $this->eventCorrelationId($context),
+                    $now,
+                    $attempt,
+                    $response,
+                ),
+            );
         }
 
-        if ($this->isTimeoutException($exception) && $this->hasEventListeners(TimeoutEvent::NAME)) {
-            $this->dispatchEvent(new TimeoutEvent(
-                $request,
-                $context->getTimeout(),
-                $now - $startTime,
-                $this->eventCorrelationId($context),
-                $now,
-            ));
+        if (
+            $this->isTimeoutException($exception) &&
+            $this->hasEventListeners(TimeoutEvent::NAME)
+        ) {
+            $this->dispatchEvent(
+                new TimeoutEvent(
+                    $request,
+                    $context->getTimeout(),
+                    $now - $startTime,
+                    $this->eventCorrelationId($context),
+                    $now,
+                ),
+            );
         }
     }
 
     /**
      * Dispatch the `request.retrying` event.
      */
-    protected function emitRetryEvent(RequestContext $context, Throwable $previous, int $attempt, int $maxAttempts, int $delayMs): void
-    {
+    protected function emitRetryEvent(
+        RequestContext $context,
+        Throwable $previous,
+        int $attempt,
+        int $maxAttempts,
+        int $delayMs,
+    ): void {
         if (! $this->hasEventListeners(RetryEvent::NAME)) {
             return;
         }
 
-        $request = $this->eventRequest($context->getMethod(), $context->getUri(), $context->getHeaders());
+        $request = $this->eventRequest(
+            $context->getMethod(),
+            $context->getUri(),
+            $context->getHeaders(),
+        );
 
-        $this->dispatchEvent(new RetryEvent(
-            $request,
-            $previous,
-            $attempt,
-            $maxAttempts,
-            $delayMs,
-            $this->eventCorrelationId($context),
-            microtime(true),
-        ));
+        $this->dispatchEvent(
+            new RetryEvent(
+                $request,
+                $previous,
+                $attempt,
+                $maxAttempts,
+                $delayMs,
+                $this->eventCorrelationId($context),
+                microtime(true),
+            ),
+        );
     }
 
     /**
      * Dispatch the `request.redirecting` event.
      */
-    protected function emitRedirectEvent(RequestInterface $request, PsrResponseInterface $response, string $location, int $redirectCount, RequestContext $context): void
-    {
+    protected function emitRedirectEvent(
+        RequestInterface $request,
+        PsrResponseInterface $response,
+        string $location,
+        int $redirectCount,
+        RequestContext $context,
+    ): void {
         if (! $this->hasEventListeners(RedirectEvent::NAME)) {
             return;
         }
 
-        $this->dispatchEvent(new RedirectEvent(
-            $request,
-            $response,
-            $location,
-            $redirectCount,
-            $this->eventCorrelationId($context),
-            microtime(true),
-        ));
+        $this->dispatchEvent(
+            new RedirectEvent(
+                $request,
+                $response,
+                $location,
+                $redirectCount,
+                $this->eventCorrelationId($context),
+                microtime(true),
+            ),
+        );
     }
 
     /**
@@ -297,8 +352,11 @@ trait ManagesEvents
      * @param  array<string, mixed>  $guzzleOptions
      * @return array<string, mixed>
      */
-    protected function attachRedirectListener(array $guzzleOptions, RequestInterface $request, RequestContext $context): array
-    {
+    protected function attachRedirectListener(
+        array $guzzleOptions,
+        RequestInterface $request,
+        RequestContext $context,
+    ): array {
         $redirects = $guzzleOptions['allow_redirects'] ?? true;
 
         // Redirects explicitly disabled: nothing to observe.
@@ -315,9 +373,19 @@ trait ManagesEvents
         ];
 
         $count = 0;
-        $config['on_redirect'] = function ($req, $response, $uri) use (&$count, $request, $context): void {
+        $config['on_redirect'] = function ($req, $response, $uri) use (
+            &$count,
+            $request,
+            $context,
+        ): void {
             $count++;
-            $this->emitRedirectEvent($request, $response, (string) $uri, $count, $context);
+            $this->emitRedirectEvent(
+                $request,
+                $response,
+                (string) $uri,
+                $count,
+                $context,
+            );
         };
 
         $guzzleOptions['allow_redirects'] = $config;
@@ -338,7 +406,10 @@ trait ManagesEvents
             }
 
             $message = strtolower($current->getMessage());
-            if (str_contains($message, 'timed out') || str_contains($message, 'timeout')) {
+            if (
+                str_contains($message, 'timed out') ||
+                str_contains($message, 'timeout')
+            ) {
                 return true;
             }
 

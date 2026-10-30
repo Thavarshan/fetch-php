@@ -10,7 +10,8 @@ use Psr\Http\Message\UriInterface;
 trait RequestImmutabilityTrait
 {
     /**
-     * Return an instance with the specified header appended with the given value.
+     * Return an instance with the specified header appended with the given
+     *     value.
      */
     public function withAddedHeader($name, $value): static
     {
@@ -30,7 +31,8 @@ trait RequestImmutabilityTrait
     }
 
     /**
-     * Return an instance with the provided value replacing the specified header.
+     * Return an instance with the provided value replacing the specified
+     *     header.
      */
     public function withHeader($name, $value): static
     {
@@ -77,11 +79,15 @@ trait RequestImmutabilityTrait
     {
         // Get the custom request target if this class has it set
         $requestTarget = null;
-        if (property_exists($this, 'customRequestTarget') && $this->customRequestTarget !== null) {
+        if (
+            property_exists($this, 'customRequestTarget') &&
+            $this->customRequestTarget !== null
+        ) {
             $requestTarget = $this->customRequestTarget;
         }
 
-        // If the new instance has a different request target than what's derived from its URI,
+        // If the new instance has a different request target than what's
+        // derived from its URI,
         // it means it has a custom request target set
         $defaultTarget = '/'.ltrim($new->getUri()->getPath(), '/');
         $query = $new->getUri()->getQuery();
@@ -100,7 +106,7 @@ trait RequestImmutabilityTrait
             $new->getHeaders(),
             $new->getBody(),
             $new->getProtocolVersion(),
-            $requestTarget
+            $requestTarget,
         );
 
         return $instance;

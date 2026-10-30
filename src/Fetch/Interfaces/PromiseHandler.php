@@ -20,7 +20,10 @@ interface PromiseHandler
     /**
      * @param  PromiseInterface<mixed>  $promise
      */
-    public function awaitPromise(PromiseInterface $promise, ?float $timeout = null): mixed;
+    public function awaitPromise(
+        PromiseInterface $promise,
+        ?float $timeout = null,
+    ): mixed;
 
     /**
      * @param  array<PromiseInterface<mixed>>  $promises
@@ -53,7 +56,11 @@ interface PromiseHandler
     /**
      * @param  array<mixed>  $items
      */
-    public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface;
+    public function map(
+        array $items,
+        callable $callback,
+        int $concurrency = 5,
+    ): PromiseInterface;
 
     /**
      * Add a callback to be executed when the promise resolves.
@@ -65,7 +72,10 @@ interface PromiseHandler
      * @param  callable|null  $onRejected  Callback for rejection
      * @return PromiseInterface The promise with attached callbacks
      */
-    public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface;
+    public function then(
+        callable $onFulfilled,
+        ?callable $onRejected = null,
+    ): PromiseInterface;
 
     /**
      * Add a callback to be executed when the promise is rejected.
@@ -79,7 +89,8 @@ interface PromiseHandler
     public function catch(callable $onRejected): PromiseInterface;
 
     /**
-     * Add a callback to be executed when the promise settles (fulfilled or rejected).
+     * Add a callback to be executed when the promise settles (fulfilled or
+     *     rejected).
      *
      * This method sets the handler to async mode and sends the request,
      * returning a promise with the finally callback.

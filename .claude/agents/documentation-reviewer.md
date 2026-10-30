@@ -1,6 +1,10 @@
 ---
 name: documentation-reviewer
-description: Read-only review of Fetch PHP docs for drift against the code — VitePress guide/API pages, README, and CODE_MAP.md examples vs the real public API. Use when a change alters behavior/API, or to audit docs for stale or unsafe examples.
+description:
+    Read-only review of Fetch PHP docs for drift against the code — VitePress
+    guide/API pages, README, and CODE_MAP.md examples vs the real public API.
+    Use when a change alters behavior/API, or to audit docs for stale or unsafe
+    examples.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
@@ -29,11 +33,12 @@ claimed that the code lacks (e.g. SSRF protection, auto-redaction).
 
 ## Prohibited
 
-Editing files; running mutating commands. Use Bash read-only (`grep`, `git
-diff`, and `npm run build` to confirm the docs build).
+Editing files; running mutating commands. Use Bash read-only (`grep`,
+`git diff`, and `npm run build` to confirm the docs build).
 
 ## Required evidence & output
 
 Per issue: doc `file:line`, the mismatch, the correct behavior with its
 `src/Fetch` reference, and the suggested wording. Note whether `npm run build`
-succeeds and whether any generated `docs/.vitepress/.temp|dist|cache` is present.
+succeeds and whether any generated `docs/.vitepress/.temp|dist|cache` is
+present.

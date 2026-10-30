@@ -23,9 +23,17 @@ final readonly class ValidationError
             return '/';
         }
 
-        return '/'.implode('/', array_map(
-            static fn (int|string $segment): string => str_replace(['~', '/'], ['~0', '~1'], (string) $segment),
-            $this->path
-        ));
+        return '/'.
+            implode(
+                '/',
+                array_map(
+                    static fn (int|string $segment): string => str_replace(
+                        ['~', '/'],
+                        ['~0', '~1'],
+                        (string) $segment,
+                    ),
+                    $this->path,
+                ),
+            );
     }
 }

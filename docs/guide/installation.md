@@ -1,95 +1,62 @@
 ---
 title: Installation
-description: How to install the Fetch HTTP package in your PHP project
+description:
+    Install Fetch PHP with Composer and check the platform requirements.
 ---
 
 # Installation
 
-The Fetch HTTP package can be installed using Composer, the PHP dependency manager.
+Install the package with Composer:
 
-## Requirements
-
-- PHP 8.3 or higher
-- Composer
-
-## Install via Composer
-
-### 1. Add to your project
-
-```bash
+```sh
 composer require jerome/fetch-php
 ```
 
-### 2. Update your autoloader
-
-If you haven't already done so, make sure you include the Composer autoloader in your project:
-
-```php
-require __DIR__ . '/vendor/autoload.php';
-```
-
-## Manual Installation (Not Recommended)
-
-While we strongly recommend using Composer, you can also manually download the package and include it in your project:
-
-1. Download the latest release from [GitHub](https://github.com/Thavarshan/fetch-php/releases)
-2. Extract the files into your project directory
-3. Set up your own autoloading system or include files manually
-
-## Verifying Installation
-
-After installation, you can verify that everything is working correctly by creating a simple script:
+Composer autoloads Fetch PHP classes under `Fetch\` and includes the global
+helpers from `Fetch\Support\helpers.php`. In a standalone script:
 
 ```php
 <?php
+
 require __DIR__ . '/vendor/autoload.php';
-
-// Make a simple request using the global helper
-$response = fetch('https://httpbin.org/get');
-
-// Check the response
-if ($response->successful()) {
-    echo "Installation successful!\n";
-    echo "Response status: " . $response->status() . "\n";
-    echo "Response body: " . $response->body() . "\n";
-} else {
-    echo "Something went wrong. HTTP status: " . $response->status() . "\n";
-}
 ```
 
-## Testing Different Response Methods
+## Requirements
 
-You can also test some of the enhanced response methods:
+- PHP `^8.3` (PHP 8.3 and later versions below 9.0).
+- Composer.
+- Runtime dependencies listed in `composer.json`: Guzzle HTTP `^7.9`, Guzzle
+  PSR-7 `^2.7`, Matrix `^4.0`, ReactPHP event-loop `^1.5` and promise `^3.2`,
+  PSR HTTP Message `1 or `2`, and PSR Log `1, `2, or `3.
+- Composer metadata requires `ext-pcntl`. The CI matrix runs Windows with the
+  pcntl and posix platform requirements ignored; a default Composer install on
+  Windows may report the missing pcntl extension.
 
-```php
-<?php
-require __DIR__ . '/vendor/autoload.php';
+The cURL extension is not declared as a package requirement. It is required for
+the HTTP/2 cURL configuration path; HTTP/2 also depends on the local cURL build
+supporting it. Other optional Guzzle features may require extensions of their
+own.
 
-// Make a request to the JSON endpoint
-$response = fetch('https://httpbin.org/json');
+## Frameworks and dependency injection
 
-// Test content type detection
-if ($response->hasJsonContent()) {
-    echo "Received JSON content\n";
+Fetch PHP is framework-independent. Use the global helper API, instantiate
+`Fetch\Http\Client`, or inject the PSR-18 client into your own services. The
+`Client` accepts a `ClientHandlerInterface`, options, and an optional PSR-3
+logger. A handler can use a custom `GuzzleHttp\ClientInterface` through
+`ClientHandler::createWithClient()` or `setHttpClient()`.
 
-    // Parse the JSON data
-    $data = $response->json();
-    echo "JSON data successfully parsed\n";
+## Common installation checks
 
-    // Access data using array syntax
-    if (isset($response['slideshow'])) {
-        echo "Slideshow title: " . $response['slideshow']['title'] . "\n";
-    }
-} else {
-    echo "Did not receive JSON content\n";
-}
+- Run `composer check-platform-reqs` if Composer reports a missing PHP
+  extension.
+- Confirm the PHP executable used by Composer matches the one used by the
+  application.
+- Use the package's declared PHP and dependency constraints when resolving
+  conflicts; this is a library and does not commit `composer.lock`.
+- For HTTP/2, check that the cURL extension is loaded and advertises HTTP/2
+  support.
+- If you install on Windows, account for the package's declared `ext-pcntl`
+  requirement; CI's platform override is for its test matrix.
 
-// Test status code helpers
-if ($response->isOk()) {
-    echo "Response has 200 OK status\n";
-}
-```
-
-## Next Steps
-
-After installation, check out the [Quickstart](/guide/quickstart) guide to begin using the Fetch HTTP package.
+Continue with the [quickstart](/guide/quickstart) or see
+[custom clients and transports](/guide/custom-clients).

@@ -1,10 +1,13 @@
 # Security Policy
 
-**PLEASE DON'T DISCLOSE SECURITY-RELATED ISSUES PUBLICLY, [SEE BELOW](#reporting-a-vulnerability).**
+**PLEASE DON'T DISCLOSE SECURITY-RELATED ISSUES PUBLICLY,
+[SEE BELOW](#reporting-a-vulnerability).**
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this app, please send an email to <Jerome Thayananthajothy> (<tjthavarshan@gmail.com>). All security vulnerabilities will and must be promptly addressed.
+If you discover a security vulnerability within this app, please send an email
+to <Jerome Thayananthajothy> (<tjthavarshan@gmail.com>). All security
+vulnerabilities will and must be promptly addressed.
 
 ### Public PGP Key
 

@@ -1,53 +1,27 @@
 ---
 title: Documentation Structure
-description: Overview of the documentation structure and file organization for the Fetch PHP project
+description: Current Fetch PHP documentation sections and their purpose.
 ---
 
 # Documentation Structure
 
+The VitePress source is organized by reader task:
+
+```text
 docs/
-├── .vitepress/
-│   ├── config.js            # VitePress configuration
-│   └── theme/               # Custom theme (if needed)
-├── public/
-│   ├── logo.png             # Your logo
-│   └── favicon.ico          # Favicon
-├── index.md                 # Homepage
-├── guide/
-│   ├── index.md             # Overview content from fetch-http-package-overview.md
-│   ├── installation.md      # Installation instructions
-│   ├── quickstart.md        # Quickstart guide from fetch-quickstart.md
-│   ├── making-requests.md   # Basic request usage from fetch-http-client-usage-guide.md
-│   ├── helper-functions.md  # Helper functions guide from helper-functions-guide.md
-│   ├── working-with-responses.md  # From working-with-response-objects.md
-│   ├── authentication.md    # Authentication section from usage guides
-│   ├── error-handling.md    # Error handling patterns
-│   ├── logging.md           # Logging configuration
-│   ├── async-requests.md    # Async usage from fetch-http-client-usage-guide.md
-│   ├── promise-operations.md # Promise operations from client-handler docs
-│   ├── retry-handling.md    # Retry configuration
-│   ├── http-caching.md      # RFC7234 caching, stale-if-error, revalidation
-│   ├── connection-pooling.md# Shared pool, DNS cache, HTTP/2
-│   ├── file-uploads.md      # File upload examples
-│   ├── custom-clients.md    # Custom client configuration
-│   ├── debugging-and-profiling.md # Debug snapshots, logging, profiling
-│   └── testing.md           # Testing with mock responses
-├── api/
-│   ├── index.md             # API overview
-│   ├── fetch.md             # fetch() function reference
-│   ├── fetch-client.md      # fetch_client() function reference
-│   ├── http-method-helpers.md # get(), post(), etc. helpers
-│   ├── client.md            # Client class API reference
-│   ├── client-handler.md    # ClientHandler API reference
-│   ├── request.md           # Request API reference
-│   ├── response.md          # Response API reference
-│   ├── method-enum.md       # Method enum documentation
-│   ├── content-type-enum.md # ContentType enum documentation
-│   └── status-enum.md       # Status enum documentation
-└── examples/
-    ├── index.md             # Basic examples
-    ├── api-integration.md   # API integration examples
-    ├── async-patterns.md    # Advanced async examples
-    ├── error-handling.md    # Error handling examples
-    ├── file-handling.md     # File upload/download examples
-    └── authentication.md    # Authentication examples
+├── index.md                 # Documentation homepage
+├── guide/                   # Installation, usage, behavior, and testing
+├── api/                     # Public functions, classes, enums, contracts
+├── examples/                # Scenario guides and runnable snippets
+├── .vitepress/config.mts    # Navigation, sidebar, and site metadata
+└── public/                  # Site assets
+```
+
+Runnable PHP snippets are under `docs/examples/snippets/`.
+`composer docs:examples` syntax-checks PHP fences across the README and docs and
+executes those snippet files offline. `npm run check-links` validates local
+Markdown paths and fragments; `npm run build` builds the site.
+
+The source-level class map is maintained in
+[`CODE_MAP.md`](https://github.com/Thavarshan/fetch-php/blob/main/CODE_MAP.md).
+The code is authoritative where an older description differs.

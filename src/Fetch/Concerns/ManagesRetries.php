@@ -50,11 +50,15 @@ trait ManagesRetries
     public function retry(int $retries, int $delay = 100): ClientHandler
     {
         if ($retries < 0) {
-            throw new InvalidArgumentException('Retries must be a non-negative integer');
+            throw new InvalidArgumentException(
+                'Retries must be a non-negative integer',
+            );
         }
 
         if ($delay < 0) {
-            throw new InvalidArgumentException('Delay must be a non-negative integer');
+            throw new InvalidArgumentException(
+                'Delay must be a non-negative integer',
+            );
         }
 
         $this->maxRetries = $retries;
@@ -76,7 +80,8 @@ trait ManagesRetries
         foreach ($normalizedStatusCodes as $statusCode) {
             if ($statusCode < 100 || $statusCode > 599) {
                 throw new InvalidArgumentException(
-                    "Invalid HTTP status code: {$statusCode}. Status codes must be in the range 100-599."
+                    "Invalid HTTP status code: {$statusCode}. "
+                        .'Status codes must be in the range 100-599.',
                 );
             }
         }
@@ -89,7 +94,8 @@ trait ManagesRetries
     /**
      * Set the exception types that should be retried.
      *
-     * @param  array<class-string<\Throwable>>  $exceptions  Exception class names
+     * @param  array<class-string<\Throwable>>  $exceptions  Exception class
+     *                                                       names
      * @return $this
      */
     public function retryExceptions(array $exceptions): ClientHandler
@@ -142,10 +148,14 @@ trait ManagesRetries
     /**
      * Implement retry logic for the request with exponential backoff.
      *
-     * This method accepts an optional RequestContext to read retry configuration
-     * from per-request context instead of handler state, making it safe for concurrent usage.
-     * All retry settings (maxRetries, retryDelay, retryableStatusCodes, retryableExceptions)
-     * are read from the context when provided, falling back to handler state otherwise.
+     * This method accepts an optional RequestContext to read retry
+     * configuration
+     * from per-request context instead of handler state, making it safe for
+     * concurrent usage.
+     * All retry settings (maxRetries, retryDelay, retryableStatusCodes,
+     * retryableExceptions)
+     * are read from the context when provided, falling back to handler state
+     * otherwise.
      *
      * @param  RequestContext|null  $context  The request context (optional)
      * @param  callable  $request  The request to execute
@@ -154,31 +164,45 @@ trait ManagesRetries
      * @throws FetchRequestException If the request fails after all retries
      * @throws \RuntimeException If something unexpected happens
      */
-    protected function retryRequest(?RequestContext $context, callable $request): ResponseInterface
-    {
+    protected function retryRequest(
+        ?RequestContext $context,
+        callable $request,
+    ): ResponseInterface {
         $strategy = $this->createRetryStrategy($context);
 
-        return $strategy->execute(
-            $request,
-            function (int $attempt, int $maxAttempts, \Throwable $exception, int $delayMs) use ($context): void {
-                $this->notifyRetry($attempt, $maxAttempts, $exception, $delayMs, $context);
-            }
-        );
+        return $strategy->execute($request, function (
+            int $attempt,
+            int $maxAttempts,
+            \Throwable $exception,
+            int $delayMs,
+        ) use ($context): void {
+            $this->notifyRetry(
+                $attempt,
+                $maxAttempts,
+                $exception,
+                $delayMs,
+                $context,
+            );
+        });
     }
 
-    protected function createRetryStrategy(?RequestContext $context): RetryStrategy
-    {
+    protected function createRetryStrategy(
+        ?RequestContext $context,
+    ): RetryStrategy {
         $maxRetries = $context?->getMaxRetries() ?? $this->getMaxRetries();
         $baseDelayMs = $context?->getRetryDelay() ?? $this->getRetryDelay();
 
-        // Read retryable status codes and exceptions from context, falling back to handler state
-        $retryableStatusCodes = $context !== null
-            ? $context->getRetryableStatusCodes()
-            : $this->retryableStatusCodes;
+        // Read retryable status codes and exceptions from context, falling back
+        // to handler state
+        $retryableStatusCodes =
+            $context !== null
+                ? $context->getRetryableStatusCodes()
+                : $this->retryableStatusCodes;
 
-        $retryableExceptions = $context !== null
-            ? $context->getRetryableExceptions()
-            : $this->retryableExceptions;
+        $retryableExceptions =
+            $context !== null
+                ? $context->getRetryableExceptions()
+                : $this->retryableExceptions;
 
         return new RetryStrategy(
             maxRetries: $maxRetries,
@@ -196,9 +220,21 @@ trait ManagesRetries
         int $delayMs,
         ?RequestContext $context,
     ): void {
-        $this->logRetryAttempt($attempt, $maxAttempts, $exception, $delayMs, $context);
+        $this->logRetryAttempt(
+            $attempt,
+            $maxAttempts,
+            $exception,
+            $delayMs,
+            $context,
+        );
         if ($context !== null) {
-            $this->emitRetryEvent($context, $exception, $attempt, $maxAttempts, $delayMs);
+            $this->emitRetryEvent(
+                $context,
+                $exception,
+                $attempt,
+                $maxAttempts,
+                $delayMs,
+            );
         }
     }
 
@@ -209,7 +245,8 @@ trait ManagesRetries
      * @param  int  $maxAttempts  Maximum number of attempts
      * @param  \Throwable  $exception  The exception that triggered the retry
      * @param  int  $delayMs  The delay before the next attempt in milliseconds
-     * @param  RequestContext|null  $context  Optional request context for additional info
+     * @param  RequestContext|null  $context  Optional request context for
+     *                                        additional info
      */
     protected function logRetryAttempt(
         int $attempt,
@@ -224,7 +261,8 @@ trait ManagesRetries
     /**
      * Calculate backoff delay with exponential growth and jitter.
      *
-     * Delegates to RetryStrategy for the actual calculation to avoid duplication.
+     * Delegates to RetryStrategy for the actual calculation to avoid
+     * duplication.
      *
      * @param  int  $baseDelay  The base delay in milliseconds
      * @param  int  $attempt  The current attempt number (0-based)
@@ -243,11 +281,14 @@ trait ManagesRetries
      * Delegates to RetryStrategy for the actual check to avoid duplication.
      *
      * @param  \Throwable  $e  The exception to check
-     * @param  RequestContext|null  $context  Optional context for per-request retry config
+     * @param  RequestContext|null  $context  Optional context for per-request
+     *                                        retry config
      * @return bool Whether the error is retryable
      */
-    protected function isRetryableError(\Throwable $e, ?RequestContext $context = null): bool
-    {
+    protected function isRetryableError(
+        \Throwable $e,
+        ?RequestContext $context = null,
+    ): bool {
         return $this->createRetryStrategy($context)->isRetryable($e);
     }
 }

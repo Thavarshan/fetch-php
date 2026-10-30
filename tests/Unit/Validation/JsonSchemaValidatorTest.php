@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 final class JsonSchemaValidatorTest extends TestCase
 {
-    public function test_it_validates_nested_objects_arrays_and_required_properties(): void
+    public function test_nested_schema_constraints(): void
     {
         $validator = new JsonSchemaValidator;
         $schema = [
@@ -26,16 +26,28 @@ final class JsonSchemaValidatorTest extends TestCase
             ],
         ];
 
-        $valid = $validator->validate(['name' => 'Ada', 'items' => [1, 2]], $schema);
-        $invalid = $validator->validate(['name' => 123, 'items' => [0, 'sensitive-value']], $schema);
+        $valid = $validator->validate(
+            ['name' => 'Ada', 'items' => [1, 2]],
+            $schema,
+        );
+        $invalid = $validator->validate(
+            ['name' => 123, 'items' => [0, 'sensitive-value']],
+            $schema,
+        );
 
         self::assertTrue($valid->isValid());
         self::assertFalse($invalid->isValid());
         self::assertGreaterThanOrEqual(3, $invalid->count());
-        $paths = array_map(static fn ($error): string => $error->pathString(), $invalid->errors());
+        $paths = array_map(
+            static fn ($error): string => $error->pathString(),
+            $invalid->errors(),
+        );
         self::assertContains('/name', $paths);
         self::assertArrayHasKey('keyword', $invalid->errors()[0]->constraint);
-        self::assertStringNotContainsString('sensitive-value', $invalid->errors()[0]->message);
+        self::assertStringNotContainsString(
+            'sensitive-value',
+            $invalid->errors()[0]->message,
+        );
     }
 
     public function test_it_supports_local_references(): void
@@ -58,10 +70,12 @@ final class JsonSchemaValidatorTest extends TestCase
         self::assertTrue($result->isValid());
     }
 
-    public function test_it_rejects_unregistered_external_references_without_fetching_them(): void
+    public function test_rejects_untrusted_references_without_io(): void
     {
         $this->expectException(ValidationConfigurationException::class);
-        $this->expectExceptionMessage('register the referenced schema as trusted');
+        $this->expectExceptionMessage(
+            'register the referenced schema as trusted',
+        );
 
         (new JsonSchemaValidator)->validate(
             ['name' => 'Ada'],
@@ -69,10 +83,12 @@ final class JsonSchemaValidatorTest extends TestCase
         );
     }
 
-    public function test_it_rejects_unregistered_external_dynamic_references(): void
+    public function test_rejects_untrusted_dynamic_references(): void
     {
         $this->expectException(ValidationConfigurationException::class);
-        $this->expectExceptionMessage('register the referenced schema as trusted');
+        $this->expectExceptionMessage(
+            'register the referenced schema as trusted',
+        );
 
         (new JsonSchemaValidator)->validate(
             ['name' => 'Ada'],
@@ -80,12 +96,16 @@ final class JsonSchemaValidatorTest extends TestCase
         );
     }
 
-    public function test_it_resolves_an_explicitly_registered_trusted_schema(): void
+    public function test_resolves_registered_trusted_schema(): void
     {
         $validator = new JsonSchemaValidator;
         $validator->registerTrustedSchema(
             'https://schemas.example.test/address.json',
-            ['type' => 'object', 'required' => ['city'], 'properties' => ['city' => ['type' => 'string']]],
+            [
+                'type' => 'object',
+                'required' => ['city'],
+                'properties' => ['city' => ['type' => 'string']],
+            ],
         );
 
         $result = $validator->validate(
@@ -96,7 +116,7 @@ final class JsonSchemaValidatorTest extends TestCase
         self::assertTrue($result->isValid());
     }
 
-    public function test_it_reports_invalid_schema_input_as_configuration_error(): void
+    public function test_invalid_schema_is_a_configuration_error(): void
     {
         $this->expectException(ValidationConfigurationException::class);
         $this->expectExceptionMessage('must contain valid JSON');

@@ -7,8 +7,10 @@ namespace Fetch\Support;
 /**
  * FetchProfiler provides performance profiling capabilities for HTTP requests.
  *
- * This class tracks timing information across multiple phases of an HTTP request,
- * including DNS resolution, connection establishment, SSL handshake, and data transfer.
+ * This class tracks timing information across multiple phases of an HTTP
+ *     request,
+ * including DNS resolution, connection establishment, SSL handshake, and data
+ *     transfer.
  */
 class FetchProfiler implements ProfilerInterface
 {
@@ -30,8 +32,10 @@ class FetchProfiler implements ProfilerInterface
      * @param  string  $method  HTTP method
      * @param  string  $uri  Request URI
      */
-    public static function generateRequestId(string $method, string $uri): string
-    {
+    public static function generateRequestId(
+        string $method,
+        string $uri,
+    ): string {
         return sprintf('%s_%s_%s', strtoupper($method), md5($uri), uniqid());
     }
 
@@ -58,16 +62,21 @@ class FetchProfiler implements ProfilerInterface
      * Record a timing event for a request.
      *
      * @param  string  $requestId  The request identifier
-     * @param  string  $event  The event name (e.g., 'dns_start', 'connect_start', 'ssl_start', 'transfer_start')
+     * @param  string  $event  The event name (e.g., 'dns_start',
+     *                         'connect_start', 'ssl_start', 'transfer_start')
      * @param  float|null  $timestamp  The timestamp (defaults to current time)
      */
-    public function recordEvent(string $requestId, string $event, ?float $timestamp = null): void
-    {
+    public function recordEvent(
+        string $requestId,
+        string $event,
+        ?float $timestamp = null,
+    ): void {
         if (! $this->enabled || ! isset($this->profiles[$requestId])) {
             return;
         }
 
-        $this->profiles[$requestId]['events'][$event] = $timestamp ?? microtime(true);
+        $this->profiles[$requestId]['events'][$event] =
+            $timestamp ?? microtime(true);
     }
 
     /**
@@ -200,7 +209,10 @@ class FetchProfiler implements ProfilerInterface
                 $times[] = $profile['total_time'];
                 $completed++;
 
-                if (isset($profile['status_code']) && $profile['status_code'] >= 400) {
+                if (
+                    isset($profile['status_code']) &&
+                    $profile['status_code'] >= 400
+                ) {
                     $failed++;
                 }
             }
@@ -215,7 +227,9 @@ class FetchProfiler implements ProfilerInterface
             'completed_requests' => $completed,
             'failed_requests' => $failed,
             'total_time' => round($totalTime, 3),
-            'average_time' => $completed > 0 ? round($totalTime / $completed, 3) : 0,
+            'average_time' => $completed > 0
+                ? round($totalTime / $completed, 3)
+                : 0,
             'min_time' => ! empty($times) ? round(min($times), 3) : 0,
             'max_time' => ! empty($times) ? round(max($times), 3) : 0,
             'total_memory' => $totalMemory,
@@ -246,27 +260,45 @@ class FetchProfiler implements ProfilerInterface
         ];
 
         // Calculate memory delta
-        $metrics['memory_delta'] = $metrics['memory_end'] - $metrics['memory_start'];
+        $metrics['memory_delta'] =
+            $metrics['memory_end'] - $metrics['memory_start'];
 
         // Calculate timing phases if events are recorded
         if (isset($events['dns_start'], $events['dns_end'])) {
-            $metrics['dns_time'] = round(($events['dns_end'] - $events['dns_start']) * 1000, 3);
+            $metrics['dns_time'] = round(
+                ($events['dns_end'] - $events['dns_start']) * 1000,
+                3,
+            );
         }
 
         if (isset($events['connect_start'], $events['connect_end'])) {
-            $metrics['connect_time'] = round(($events['connect_end'] - $events['connect_start']) * 1000, 3);
+            $metrics['connect_time'] = round(
+                ($events['connect_end'] - $events['connect_start']) * 1000,
+                3,
+            );
         }
 
         if (isset($events['ssl_start'], $events['ssl_end'])) {
-            $metrics['ssl_time'] = round(($events['ssl_end'] - $events['ssl_start']) * 1000, 3);
+            $metrics['ssl_time'] = round(
+                ($events['ssl_end'] - $events['ssl_start']) * 1000,
+                3,
+            );
         }
 
         if (isset($events['transfer_start'], $events['transfer_end'])) {
-            $metrics['transfer_time'] = round(($events['transfer_end'] - $events['transfer_start']) * 1000, 3);
+            $metrics['transfer_time'] = round(
+                ($events['transfer_end'] - $events['transfer_start']) * 1000,
+                3,
+            );
         }
 
         if (isset($events['request_sent'])) {
-            $metrics['time_to_first_byte'] = round((($events['response_start'] ?? $endTime) - $events['request_sent']) * 1000, 3);
+            $metrics['time_to_first_byte'] = round(
+                (($events['response_start'] ?? $endTime) -
+                    $events['request_sent']) *
+                    1000,
+                3,
+            );
         }
 
         // Include raw events for detailed analysis

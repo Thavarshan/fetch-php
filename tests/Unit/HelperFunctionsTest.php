@@ -53,7 +53,10 @@ class HelperFunctionsTest extends TestCase
         $processed = process_request_options($options);
 
         $this->assertEquals('POST', $processed['method']);
-        $this->assertEquals(['X-Custom' => 'value', 'Content-Type' => 'application/json'], $processed['headers']);
+        $this->assertEquals(
+            ['X-Custom' => 'value', 'Content-Type' => 'application/json'],
+            $processed['headers'],
+        );
         $this->assertEquals(['name' => 'John'], $processed['json']);
         $this->assertEquals(['page' => 1], $processed['query']);
         $this->assertEquals(30, $processed['timeout']);
@@ -62,12 +65,16 @@ class HelperFunctionsTest extends TestCase
     public function test_extract_body_and_content_type(): void
     {
         // Test with JSON
-        [$body, $contentType] = extract_body_and_content_type(['json' => ['name' => 'John']]);
+        [$body, $contentType] = extract_body_and_content_type([
+            'json' => ['name' => 'John'],
+        ]);
         $this->assertEquals(['name' => 'John'], $body);
         $this->assertEquals(ContentType::JSON, $contentType);
 
         // Test with form
-        [$body, $contentType] = extract_body_and_content_type(['form' => ['name' => 'John']]);
+        [$body, $contentType] = extract_body_and_content_type([
+            'form' => ['name' => 'John'],
+        ]);
         $this->assertEquals(['name' => 'John'], $body);
         $this->assertEquals(ContentType::FORM_URLENCODED, $contentType);
 
@@ -106,10 +113,13 @@ class HelperFunctionsTest extends TestCase
             'body' => ['data' => ['type' => 'users']],
             'content_type' => ContentType::VND_API_JSON,
         ]);
-        $this->assertSame(ContentType::VND_API_JSON->value, $normalized['headers']['Content-Type']);
+        $this->assertSame(
+            ContentType::VND_API_JSON->value,
+            $normalized['headers']['Content-Type'],
+        );
     }
 
-    public function test_base_uri_preserves_form_and_multipart_array_bodies(): void
+    public function test_base_uri_preserves_form_and_multipart_bodies(): void
     {
         MockServer::fake([
             'https://example.com/submit' => MockResponse::ok(),
@@ -123,14 +133,14 @@ class HelperFunctionsTest extends TestCase
             RequestOptions::normalizeBodyOptions([
                 'body' => $formData,
                 'content_type' => ContentType::FORM_URLENCODED,
-            ])['form_params']
+            ])['form_params'],
         );
         $this->assertSame(
             $multipartData,
             RequestOptions::normalizeBodyOptions([
                 'body' => $multipartData,
                 'content_type' => ContentType::MULTIPART,
-            ])['multipart']
+            ])['multipart'],
         );
 
         fetch('/submit', [
@@ -141,8 +151,9 @@ class HelperFunctionsTest extends TestCase
         ]);
 
         MockServer::assertSent(function ($request): bool {
-            return (string) $request->getBody() === 'name=Ada+Lovelace'
-                && $request->getHeaderLine('Content-Type') === ContentType::FORM_URLENCODED->value;
+            return (string) $request->getBody() === 'name=Ada+Lovelace' &&
+                $request->getHeaderLine('Content-Type') ===
+                    ContentType::FORM_URLENCODED->value;
         });
 
         fetch('/submit', [
@@ -161,7 +172,13 @@ class HelperFunctionsTest extends TestCase
             'https://example.com/users*' => MockResponse::json(['users' => []]),
         ]);
 
-        $response = request_method('GET', 'https://example.com/users', ['page' => 1], [], true);
+        $response = request_method(
+            'GET',
+            'https://example.com/users',
+            ['page' => 1],
+            [],
+            true,
+        );
 
         $this->assertSame(['users' => []], $response->json());
     }

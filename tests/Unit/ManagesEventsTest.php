@@ -17,8 +17,7 @@ class ManagesEventsTest extends TestCase
 {
     private function handler(): object
     {
-        return new class
-        {
+        return new class {
             use ManagesEvents;
         };
     }
@@ -28,8 +27,13 @@ class ManagesEventsTest extends TestCase
         $handler = $this->handler();
         $listener = fn () => null;
 
-        $this->assertSame($handler, $handler->on(RequestEvent::NAME, $listener));
-        $this->assertTrue($handler->getEventDispatcher()->hasListeners(RequestEvent::NAME));
+        $this->assertSame(
+            $handler,
+            $handler->on(RequestEvent::NAME, $listener),
+        );
+        $this->assertTrue(
+            $handler->getEventDispatcher()->hasListeners(RequestEvent::NAME),
+        );
     }
 
     public function test_on_helpers_map_to_event_names(): void
@@ -82,7 +86,9 @@ class ManagesEventsTest extends TestCase
 
         $handler->hooks(['custom.event' => fn () => null]);
 
-        $this->assertTrue($handler->getEventDispatcher()->hasListeners('custom.event'));
+        $this->assertTrue(
+            $handler->getEventDispatcher()->hasListeners('custom.event'),
+        );
     }
 
     public function test_generates_correlation_ids(): void

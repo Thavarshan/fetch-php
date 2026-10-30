@@ -17,7 +17,7 @@ class DebugInfoTest extends TestCase
             null,
             ['total_time' => 100.5],
             [],
-            1024
+            1024,
         );
 
         $this->assertInstanceOf(DebugInfo::class, $debugInfo);
@@ -27,13 +27,20 @@ class DebugInfoTest extends TestCase
 
     public function test_create_with_response(): void
     {
-        $response = new Psr7Response(200, ['Content-Type' => 'application/json'], '{"data":"test"}');
+        $response = new Psr7Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"data":"test"}',
+        );
 
         $debugInfo = DebugInfo::create(
             'POST',
             'https://example.com/api',
-            ['headers' => ['Content-Type' => 'application/json'], 'body' => ['test' => 'data']],
-            $response
+            [
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => ['test' => 'data'],
+            ],
+            $response,
         );
 
         $this->assertSame($response, $debugInfo->getResponse());
@@ -44,11 +51,9 @@ class DebugInfoTest extends TestCase
 
     public function test_format_request(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            ['headers' => ['Accept' => 'application/json']],
-        );
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', [
+            'headers' => ['Accept' => 'application/json'],
+        ]);
 
         $formatted = $debugInfo->formatRequest();
 
@@ -59,11 +64,9 @@ class DebugInfoTest extends TestCase
 
     public function test_format_request_with_disabled_headers(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            ['headers' => ['Accept' => 'application/json']],
-        );
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', [
+            'headers' => ['Accept' => 'application/json'],
+        ]);
 
         $formatted = $debugInfo->formatRequest(['request_headers' => false]);
 
@@ -72,13 +75,17 @@ class DebugInfoTest extends TestCase
 
     public function test_format_response(): void
     {
-        $response = new Psr7Response(200, ['Content-Type' => 'application/json'], '{"status":"ok"}');
+        $response = new Psr7Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            '{"status":"ok"}',
+        );
 
         $debugInfo = DebugInfo::create(
             'GET',
             'https://example.com/api',
             [],
-            $response
+            $response,
         );
 
         $formatted = $debugInfo->formatResponse();
@@ -91,11 +98,7 @@ class DebugInfoTest extends TestCase
 
     public function test_format_response_returns_null_when_no_response(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            []
-        );
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', []);
 
         $this->assertNull($debugInfo->formatResponse());
     }
@@ -109,13 +112,16 @@ class DebugInfoTest extends TestCase
             'GET',
             'https://example.com/api',
             [],
-            $response
+            $response,
         );
 
         // Default truncation is 1024 bytes
         $formatted = $debugInfo->formatResponse(['response_body' => 100]);
 
-        $this->assertStringContainsString('... (truncated)', $formatted['body']);
+        $this->assertStringContainsString(
+            '... (truncated)',
+            $formatted['body'],
+        );
         $this->assertLessThan(200, strlen($formatted['body']));
     }
 
@@ -130,7 +136,7 @@ class DebugInfoTest extends TestCase
             $response,
             ['total_time' => 50.0],
             [],
-            2048
+            2048,
         );
 
         $array = $debugInfo->toArray();
@@ -144,11 +150,7 @@ class DebugInfoTest extends TestCase
 
     public function test_dump_returns_json_string(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            []
-        );
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', []);
 
         $json = $debugInfo->dump();
 
@@ -160,11 +162,7 @@ class DebugInfoTest extends TestCase
 
     public function test_to_string_returns_json(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            []
-        );
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', []);
 
         $string = (string) $debugInfo;
 
@@ -186,11 +184,9 @@ class DebugInfoTest extends TestCase
 
     public function test_format_body_with_array(): void
     {
-        $debugInfo = DebugInfo::create(
-            'POST',
-            'https://example.com/api',
-            ['body' => ['key' => 'value']],
-        );
+        $debugInfo = DebugInfo::create('POST', 'https://example.com/api', [
+            'body' => ['key' => 'value'],
+        ]);
 
         $formatted = $debugInfo->formatRequest();
 
@@ -207,7 +203,7 @@ class DebugInfoTest extends TestCase
             null,
             [],
             [],
-            1024 * 1024 // 1MB
+            1024 * 1024, // 1MB
         );
 
         $array = $debugInfo->toArray();
@@ -218,31 +214,28 @@ class DebugInfoTest extends TestCase
 
     public function test_json_body_option_is_captured(): void
     {
-        $debugInfo = DebugInfo::create(
-            'POST',
-            'https://example.com/api',
-            ['json' => ['name' => 'test', 'value' => 123]],
-        );
+        $debugInfo = DebugInfo::create('POST', 'https://example.com/api', [
+            'json' => ['name' => 'test', 'value' => 123],
+        ]);
 
         $requestData = $debugInfo->getRequestData();
 
-        $this->assertEquals(['name' => 'test', 'value' => 123], $requestData['body']);
+        $this->assertEquals(
+            ['name' => 'test', 'value' => 123],
+            $requestData['body'],
+        );
     }
 
     public function test_sensitive_headers_are_redacted_in_request(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            [
-                'headers' => [
-                    'Authorization' => 'Bearer secret-token',
-                    'X-Api-Key' => 'my-api-key',
-                    'Cookie' => 'session=abc123',
-                    'Content-Type' => 'application/json',
-                ],
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', [
+            'headers' => [
+                'Authorization' => 'Bearer secret-token',
+                'X-Api-Key' => 'my-api-key',
+                'Cookie' => 'session=abc123',
+                'Content-Type' => 'application/json',
             ],
-        );
+        ]);
 
         $requestData = $debugInfo->getRequestData();
         $headers = $requestData['headers'];
@@ -265,14 +258,14 @@ class DebugInfoTest extends TestCase
                 'Set-Cookie' => 'session=xyz789; HttpOnly',
                 'X-Auth-Token' => 'refresh-token',
             ],
-            '{"data":"test"}'
+            '{"data":"test"}',
         );
 
         $debugInfo = DebugInfo::create(
             'GET',
             'https://example.com/api',
             [],
-            $response
+            $response,
         );
 
         $formatted = $debugInfo->formatResponse();
@@ -288,57 +281,51 @@ class DebugInfoTest extends TestCase
 
     public function test_auth_option_is_redacted(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            [
-                'auth' => ['username', 'password'],
-                'headers' => ['Accept' => 'application/json'],
-            ],
-        );
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', [
+            'auth' => ['username', 'password'],
+            'headers' => ['Accept' => 'application/json'],
+        ]);
 
         $requestData = $debugInfo->getRequestData();
 
         // Auth credentials should not appear in stored data
         // The sanitization strips them before storage
         $this->assertArrayNotHasKey('auth', $requestData);
-        $this->assertEquals('application/json', $requestData['headers']['Accept']);
+        $this->assertEquals(
+            'application/json',
+            $requestData['headers']['Accept'],
+        );
     }
 
     public function test_array_valued_sensitive_headers_are_redacted(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            [
-                'headers' => [
-                    'Authorization' => ['Bearer token1', 'Bearer token2'],
-                    'Content-Type' => 'application/json',
-                ],
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', [
+            'headers' => [
+                'Authorization' => ['Bearer token1', 'Bearer token2'],
+                'Content-Type' => 'application/json',
             ],
-        );
+        ]);
 
         $requestData = $debugInfo->getRequestData();
         $headers = $requestData['headers'];
 
         // Array-valued sensitive headers should have all values redacted
-        $this->assertEquals(['[REDACTED]', '[REDACTED]'], $headers['Authorization']);
+        $this->assertEquals(
+            ['[REDACTED]', '[REDACTED]'],
+            $headers['Authorization'],
+        );
         $this->assertEquals('application/json', $headers['Content-Type']);
     }
 
     public function test_case_insensitive_header_redaction(): void
     {
-        $debugInfo = DebugInfo::create(
-            'GET',
-            'https://example.com/api',
-            [
-                'headers' => [
-                    'authorization' => 'Bearer token',
-                    'AUTHORIZATION' => 'Bearer another-token',
-                    'x-API-key' => 'my-key',
-                ],
+        $debugInfo = DebugInfo::create('GET', 'https://example.com/api', [
+            'headers' => [
+                'authorization' => 'Bearer token',
+                'AUTHORIZATION' => 'Bearer another-token',
+                'x-API-key' => 'my-key',
             ],
-        );
+        ]);
 
         $requestData = $debugInfo->getRequestData();
         $headers = $requestData['headers'];

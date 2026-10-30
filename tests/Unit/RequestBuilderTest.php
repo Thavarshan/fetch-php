@@ -14,16 +14,18 @@ use PHPUnit\Framework\TestCase;
 
 class RequestBuilderTest extends TestCase
 {
-    public function test_cookie_headers_are_validated_without_auth_options(): void
+    public function test_cookies_validate_without_auth(): void
     {
         $builder = new RequestBuilder;
         $request = new Request('GET', 'https://example.test/secure');
-        $cookies = CookieJar::fromArray(['session' => 'fixture'], 'example.test');
-
-        $prepared = $builder->prepareValidationRequest(
-            $request,
-            ['cookies' => $cookies],
+        $cookies = CookieJar::fromArray(
+            ['session' => 'fixture'],
+            'example.test',
         );
+
+        $prepared = $builder->prepareValidationRequest($request, [
+            'cookies' => $cookies,
+        ]);
 
         self::assertSame('session=fixture', $prepared->getHeaderLine('Cookie'));
         self::assertFalse($prepared->hasHeader('Authorization'));
@@ -34,27 +36,42 @@ class RequestBuilderTest extends TestCase
         self::assertFalse($otherHost->hasHeader('Cookie'));
     }
 
-    public function test_json_body_options_are_built_without_mutating_input(): void
+    public function test_json_body_options_are_immutable(): void
     {
         $builder = new RequestBuilder;
         $options = ['headers' => ['X-Existing' => 'yes']];
 
-        $result = $builder->applyBodyOptions($options, ['name' => 'Ada'], ContentType::JSON);
+        $result = $builder->applyBodyOptions(
+            $options,
+            ['name' => 'Ada'],
+            ContentType::JSON,
+        );
 
         self::assertSame(['headers' => ['X-Existing' => 'yes']], $options);
         self::assertSame(['name' => 'Ada'], $result['json']);
-        self::assertSame('application/json', $result['headers']['Content-Type']);
+        self::assertSame(
+            'application/json',
+            $result['headers']['Content-Type'],
+        );
     }
 
-    public function test_middleware_body_replacement_removes_conflicting_structured_body_options(): void
+    public function test_body_replacement_clears_structured_options(): void
     {
         $builder = new RequestBuilder;
-        $request = new Request('POST', 'https://example.test/users', [], '{"name":"Ada"}');
+        $request = new Request(
+            'POST',
+            'https://example.test/users',
+            [],
+            '{"name":"Ada"}',
+        );
         $request = $request->withBody(Utils::streamFor('{"name":"Grace"}'));
 
         $options = $builder->mergeMiddlewareRequest(
             $request,
-            ['json' => ['name' => 'Ada'], 'headers' => ['Content-Type' => 'application/json']],
+            [
+                'json' => ['name' => 'Ada'],
+                'headers' => ['Content-Type' => 'application/json'],
+            ],
             '{"name":"Ada"}',
         );
 
@@ -62,16 +79,24 @@ class RequestBuilderTest extends TestCase
         self::assertArrayNotHasKey('json', $options);
     }
 
-    public function test_middleware_edits_to_a_materialized_body_stream_are_sent(): void
+    public function test_materialized_body_edits_are_sent(): void
     {
         $builder = new RequestBuilder;
         $seedBody = '{"name":"Ada"}';
-        $request = new Request('POST', 'https://example.test/users', ['Content-Type' => 'application/json'], $seedBody);
+        $request = new Request(
+            'POST',
+            'https://example.test/users',
+            ['Content-Type' => 'application/json'],
+            $seedBody,
+        );
         $request->getBody()->write('{"name":"Grace"}');
 
         $options = $builder->mergeMiddlewareRequest(
             $request,
-            ['json' => ['name' => 'Ada'], 'headers' => ['Content-Type' => 'application/json']],
+            [
+                'json' => ['name' => 'Ada'],
+                'headers' => ['Content-Type' => 'application/json'],
+            ],
             $seedBody,
             $request->getBody(),
         );
@@ -80,7 +105,7 @@ class RequestBuilderTest extends TestCase
         self::assertArrayNotHasKey('json', $options);
     }
 
-    public function test_multipart_middleware_request_has_a_matching_boundary_and_transport_body(): void
+    public function test_multipart_boundary_matches_transport_body(): void
     {
         $builder = new RequestBuilder;
         $parts = [['name' => 'title', 'contents' => 'quarterly report']];
@@ -89,18 +114,29 @@ class RequestBuilderTest extends TestCase
             'https://example.test/upload',
             ['multipart' => $parts],
         );
-        $boundary = substr($request->getHeaderLine('Content-Type'), strlen('multipart/form-data; boundary='));
+        $boundary = substr(
+            $request->getHeaderLine('Content-Type'),
+            strlen('multipart/form-data; boundary='),
+        );
 
-        $options = $builder->mergeMiddlewareRequest($request, ['multipart' => $parts], $seedBody, $request->getBody());
+        $options = $builder->mergeMiddlewareRequest(
+            $request,
+            ['multipart' => $parts],
+            $seedBody,
+            $request->getBody(),
+        );
 
         self::assertNull($seedBody);
         self::assertNotSame('', $boundary);
         self::assertSame($request->getBody(), $options['body']);
         self::assertArrayNotHasKey('multipart', $options);
-        self::assertSame('multipart/form-data; boundary='.$boundary, $options['headers']['Content-Type']);
+        self::assertSame(
+            'multipart/form-data; boundary='.$boundary,
+            $options['headers']['Content-Type'],
+        );
     }
 
-    public function test_seed_body_reads_psr_stream_from_its_current_position_and_restores_it(): void
+    public function test_psr_seed_body_preserves_position(): void
     {
         $body = Utils::streamFor('invalid-prefix{"name":"Ada"}');
         $body->seek(strlen('invalid-prefix'));
@@ -111,7 +147,7 @@ class RequestBuilderTest extends TestCase
         self::assertSame(strlen('invalid-prefix'), $body->tell());
     }
 
-    public function test_seed_body_reads_resource_from_its_current_position_and_restores_it(): void
+    public function test_resource_seed_body_preserves_position(): void
     {
         $body = fopen('php://temp', 'r+');
         self::assertIsResource($body);
@@ -125,12 +161,14 @@ class RequestBuilderTest extends TestCase
         fclose($body);
     }
 
-    public function test_query_options_replace_existing_query_like_guzzle(): void
+    public function test_query_options_replace_existing_query(): void
     {
         $builder = new RequestBuilder;
         $request = new Request('GET', 'https://example.test/users?existing=1');
 
-        $withQuery = $builder->withQueryOptions($request, ['query' => ['page' => 2]]);
+        $withQuery = $builder->withQueryOptions($request, [
+            'query' => ['page' => 2],
+        ]);
 
         self::assertSame('page=2', $withQuery->getUri()->getQuery());
     }
@@ -140,17 +178,24 @@ class RequestBuilderTest extends TestCase
         $builder = new RequestBuilder;
         $request = new Request('GET', 'https://example.test/users?old=yes');
 
-        $withQuery = $builder->withQueryOptions($request, ['query' => ['search' => 'two words']]);
+        $withQuery = $builder->withQueryOptions($request, [
+            'query' => ['search' => 'two words'],
+        ]);
 
-        self::assertSame('search=two%20words', $withQuery->getUri()->getQuery());
+        self::assertSame(
+            'search=two%20words',
+            $withQuery->getUri()->getQuery(),
+        );
     }
 
-    public function test_basic_auth_options_are_materialized_for_validation(): void
+    public function test_basic_auth_is_materialized_for_validation(): void
     {
         $builder = new RequestBuilder;
         $request = new Request('GET', 'https://example.test/secure');
 
-        $withAuth = $builder->prepareValidationRequest($request, ['auth' => ['fixture-user', 'fixture-password']]);
+        $withAuth = $builder->prepareValidationRequest($request, [
+            'auth' => ['fixture-user', 'fixture-password'],
+        ]);
 
         self::assertSame(
             'Basic '.base64_encode('fixture-user:fixture-password'),
@@ -158,10 +203,15 @@ class RequestBuilderTest extends TestCase
         );
     }
 
-    public function test_prepares_only_supported_guzzle_options_from_request_context(): void
+    public function test_context_filters_guzzle_options(): void
     {
         $builder = new RequestBuilder;
-        $context = RequestContext::fromOptions(['method' => 'POST', 'uri' => '/users', 'json' => ['x' => 1], 'validation' => ['response_schema' => ['type' => 'object']]]);
+        $context = RequestContext::fromOptions([
+            'method' => 'POST',
+            'uri' => '/users',
+            'json' => ['x' => 1],
+            'validation' => ['response_schema' => ['type' => 'object']],
+        ]);
 
         $options = $builder->prepareGuzzleOptions([], $context);
 

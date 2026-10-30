@@ -10,7 +10,7 @@ const props = withDefaults(
     {
         size: 20,
         stroke: 1.8,
-    }
+    },
 );
 
 const iconSize = computed(() => props.size);

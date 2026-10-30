@@ -21,10 +21,7 @@ class MockResponseSequenceTest extends TestCase
 
     public function test_creates_sequence_with_initial_responses(): void
     {
-        $responses = [
-            MockResponse::ok(),
-            MockResponse::created(),
-        ];
+        $responses = [MockResponse::ok(), MockResponse::created()];
 
         $sequence = new MockResponseSequence($responses);
 
@@ -49,7 +46,10 @@ class MockResponseSequenceTest extends TestCase
         $response = $sequence->next();
 
         $this->assertSame(200, $response->getStatus());
-        $this->assertSame(json_encode(['data' => 'value']), $response->getBody());
+        $this->assertSame(
+            json_encode(['data' => 'value']),
+            $response->getBody(),
+        );
     }
 
     public function test_pushes_status_response(): void
@@ -163,7 +163,8 @@ class MockResponseSequenceTest extends TestCase
 
         $sequence->next(); // Exhaust the sequence
 
-        $this->assertTrue($sequence->hasMore()); // Still has more because of default
+        // It still has the default response.
+        $this->assertTrue($sequence->hasMore());
     }
 
     public function test_has_more_with_loop(): void
@@ -174,7 +175,8 @@ class MockResponseSequenceTest extends TestCase
 
         $sequence->next(); // Would normally exhaust
 
-        $this->assertTrue($sequence->hasMore()); // Still has more because of loop
+        // The sequence loops, so a response is still available.
+        $this->assertTrue($sequence->hasMore());
     }
 
     public function test_resets_sequence(): void

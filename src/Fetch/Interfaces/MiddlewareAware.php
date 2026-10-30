@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Fetch\Interfaces;
 
-use Psr\Http\Message\RequestInterface;
-
 interface MiddlewareAware
 {
     /**
@@ -13,10 +11,11 @@ interface MiddlewareAware
      *
      * Higher-priority middleware run first (outermost). Middleware with equal
      * priority run in the order they were added.
-     *
-     * @param  Middleware|callable(RequestInterface, callable): mixed  $middleware
      */
-    public function addMiddleware(Middleware|callable $middleware, int $priority = 0): self;
+    public function addMiddleware(
+        Middleware|callable $middleware,
+        int $priority = 0,
+    ): self;
 
     /**
      * Replace the entire middleware stack.
@@ -24,7 +23,10 @@ interface MiddlewareAware
      * Each entry is either a middleware (object or callable) or a
      * `[$middleware, $priority]` pair.
      *
-     * @param  array<int, Middleware|callable|array{0: Middleware|callable, 1?: int}>  $middleware
+     * @param  array<int, Middleware|callable|array{
+     *     0: Middleware|callable,
+     *     1?: int
+     * }>  $middleware
      */
     public function middleware(array $middleware): self;
 
@@ -48,18 +50,28 @@ interface MiddlewareAware
     /**
      * Apply the given callback to the handler when the condition is truthy.
      *
-     * @param  mixed  $condition  A boolean, or a callable resolved with the handler.
+     * @param  mixed  $condition  A boolean, or a callable resolved with the
+     *                            handler.
      * @param  callable(self, mixed): mixed  $callback
      * @param  callable(self, mixed): mixed|null  $default
      */
-    public function when(mixed $condition, callable $callback, ?callable $default = null): self;
+    public function when(
+        mixed $condition,
+        callable $callback,
+        ?callable $default = null,
+    ): self;
 
     /**
      * Apply the given callback to the handler when the condition is falsy.
      *
-     * @param  mixed  $condition  A boolean, or a callable resolved with the handler.
+     * @param  mixed  $condition  A boolean, or a callable resolved with the
+     *                            handler.
      * @param  callable(self, mixed): mixed  $callback
      * @param  callable(self, mixed): mixed|null  $default
      */
-    public function unless(mixed $condition, callable $callback, ?callable $default = null): self;
+    public function unless(
+        mixed $condition,
+        callable $callback,
+        ?callable $default = null,
+    ): self;
 }

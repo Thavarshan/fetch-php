@@ -23,7 +23,8 @@ class Recorder
     /**
      * Recorded requests and responses.
      *
-     * @var array<array{request: Request, response: ResponseInterface, timestamp: float}>
+     * @var array<array{request: Request, response: ResponseInterface,
+     *     timestamp: float}>
      */
     protected array $recordings = [];
 
@@ -55,7 +56,8 @@ class Recorder
     /**
      * Stop recording and return the recordings.
      *
-     * @return array<array{request: Request, response: ResponseInterface, timestamp: float}>
+     * @return array<array{request: Request, response: ResponseInterface,
+     *     timestamp: float}>
      */
     public static function stop(): array
     {
@@ -68,8 +70,10 @@ class Recorder
     /**
      * Record a request and response.
      */
-    public static function record(Request $request, ResponseInterface $response): void
-    {
+    public static function record(
+        Request $request,
+        ResponseInterface $response,
+    ): void {
         $instance = self::getInstance();
 
         if (! $instance->isRecording) {
@@ -94,7 +98,8 @@ class Recorder
     /**
      * Get all recordings.
      *
-     * @return array<array{request: Request, response: ResponseInterface, timestamp: float}>
+     * @return array<array{request: Request, response: ResponseInterface,
+     *     timestamp: float}>
      */
     public static function getRecordings(): array
     {
@@ -112,7 +117,8 @@ class Recorder
     /**
      * Replay recordings by setting up mock responses.
      *
-     * @param  array<array{request: Request, response: ResponseInterface, timestamp?: float}>  $recordings  Recordings to replay
+     * @param  array<array{request: Request, response: ResponseInterface,
+     *     timestamp?: float}>  $recordings  Recordings to replay
      */
     public static function replay(array $recordings): void
     {
@@ -130,13 +136,15 @@ class Recorder
             $mockResponse = MockResponse::create(
                 $response->status(),
                 $response->body(),
-                $response->getHeaders()
+                $response->getHeaders(),
             );
 
             // If the pattern already exists, convert to sequence
             if (isset($fakes[$pattern])) {
-                if (! $fakes[$pattern] instanceof MockResponseSequence) {
-                    $fakes[$pattern] = MockResponse::sequence([$fakes[$pattern]]);
+                if (! ($fakes[$pattern] instanceof MockResponseSequence)) {
+                    $fakes[$pattern] = MockResponse::sequence([
+                        $fakes[$pattern],
+                    ]);
                 }
                 $fakes[$pattern]->pushResponse($mockResponse);
             } else {
@@ -175,7 +183,10 @@ class Recorder
             ];
         }
 
-        return json_encode($exportData, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+        return json_encode(
+            $exportData,
+            JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR,
+        );
     }
 
     /**
@@ -186,7 +197,9 @@ class Recorder
         $data = json_decode($json, true);
 
         if (! is_array($data)) {
-            throw new InvalidArgumentException('Invalid JSON format for recordings.');
+            throw new InvalidArgumentException(
+                'Invalid JSON format for recordings.',
+            );
         }
 
         $fakes = [];
@@ -199,13 +212,15 @@ class Recorder
             $mockResponse = MockResponse::create(
                 $recording['response']['status'] ?? 200,
                 $recording['response']['body'] ?? '',
-                $recording['response']['headers'] ?? []
+                $recording['response']['headers'] ?? [],
             );
 
             // If the pattern already exists, convert to sequence
             if (isset($fakes[$pattern])) {
-                if (! $fakes[$pattern] instanceof MockResponseSequence) {
-                    $fakes[$pattern] = MockResponse::sequence([$fakes[$pattern]]);
+                if (! ($fakes[$pattern] instanceof MockResponseSequence)) {
+                    $fakes[$pattern] = MockResponse::sequence([
+                        $fakes[$pattern],
+                    ]);
                 }
                 $fakes[$pattern]->pushResponse($mockResponse);
             } else {

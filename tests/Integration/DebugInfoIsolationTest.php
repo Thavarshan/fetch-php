@@ -28,7 +28,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient, new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true));
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -52,12 +58,21 @@ class DebugInfoIsolationTest extends TestCase
         $this->assertNotSame($debug1, $debug3);
 
         // Each should contain the correct request URI
-        $this->assertStringContainsString('endpoint1', $debug1->getRequestData()['uri']);
-        $this->assertStringContainsString('endpoint2', $debug2->getRequestData()['uri']);
-        $this->assertStringContainsString('endpoint3', $debug3->getRequestData()['uri']);
+        $this->assertStringContainsString(
+            'endpoint1',
+            $debug1->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'endpoint2',
+            $debug2->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'endpoint3',
+            $debug3->getRequestData()['uri'],
+        );
     }
 
-    public function test_concurrent_async_requests_have_isolated_debug_info(): void
+    public function test_async_requests_have_isolated_debug_info(): void
     {
         // Create mock responses
         $mockHandler = new MockHandler([
@@ -69,7 +84,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient, new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true));
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -97,9 +118,18 @@ class DebugInfoIsolationTest extends TestCase
         $this->assertNotSame($debug1, $debug3);
 
         // Each should contain the correct request URI
-        $this->assertStringContainsString('async1', $debug1->getRequestData()['uri']);
-        $this->assertStringContainsString('async2', $debug2->getRequestData()['uri']);
-        $this->assertStringContainsString('async3', $debug3->getRequestData()['uri']);
+        $this->assertStringContainsString(
+            'async1',
+            $debug1->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'async2',
+            $debug2->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'async3',
+            $debug3->getRequestData()['uri'],
+        );
     }
 
     public function test_debug_info_contains_timing_data(): void
@@ -112,7 +142,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient, new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true));
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -126,7 +162,10 @@ class DebugInfoIsolationTest extends TestCase
         // Should have request info
         $this->assertArrayHasKey('request', $debugArray);
         $this->assertEquals('GET', $debugArray['request']['method']);
-        $this->assertStringContainsString('/api/test', $debugArray['request']['uri']);
+        $this->assertStringContainsString(
+            '/api/test',
+            $debugArray['request']['uri'],
+        );
 
         // Should have response info
         $this->assertArrayHasKey('response', $debugArray);
@@ -151,7 +190,13 @@ class DebugInfoIsolationTest extends TestCase
 
         $profiler = new FetchProfiler;
 
-        $handler = ClientHandler::createWithClient($guzzleClient, new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true));
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withProfiler($profiler);
         $handler->withDebug(true); // Enable debug mode to capture debug info
@@ -173,8 +218,14 @@ class DebugInfoIsolationTest extends TestCase
         $debug2 = $response2->getDebugInfo();
 
         $this->assertNotSame($debug1, $debug2);
-        $this->assertStringContainsString('endpoint1', $debug1->getRequestData()['uri']);
-        $this->assertStringContainsString('endpoint2', $debug2->getRequestData()['uri']);
+        $this->assertStringContainsString(
+            'endpoint1',
+            $debug1->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'endpoint2',
+            $debug2->getRequestData()['uri'],
+        );
     }
 
     public function test_response_without_debug_mode_has_no_debug_info(): void
@@ -187,7 +238,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient, new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true));
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         // Don't enable debug mode
 
@@ -198,7 +255,7 @@ class DebugInfoIsolationTest extends TestCase
         $this->assertNull($response->getDebugInfo());
     }
 
-    public function test_get_last_debug_info_still_works_for_backward_compatibility(): void
+    public function test_last_debug_info_keeps_backward_compatibility(): void
     {
         // Create mock response
         $mockHandler = new MockHandler([
@@ -208,7 +265,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient, new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true));
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -226,7 +289,7 @@ class DebugInfoIsolationTest extends TestCase
         $this->assertSame($lastDebugInfo, $responseDebugInfo);
     }
 
-    public function test_mixed_sync_and_async_requests_have_isolated_debug_info(): void
+    public function test_mixed_sync_and_async_debug_info_is_isolated(): void
     {
         // Create mock responses
         $mockHandler = new MockHandler([
@@ -239,7 +302,13 @@ class DebugInfoIsolationTest extends TestCase
         $handlerStack = HandlerStack::create($mockHandler);
         $guzzleClient = new Client(['handler' => $handlerStack]);
 
-        $handler = ClientHandler::createWithClient($guzzleClient, new GuzzleAsyncTransport($guzzleClient, supportsQueueOnlyHandlers: true));
+        $handler = ClientHandler::createWithClient(
+            $guzzleClient,
+            new GuzzleAsyncTransport(
+                $guzzleClient,
+                supportsQueueOnlyHandlers: true,
+            ),
+        );
         $handler->baseUri('https://api.example.com');
         $handler->withDebug(true);
 
@@ -268,9 +337,21 @@ class DebugInfoIsolationTest extends TestCase
         $this->assertTrue($syncResponse2->hasDebugInfo());
 
         // Each debug info should contain the correct URI
-        $this->assertStringContainsString('sync1', $syncResponse1->getDebugInfo()->getRequestData()['uri']);
-        $this->assertStringContainsString('async1', $asyncResponses['async1']->getDebugInfo()->getRequestData()['uri']);
-        $this->assertStringContainsString('async2', $asyncResponses['async2']->getDebugInfo()->getRequestData()['uri']);
-        $this->assertStringContainsString('sync2', $syncResponse2->getDebugInfo()->getRequestData()['uri']);
+        $this->assertStringContainsString(
+            'sync1',
+            $syncResponse1->getDebugInfo()->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'async1',
+            $asyncResponses['async1']->getDebugInfo()->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'async2',
+            $asyncResponses['async2']->getDebugInfo()->getRequestData()['uri'],
+        );
+        $this->assertStringContainsString(
+            'sync2',
+            $syncResponse2->getDebugInfo()->getRequestData()['uri'],
+        );
     }
 }

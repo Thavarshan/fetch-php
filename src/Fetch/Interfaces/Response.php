@@ -29,7 +29,7 @@ interface Response extends ArrayAccess, PsrResponseInterface
         mixed $data,
         int|Status $status = Status::OK,
         array $headers = [],
-        int $options = 0
+        int $options = 0,
     ): self;
 
     /**
@@ -40,7 +40,7 @@ interface Response extends ArrayAccess, PsrResponseInterface
     public static function withRedirect(
         string $location,
         int|Status $status = Status::FOUND,
-        array $headers = []
+        array $headers = [],
     ): self;
 
     /**
@@ -59,13 +59,18 @@ interface Response extends ArrayAccess, PsrResponseInterface
     public static function created(
         string $location,
         mixed $data = null,
-        array $headers = []
+        array $headers = [],
     ): self;
 
     /**
      * Get the body as a JSON-decoded array or object.
      */
-    public function json(bool $assoc = true, bool $throwOnError = true, int $depth = 512, int $options = 0): mixed;
+    public function json(
+        bool $assoc = true,
+        bool $throwOnError = true,
+        int $depth = 512,
+        int $options = 0,
+    ): mixed;
 
     /**
      * Check if the response status code is a redirect (3xx).
@@ -208,7 +213,10 @@ interface Response extends ArrayAccess, PsrResponseInterface
     /**
      * Parse the body as XML.
      */
-    public function xml(int $options = 0, bool $throwOnError = true): ?SimpleXMLElement;
+    public function xml(
+        int $options = 0,
+        bool $throwOnError = true,
+    ): ?SimpleXMLElement;
 
     /**
      * Check if the response has the given status code.

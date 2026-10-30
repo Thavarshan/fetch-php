@@ -1,6 +1,10 @@
 ---
 name: http-security-reviewer
-description: Read-only adversarial security review of Fetch PHP HTTP behavior — SSRF, header/credential leakage, redirects, proxies, TLS verification, logging/debug redaction, and cache isolation. Use when reviewing changes to URL/auth/redirect/TLS/logging/cache/middleware code.
+description:
+    Read-only adversarial security review of Fetch PHP HTTP behavior — SSRF,
+    header/credential leakage, redirects, proxies, TLS verification,
+    logging/debug redaction, and cache isolation. Use when reviewing changes to
+    URL/auth/redirect/TLS/logging/cache/middleware code.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
@@ -26,12 +30,13 @@ SSRF (user input reaching request URL/redirect/proxy — the library does NOT
 block private hosts); credential/header leakage into logs/debug/exceptions/
 tests/docs; cross-origin `Authorization`/`Cookie` forwarding on redirect; TLS
 verification staying on by default; fail-closed validation and
-locale-independent header comparison; cache key/vary isolation across principals.
+locale-independent header comparison; cache key/vary isolation across
+principals.
 
 ## Prohibited
 
-Editing any file; running mutating commands; network calls to third parties.
-Use Bash only for read-only inspection (`git diff`, `grep`).
+Editing any file; running mutating commands; network calls to third parties. Use
+Bash only for read-only inspection (`git diff`, `grep`).
 
 ## Required evidence & output
 

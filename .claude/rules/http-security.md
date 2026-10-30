@@ -1,13 +1,13 @@
 ---
 paths:
-  - "src/Fetch/Concerns/HandlesUris.php"
-  - "src/Fetch/Concerns/ConfiguresRequests.php"
-  - "src/Fetch/Http/Request.php"
-  - "src/Fetch/Middleware/**/*.php"
-  - "src/Fetch/Cache/**/*.php"
-  - "src/Fetch/Pool/**/*.php"
-  - "src/Fetch/Support/DebugInfo.php"
-  - "src/Fetch/Support/ProfilerBridge.php"
+    - 'src/Fetch/Concerns/HandlesUris.php'
+    - 'src/Fetch/Concerns/ConfiguresRequests.php'
+    - 'src/Fetch/Http/Request.php'
+    - 'src/Fetch/Middleware/**/*.php'
+    - 'src/Fetch/Cache/**/*.php'
+    - 'src/Fetch/Pool/**/*.php'
+    - 'src/Fetch/Support/DebugInfo.php'
+    - 'src/Fetch/Support/ProfilerBridge.php'
 ---
 
 # HTTP security rules

@@ -1,6 +1,11 @@
 ---
 name: fetch-php-http-security-review
-description: Security review for Fetch PHP's HTTP behavior — SSRF, header/credential leakage, redirect and proxy handling, TLS verification, logging/debug redaction, cache isolation, and unsafe URI handling. Use when changing URL/URI handling, auth, redirects, proxies, TLS, logging/profiling, caching, or middleware/events.
+description:
+    Security review for Fetch PHP's HTTP behavior — SSRF, header/credential
+    leakage, redirect and proxy handling, TLS verification, logging/debug
+    redaction, cache isolation, and unsafe URI handling. Use when changing
+    URL/URI handling, auth, redirects, proxies, TLS, logging/profiling, caching,
+    or middleware/events.
 ---
 
 # Fetch PHP HTTP security review
@@ -18,7 +23,7 @@ Any change to: URI building/validation (`HandlesUris`), auth
 
 ## Threats to check
 
-1. **SSRF / unsafe URLs.** `HandlesUris` validates *format* only (rejects
+1. **SSRF / unsafe URLs.** `HandlesUris` validates _format_ only (rejects
    whitespace, requires a base URI for relative paths) — it does **not** block
    private/link-local/metadata hosts or restrict schemes beyond
    `FILTER_VALIDATE_URL`. Flag any new path where user input reaches a request
@@ -41,7 +46,7 @@ Any change to: URI building/validation (`HandlesUris`), auth
    authorized response to another. Never cache responses keyed without auth
    context when auth affects the body.
 6. **Header/URI correctness.** Compare header names case-insensitively and
-   locale-independently; fail *closed* on validation errors (`preg_match`
+   locale-independently; fail _closed_ on validation errors (`preg_match`
    returning `false`), never fail open. Watch for CRLF/whitespace injection into
    headers or URIs and request-smuggling-style ambiguity.
 7. **Response body handling.** Untrusted bodies (JSON/XML) parsed safely; no

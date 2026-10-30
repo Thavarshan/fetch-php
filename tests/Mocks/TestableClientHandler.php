@@ -25,7 +25,7 @@ class TestableClientHandler extends ClientHandler
     public static function handle(
         string $method,
         string $uri,
-        array $options = []
+        array $options = [],
     ): Response|PromiseInterface {
         // Delegate to parent's implementation which uses static::create()
         return parent::handle($method, $uri, $options);

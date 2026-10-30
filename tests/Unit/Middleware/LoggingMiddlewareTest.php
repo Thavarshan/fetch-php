@@ -16,13 +16,16 @@ class LoggingMiddlewareTest extends TestCase
 {
     private function collectingLogger(array &$logs): AbstractLogger
     {
-        return new class($logs) extends AbstractLogger
-        {
+        return new class($logs) extends AbstractLogger {
             public function __construct(private array &$logs) {}
 
             public function log($level, $message, array $context = []): void
             {
-                $this->logs[] = ['level' => $level, 'message' => (string) $message, 'context' => $context];
+                $this->logs[] = [
+                    'level' => $level,
+                    'message' => (string) $message,
+                    'context' => $context,
+                ];
             }
         };
     }
@@ -33,7 +36,10 @@ class LoggingMiddlewareTest extends TestCase
         $middleware = new LoggingMiddleware($this->collectingLogger($logs));
         $request = new Request('GET', 'https://example.com/api');
 
-        $middleware->handle($request, fn (RequestInterface $req) => new Response(200));
+        $middleware->handle(
+            $request,
+            fn (RequestInterface $req) => new Response(200),
+        );
 
         $this->assertCount(2, $logs);
         $this->assertSame('HTTP request started', $logs[0]['message']);
@@ -42,7 +48,10 @@ class LoggingMiddlewareTest extends TestCase
 
         // Same correlation id links both entries.
         $this->assertNotEmpty($logs[0]['context']['correlation_id']);
-        $this->assertSame($logs[0]['context']['correlation_id'], $logs[1]['context']['correlation_id']);
+        $this->assertSame(
+            $logs[0]['context']['correlation_id'],
+            $logs[1]['context']['correlation_id'],
+        );
     }
 
     public function test_attaches_correlation_header_to_request(): void
@@ -61,9 +70,15 @@ class LoggingMiddlewareTest extends TestCase
     public function test_respects_custom_level(): void
     {
         $logs = [];
-        $middleware = new LoggingMiddleware($this->collectingLogger($logs), LogLevel::DEBUG);
+        $middleware = new LoggingMiddleware(
+            $this->collectingLogger($logs),
+            LogLevel::DEBUG,
+        );
 
-        $middleware->handle(new Request('GET', 'https://example.com'), fn () => new Response(200));
+        $middleware->handle(
+            new Request('GET', 'https://example.com'),
+            fn () => new Response(200),
+        );
 
         $this->assertSame(LogLevel::DEBUG, $logs[0]['level']);
     }

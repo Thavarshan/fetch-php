@@ -29,7 +29,7 @@ use IteratorAggregate;
  * }
  * ```
  *
- * @see https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation
+ * @see https://html.spec.whatwg.org/multipage/server-sent-events.html
  *
  * @implements IteratorAggregate<int, ServerSentEvent>
  */
@@ -93,7 +93,11 @@ class EventSource implements IteratorAggregate
             // A blank line dispatches the buffered event (if any).
             if ($line === '') {
                 if ($hasData || $hasFields) {
-                    $event = $this->buildEvent($dataBuffer, $eventType, $hasData);
+                    $event = $this->buildEvent(
+                        $dataBuffer,
+                        $eventType,
+                        $hasData,
+                    );
 
                     if ($event !== null) {
                         yield $event;
@@ -168,16 +172,20 @@ class EventSource implements IteratorAggregate
      * Returns null when the buffer holds no data lines (only metadata), which
      * per the spec must not fire a message event.
      */
-    protected function buildEvent(string $dataBuffer, string $eventType, bool $hasData): ?ServerSentEvent
-    {
+    protected function buildEvent(
+        string $dataBuffer,
+        string $eventType,
+        bool $hasData,
+    ): ?ServerSentEvent {
         if (! $hasData) {
             return null;
         }
 
         // A single trailing newline is stripped from the data buffer.
-        $data = substr($dataBuffer, -1) === "\n"
-            ? substr($dataBuffer, 0, -1)
-            : $dataBuffer;
+        $data =
+            substr($dataBuffer, -1) === "\n"
+                ? substr($dataBuffer, 0, -1)
+                : $dataBuffer;
 
         return new ServerSentEvent(
             data: $data,

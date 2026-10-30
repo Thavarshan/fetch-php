@@ -14,8 +14,9 @@ use Fetch\Pool\PoolConfiguration;
 /** Stable ClientHandler facade for the composed connection pool manager. */
 trait ManagesConnectionPool
 {
-    protected static function initializePool(?PoolConfiguration $config = null): void
-    {
+    protected static function initializePool(
+        ?PoolConfiguration $config = null,
+    ): void {
         ConnectionPoolManager::initialize($config);
     }
 
@@ -31,7 +32,9 @@ trait ManagesConnectionPool
     public function withHttp2(array|bool $config = true): ClientHandler
     {
         $this->connectionPoolManager->withHttp2($config);
-        $this->options = $this->connectionPoolManager->applyHttp2Options($this->options);
+        $this->options = $this->connectionPoolManager->applyHttp2Options(
+            $this->options,
+        );
 
         return $this;
     }
@@ -102,7 +105,9 @@ trait ManagesConnectionPool
 
     protected function applyHttp2Options(): void
     {
-        $this->options = $this->connectionPoolManager->applyHttp2Options($this->options);
+        $this->options = $this->connectionPoolManager->applyHttp2Options(
+            $this->options,
+        );
     }
 
     protected function isPoolInitialized(): bool

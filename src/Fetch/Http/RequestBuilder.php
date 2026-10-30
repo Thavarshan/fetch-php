@@ -15,30 +15,53 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
-/** Builds normalized request options and the PSR-7 request used by middleware. */
+/**
+ * Builds normalized request options and the PSR-7 request used by middleware.
+ */
 final class RequestBuilder
 {
     /**
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public function applyBodyOptions(array $options, mixed $body, ContentType|string $contentType): array
-    {
+    public function applyBodyOptions(
+        array $options,
+        mixed $body,
+        ContentType|string $contentType,
+    ): array {
         if ($body === null) {
             return $options;
         }
 
         $contentTypeEnum = ContentType::normalizeContentType($contentType);
-        $contentTypeValue = $contentTypeEnum instanceof ContentType ? $contentTypeEnum->value : (string) $contentTypeEnum;
+        $contentTypeValue =
+            $contentTypeEnum instanceof ContentType
+                ? $contentTypeEnum->value
+                : (string) $contentTypeEnum;
         $options['headers'] ??= [];
-        unset($options['body'], $options['json'], $options['form_params'], $options['multipart']);
+        unset(
+            $options['body'],
+            $options['json'],
+            $options['form_params'],
+            $options['multipart'],
+        );
 
         if (is_array($body)) {
             return match ($contentTypeEnum) {
                 ContentType::JSON => $this->withJsonBody($options, $body),
-                ContentType::FORM_URLENCODED => $this->withFormBody($options, $body),
-                ContentType::MULTIPART => $this->withMultipartBody($options, $body),
-                default => $this->withGenericArrayBody($options, $body, $contentTypeValue),
+                ContentType::FORM_URLENCODED => $this->withFormBody(
+                    $options,
+                    $body,
+                ),
+                ContentType::MULTIPART => $this->withMultipartBody(
+                    $options,
+                    $body,
+                ),
+                default => $this->withGenericArrayBody(
+                    $options,
+                    $body,
+                    $contentTypeValue,
+                ),
             };
         }
 
@@ -54,28 +77,49 @@ final class RequestBuilder
      * @param  array<string, mixed>  $guzzleOptions
      * @return array{0: RequestInterface, 1: string|null}
      */
-    public function buildMiddlewareRequest(string $method, string $uri, array $guzzleOptions, bool $captureStreamBody = true): array
-    {
+    public function buildMiddlewareRequest(
+        string $method,
+        string $uri,
+        array $guzzleOptions,
+        bool $captureStreamBody = true,
+    ): array {
         $headers = $guzzleOptions['headers'] ?? [];
 
-        if (isset($guzzleOptions['multipart']) && is_array($guzzleOptions['multipart'])) {
-            $multipartBody = new MultipartStream(RequestOptions::normalizeMultipart($guzzleOptions['multipart']));
+        if (
+            isset($guzzleOptions['multipart']) &&
+            is_array($guzzleOptions['multipart'])
+        ) {
+            $multipartBody = new MultipartStream(
+                RequestOptions::normalizeMultipart($guzzleOptions['multipart']),
+            );
             foreach (array_keys($headers) as $name) {
                 if (strcasecmp((string) $name, 'Content-Type') === 0) {
                     unset($headers[$name]);
                 }
             }
-            $headers['Content-Type'] = 'multipart/form-data; boundary='.$multipartBody->getBoundary();
+            $headers['Content-Type'] =
+                'multipart/form-data; boundary='.
+                $multipartBody->getBoundary();
 
-            return [new GuzzleRequest($method, $uri, $headers, $multipartBody), null];
+            return [
+                new GuzzleRequest($method, $uri, $headers, $multipartBody),
+                null,
+            ];
         }
 
         $body = $guzzleOptions['body'] ?? null;
         $isStreamBody = is_resource($body) || $body instanceof StreamInterface;
-        $seedBody = $isStreamBody && ! $captureStreamBody ? null : $this->encodeSeedBody($guzzleOptions);
-        $requestBody = $isStreamBody && ! $captureStreamBody ? $body : ($seedBody ?? '');
+        $seedBody =
+            $isStreamBody && ! $captureStreamBody
+                ? null
+                : $this->encodeSeedBody($guzzleOptions);
+        $requestBody =
+            $isStreamBody && ! $captureStreamBody ? $body : $seedBody ?? '';
 
-        return [new GuzzleRequest($method, $uri, $headers, $requestBody), $seedBody];
+        return [
+            new GuzzleRequest($method, $uri, $headers, $requestBody),
+            $seedBody,
+        ];
     }
 
     /**
@@ -94,13 +138,16 @@ final class RequestBuilder
     }
 
     /**
-     * Make a non-seekable request body replayable after its contents are inspected by validation.
+     * Make a non-seekable request body replayable after its contents are
+     * inspected by validation.
      *
      * @param  array<string, mixed>  $options
      * @return array{0: RequestInterface, 1: array<string, mixed>}
      */
-    public function makeRequestBodyReplayable(RequestInterface $request, array $options): array
-    {
+    public function makeRequestBodyReplayable(
+        RequestInterface $request,
+        array $options,
+    ): array {
         $body = $request->getBody();
         if ($body->isSeekable()) {
             return [$request, $options];
@@ -113,8 +160,10 @@ final class RequestBuilder
     }
 
     /** @param array<string, mixed> $options */
-    public function withQueryOptions(RequestInterface $request, array $options): RequestInterface
-    {
+    public function withQueryOptions(
+        RequestInterface $request,
+        array $options,
+    ): RequestInterface {
         if (! isset($options['query'])) {
             return $request;
         }
@@ -127,22 +176,28 @@ final class RequestBuilder
     }
 
     /**
-     * Apply request options that Guzzle materializes after middleware before validation and dispatch.
+     * Apply request options that Guzzle materializes after middleware before
+     * validation and dispatch.
      *
      * @param  array<string, mixed>  $options
      */
-    public function prepareValidationRequest(RequestInterface $request, array $options): RequestInterface
-    {
+    public function prepareValidationRequest(
+        RequestInterface $request,
+        array $options,
+    ): RequestInterface {
         $request = $this->withQueryOptions($request, $options);
         $auth = $options['auth'] ?? null;
 
-        if (is_array($auth)
-            && isset($auth[0], $auth[1])
-            && is_string($auth[0])
-            && is_string($auth[1])) {
-            $authType = isset($auth[2]) && is_string($auth[2])
-                ? strtolower($auth[2])
-                : 'basic';
+        if (
+            is_array($auth) &&
+            isset($auth[0], $auth[1]) &&
+            is_string($auth[0]) &&
+            is_string($auth[1])
+        ) {
+            $authType =
+                isset($auth[2]) && is_string($auth[2])
+                    ? strtolower($auth[2])
+                    : 'basic';
             if ($authType === 'basic') {
                 $credentials = base64_encode($auth[0].':'.$auth[1]);
                 $request = $request->withHeader(
@@ -154,7 +209,9 @@ final class RequestBuilder
 
         $cookies = $options['cookies'] ?? null;
 
-        return $cookies instanceof CookieJarInterface ? $cookies->withCookieHeader($request) : $request;
+        return $cookies instanceof CookieJarInterface
+            ? $cookies->withCookieHeader($request)
+            : $request;
     }
 
     /** @param array<string, mixed> $options */
@@ -164,7 +221,11 @@ final class RequestBuilder
             return $options['body'];
         }
 
-        if (isset($options['body']) && (is_resource($options['body']) || $options['body'] instanceof StreamInterface)) {
+        if (
+            isset($options['body']) &&
+            (is_resource($options['body']) ||
+                $options['body'] instanceof StreamInterface)
+        ) {
             return $this->readStreamBody($options['body']);
         }
 
@@ -176,7 +237,10 @@ final class RequestBuilder
             }
         }
 
-        if (isset($options['form_params']) && is_array($options['form_params'])) {
+        if (
+            isset($options['form_params']) &&
+            is_array($options['form_params'])
+        ) {
             return http_build_query($options['form_params'], '', '&');
         }
 
@@ -184,13 +248,16 @@ final class RequestBuilder
     }
 
     /**
-     * Replace a consumed non-seekable body stream with the bytes captured for middleware.
+     * Replace a consumed non-seekable body stream with the bytes captured for
+     * middleware.
      *
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public function replaceConsumedNonSeekableBody(array $options, ?string $seedBody): array
-    {
+    public function replaceConsumedNonSeekableBody(
+        array $options,
+        ?string $seedBody,
+    ): array {
         if ($seedBody === null || ! isset($options['body'])) {
             return $options;
         }
@@ -202,7 +269,10 @@ final class RequestBuilder
             default => true,
         };
 
-        if (! $seekable && (is_resource($body) || $body instanceof StreamInterface)) {
+        if (
+            ! $seekable &&
+            (is_resource($body) || $body instanceof StreamInterface)
+        ) {
             $options['body'] = $seedBody;
         }
 
@@ -235,7 +305,11 @@ final class RequestBuilder
             if ($seedBody !== null && $requestBody->isSeekable()) {
                 $body = $this->readFullStreamBody($requestBody);
                 if ($body !== $seedBody) {
-                    unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);
+                    unset(
+                        $guzzleOptions['json'],
+                        $guzzleOptions['form_params'],
+                        $guzzleOptions['multipart'],
+                    );
                     $guzzleOptions['body'] = $body;
 
                     return $guzzleOptions;
@@ -251,7 +325,11 @@ final class RequestBuilder
         }
 
         if ($initialBody !== null) {
-            unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);
+            unset(
+                $guzzleOptions['json'],
+                $guzzleOptions['form_params'],
+                $guzzleOptions['multipart'],
+            );
             $guzzleOptions['body'] = $requestBody;
 
             return $guzzleOptions;
@@ -260,12 +338,19 @@ final class RequestBuilder
         $body = (string) $requestBody;
 
         if ($seedBody !== null && $body !== $seedBody) {
-            unset($guzzleOptions['json'], $guzzleOptions['form_params'], $guzzleOptions['multipart']);
+            unset(
+                $guzzleOptions['json'],
+                $guzzleOptions['form_params'],
+                $guzzleOptions['multipart'],
+            );
             $guzzleOptions['body'] = $body;
-        } elseif ($seedBody === null && $body !== ''
-            && ! isset($guzzleOptions['multipart'])
-            && ! isset($guzzleOptions['form_params'])
-            && ! isset($guzzleOptions['json'])) {
+        } elseif (
+            $seedBody === null &&
+            $body !== '' &&
+            ! isset($guzzleOptions['multipart']) &&
+            ! isset($guzzleOptions['form_params']) &&
+            ! isset($guzzleOptions['json'])
+        ) {
             $guzzleOptions['body'] = $body;
         }
 
@@ -276,12 +361,19 @@ final class RequestBuilder
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public function prepareGuzzleOptions(array $options, ?RequestContext $context = null): array
-    {
-        return ($context ?? RequestContext::fromOptions($options))->toGuzzleOptions();
+    public function prepareGuzzleOptions(
+        array $options,
+        ?RequestContext $context = null,
+    ): array {
+        return (
+            $context ?? RequestContext::fromOptions($options)
+        )->toGuzzleOptions();
     }
 
-    /** Read from the body's current position and restore it when the source is seekable. */
+    /**
+     * Read from the body's current position and restore it when the source is
+     *     seekable.
+     */
     private function readStreamBody(mixed $body): string
     {
         if ($body instanceof StreamInterface) {
@@ -301,10 +393,14 @@ final class RequestBuilder
         $position = $seekable ? ftell($body) : false;
         $contents = stream_get_contents($body);
         if ($seekable && $position !== false && fseek($body, $position) !== 0) {
-            throw new RuntimeException('Unable to restore the request body stream position.');
+            throw new RuntimeException(
+                'Unable to restore the request body stream position.',
+            );
         }
         if ($contents === false) {
-            throw new RuntimeException('Unable to read the request body stream.');
+            throw new RuntimeException(
+                'Unable to read the request body stream.',
+            );
         }
 
         return $contents;
@@ -343,7 +439,8 @@ final class RequestBuilder
     private function withFormBody(array $options, array $body): array
     {
         $options['form_params'] = $body;
-        $options['headers']['Content-Type'] ??= ContentType::FORM_URLENCODED->value;
+        $options['headers']['Content-Type'] ??=
+            ContentType::FORM_URLENCODED->value;
 
         return $options;
     }
@@ -366,8 +463,11 @@ final class RequestBuilder
      * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
-    private function withGenericArrayBody(array $options, array $body, string $contentType): array
-    {
+    private function withGenericArrayBody(
+        array $options,
+        array $body,
+        string $contentType,
+    ): array {
         $options['body'] = json_encode($body);
         $options['headers']['Content-Type'] ??= $contentType;
 

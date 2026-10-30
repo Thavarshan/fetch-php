@@ -21,7 +21,12 @@ class ServerSentEventTest extends TestCase
 
     public function test_exposes_all_fields(): void
     {
-        $event = new ServerSentEvent(data: 'hello', type: 'greeting', id: '42', retry: 3000);
+        $event = new ServerSentEvent(
+            data: 'hello',
+            type: 'greeting',
+            id: '42',
+            retry: 3000,
+        );
 
         $this->assertSame('hello', $event->data);
         $this->assertSame('greeting', $event->type);
@@ -34,7 +39,10 @@ class ServerSentEventTest extends TestCase
         $event = new ServerSentEvent(data: '{"delta":"hi","index":0}');
 
         $this->assertSame(['delta' => 'hi', 'index' => 0], $event->json());
-        $this->assertSame('hi', $event->json()->delta ?? ($event->json(false)->delta));
+        $this->assertSame(
+            'hi',
+            $event->json()->delta ?? $event->json(false)->delta,
+        );
     }
 
     public function test_json_returns_null_on_invalid_when_not_throwing(): void
@@ -60,6 +68,9 @@ class ServerSentEventTest extends TestCase
 
     public function test_stringable(): void
     {
-        $this->assertSame('payload', (string) new ServerSentEvent(data: 'payload'));
+        $this->assertSame(
+            'payload',
+            (string) new ServerSentEvent(data: 'payload'),
+        );
     }
 }

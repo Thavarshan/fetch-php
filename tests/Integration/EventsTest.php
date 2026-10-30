@@ -31,10 +31,13 @@ class EventsTest extends TestCase
         $stack = HandlerStack::create(new MockHandler($responses));
         $guzzle = new GuzzleClient(['handler' => $stack]);
 
-        return (new ClientHandler)->setHttpClient($guzzle, new GuzzleAsyncTransport($guzzle, supportsQueueOnlyHandlers: true));
+        return (new ClientHandler)->setHttpClient(
+            $guzzle,
+            new GuzzleAsyncTransport($guzzle, supportsQueueOnlyHandlers: true),
+        );
     }
 
-    public function test_request_and_response_events_fire_with_shared_correlation_id(): void
+    public function test_events_share_a_correlation_id(): void
     {
         $handler = $this->handler([new PsrResponse(200, [], 'ok')]);
 
@@ -59,10 +62,13 @@ class EventsTest extends TestCase
 
         // Both events share the request's correlation id.
         $this->assertNotSame('', $requestEvent->getCorrelationId());
-        $this->assertSame($requestEvent->getCorrelationId(), $responseEvent->getCorrelationId());
+        $this->assertSame(
+            $requestEvent->getCorrelationId(),
+            $responseEvent->getCorrelationId(),
+        );
     }
 
-    public function test_middleware_short_circuit_fires_request_and_response_events_in_sync_and_async_modes(): void
+    public function test_short_circuit_emits_sync_and_async_events(): void
     {
         foreach ([false, true] as $async) {
             $handler = $this->handler([]);
@@ -70,31 +76,50 @@ class EventsTest extends TestCase
             $responseEvent = null;
 
             $handler
-                ->addMiddleware(static fn (RequestInterface $request, callable $next): PsrResponse => new PsrResponse(200, [], 'short-circuit'))
-                ->onRequest(function (RequestEvent $event) use (&$requestEvent): void {
+                ->addMiddleware(
+                    static fn (
+                        RequestInterface $request,
+                        callable $next,
+                    ): PsrResponse => new PsrResponse(200, [], 'short-circuit'),
+                )
+                ->onRequest(function (RequestEvent $event) use (
+                    &$requestEvent,
+                ): void {
                     $requestEvent = $event;
                 })
-                ->onResponse(function (ResponseEvent $event) use (&$responseEvent): void {
+                ->onResponse(function (ResponseEvent $event) use (
+                    &$responseEvent,
+                ): void {
                     $responseEvent = $event;
                 });
 
             $handler->async($async);
             $request = $handler->get('https://example.com/short-circuit');
-            $response = $request instanceof PromiseInterface ? await($request) : $request;
+            $response =
+                $request instanceof PromiseInterface
+                    ? await($request)
+                    : $request;
 
             $this->assertSame('short-circuit', (string) $response->getBody());
             $this->assertInstanceOf(RequestEvent::class, $requestEvent);
             $this->assertInstanceOf(ResponseEvent::class, $responseEvent);
-            $this->assertSame($requestEvent->getCorrelationId(), $responseEvent->getCorrelationId());
+            $this->assertSame(
+                $requestEvent->getCorrelationId(),
+                $responseEvent->getCorrelationId(),
+            );
         }
     }
 
     public function test_error_and_timeout_events_fire_on_failure(): void
     {
         $handler = $this->handler([
-            new ConnectException('cURL error 28: Operation timed out', new PsrRequest('GET', 'https://example.com')),
+            new ConnectException(
+                'cURL error 28: Operation timed out',
+                new PsrRequest('GET', 'https://example.com'),
+            ),
         ]);
-        // Disable retries at the option level so the connect failure surfaces on
+        // Disable retries at the option level so the connect failure surfaces
+        // on
         // the first attempt rather than being retried into an empty mock queue.
         $handler->withOptions(['retries' => 0]);
 
@@ -157,7 +182,10 @@ class EventsTest extends TestCase
 
         $this->assertSame(200, $response->status());
         $this->assertInstanceOf(RedirectEvent::class, $redirectEvent);
-        $this->assertSame('https://example.com/new', $redirectEvent->getLocation());
+        $this->assertSame(
+            'https://example.com/new',
+            $redirectEvent->getLocation(),
+        );
         $this->assertSame(1, $redirectEvent->getRedirectCount());
     }
 

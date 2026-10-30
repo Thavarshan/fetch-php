@@ -16,7 +16,8 @@ use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
  *
  * Unlike the buffered {@see Response}, a streamed response never reads the
  * whole body into memory up front. Consumers pull data as it arrives via
- * {@see StreamedResponse::stream()} (raw chunks) or {@see StreamedResponse::lines()}
+ * {@see StreamedResponse::stream()} (raw chunks) or {@see
+ *     StreamedResponse::lines()}
  * (newline-delimited), mirroring JavaScript's `response.body` reader.
  *
  * @extends \IteratorAggregate<int, string>

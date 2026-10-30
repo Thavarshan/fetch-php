@@ -21,10 +21,16 @@ class DebugConfig
     /**
      * @param  array<string, mixed>  $options
      */
-    public function __construct(bool $enabled = false, array $options = [], ?ProfilerInterface $profiler = null)
-    {
+    public function __construct(
+        bool $enabled = false,
+        array $options = [],
+        ?ProfilerInterface $profiler = null,
+    ) {
         $this->enabled = $enabled;
-        $this->options = $options === [] ? DebugInfo::getDefaultOptions() : array_merge(DebugInfo::getDefaultOptions(), $options);
+        $this->options =
+            $options === []
+                ? DebugInfo::getDefaultOptions()
+                : array_merge(DebugInfo::getDefaultOptions(), $options);
         $this->profiler = $profiler;
     }
 

@@ -20,7 +20,9 @@ interface DebuggableHandler
 
     public function setLogger(LoggerInterface $logger): self;
 
-    public function withProfiler(FetchProfiler|ProfilerInterface $profiler): self;
+    public function withProfiler(
+        FetchProfiler|ProfilerInterface $profiler,
+    ): self;
 
     public function getProfiler(): ?ProfilerInterface;
 

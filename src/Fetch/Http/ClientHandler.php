@@ -58,7 +58,8 @@ class ClientHandler implements ClientHandlerInterface
     use PerformsHttpRequests;
 
     /**
-     * Legacy compatibility storage. Runtime defaults are owned by GlobalServices.
+     * Legacy compatibility storage. Runtime defaults are owned by
+     * GlobalServices.
      *
      * @var array<string, mixed>
      *
@@ -140,7 +141,8 @@ class ClientHandler implements ClientHandlerInterface
      * @param  int|null  $maxRetries  Number of retries for the request
      * @param  int|null  $retryDelay  Delay between retries in milliseconds
      * @param  bool  $isAsync  Whether the request is asynchronous
-     * @param  LoggerInterface|null  $logger  Logger for request/response details
+     * @param  LoggerInterface|null  $logger  Logger for request/response
+     *                                        details
      */
     public function __construct(
         protected ?ClientInterface $httpClient = null,
@@ -163,17 +165,19 @@ class ClientHandler implements ClientHandlerInterface
         $this->maxRetries = $maxRetries ?? self::DEFAULT_RETRIES;
         $this->retryDelay = $retryDelay ?? self::DEFAULT_RETRY_DELAY;
         $this->cacheManager = $cacheManager;
-        $this->validationManager = $validationManager ?? new ValidationManager;
+        $this->validationManager =
+            $validationManager ?? new ValidationManager;
         $this->validationPolicy = $validationPolicy ?? new ValidationPolicy;
         $this->promiseManager = $promiseManager ?? new PromiseManager;
-        $this->connectionPoolManager = $connectionPoolManager ?? new ConnectionPoolManager;
+        $this->connectionPoolManager =
+            $connectionPoolManager ?? new ConnectionPoolManager;
         $this->requestBuilder = $requestBuilder ?? new RequestBuilder;
         $this->asyncTransport = $asyncTransport;
 
         // Initialize with default options using centralized merging
         $this->options = FetchRequestOptions::merge(
             self::getDefaultOptions(),
-            $this->options
+            $this->options,
         );
 
         // Set the timeout in options
@@ -221,8 +225,10 @@ class ClientHandler implements ClientHandlerInterface
      * @param  ClientInterface  $client  Custom HTTP client
      * @return static New client handler instance
      */
-    public static function createWithClient(ClientInterface $client, ?AsyncTransport $asyncTransport = null): static
-    {
+    public static function createWithClient(
+        ClientInterface $client,
+        ?AsyncTransport $asyncTransport = null,
+    ): static {
         static::initializePool();
 
         return new static(httpClient: $client, asyncTransport: $asyncTransport);
@@ -257,7 +263,8 @@ class ClientHandler implements ClientHandlerInterface
     /**
      * Reset default options to factory defaults.
      *
-     * This is called by GlobalServices::reset() to ensure complete test isolation.
+     * This is called by GlobalServices::reset() to ensure complete test
+     * isolation.
      *
      * @internal Used by GlobalServices for test isolation
      */
@@ -286,7 +293,13 @@ class ClientHandler implements ClientHandlerInterface
         string $version = '1.1',
         ?string $reason = null,
     ): Response {
-        return new Response($statusCode, $headers, $body ?? '', $version, $reason);
+        return new Response(
+            $statusCode,
+            $headers,
+            $body ?? '',
+            $version,
+            $reason,
+        );
     }
 
     /**
@@ -306,7 +319,7 @@ class ClientHandler implements ClientHandlerInterface
 
         $headers = array_merge(
             ['Content-Type' => ContentType::JSON->value],
-            $headers
+            $headers,
         );
 
         return self::createMockResponse($statusCode, $headers, $jsonData);
@@ -330,8 +343,10 @@ class ClientHandler implements ClientHandlerInterface
         return $this->promiseManager->wrapAsync($callable);
     }
 
-    public function awaitPromise(PromiseInterface $promise, ?float $timeout = null): mixed
-    {
+    public function awaitPromise(
+        PromiseInterface $promise,
+        ?float $timeout = null,
+    ): mixed {
         return $this->promiseManager->awaitPromise($promise, $timeout);
     }
 
@@ -355,8 +370,10 @@ class ClientHandler implements ClientHandlerInterface
         return $this->promiseManager->sequence($callables);
     }
 
-    public function then(callable $onFulfilled, ?callable $onRejected = null): PromiseInterface
-    {
+    public function then(
+        callable $onFulfilled,
+        ?callable $onRejected = null,
+    ): PromiseInterface {
         $this->async();
 
         return $this->sendAsync()->then($onFulfilled, $onRejected);
@@ -386,8 +403,11 @@ class ClientHandler implements ClientHandlerInterface
         return $this->promiseManager->reject($reason);
     }
 
-    public function map(array $items, callable $callback, int $concurrency = 5): PromiseInterface
-    {
+    public function map(
+        array $items,
+        callable $callback,
+        int $concurrency = 5,
+    ): PromiseInterface {
         return $this->promiseManager->map($items, $callback, $concurrency);
     }
 
@@ -399,21 +419,31 @@ class ClientHandler implements ClientHandlerInterface
     public function getHttpClient(): ClientInterface
     {
         if (! $this->httpClient) {
+            $timeout = $this->options['timeout'] ?? self::DEFAULT_TIMEOUT;
             $clientOptions = [
-                RequestOptions::CONNECT_TIMEOUT => $this->options['timeout'] ?? self::DEFAULT_TIMEOUT,
-                RequestOptions::HTTP_ERRORS => false, // We'll handle HTTP errors ourselves
+                RequestOptions::CONNECT_TIMEOUT => $timeout,
+                // Fetch handles HTTP error responses itself.
+                RequestOptions::HTTP_ERRORS => false,
             ];
 
             if (extension_loaded('curl')) {
-                $curlMultiHandler = new CurlMultiHandler(['select_timeout' => 0.001]);
+                $curlMultiHandler = new CurlMultiHandler([
+                    'select_timeout' => 0.001,
+                ]);
                 $this->curlMultiHandler = $curlMultiHandler;
                 $clientOptions['handler'] = HandlerStack::create(
-                    Proxy::wrapStreaming($curlMultiHandler, new StreamHandler),
+                    Proxy::wrapStreaming(
+                        $curlMultiHandler,
+                        new StreamHandler,
+                    ),
                 );
             }
 
             $this->httpClient = new GuzzleClient($clientOptions);
-            $this->asyncTransport ??= new GuzzleAsyncTransport($this->httpClient, $this->curlMultiHandler);
+            $this->asyncTransport ??= new GuzzleAsyncTransport(
+                $this->httpClient,
+                $this->curlMultiHandler,
+            );
         }
 
         return $this->httpClient;
@@ -425,8 +455,10 @@ class ClientHandler implements ClientHandlerInterface
      * @param  ClientInterface  $client  The HTTP client
      * @return $this
      */
-    public function setHttpClient(ClientInterface $client, ?AsyncTransport $asyncTransport = null): self
-    {
+    public function setHttpClient(
+        ClientInterface $client,
+        ?AsyncTransport $asyncTransport = null,
+    ): self {
         $this->httpClient = $client;
         $this->asyncTransport = $asyncTransport;
         $this->curlMultiHandler = null;
@@ -498,11 +530,14 @@ class ClientHandler implements ClientHandlerInterface
         return $this->validationManager;
     }
 
-    public function getValidationPolicy(?RequestContext $context = null): ValidationPolicy
-    {
+    public function getValidationPolicy(
+        ?RequestContext $context = null,
+    ): ValidationPolicy {
         $perRequest = $context?->getOption('validation', []);
 
-        return is_array($perRequest) ? $this->validationPolicy->withOptions($perRequest) : $this->validationPolicy;
+        return is_array($perRequest)
+            ? $this->validationPolicy->withOptions($perRequest)
+            : $this->validationPolicy;
     }
 
     /**
@@ -530,13 +565,15 @@ class ClientHandler implements ClientHandlerInterface
      *
      * @param  array<string, mixed>  $options  Cache options
      */
-    public function withCache(?CacheInterface $cache = null, array $options = []): self
-    {
+    public function withCache(
+        ?CacheInterface $cache = null,
+        array $options = [],
+    ): self {
         $this->cacheManager = new CacheManager(
             cache: $cache,
             options: array_merge(['enabled' => true], $options),
             logger: $this->logger,
-            logLevel: $this->logLevel
+            logLevel: $this->logLevel,
         );
 
         return $this;
@@ -636,7 +673,16 @@ class ClientHandler implements ClientHandlerInterface
     public function withLogLevel(string $level): self
     {
         $level = strtolower($level);
-        $allowed = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
+        $allowed = [
+            'debug',
+            'info',
+            'notice',
+            'warning',
+            'error',
+            'critical',
+            'alert',
+            'emergency',
+        ];
 
         if (! in_array($level, $allowed, true)) {
             throw new InvalidArgumentException("Invalid log level: {$level}");
@@ -667,8 +713,10 @@ class ClientHandler implements ClientHandlerInterface
         $this->promiseManager->validatePromises($promises);
     }
 
-    protected function awaitWithTimeout(PromiseInterface $promise, float $timeout): mixed
-    {
+    protected function awaitWithTimeout(
+        PromiseInterface $promise,
+        float $timeout,
+    ): mixed {
         return $this->promiseManager->awaitPromise($promise, $timeout);
     }
 
@@ -684,7 +732,10 @@ class ClientHandler implements ClientHandlerInterface
         }
 
         $client = $this->getHttpClient();
-        $this->asyncTransport = new GuzzleAsyncTransport($client, $this->curlMultiHandler);
+        $this->asyncTransport = new GuzzleAsyncTransport(
+            $client,
+            $this->curlMultiHandler,
+        );
 
         return $this->asyncTransport;
     }
@@ -702,12 +753,16 @@ class ClientHandler implements ClientHandlerInterface
         $uri = $this->options['uri'] ?? null;
 
         if (! is_string($method) || ! is_string($uri)) {
-            throw new LogicException('sendAsync() requires method and uri to be set.');
+            throw new LogicException(
+                'sendAsync() requires method and uri to be set.',
+            );
         }
 
         $promise = $this->sendRequest($method, $uri, ['async' => true]);
-        if (! $promise instanceof PromiseInterface) {
-            throw new LogicException('The asynchronous request pipeline did not return a promise.');
+        if (! ($promise instanceof PromiseInterface)) {
+            throw new LogicException(
+                'The asynchronous request pipeline did not return a promise.',
+            );
         }
 
         return $promise;
@@ -720,22 +775,22 @@ class ClientHandler implements ClientHandlerInterface
      * @param  int  $maxAttempts  Maximum attempts
      * @param  \Throwable  $exception  The exception that caused the retry
      */
-    protected function logRetry(int $attempt, int $maxAttempts, \Throwable $exception): void
-    {
-        $this->logger->info(
-            'Retrying request',
-            [
-                'attempt' => $attempt,
-                'max_attempts' => $maxAttempts,
-                // Read the raw URI option rather than getFullUri(): requests are
-                // dispatched statelessly, so handler-state URI resolution would
-                // throw when no URI is configured on the handler itself.
-                'uri' => $this->options['uri'] ?? '',
-                'method' => $this->options['method'] ?? Method::GET->value,
-                'error' => $exception->getMessage(),
-                'code' => $exception->getCode(),
-            ]
-        );
+    protected function logRetry(
+        int $attempt,
+        int $maxAttempts,
+        \Throwable $exception,
+    ): void {
+        $this->logger->info('Retrying request', [
+            'attempt' => $attempt,
+            'max_attempts' => $maxAttempts,
+            // Read the raw URI option rather than getFullUri(): requests are
+            // dispatched statelessly, so handler-state URI resolution would
+            // throw when no URI is configured on the handler itself.
+            'uri' => $this->options['uri'] ?? '',
+            'method' => $this->options['method'] ?? Method::GET->value,
+            'error' => $exception->getMessage(),
+            'code' => $exception->getCode(),
+        ]);
     }
 
     /**
@@ -745,20 +800,19 @@ class ClientHandler implements ClientHandlerInterface
      * @param  string  $uri  Request URI
      * @param  array<string, mixed>  $options  Request options
      */
-    protected function logRequest(string $method, string $uri, array $options): void
-    {
+    protected function logRequest(
+        string $method,
+        string $uri,
+        array $options,
+    ): void {
         // Remove potentially sensitive data
         $sanitizedOptions = $this->sanitizeOptions($options);
 
-        $this->logger->log(
-            $this->logLevel,
-            'Sending HTTP request',
-            [
-                'method' => $method,
-                'uri' => $uri,
-                'options' => $sanitizedOptions,
-            ]
-        );
+        $this->logger->log($this->logLevel, 'Sending HTTP request', [
+            'method' => $method,
+            'uri' => $uri,
+            'options' => $sanitizedOptions,
+        ]);
     }
 
     /**
@@ -769,16 +823,12 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected function logResponse(Response $response, float $duration): void
     {
-        $this->logger->log(
-            $this->logLevel,
-            'Received HTTP response',
-            [
-                'status_code' => $response->getStatusCode(),
-                'reason' => $response->getReasonPhrase(),
-                'duration' => round($duration, 3),
-                'content_length' => $this->getResponseContentLength($response),
-            ]
-        );
+        $this->logger->log($this->logLevel, 'Received HTTP response', [
+            'status_code' => $response->getStatusCode(),
+            'reason' => $response->getReasonPhrase(),
+            'duration' => round($duration, 3),
+            'content_length' => $this->getResponseContentLength($response),
+        ]);
     }
 
     /**
@@ -812,15 +862,29 @@ class ClientHandler implements ClientHandlerInterface
         $sanitizedOptions = $options;
 
         // Mask sensitive headers (case-insensitive)
-        if (isset($sanitizedOptions['headers']) && is_array($sanitizedOptions['headers'])) {
+        if (
+            isset($sanitizedOptions['headers']) &&
+            is_array($sanitizedOptions['headers'])
+        ) {
             $sensitiveHeaders = [
-                'authorization', 'x-api-key', 'api-key', 'x-auth-token', 'cookie', 'set-cookie',
+                'authorization',
+                'x-api-key',
+                'api-key',
+                'x-auth-token',
+                'cookie',
+                'set-cookie',
             ];
 
             foreach ($sanitizedOptions['headers'] as $key => $value) {
-                if (in_array(strtolower((string) $key), $sensitiveHeaders, true)) {
+                if (
+                    in_array(strtolower((string) $key), $sensitiveHeaders, true)
+                ) {
                     if (is_array($value)) {
-                        $sanitizedOptions['headers'][$key] = array_fill(0, count($value), '[REDACTED]');
+                        $sanitizedOptions['headers'][$key] = array_fill(
+                            0,
+                            count($value),
+                            '[REDACTED]',
+                        );
                     } else {
                         $sanitizedOptions['headers'][$key] = '[REDACTED]';
                     }
@@ -852,27 +916,129 @@ class ClientHandler implements ClientHandlerInterface
             cacheManager: $this->getCacheManager(),
             middleware: $middleware,
             hooks: new RequestCoordinatorHooks(
-                mockRequest: fn (string $method, string $uri, array $options) => $this->handleMockRequest($method, $uri, $options),
-                startProfiling: fn (string $method, string $uri) => $this->startProfiling($method, $uri),
-                recordProfilingEvent: fn (?string $requestId, string $event) => $this->recordProfilingEvent($requestId, $event),
-                endProfiling: fn (?string $requestId, ?int $statusCode) => $this->endProfiling($requestId, $statusCode),
-                connectionStats: fn (): array => $this->getConnectionDebugStats(),
-                captureDebugSnapshot: fn (string $method, string $uri, array $options, ?ResponseInterface $response, float $startTime, int $startMemory, array $connectionStats) => $this->captureDebugSnapshot($method, $uri, $options, $response, $startTime, $startMemory, $connectionStats),
-                logRequest: fn (string $method, string $uri, array $options) => $this->logRequest($method, $uri, $options),
-                logResponse: function (ResponseContract $response, float $duration): void {
+                mockRequest: fn (
+                    string $method,
+                    string $uri,
+                    array $options,
+                ) => $this->handleMockRequest($method, $uri, $options),
+                startProfiling: fn (
+                    string $method,
+                    string $uri,
+                ) => $this->startProfiling($method, $uri),
+                recordProfilingEvent: fn (
+                    ?string $requestId,
+                    string $event,
+                ) => $this->recordProfilingEvent($requestId, $event),
+                endProfiling: fn (
+                    ?string $requestId,
+                    ?int $statusCode,
+                ) => $this->endProfiling($requestId, $statusCode),
+                connectionStats: $this->getConnectionDebugStats(...),
+                captureDebugSnapshot: fn (
+                    string $method,
+                    string $uri,
+                    array $options,
+                    ?ResponseInterface $response,
+                    float $startTime,
+                    int $startMemory,
+                    array $connectionStats,
+                ) => $this->captureDebugSnapshot(
+                    $method,
+                    $uri,
+                    $options,
+                    $response,
+                    $startTime,
+                    $startMemory,
+                    $connectionStats,
+                ),
+                logRequest: fn (
+                    string $method,
+                    string $uri,
+                    array $options,
+                ) => $this->logRequest($method, $uri, $options),
+                logResponse: function (
+                    ResponseContract $response,
+                    float $duration,
+                ): void {
                     if ($response instanceof Response) {
                         $this->logResponse($response, $duration);
                     }
                 },
-                eventRequest: fn (string $method, string $uri, array $headers) => $this->eventRequest($method, $uri, $headers),
-                emitRequestEvent: fn (RequestInterface $request, RequestContext $requestContext, float $timestamp) => $this->emitRequestEvent($request, $requestContext, $timestamp),
-                emitResponseEvent: fn (RequestInterface $request, ResponseInterface $response, RequestContext $requestContext, float $startTime) => $this->emitResponseEvent($request, $response, $requestContext, $startTime),
-                emitErrorEvent: fn (RequestInterface $request, \Throwable $exception, RequestContext $requestContext, float $startTime) => $this->emitErrorEvent($request, $exception, $requestContext, $startTime),
-                hasRedirectListeners: fn (): bool => $this->hasEventListeners(RedirectEvent::NAME),
-                attachRedirectListener: fn (array $options, RequestInterface $request, RequestContext $requestContext): array => $this->attachRedirectListener($options, $request, $requestContext),
-                notifyRetry: fn (int $attempt, int $maxAttempts, \Throwable $exception, int $delay, ?RequestContext $requestContext) => $this->notifyRetry($attempt, $maxAttempts, $exception, $delay, $requestContext),
-                withErrorContext: fn (\Throwable $exception, string $method, string $uri): \Throwable => $this->withErrorContext($exception, $method, $uri),
-                logAsyncFailure: function (string $method, string $uri, \Throwable $exception): void {
+                eventRequest: fn (
+                    string $method,
+                    string $uri,
+                    array $headers,
+                ) => $this->eventRequest($method, $uri, $headers),
+                emitRequestEvent: fn (
+                    RequestInterface $request,
+                    RequestContext $requestContext,
+                    float $timestamp,
+                ) => $this->emitRequestEvent(
+                    $request,
+                    $requestContext,
+                    $timestamp,
+                ),
+                emitResponseEvent: fn (
+                    RequestInterface $request,
+                    ResponseInterface $response,
+                    RequestContext $requestContext,
+                    float $startTime,
+                ) => $this->emitResponseEvent(
+                    $request,
+                    $response,
+                    $requestContext,
+                    $startTime,
+                ),
+                emitErrorEvent: fn (
+                    RequestInterface $request,
+                    \Throwable $exception,
+                    RequestContext $requestContext,
+                    float $startTime,
+                ) => $this->emitErrorEvent(
+                    $request,
+                    $exception,
+                    $requestContext,
+                    $startTime,
+                ),
+                hasRedirectListeners: fn (): bool => $this->hasEventListeners(
+                    RedirectEvent::NAME,
+                ),
+                attachRedirectListener: fn (
+                    array $options,
+                    RequestInterface $request,
+                    RequestContext $requestContext,
+                ): array => $this->attachRedirectListener(
+                    $options,
+                    $request,
+                    $requestContext,
+                ),
+                notifyRetry: fn (
+                    int $attempt,
+                    int $maxAttempts,
+                    \Throwable $exception,
+                    int $delay,
+                    ?RequestContext $requestContext,
+                ) => $this->notifyRetry(
+                    $attempt,
+                    $maxAttempts,
+                    $exception,
+                    $delay,
+                    $requestContext,
+                ),
+                withErrorContext: fn (
+                    \Throwable $exception,
+                    string $method,
+                    string $uri,
+                ): \Throwable => $this->withErrorContext(
+                    $exception,
+                    $method,
+                    $uri,
+                ),
+                logAsyncFailure: function (
+                    string $method,
+                    string $uri,
+                    \Throwable $exception,
+                ): void {
                     $this->logger->error('Async request failed', [
                         'method' => $method,
                         'uri' => $uri,

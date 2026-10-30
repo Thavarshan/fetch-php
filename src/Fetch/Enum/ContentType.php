@@ -39,16 +39,19 @@ enum ContentType: string
     /**
      * Try to get a content type from a string, or return default.
      */
-    public static function tryFromString(string $contentType, ?self $default = null): ?self
-    {
+    public static function tryFromString(
+        string $contentType,
+        ?self $default = null,
+    ): ?self {
         return self::tryFrom(strtolower($contentType)) ?? $default;
     }
 
     /**
      * Normalize a content type to a ContentType enum value.
      */
-    public static function normalizeContentType(string|ContentType $contentType): string|ContentType
-    {
+    public static function normalizeContentType(
+        string|ContentType $contentType,
+    ): string|ContentType {
         if ($contentType instanceof ContentType) {
             return $contentType;
         }
@@ -65,13 +68,17 @@ enum ContentType: string
      */
     public function isJson(): bool
     {
-        return in_array($this, [
-            self::JSON,
-            self::VND_API_JSON,
-            self::LD_JSON,
-            self::GEO_JSON,
-            self::PROBLEM_JSON,
-        ], true);
+        return in_array(
+            $this,
+            [
+                self::JSON,
+                self::VND_API_JSON,
+                self::LD_JSON,
+                self::GEO_JSON,
+                self::PROBLEM_JSON,
+            ],
+            true,
+        );
     }
 
     /**
@@ -97,7 +104,14 @@ enum ContentType: string
     {
         return match ($this) {
             // These are text-based content types
-            self::JSON, self::FORM_URLENCODED, self::TEXT, self::HTML, self::XML, self::CSV, self::EVENT_STREAM, self::NDJSON => true,
+            self::JSON,
+            self::FORM_URLENCODED,
+            self::TEXT,
+            self::HTML,
+            self::XML,
+            self::CSV,
+            self::EVENT_STREAM,
+            self::NDJSON => true,
             // These are binary/non-text content types
             self::MULTIPART => false,
             // Default for any new enum values added in the future
