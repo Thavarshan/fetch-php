@@ -286,9 +286,9 @@ const stats = [
                 <p class="section-title">Copy/paste ready</p>
                 <h2>Same mental model as JavaScript</h2>
                 <p>
-                    Use the Matrix async helpers to keep promise-based workflows
-                    familiar. The response helpers map directly to fetch(), so
-                    JSON parsing feels identical.
+                    Use an async handler with Matrix's await helper to compose
+                    nonblocking requests. Response helpers keep JSON parsing
+                    compact.
                 </p>
                 <ul class="checklist">
                     <li>
