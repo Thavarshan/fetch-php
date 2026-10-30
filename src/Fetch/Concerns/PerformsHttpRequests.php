@@ -502,12 +502,16 @@ trait PerformsHttpRequests
         ContentType|string $contentType,
         array $requestOptions = [],
     ): array {
+        $contentTypeOption =
+            RequestOptions::getExplicitContentTypeOption($requestOptions);
         $explicitContentType =
             RequestOptions::getExplicitContentType($requestOptions) ??
             $this->explicitContentType;
-        $serializationType =
-            RequestOptions::getExplicitContentTypeOption($requestOptions) ??
-            $contentType;
+        $serializationType = $contentTypeOption ?? $contentType;
+
+        if ($contentTypeOption !== null) {
+            $options['content_type'] = $contentTypeOption;
+        }
 
         return $this->requestBuilder->applyBodyOptions(
             $options,

@@ -316,7 +316,10 @@ final class RequestBodyNormalizationIntegrationTest extends TestCase
             'https://example.test/client-option-form',
             ['name' => 'Grace'],
             ContentType::JSON,
-            ['content_type' => ContentType::FORM_URLENCODED],
+            [
+                'content_type' => ContentType::FORM_URLENCODED,
+                'headers' => ['Content-Type' => 'text/plain'],
+            ],
         );
 
         self::assertSame(

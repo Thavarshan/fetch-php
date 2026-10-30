@@ -672,13 +672,18 @@ class Client implements ClientInterface, LoggerAwareInterface
         mixed $body,
         string|ContentType $contentType,
     ): ResponseInterface|PromiseInterface {
+        $contentTypeOption =
+            RequestOptions::getExplicitContentTypeOption($options);
         $serializationType =
-            RequestOptions::getExplicitContentTypeOption($options) ??
-            $contentType;
+            $contentTypeOption ?? $contentType;
         $options = RequestOptions::merge(
             ClientHandler::getDefaultOptions(),
             $options,
         );
+
+        if ($body !== null && $contentTypeOption !== null) {
+            $options['content_type'] = $contentTypeOption;
+        }
 
         // Normalize the HTTP method
         $method = RequestOptions::getMethod($options);
