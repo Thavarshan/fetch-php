@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v4.1.0] - 2026-10-30
+
 ### Fixed
 
 - Route `Client::fetch()`, request helpers, request builders, and fluent body
@@ -170,7 +172,8 @@ execution and validation in [#127], and documentation and release hardening in
 
 See the [upgrade guide] for code examples and transport migration details.
 
-[Unreleased]: https://github.com/Thavarshan/fetch-php/compare/4.0.1...HEAD
+[Unreleased]: https://github.com/Thavarshan/fetch-php/compare/4.1.0...HEAD
+[v4.1.0]: https://github.com/Thavarshan/fetch-php/compare/4.0.1...4.1.0
 [v4.0.1]: https://github.com/Thavarshan/fetch-php/compare/4.0.0...4.0.1
 [v4.0.0]: https://github.com/Thavarshan/fetch-php/compare/3.8.1...4.0.0
 [#118]: https://github.com/Thavarshan/fetch-php/pull/118
