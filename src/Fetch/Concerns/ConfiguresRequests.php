@@ -42,7 +42,7 @@ trait ConfiguresRequests
         // Normalize body-related options to avoid conflicts
         $options = RequestOptions::normalizeBodyOptions($options);
 
-        $this->options = array_merge($this->options, $options);
+        $this->options = RequestOptions::merge($this->options, $options);
 
         // Map retry-related options to handler properties
         if (isset($options['retries']) && is_numeric($options['retries'])) {
@@ -68,6 +68,19 @@ trait ConfiguresRequests
      */
     public function withOption(string $key, mixed $value): ClientHandler
     {
+        if (in_array(
+            $key,
+            ['body', 'json', 'form', 'form_params', 'multipart'],
+            true,
+        )) {
+            $this->options = RequestOptions::replaceBodyOptions(
+                $this->options,
+                [$key => $value],
+            );
+
+            return $this;
+        }
+
         $this->options[$key] = $value;
 
         return $this;
@@ -81,15 +94,10 @@ trait ConfiguresRequests
      */
     public function withFormParams(array $params): ClientHandler
     {
-        $this->options['form_params'] = $params;
-
-        // Set the content type header for form params
-        if (! $this->hasHeader('Content-Type')) {
-            $this->withHeader(
-                'Content-Type',
-                ContentType::FORM_URLENCODED->value,
-            );
-        }
+        $this->options = RequestOptions::replaceBodyOptions(
+            $this->options,
+            ['form_params' => $params],
+        );
 
         return $this;
     }
@@ -106,17 +114,10 @@ trait ConfiguresRequests
      */
     public function withMultipart(array $multipart): ClientHandler
     {
-        $this->options['multipart'] = $multipart;
-
-        // Remove any content type headers as they're automatically set by the
-        // multipart boundary
-        if (
-            $this->hasHeader('Content-Type') &&
-            isset($this->options['headers']) &&
-            is_array($this->options['headers'])
-        ) {
-            unset($this->options['headers']['Content-Type']);
-        }
+        $this->options = RequestOptions::replaceBodyOptions(
+            $this->options,
+            ['multipart' => $multipart],
+        );
 
         return $this;
     }
@@ -199,65 +200,18 @@ trait ConfiguresRequests
         array|string $body,
         string|ContentType $contentType = ContentType::JSON,
     ): ClientHandler {
-        // Convert string content type to enum if necessary
-        $contentTypeEnum = ContentType::normalizeContentType($contentType);
-        $contentTypeValue =
-            $contentTypeEnum instanceof ContentType
-                ? $contentTypeEnum->value
-                : $contentTypeEnum;
+        $existingContentType = RequestOptions::getHeaderValue(
+            $this->options['headers'] ?? [],
+            'Content-Type',
+        );
+        $type = is_string($existingContentType)
+            ? $existingContentType
+            : $contentType;
 
-        if (is_array($body)) {
-            if ($contentTypeEnum === ContentType::JSON) {
-                // Use Guzzle's json option for proper JSON handling
-                $this->options['json'] = $body;
-
-                // IMPORTANT: Remove any existing conflicting options to prevent
-                // conflicts
-                $this->unsetConflictingOptions([
-                    'body',
-                    'form_params',
-                    'multipart',
-                ]);
-
-                // Set JSON content type header if not already set
-                if (! $this->hasHeader('Content-Type')) {
-                    $this->withHeader('Content-Type', ContentType::JSON->value);
-                }
-            } elseif ($contentTypeEnum === ContentType::FORM_URLENCODED) {
-                $this->withFormParams($body);
-                // Ensure no conflicting body option
-                $this->unsetConflictingOptions(['body', 'json', 'multipart']);
-            } elseif ($contentTypeEnum === ContentType::MULTIPART) {
-                $this->withMultipart($this->normalizeMultipart($body));
-                // Ensure no conflicting body option
-                $this->unsetConflictingOptions(['body', 'json', 'form_params']);
-            } else {
-                // For any other content type, serialize the array to JSON in
-                // body
-                $this->options['body'] = json_encode($body);
-                // Remove conflicting options to prevent conflicts
-                $this->unsetConflictingOptions([
-                    'json',
-                    'form_params',
-                    'multipart',
-                ]);
-                if (! $this->hasHeader('Content-Type')) {
-                    $this->withHeader('Content-Type', $contentTypeValue);
-                }
-            }
-        } else {
-            // For string bodies, use body option
-            $this->options['body'] = $body;
-            // Remove body-related options to prevent conflicts
-            $this->unsetConflictingOptions([
-                'json',
-                'form_params',
-                'multipart',
-            ]);
-            if (! $this->hasHeader('Content-Type')) {
-                $this->withHeader('Content-Type', $contentTypeValue);
-            }
-        }
+        $this->options = RequestOptions::replaceBodyOptions(
+            $this->options,
+            ['body' => $body, 'content_type' => $type],
+        );
 
         return $this;
     }
@@ -271,13 +225,10 @@ trait ConfiguresRequests
      */
     public function withJson(array $data, int $options = 0): ClientHandler
     {
-        // Use Guzzle's built-in json option for proper handling
-        $this->options['json'] = $data;
-
-        // Set JSON content type if not already set
-        if (! $this->hasHeader('Content-Type')) {
-            $this->withHeader('Content-Type', ContentType::JSON->value);
-        }
+        $this->options = RequestOptions::replaceBodyOptions(
+            $this->options,
+            ['json' => $data],
+        );
 
         return $this;
     }

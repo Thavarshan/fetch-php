@@ -1052,8 +1052,8 @@ class ClientHandler implements ClientHandlerInterface
 
     public function __clone(): void
     {
-        // Pool and HTTP/2 toggles belong to the handler; GlobalServices still
-        // owns the shared pool and DNS cache used by each manager instance.
+        // The legacy pool settings and HTTP/2 options belong to the handler;
+        // GlobalServices retains its diagnostics and default options.
         $this->connectionPoolManager = clone $this->connectionPoolManager;
     }
 }

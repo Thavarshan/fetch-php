@@ -56,6 +56,25 @@ class RequestTest extends TestCase
         );
     }
 
+    public function test_json_factory_preserves_explicit_type(): void
+    {
+        $request = Request::json(
+            Method::POST,
+            'https://api.example.com/users',
+            ['data' => ['type' => 'users']],
+            ['content-type' => ContentType::VND_API_JSON->value],
+        );
+
+        self::assertSame(
+            ContentType::VND_API_JSON->value,
+            $request->getHeaderLine('Content-Type'),
+        );
+        self::assertSame(
+            ['data' => ['type' => 'users']],
+            $request->getBodyAsJson(),
+        );
+    }
+
     public function test_create_with_form_params(): void
     {
         $formParams = ['username' => 'john', 'password' => 'secret'];
@@ -101,6 +120,7 @@ class RequestTest extends TestCase
             Method::POST,
             'https://api.example.com/upload',
             $multipart,
+            ['content-type' => 'text/plain'],
         );
 
         $this->assertEquals(Method::POST->value, $request->getMethod());

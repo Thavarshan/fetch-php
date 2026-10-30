@@ -6,6 +6,7 @@ namespace Fetch\Http;
 
 use Fetch\Enum\ContentType;
 use Fetch\Enum\Method;
+use Fetch\Support\RequestOptions;
 use Fetch\Traits\RequestImmutabilityTrait;
 use GuzzleHttp\Psr7\MultipartStream;
 use GuzzleHttp\Psr7\Request as BaseRequest;
@@ -85,11 +86,16 @@ class Request extends BaseRequest implements RequestInterface
             );
         }
 
-        // Add the Content-Type header if not already present
-        $headers['Content-Type'] = ContentType::JSON->value;
+        // Keep explicit headers while sharing option normalization rules.
+        $headers = RequestOptions::normalizeBodyOptions([
+            'json' => $data,
+            'headers' => $headers,
+        ])['headers'] ?? [];
 
         // Add Content-Length if not already set
-        if (! isset($headers['Content-Length'])) {
+        if (
+            RequestOptions::getHeaderValue($headers, 'Content-Length') === null
+        ) {
             $headers['Content-Length'] = (string) strlen($body);
         }
 
@@ -115,11 +121,15 @@ class Request extends BaseRequest implements RequestInterface
         // Prepare the form body
         $body = http_build_query($formParams);
 
-        // Add the Content-Type header if not already present
-        $headers['Content-Type'] = ContentType::FORM_URLENCODED->value;
+        $headers = RequestOptions::normalizeBodyOptions([
+            'form_params' => $formParams,
+            'headers' => $headers,
+        ])['headers'] ?? [];
 
         // Add Content-Length if not already set
-        if (! isset($headers['Content-Length'])) {
+        if (
+            RequestOptions::getHeaderValue($headers, 'Content-Length') === null
+        ) {
             $headers['Content-Length'] = (string) strlen($body);
         }
 
@@ -163,7 +173,14 @@ class Request extends BaseRequest implements RequestInterface
             }
         }
 
-        $body = new MultipartStream($multipart);
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'multipart' => $multipart,
+            'headers' => $headers,
+        ]);
+        $headers = $normalized['headers'] ?? [];
+        $body = new MultipartStream(
+            RequestOptions::normalizeMultipart($multipart),
+        );
 
         // Set the Content-Type header with the boundary
         $headers['Content-Type'] =
@@ -172,7 +189,9 @@ class Request extends BaseRequest implements RequestInterface
             $body->getBoundary();
 
         // Add Content-Length if not already set
-        if (! isset($headers['Content-Length'])) {
+        if (
+            RequestOptions::getHeaderValue($headers, 'Content-Length') === null
+        ) {
             $size = $body->getSize();
             if ($size !== null) {
                 $headers['Content-Length'] = (string) $size;

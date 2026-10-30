@@ -267,7 +267,6 @@ class ManagesConnectionPoolTest extends TestCase
 
         $ref = new \ReflectionClass($dnsCache);
         $prop = $ref->getProperty('cache');
-        $prop->setAccessible(true);
         $prop->setValue($dnsCache, [
             'example.com' => [
                 'addresses' => ['127.0.0.1'],

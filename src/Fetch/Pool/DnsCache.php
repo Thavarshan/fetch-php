@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fetch\Pool;
 
+use Closure;
 use Fetch\Exceptions\NetworkException;
 use GuzzleHttp\Psr7\Request;
 
@@ -19,12 +20,27 @@ class DnsCache
      */
     protected array $cache = [];
 
+    /** @var (Closure(string): array<int, string>)|null */
+    private ?Closure $resolver;
+
+    /** @var Closure(): int */
+    private Closure $clock;
+
     /**
      * Create a new DNS cache instance.
      *
      * @param  int  $ttl  Time-to-live for cached entries in seconds
+     * @param  (Closure(string): array<int, string>)|null  $resolver
+     * @param  (Closure(): int)|null  $clock  Optional Unix timestamp provider
      */
-    public function __construct(protected int $ttl = 300) {}
+    public function __construct(
+        protected int $ttl = 300,
+        ?Closure $resolver = null,
+        ?Closure $clock = null,
+    ) {
+        $this->resolver = $resolver;
+        $this->clock = $clock ?? static fn (): int => time();
+    }
 
     /**
      * Resolve a hostname to IP addresses.
@@ -47,12 +63,21 @@ class DnsCache
         }
 
         // Perform DNS lookup
-        $addresses = $this->performDnsLookup($hostname);
+        $addresses = $this->resolver !== null
+            ? ($this->resolver)($hostname)
+            : $this->performDnsLookup($hostname);
+
+        if ($addresses === []) {
+            throw new NetworkException(
+                "Failed to resolve hostname: {$hostname}",
+                new Request('GET', 'https://'.rawurlencode($hostname).'/'),
+            );
+        }
 
         // Cache the result
         $this->cache[$cacheKey] = [
             'addresses' => $addresses,
-            'expires_at' => time() + $this->ttl,
+            'expires_at' => ($this->clock)() + $this->ttl,
         ];
 
         return $addresses;
@@ -154,7 +179,7 @@ class DnsCache
      */
     protected function isExpired(array $entry): bool
     {
-        return time() >= $entry['expires_at'];
+        return ($this->clock)() >= $entry['expires_at'];
     }
 
     /**

@@ -14,6 +14,7 @@ use Fetch\Interfaces\EventDispatcher;
 use Fetch\Interfaces\Middleware;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
+use Fetch\Support\RequestOptions;
 use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -199,13 +200,13 @@ class Client implements ClientInterface, LoggerAwareInterface
             return $this->handler;
         }
 
-        $options = array_merge(
+        $options = RequestOptions::merge(
             ClientHandler::getDefaultOptions(),
             $options ?? [],
         );
 
         // Normalize the HTTP method
-        $method = strtoupper($options['method'] ?? Method::GET->value);
+        $method = RequestOptions::getMethod($options);
 
         try {
             $methodEnum = Method::fromString($method);
@@ -215,27 +216,9 @@ class Client implements ClientInterface, LoggerAwareInterface
             );
         }
 
-        // Process the request body
-        $body = null;
-        $contentType = ContentType::JSON;
-
-        if (isset($options['body'])) {
-            $body = $options['body'];
-            $contentTypeStr =
-                $options['headers']['Content-Type'] ?? ContentType::JSON->value;
-
-            try {
-                $contentType = ContentType::tryFromString($contentTypeStr);
-            } catch (\ValueError $e) {
-                $contentType = $contentTypeStr;
-            }
-        }
-
-        // Handle JSON body specifically
-        if (isset($options['json'])) {
-            $body = $options['json'];
-            $contentType = ContentType::JSON;
-        }
+        [$body, $contentType] =
+            RequestOptions::extractBodyAndContentType($options);
+        $contentType ??= ContentType::JSON;
 
         $this->logger->info('Sending fetch request', [
             'method' => $method,

@@ -33,44 +33,10 @@ final class RequestBuilder
             return $options;
         }
 
-        $contentTypeEnum = ContentType::normalizeContentType($contentType);
-        $contentTypeValue =
-            $contentTypeEnum instanceof ContentType
-                ? $contentTypeEnum->value
-                : (string) $contentTypeEnum;
-        $options['headers'] ??= [];
-        unset(
-            $options['body'],
-            $options['json'],
-            $options['form_params'],
-            $options['multipart'],
-        );
-
-        if (is_array($body)) {
-            return match ($contentTypeEnum) {
-                ContentType::JSON => $this->withJsonBody($options, $body),
-                ContentType::FORM_URLENCODED => $this->withFormBody(
-                    $options,
-                    $body,
-                ),
-                ContentType::MULTIPART => $this->withMultipartBody(
-                    $options,
-                    $body,
-                ),
-                default => $this->withGenericArrayBody(
-                    $options,
-                    $body,
-                    $contentTypeValue,
-                ),
-            };
-        }
-
-        $options['body'] = $body;
-        if (! isset($options['headers']['Content-Type'])) {
-            $options['headers']['Content-Type'] = $contentTypeValue;
-        }
-
-        return $options;
+        return RequestOptions::replaceBodyOptions($options, [
+            'body' => $body,
+            'content_type' => $contentType,
+        ]);
     }
 
     /**
@@ -416,61 +382,5 @@ final class RequestBuilder
         } finally {
             $body->seek($position);
         }
-    }
-
-    /**
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $body
-     * @return array<string, mixed>
-     */
-    private function withJsonBody(array $options, array $body): array
-    {
-        $options['json'] = $body;
-        $options['headers']['Content-Type'] ??= ContentType::JSON->value;
-
-        return $options;
-    }
-
-    /**
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $body
-     * @return array<string, mixed>
-     */
-    private function withFormBody(array $options, array $body): array
-    {
-        $options['form_params'] = $body;
-        $options['headers']['Content-Type'] ??=
-            ContentType::FORM_URLENCODED->value;
-
-        return $options;
-    }
-
-    /**
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $body
-     * @return array<string, mixed>
-     */
-    private function withMultipartBody(array $options, array $body): array
-    {
-        $options['multipart'] = RequestOptions::normalizeMultipart($body);
-        unset($options['headers']['Content-Type']);
-
-        return $options;
-    }
-
-    /**
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $body
-     * @return array<string, mixed>
-     */
-    private function withGenericArrayBody(
-        array $options,
-        array $body,
-        string $contentType,
-    ): array {
-        $options['body'] = json_encode($body);
-        $options['headers']['Content-Type'] ??= $contentType;
-
-        return $options;
     }
 }

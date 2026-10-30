@@ -29,8 +29,9 @@ returning or caching them. `RequestExecutor` handles synchronous transport;
 The default `GuzzleAsyncTransport` pumps cURL multi and Guzzle's promise queue
 from ReactPHP. `PromiseManager` composes Matrix operations, while
 `ConnectionPoolManager` holds handler configuration for shared pool services.
-The separate Fetch pool and DNS cache are not wired into transport selection.
-Guzzle manages connections in the active transport.
+The separate Fetch pool and DNS cache are not wired into transport selection;
+their handler-facing configuration is deprecated since 4.1.0. Guzzle manages
+connections in the active transport.
 
 `StreamingRequestExecutor` uses Guzzle's incremental stream handler. Streaming
 is synchronous and bypasses middleware, validation, mocks, retries, and caching;

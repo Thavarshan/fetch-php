@@ -126,5 +126,5 @@ The concrete handler also provides `withRequestSchema(mixed $schema)`,
 [validation](/guide/validation) for optional adapters and per-request options.
 
 See [middleware and events](/api/middleware-events). Pool and DNS configuration
-is exposed by `PoolAwareHandler`, but those services are not integrated into
-request execution; see [connection pooling](/guide/connection-pooling).
+is deprecated since 4.1.0. Those services are not integrated into request
+execution; see [HTTP/2 and legacy pool APIs](/guide/connection-pooling).

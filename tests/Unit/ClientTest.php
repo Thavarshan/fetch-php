@@ -120,6 +120,68 @@ class ClientTest extends TestCase
         $this->assertSame($mockResponse, $result);
     }
 
+    public function test_fetch_uses_normalized_form_options(): void
+    {
+        $body = ['name' => 'Ada Lovelace'];
+        $mockResponse = $this->createMock(Response::class);
+
+        $this->mockHandler
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                Method::POST,
+                'https://example.com/users',
+                $body,
+                ContentType::FORM_URLENCODED,
+                $this->callback(
+                    static fn (array $requestOptions): bool =>
+                        $requestOptions['form_params'] === $body &&
+                        ! isset($requestOptions['body']),
+                ),
+            )
+            ->willReturn($mockResponse);
+
+        self::assertSame(
+            $mockResponse,
+            $this->client->fetch('https://example.com/users', [
+                'method' => 'POST',
+                'form_params' => $body,
+                'body' => 'ignored',
+            ]),
+        );
+    }
+
+    public function test_fetch_respects_case_insensitive_content_type(): void
+    {
+        $body = ['name' => 'Ada Lovelace'];
+        $mockResponse = $this->createMock(Response::class);
+
+        $this->mockHandler
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                Method::POST,
+                'https://example.com/users',
+                '{"name":"Ada Lovelace"}',
+                ContentType::TEXT,
+                $this->callback(
+                    static fn (array $requestOptions): bool =>
+                        $requestOptions['headers']['content-type'] ===
+                            'text/plain',
+                ),
+            )
+            ->willReturn($mockResponse);
+
+        self::assertSame(
+            $mockResponse,
+            $this->client->fetch('https://example.com/users', [
+                'method' => 'POST',
+                'body' => $body,
+                'headers' => ['content-type' => 'text/plain'],
+            ]),
+        );
+    }
+
     public function test_get(): void
     {
         $url = 'https://example.com';

@@ -155,39 +155,7 @@ if (! function_exists('extract_body_and_content_type')) {
      */
     function extract_body_and_content_type(array $options): array
     {
-        $options = RequestOptions::normalizeBodyOptions($options);
-        $body = null;
-        $contentType = null;
-        $rawContentType =
-            $options['content_type'] ??
-            ($options['headers']['Content-Type'] ?? null);
-
-        if (is_array($rawContentType)) {
-            $rawContentType = $rawContentType[0] ?? null;
-        }
-
-        $normalizedContentType =
-            $rawContentType instanceof ContentType || is_string($rawContentType)
-                ? ContentType::normalizeContentType($rawContentType)
-                : null;
-
-        // RequestOptions owns normalization and body precedence for all entry
-        // points.
-        if (isset($options['json'])) {
-            $body = $options['json'];
-            $contentType = $normalizedContentType ?? ContentType::JSON;
-        } elseif (isset($options['form_params'])) {
-            $body = $options['form_params'];
-            $contentType = ContentType::FORM_URLENCODED;
-        } elseif (isset($options['multipart'])) {
-            $body = $options['multipart'];
-            $contentType = ContentType::MULTIPART;
-        } elseif (isset($options['body'])) {
-            $body = $options['body'];
-            $contentType = $normalizedContentType;
-        }
-
-        return [$body, $contentType];
+        return RequestOptions::extractBodyAndContentType($options);
     }
 }
 
