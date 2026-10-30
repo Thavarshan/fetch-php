@@ -18,8 +18,9 @@ configurable handler.
   PSR-18 and also has convenience methods such as `get()` and `post()`.
 - `$client->getHandler()` returns the `Fetch\Interfaces\ClientHandler` contract
   for handler-only configuration such as `withCache()` and `retry()`.
-- The pool and DNS APIs expose configuration, but are not connected to outgoing
-  request transport. See [connection pooling](/guide/connection-pooling).
+- Pool and DNS configuration is deprecated since 4.1.0 and does not affect
+  outgoing request transport. See
+  [HTTP/2 and legacy pool APIs](/guide/connection-pooling).
 - `Fetch\Http\ClientHandler::create()` creates an independent handler;
   `createWithBaseUri()` and `createWithClient()` are factories.
 - `Fetch\Http\Client::createWithBaseUri()` creates a client facade with a
@@ -93,10 +94,23 @@ explicitly normalizes. For lower-level Guzzle options such as `verify`,
 `version`, `curl`, `sink`, or `decode_content`, configure a `ClientHandler` or
 pass them through the `Client` facade.
 
-Body option precedence is `json > form/form_params > multipart > body`. Query
-and headers merge with handler defaults. `Client::fetch()` and the global
-base-URI helper pass request overrides through the immutable request context, so
-they do not persist into later requests or change the shared handler defaults.
+Within one option set, body precedence is
+`json > form/form_params > multipart > body`. A body option from a later
+configuration scope replaces the earlier scope's body. The explicit
+`content_type` option overrides inferred content types; otherwise an explicit
+Content-Type header is preserved case-insensitively. Named `json` and
+`form`/`form_params` options determine serialization even when a custom
+Content-Type header is supplied; the header is sent as provided. The
+`withBody()`, `request()`, `post()`, `put()`, `patch()`, and `delete()`
+body-format argument also selects serialization independently of an explicit
+Content-Type header. A request-scope `content_type` option takes precedence
+over that argument. A generic array `body` passed to `sendRequest()` uses
+`content_type` or Content-Type to select its serialization. Multipart requests
+drop the caller's Content-Type so Guzzle can provide the boundary. Query
+parameters and other headers merge with handler defaults.
+`Client::fetch()` and the global base-URI helper pass request overrides through
+the immutable request context, so they do not persist into later requests or
+change the shared handler defaults.
 
 <<< @/examples/snippets/request-options.php
 

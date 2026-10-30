@@ -39,10 +39,59 @@ trait ConfiguresRequests
      */
     public function withOptions(array $options): ClientHandler
     {
-        // Normalize body-related options to avoid conflicts
-        $options = RequestOptions::normalizeBodyOptions($options);
+        $baseOptions = $this->options;
+        $hasBody = RequestOptions::hasBodyOption($options);
+        $hasContentType = RequestOptions::hasHeader(
+            $options['headers'] ?? [],
+            'Content-Type',
+        ) || array_key_exists('content_type', $options);
+        $contentType = RequestOptions::getExplicitContentType($options);
 
-        $this->options = array_merge($this->options, $options);
+        if (array_key_exists('content_type', $options)) {
+            $this->explicitContentTypeOption =
+                RequestOptions::getExplicitContentTypeOption($options);
+        } elseif ($hasContentType) {
+            $this->explicitContentTypeOption = null;
+        }
+
+        if ($hasBody) {
+            $normalized = RequestOptions::normalizeBodyOptions($options);
+
+            if (isset($normalized['multipart'])) {
+                $baseOptions = RequestOptions::withoutHeader(
+                    $baseOptions,
+                    'Content-Type',
+                );
+                $this->explicitContentType = null;
+                $this->explicitContentTypeOption = null;
+            } elseif ($hasContentType) {
+                $this->explicitContentType = $contentType;
+
+                if ($contentType === null) {
+                    $baseOptions = RequestOptions::withoutHeader(
+                        $baseOptions,
+                        'Content-Type',
+                    );
+                }
+            } elseif ($this->explicitContentType !== null) {
+                $options = RequestOptions::withHeaderValue(
+                    $options,
+                    'Content-Type',
+                    $this->explicitContentType instanceof ContentType
+                        ? $this->explicitContentType->value
+                        : $this->explicitContentType,
+                );
+            } else {
+                $baseOptions = RequestOptions::withoutHeader(
+                    $baseOptions,
+                    'Content-Type',
+                );
+            }
+        } elseif ($hasContentType) {
+            $this->explicitContentType = $contentType;
+        }
+
+        $this->options = RequestOptions::merge($baseOptions, $options);
 
         // Map retry-related options to handler properties
         if (isset($options['retries']) && is_numeric($options['retries'])) {
@@ -68,6 +117,41 @@ trait ConfiguresRequests
      */
     public function withOption(string $key, mixed $value): ClientHandler
     {
+        if (in_array(
+            $key,
+            ['body', 'json', 'form', 'form_params', 'multipart'],
+            true,
+        )) {
+            $this->replaceConfiguredBodyOptions([$key => $value]);
+
+            return $this;
+        }
+
+        if ($key === 'headers' && is_array($value)) {
+            $this->options = RequestOptions::merge(
+                $this->options,
+                ['headers' => $value],
+            );
+
+            if (RequestOptions::hasHeader($value, 'Content-Type')) {
+                $this->explicitContentType =
+                    RequestOptions::getExplicitContentType([
+                        'headers' => $value,
+                    ]);
+                $this->explicitContentTypeOption = null;
+            }
+
+            return $this;
+        }
+
+        if ($key === 'content_type') {
+            $this->explicitContentType = $value instanceof ContentType ||
+                is_string($value)
+                ? $value
+                : null;
+            $this->explicitContentTypeOption = $this->explicitContentType;
+        }
+
         $this->options[$key] = $value;
 
         return $this;
@@ -81,15 +165,7 @@ trait ConfiguresRequests
      */
     public function withFormParams(array $params): ClientHandler
     {
-        $this->options['form_params'] = $params;
-
-        // Set the content type header for form params
-        if (! $this->hasHeader('Content-Type')) {
-            $this->withHeader(
-                'Content-Type',
-                ContentType::FORM_URLENCODED->value,
-            );
-        }
+        $this->replaceConfiguredBodyOptions(['form_params' => $params]);
 
         return $this;
     }
@@ -106,17 +182,7 @@ trait ConfiguresRequests
      */
     public function withMultipart(array $multipart): ClientHandler
     {
-        $this->options['multipart'] = $multipart;
-
-        // Remove any content type headers as they're automatically set by the
-        // multipart boundary
-        if (
-            $this->hasHeader('Content-Type') &&
-            isset($this->options['headers']) &&
-            is_array($this->options['headers'])
-        ) {
-            unset($this->options['headers']['Content-Type']);
-        }
+        $this->replaceConfiguredBodyOptions(['multipart' => $multipart]);
 
         return $this;
     }
@@ -156,15 +222,18 @@ trait ConfiguresRequests
      */
     public function withHeaders(array $headers): ClientHandler
     {
-        // Initialize headers array if not set
-        if (! isset($this->options['headers'])) {
-            $this->options['headers'] = [];
-        }
-
-        $this->options['headers'] = array_merge(
-            $this->options['headers'],
-            $headers,
+        $this->options = RequestOptions::merge(
+            $this->options,
+            ['headers' => $headers],
         );
+
+        if (RequestOptions::hasHeader($headers, 'Content-Type')) {
+            $this->explicitContentType =
+                RequestOptions::getExplicitContentType([
+                    'headers' => $headers,
+                ]);
+            $this->explicitContentTypeOption = null;
+        }
 
         return $this;
     }
@@ -178,12 +247,18 @@ trait ConfiguresRequests
      */
     public function withHeader(string $header, mixed $value): ClientHandler
     {
-        // Initialize headers array if not set
-        if (! isset($this->options['headers'])) {
-            $this->options['headers'] = [];
-        }
+        $this->options = RequestOptions::merge(
+            $this->options,
+            ['headers' => [$header => $value]],
+        );
 
-        $this->options['headers'][$header] = $value;
+        if (strcasecmp($header, 'Content-Type') === 0) {
+            $this->explicitContentType =
+                RequestOptions::getExplicitContentType([
+                    'headers' => [$header => $value],
+                ]);
+            $this->explicitContentTypeOption = null;
+        }
 
         return $this;
     }
@@ -199,65 +274,10 @@ trait ConfiguresRequests
         array|string $body,
         string|ContentType $contentType = ContentType::JSON,
     ): ClientHandler {
-        // Convert string content type to enum if necessary
-        $contentTypeEnum = ContentType::normalizeContentType($contentType);
-        $contentTypeValue =
-            $contentTypeEnum instanceof ContentType
-                ? $contentTypeEnum->value
-                : $contentTypeEnum;
-
-        if (is_array($body)) {
-            if ($contentTypeEnum === ContentType::JSON) {
-                // Use Guzzle's json option for proper JSON handling
-                $this->options['json'] = $body;
-
-                // IMPORTANT: Remove any existing conflicting options to prevent
-                // conflicts
-                $this->unsetConflictingOptions([
-                    'body',
-                    'form_params',
-                    'multipart',
-                ]);
-
-                // Set JSON content type header if not already set
-                if (! $this->hasHeader('Content-Type')) {
-                    $this->withHeader('Content-Type', ContentType::JSON->value);
-                }
-            } elseif ($contentTypeEnum === ContentType::FORM_URLENCODED) {
-                $this->withFormParams($body);
-                // Ensure no conflicting body option
-                $this->unsetConflictingOptions(['body', 'json', 'multipart']);
-            } elseif ($contentTypeEnum === ContentType::MULTIPART) {
-                $this->withMultipart($this->normalizeMultipart($body));
-                // Ensure no conflicting body option
-                $this->unsetConflictingOptions(['body', 'json', 'form_params']);
-            } else {
-                // For any other content type, serialize the array to JSON in
-                // body
-                $this->options['body'] = json_encode($body);
-                // Remove conflicting options to prevent conflicts
-                $this->unsetConflictingOptions([
-                    'json',
-                    'form_params',
-                    'multipart',
-                ]);
-                if (! $this->hasHeader('Content-Type')) {
-                    $this->withHeader('Content-Type', $contentTypeValue);
-                }
-            }
-        } else {
-            // For string bodies, use body option
-            $this->options['body'] = $body;
-            // Remove body-related options to prevent conflicts
-            $this->unsetConflictingOptions([
-                'json',
-                'form_params',
-                'multipart',
-            ]);
-            if (! $this->hasHeader('Content-Type')) {
-                $this->withHeader('Content-Type', $contentTypeValue);
-            }
-        }
+        $this->replaceConfiguredBodyOptions(
+            ['body' => $body],
+            $contentType,
+        );
 
         return $this;
     }
@@ -271,13 +291,7 @@ trait ConfiguresRequests
      */
     public function withJson(array $data, int $options = 0): ClientHandler
     {
-        // Use Guzzle's built-in json option for proper handling
-        $this->options['json'] = $data;
-
-        // Set JSON content type if not already set
-        if (! $this->hasHeader('Content-Type')) {
-            $this->withHeader('Content-Type', ContentType::JSON->value);
-        }
+        $this->replaceConfiguredBodyOptions(['json' => $data]);
 
         return $this;
     }
@@ -424,6 +438,8 @@ trait ConfiguresRequests
     public function reset(): ClientHandler
     {
         $this->options = [];
+        $this->explicitContentType = null;
+        $this->explicitContentTypeOption = null;
         $this->timeout = null;
         $this->maxRetries = null;
         $this->retryDelay = null;
@@ -494,5 +510,53 @@ trait ConfiguresRequests
     protected function normalizeMultipart(array $multipart): array
     {
         return RequestOptions::normalizeMultipart($multipart);
+    }
+
+    /**
+     * Replace body options while retaining only an explicit Content-Type.
+     *
+     * @param  array<string, mixed>  $bodyOptions
+     */
+    private function replaceConfiguredBodyOptions(
+        array $bodyOptions,
+        ContentType|string|null $serializationType = null,
+    ): void {
+        $effectiveSerializationType =
+            $this->explicitContentTypeOption ?? $serializationType;
+        $multipart = isset($bodyOptions['multipart']) ||
+            $this->isMultipartContentType(
+                $effectiveSerializationType ??
+                $bodyOptions['content_type'] ??
+                null,
+            );
+
+        if ($multipart) {
+            $this->explicitContentType = null;
+            $this->explicitContentTypeOption = null;
+        } elseif (
+            $this->explicitContentTypeOption !== null &&
+            ! array_key_exists('content_type', $bodyOptions)
+        ) {
+            $bodyOptions['content_type'] = $this->explicitContentTypeOption;
+        }
+
+        $this->options = RequestOptions::replaceBodyOptions(
+            $this->options,
+            $bodyOptions,
+            $this->explicitContentType !== null,
+            $effectiveSerializationType,
+        );
+    }
+
+    private function isMultipartContentType(mixed $contentType): bool
+    {
+        if ($contentType instanceof ContentType) {
+            return $contentType === ContentType::MULTIPART;
+        }
+
+        return is_string($contentType) && str_starts_with(
+            strtolower($contentType),
+            ContentType::MULTIPART->value,
+        );
     }
 }

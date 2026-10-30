@@ -136,6 +136,129 @@ class RequestOptionsTest extends TestCase
         $this->assertArrayNotHasKey('body', $normalized);
     }
 
+    public function test_body_representations_follow_documented_precedence(
+    ): void {
+        $json = ['nested' => ['value' => true]];
+        $form = ['form' => 'value'];
+        $multipart = [['name' => 'upload', 'contents' => 'file']];
+
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'json' => $json,
+            'form_params' => $form,
+            'multipart' => $multipart,
+            'body' => 'raw',
+        ]);
+
+        self::assertSame($json, $normalized['json']);
+        self::assertArrayNotHasKey('form_params', $normalized);
+        self::assertArrayNotHasKey('multipart', $normalized);
+        self::assertArrayNotHasKey('body', $normalized);
+
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'form' => $form,
+            'multipart' => $multipart,
+            'body' => 'raw',
+        ]);
+
+        self::assertSame($form, $normalized['form_params']);
+        self::assertArrayNotHasKey('multipart', $normalized);
+        self::assertArrayNotHasKey('body', $normalized);
+
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'multipart' => $multipart,
+            'body' => 'raw',
+        ]);
+
+        self::assertSame($multipart, $normalized['multipart']);
+        self::assertArrayNotHasKey('body', $normalized);
+    }
+
+    public function test_body_precedence_uses_case_insensitive_headers(): void
+    {
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'body' => ['nested' => ['value' => 'present']],
+            'headers' => [
+                'content-type' => 'application/x-www-form-urlencoded',
+            ],
+        ]);
+
+        self::assertSame(
+            ['nested' => ['value' => 'present']],
+            $normalized['form_params'],
+        );
+        self::assertArrayNotHasKey('body', $normalized);
+        self::assertSame(
+            'application/x-www-form-urlencoded',
+            RequestOptions::getHeaderValue(
+                $normalized['headers'],
+                'Content-Type',
+            ),
+        );
+    }
+
+    public function test_request_body_options_override_client_defaults(): void
+    {
+        $merged = RequestOptions::merge(
+            ['json' => ['default' => true]],
+            ['body' => 'request payload'],
+        );
+
+        self::assertSame('request payload', $merged['body']);
+        self::assertArrayNotHasKey('json', $merged);
+    }
+
+    public function test_null_request_body_clears_client_body_defaults(): void
+    {
+        $merged = RequestOptions::merge(
+            ['json' => ['default' => true]],
+            ['body' => null],
+        );
+
+        self::assertArrayNotHasKey('json', $merged);
+        self::assertArrayHasKey('body', $merged);
+        self::assertNull($merged['body']);
+    }
+
+    public function test_extract_body_returns_empty_raw_payload(): void
+    {
+        self::assertSame(
+            ['', null],
+            RequestOptions::extractBodyAndContentType(['body' => '']),
+        );
+    }
+
+    public function test_null_body_is_treated_as_no_payload(): void
+    {
+        self::assertSame(
+            [null, null],
+            RequestOptions::extractBodyAndContentType(['body' => null]),
+        );
+    }
+
+    public function test_multipart_removes_case_insensitive_content_type(): void
+    {
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'multipart' => [['name' => 'upload', 'contents' => 'file']],
+            'headers' => ['content-type' => 'multipart/form-data'],
+        ]);
+
+        self::assertArrayHasKey('multipart', $normalized);
+        self::assertArrayNotHasKey('Content-Type', $normalized['headers']);
+        self::assertArrayNotHasKey('content-type', $normalized['headers']);
+    }
+
+    public function test_array_body_multipart_removes_lowercase_type_header(
+    ): void {
+        $normalized = RequestOptions::normalizeBodyOptions([
+            'body' => [['name' => 'upload', 'contents' => 'fixture']],
+            'headers' => ['content-type' => 'multipart/form-data'],
+        ]);
+
+        self::assertArrayHasKey('multipart', $normalized);
+        self::assertArrayNotHasKey('Content-Type', $normalized['headers']);
+        self::assertArrayNotHasKey('content-type', $normalized['headers']);
+    }
+
     public function test_merge_deep_merges_headers(): void
     {
         $options1 = [

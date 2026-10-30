@@ -90,57 +90,39 @@ if (! function_exists('process_request_options')) {
      */
     function process_request_options(array $options): array
     {
-        $processedOptions = [];
+        $normalizedOptions = RequestOptions::normalizeOptionKeys($options);
 
         // Method (default to GET)
-        $method = $options['method'] ?? Method::GET;
+        $method = $normalizedOptions['method'] ?? Method::GET;
         $methodValue =
             $method instanceof Method ? $method->value : (string) $method;
-        $processedOptions['method'] = $methodValue;
-
-        // Headers
-        if (isset($options['headers'])) {
-            $processedOptions['headers'] = $options['headers'];
-        }
-
-        // Content type and body handling
-        [$body, $contentType] = extract_body_and_content_type($options);
-
-        if ($body !== null) {
-            $processedOptions['body'] = $body;
-            if ($contentType !== null) {
-                $processedOptions['content_type'] = $contentType;
-            }
-        }
-
-        // Query parameters
-        if (isset($options['query'])) {
-            $processedOptions['query'] = $options['query'];
-        }
-
-        // Copy other direct pass options
-        $directPassOptions = [
-            'timeout',
-            'connect_timeout',
-            'retries',
-            'retry_delay',
-            'auth',
-            'token',
-            'proxy',
-            'cookies',
-            'allow_redirects',
-            'cert',
-            'ssl_key',
-            'stream',
-            'progress',
-            'debug',
-        ];
-
-        foreach ($directPassOptions as $opt) {
-            if (isset($options[$opt])) {
-                $processedOptions[$opt] = $options[$opt];
-            }
-        }
+        $processedOptions = ['method' => $methodValue] + array_intersect_key(
+            $normalizedOptions,
+            array_flip([
+                'headers',
+                'body',
+                'json',
+                'form',
+                'form_params',
+                'multipart',
+                'content_type',
+                'query',
+                'timeout',
+                'connect_timeout',
+                'retries',
+                'retry_delay',
+                'auth',
+                'token',
+                'proxy',
+                'cookies',
+                'allow_redirects',
+                'cert',
+                'ssl_key',
+                'stream',
+                'progress',
+                'debug',
+            ]),
+        );
 
         return RequestOptions::normalizeBodyOptions($processedOptions);
     }
@@ -155,39 +137,7 @@ if (! function_exists('extract_body_and_content_type')) {
      */
     function extract_body_and_content_type(array $options): array
     {
-        $options = RequestOptions::normalizeBodyOptions($options);
-        $body = null;
-        $contentType = null;
-        $rawContentType =
-            $options['content_type'] ??
-            ($options['headers']['Content-Type'] ?? null);
-
-        if (is_array($rawContentType)) {
-            $rawContentType = $rawContentType[0] ?? null;
-        }
-
-        $normalizedContentType =
-            $rawContentType instanceof ContentType || is_string($rawContentType)
-                ? ContentType::normalizeContentType($rawContentType)
-                : null;
-
-        // RequestOptions owns normalization and body precedence for all entry
-        // points.
-        if (isset($options['json'])) {
-            $body = $options['json'];
-            $contentType = $normalizedContentType ?? ContentType::JSON;
-        } elseif (isset($options['form_params'])) {
-            $body = $options['form_params'];
-            $contentType = ContentType::FORM_URLENCODED;
-        } elseif (isset($options['multipart'])) {
-            $body = $options['multipart'];
-            $contentType = ContentType::MULTIPART;
-        } elseif (isset($options['body'])) {
-            $body = $options['body'];
-            $contentType = $normalizedContentType;
-        }
-
-        return [$body, $contentType];
+        return RequestOptions::extractBodyAndContentType($options);
     }
 }
 

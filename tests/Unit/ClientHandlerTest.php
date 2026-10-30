@@ -118,7 +118,6 @@ class ClientHandlerTest extends TestCase
 
         // Use reflection to verify the client was set
         $reflection = new ReflectionProperty($handler, 'httpClient');
-        $reflection->setAccessible(true);
         $this->assertSame($mockClient, $reflection->getValue($handler));
     }
 
@@ -332,7 +331,6 @@ class ClientHandlerTest extends TestCase
 
         // Use reflection to verify logger was set
         $reflection = new ReflectionProperty($this->handler, 'logger');
-        $reflection->setAccessible(true);
         $this->assertSame($mockLogger, $reflection->getValue($this->handler));
     }
 
@@ -382,7 +380,6 @@ class ClientHandlerTest extends TestCase
 
         // Call logRetry via reflection
         $reflection = new ReflectionMethod($handler, 'logRetry');
-        $reflection->setAccessible(true);
         $reflection->invoke($handler, 1, 3, new Exception('Test error'));
     }
 
@@ -414,7 +411,6 @@ class ClientHandlerTest extends TestCase
 
         // Call logRequest via reflection
         $reflection = new ReflectionMethod($handler, 'logRequest');
-        $reflection->setAccessible(true);
         $reflection->invoke($handler, 'GET', 'https://example.com', [
             'headers' => ['Authorization' => 'Bearer token'],
         ]);
@@ -452,7 +448,6 @@ class ClientHandlerTest extends TestCase
 
         // Call logResponse via reflection
         $reflection = new ReflectionMethod($handler, 'logResponse');
-        $reflection->setAccessible(true);
         $reflection->invoke($handler, $response, 0.125);
     }
 
@@ -471,7 +466,6 @@ class ClientHandlerTest extends TestCase
             $this->handler,
             'getResponseContentLength',
         );
-        $reflection->setAccessible(true);
         $length = $reflection->invoke($this->handler, $response);
 
         $this->assertEquals('42', $length);
@@ -492,7 +486,6 @@ class ClientHandlerTest extends TestCase
             $this->handler,
             'getResponseContentLength',
         );
-        $reflection->setAccessible(true);
         $length = $reflection->invoke($this->handler, $response);
 
         $this->assertEquals(17, $length); // Length of 'Test body content'
@@ -512,7 +505,6 @@ class ClientHandlerTest extends TestCase
 
         // Call sanitizeOptions via reflection
         $reflection = new ReflectionMethod($this->handler, 'sanitizeOptions');
-        $reflection->setAccessible(true);
         $sanitized = $reflection->invoke($this->handler, $options);
 
         // Check authorization data is redacted
@@ -539,7 +531,6 @@ class ClientHandlerTest extends TestCase
         ];
 
         $reflection = new ReflectionMethod($this->handler, 'sanitizeOptions');
-        $reflection->setAccessible(true);
         $sanitized = $reflection->invoke($this->handler, $options);
 
         $this->assertEquals('[REDACTED]', $sanitized['headers']['X-API-Key']);

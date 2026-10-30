@@ -36,7 +36,7 @@ integrations. The public API is described in the [API reference](/api/).
 - [Lifecycle events](/guide/events)
 - [Streaming and SSE](/guide/streaming)
 - [File uploads](/guide/file-uploads)
-- [Connection pool and HTTP/2 settings](/guide/connection-pooling)
+- [HTTP/2 and legacy pool APIs](/guide/connection-pooling)
 - [Logging](/guide/logging)
 - [Debugging and profiling](/guide/debugging-and-profiling)
 - [Custom clients and transports](/guide/custom-clients)

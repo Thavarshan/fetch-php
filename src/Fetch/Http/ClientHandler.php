@@ -132,6 +132,10 @@ class ClientHandler implements ClientHandlerInterface
 
     private ?CurlMultiHandler $curlMultiHandler = null;
 
+    private ContentType|string|null $explicitContentType = null;
+
+    private ContentType|string|null $explicitContentTypeOption = null;
+
     /**
      * ClientHandler constructor.
      *
@@ -174,9 +178,31 @@ class ClientHandler implements ClientHandlerInterface
         $this->requestBuilder = $requestBuilder ?? new RequestBuilder;
         $this->asyncTransport = $asyncTransport;
 
+        // Track only caller-supplied Content-Type values. Inferred values are
+        // replaced when a later body setter selects a different format.
+        $defaultOptions = self::getDefaultOptions();
+        $hasConstructorContentTypeHeader = FetchRequestOptions::hasHeader(
+            $this->options['headers'] ?? [],
+            'Content-Type',
+        );
+        if (array_key_exists('content_type', $this->options)) {
+            $this->explicitContentTypeOption =
+                FetchRequestOptions::getExplicitContentTypeOption(
+                    $this->options,
+                );
+        } elseif (! $hasConstructorContentTypeHeader) {
+            $this->explicitContentTypeOption =
+                FetchRequestOptions::getExplicitContentTypeOption(
+                    $defaultOptions,
+                );
+        }
+        $this->explicitContentType =
+            FetchRequestOptions::getExplicitContentType($this->options) ??
+            FetchRequestOptions::getExplicitContentType($defaultOptions);
+
         // Initialize with default options using centralized merging
         $this->options = FetchRequestOptions::merge(
-            self::getDefaultOptions(),
+            $defaultOptions,
             $this->options,
         );
 
@@ -1052,8 +1078,8 @@ class ClientHandler implements ClientHandlerInterface
 
     public function __clone(): void
     {
-        // Pool and HTTP/2 toggles belong to the handler; GlobalServices still
-        // owns the shared pool and DNS cache used by each manager instance.
+        // The legacy pool settings and HTTP/2 options belong to the handler;
+        // GlobalServices retains its diagnostics and default options.
         $this->connectionPoolManager = clone $this->connectionPoolManager;
     }
 }

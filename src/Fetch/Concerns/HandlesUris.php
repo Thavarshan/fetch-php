@@ -17,8 +17,8 @@ trait HandlesUris
      *
      * @throws InvalidArgumentException If the URI is invalid
      *
-     * @deprecated since 3.8.2 Use buildFullUriFromContext(); removal is planned
-     *     for 4.0.
+     * @deprecated since 3.8.2 Retained for compatibility; no removal release
+     *     is scheduled. Use buildFullUriFromContext() instead.
      */
     protected function buildFullUri(string $uri): string
     {
@@ -28,29 +28,11 @@ trait HandlesUris
             E_USER_DEPRECATED,
         );
 
-        // Get base URI and query parameters from options
-        $baseUri = $this->options['base_uri'] ?? '';
-        if (! is_string($baseUri)) {
-            throw new InvalidArgumentException('Base URI must be a string.');
-        }
-        $queryParams = $this->options['query'] ?? [];
+        $options = array_merge($this->options, ['uri' => $uri]);
 
-        // Normalize URIs before processing
-        $uri = $this->normalizeUri($uri);
-        if (! empty($baseUri)) {
-            $baseUri = $this->normalizeUri($baseUri);
-        }
-
-        // Validate inputs
-        $this->validateUriInputs($uri, $baseUri);
-
-        // Build the final URI
-        $fullUri = $this->isAbsoluteUrl($uri)
-            ? $uri
-            : $this->joinUriPaths($baseUri, $uri);
-
-        // Add query parameters if any
-        return $this->appendQueryParameters($fullUri, $queryParams);
+        return $this->buildFullUriFromContext(
+            RequestContext::fromOptions($options),
+        );
     }
 
     /**

@@ -99,7 +99,6 @@ class ManagesPromisesTest extends TestCase
         // Use reflection to access protected method
         $reflection = new ReflectionClass($this->handler);
         $method = $reflection->getMethod('awaitWithTimeout');
-        $method->setAccessible(true);
 
         $result = $method->invoke($this->handler, $promise, 1.0);
         $this->assertEquals('quick result', $result);
@@ -406,7 +405,6 @@ class ManagesPromisesTest extends TestCase
         // Use reflection to access protected method
         $reflection = new ReflectionClass($this->handler);
         $method = $reflection->getMethod('validatePromises');
-        $method->setAccessible(true);
 
         // Should not throw an exception
         $method->invoke($this->handler, $promises);
@@ -422,7 +420,6 @@ class ManagesPromisesTest extends TestCase
         // Use reflection to access protected method
         $reflection = new ReflectionClass($this->handler);
         $method = $reflection->getMethod('validatePromises');
-        $method->setAccessible(true);
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Item at index 1 is not a promise');

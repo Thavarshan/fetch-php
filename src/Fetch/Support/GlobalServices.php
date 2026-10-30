@@ -14,13 +14,12 @@ use Fetch\Pool\PoolConfiguration;
  * Manages global/shared services for the Fetch HTTP client.
  *
  * This class provides explicit lifecycle management for services that are
- * intentionally shared across ClientHandler instances to enable connection
- * reuse and consistent default configurations.
+ * intentionally shared across ClientHandler instances for legacy pool
+ * diagnostics and consistent default configurations.
  *
  * **Why Global State Exists:**
- * - ConnectionPool: Connection reuse across handlers reduces latency and
- *     resource usage
- * - DnsCache: DNS resolution caching improves performance for repeated requests
+ * - ConnectionPool: Legacy client objects and configuration diagnostics
+ * - DnsCache: A standalone DNS lookup cache; not used by request transport
  * - DefaultOptions: Consistent configuration baseline for all handlers
  *
  * **Thread Safety:**
@@ -38,12 +37,12 @@ use Fetch\Pool\PoolConfiguration;
 final class GlobalServices
 {
     /**
-     * The shared connection pool instance.
+     * The shared legacy connection-pool utility instance.
      */
     private static ?ConnectionPool $connectionPool = null;
 
     /**
-     * The shared DNS cache instance.
+     * The shared standalone DNS cache instance.
      */
     private static ?DnsCache $dnsCache = null;
 
@@ -86,7 +85,7 @@ final class GlobalServices
         self::$dnsCache = new DnsCache($poolConfig->getDnsCacheTtl());
 
         self::$defaultOptions = array_merge(
-            self::getFactoryDefaults(),
+            self::$defaultOptions,
             $defaultOptions,
         );
 

@@ -13,8 +13,8 @@ Fetch PHP (`jerome/fetch-php`) is a modern PHP HTTP client that brings the
 JavaScript `fetch` experience to PHP, built on top of Guzzle. It provides a
 `fetch()`-style API plus verb helpers, async/await via ReactPHP +
 `jerome/matrix`, streaming and Server-Sent Events, RFC 7234 HTTP caching,
-connection pooling, middleware, lifecycle events, retries, and full
-PSR-7/PSR-18/PSR-3 compliance.
+legacy pool and DNS-cache utilities, middleware, lifecycle events, retries, and
+full PSR-7/PSR-18/PSR-3 compliance.
 
 The public GitHub repository is `Thavarshan/fetch-php`; the Packagist package is
 `jerome/fetch-php`.

@@ -244,8 +244,29 @@ trait PerformsHttpRequests
     ): ResponseInterface|PromiseInterface {
         $methodStr =
             $method instanceof Method ? $method->value : strtoupper($method);
+        $baseOptions = $this->options;
+
+        if (
+            RequestOptions::hasBodyOption($options) &&
+            ! array_key_exists('content_type', $options) &&
+            RequestOptions::getExplicitContentTypeHeader($options) === null &&
+            $this->explicitContentTypeOption !== null
+        ) {
+            $options['content_type'] = $this->explicitContentTypeOption;
+        }
+
+        if (
+            RequestOptions::hasBodyOption($options) &&
+            $this->explicitContentType === null
+        ) {
+            $baseOptions = RequestOptions::withoutHeader(
+                $baseOptions,
+                'Content-Type',
+            );
+        }
+
         $requestOptions = RequestOptions::merge(
-            $this->options,
+            $baseOptions,
             ['async' => $this->isAsync],
             $options,
             ['method' => $methodStr, 'uri' => $uri],
@@ -283,13 +304,17 @@ trait PerformsHttpRequests
         string|ContentType $contentType = ContentType::JSON,
         array $options = [],
     ): ResponseInterface|PromiseInterface {
-        $mergedOptions = RequestOptions::merge($this->options, $options);
+        $mergedOptions = $this->mergeRequestOptions(
+            $options,
+            $body !== null,
+        );
 
         if ($body !== null) {
             $mergedOptions = $this->applyBodyOptions(
                 $mergedOptions,
                 $body,
                 $contentType,
+                $options,
             );
         }
 
@@ -425,7 +450,8 @@ trait PerformsHttpRequests
             $method instanceof Method ? $method->value : strtoupper($method);
 
         // Streaming is inherently synchronous: force async off for this path.
-        $requestOptions = RequestOptions::merge($this->options, $options, [
+        $requestOptions = $this->mergeRequestOptions($options);
+        $requestOptions = RequestOptions::merge($requestOptions, [
             'method' => $methodStr,
             'uri' => $uri,
             'async' => false,
@@ -476,18 +502,73 @@ trait PerformsHttpRequests
      * @param  array<string, mixed>  $options  Base options array
      * @param  mixed  $body  The request body
      * @param  ContentType|string  $contentType  The content type
+     * @param  array<string, mixed>  $requestOptions  Raw request options
      * @return array<string, mixed> New options array with body applied
      */
     protected function applyBodyOptions(
         array $options,
         mixed $body,
         ContentType|string $contentType,
+        array $requestOptions = [],
     ): array {
+        $requestContentTypeOption = array_key_exists(
+            'content_type',
+            $requestOptions,
+        )
+            ? RequestOptions::getExplicitContentTypeOption($requestOptions)
+            : null;
+        $contentTypeOption = array_key_exists(
+            'content_type',
+            $requestOptions,
+        )
+            ? $requestContentTypeOption
+            : (
+                RequestOptions::getExplicitContentTypeHeader(
+                    $requestOptions,
+                ) === null
+                    ? $this->explicitContentTypeOption
+                    : null
+            );
+        $explicitContentType =
+            RequestOptions::getExplicitContentType($requestOptions) ??
+            $this->explicitContentType;
+        $serializationType = $contentTypeOption ?? $contentType;
+
+        if ($contentTypeOption !== null) {
+            $options['content_type'] = $contentTypeOption;
+        }
+
         return $this->requestBuilder->applyBodyOptions(
             $options,
             $body,
-            $contentType,
+            $serializationType,
+            $explicitContentType !== null,
         );
+    }
+
+    /**
+     * Merge request options without treating an inferred header as explicit.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    protected function mergeRequestOptions(
+        array $options,
+        bool $replacingBody = false,
+    ): array {
+        $baseOptions = $this->options;
+
+        if (
+            ($replacingBody || RequestOptions::hasBodyOption($options)) &&
+            $this->explicitContentType === null
+        ) {
+            $baseOptions = RequestOptions::withoutHeader(
+                $baseOptions,
+                'Content-Type',
+            );
+        }
+
+        return RequestOptions::merge($baseOptions, $options);
     }
 
     /**
@@ -512,11 +593,15 @@ trait PerformsHttpRequests
             return $this->sendRequest($method, $uri, $options);
         }
 
-        $mergedOptions = RequestOptions::merge($this->options, $options);
+        $mergedOptions = $this->mergeRequestOptions(
+            $options,
+            $body !== null,
+        );
         $bodyOptions = $this->applyBodyOptions(
             $mergedOptions,
             $body,
             $contentType,
+            $options,
         );
 
         return $this->sendRequest($method, $uri, $bodyOptions);

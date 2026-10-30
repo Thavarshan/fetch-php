@@ -11,7 +11,7 @@ use Fetch\Pool\DnsCache;
 use Fetch\Pool\Http2Configuration;
 use Fetch\Pool\PoolConfiguration;
 
-/** Stable ClientHandler facade for the composed connection pool manager. */
+/** ClientHandler facade for legacy pool and HTTP/2 configuration. */
 trait ManagesConnectionPool
 {
     protected static function initializePool(
@@ -20,7 +20,11 @@ trait ManagesConnectionPool
         ConnectionPoolManager::initialize($config);
     }
 
-    /** @param array<string, mixed>|bool $config */
+    /**
+     * @param  array<string, mixed>|bool  $config
+     *
+     * @deprecated since 4.1.0 Pool configuration does not affect transports.
+     */
     public function withConnectionPool(array|bool $config = true): ClientHandler
     {
         $this->connectionPoolManager->withConnectionPool($config);
@@ -39,11 +43,13 @@ trait ManagesConnectionPool
         return $this;
     }
 
+    /** @deprecated since 4.1.0 The pool is not used by request transport. */
     public function getConnectionPool(): ?ConnectionPool
     {
         return $this->connectionPoolManager->getConnectionPool();
     }
 
+    /** @deprecated since 4.1.0 DNS results do not affect request transport. */
     public function getDnsCache(): ?DnsCache
     {
         return $this->connectionPoolManager->getDnsCache();
@@ -60,6 +66,7 @@ trait ManagesConnectionPool
         return $this->connectionPoolManager->getHttp2Config();
     }
 
+    /** @deprecated since 4.1.0 This reports configuration only. */
     public function isPoolingEnabled(): bool
     {
         return $this->connectionPoolManager->isPoolingEnabled();
@@ -70,18 +77,27 @@ trait ManagesConnectionPool
         return $this->connectionPoolManager->isHttp2Enabled();
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     *
+     * @deprecated since 4.1.0 These counters do not report socket reuse.
+     */
     public function getPoolStats(): array
     {
         return $this->connectionPoolManager->getPoolStats();
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     *
+     * @deprecated since 4.1.0 The cache is not used by request transport.
+     */
     public function getDnsCacheStats(): array
     {
         return $this->connectionPoolManager->getDnsCacheStats();
     }
 
+    /** @deprecated since 4.1.0 DNS cache is not used by request transport. */
     public function clearDnsCache(?string $hostname = null): ClientHandler
     {
         $this->connectionPoolManager->clearDnsCache($hostname);
@@ -89,6 +105,9 @@ trait ManagesConnectionPool
         return $this;
     }
 
+    /**
+     * @deprecated since 4.1.0 The custom pool does not own transport sockets.
+     */
     public function closeAllConnections(): ClientHandler
     {
         $this->connectionPoolManager->closeAllConnections();
@@ -96,6 +115,9 @@ trait ManagesConnectionPool
         return $this;
     }
 
+    /**
+     * @deprecated since 4.1.0 The custom pool does not own transport sockets.
+     */
     public function resetPool(): ClientHandler
     {
         $this->connectionPoolManager->reset();

@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Route `Client::fetch()`, request helpers, request builders, and fluent body
+  setters through `RequestOptions` normalization. Request-scope body values now
+  replace lower-scope defaults. Body-format arguments retain their selected
+  serialization with custom Content-Type headers, while multipart boundaries
+  remain transport-generated.
+- Preserve `GlobalServices` defaults when a handler initializes its services.
+
+### Deprecated
+
+- Deprecate handler APIs that imply custom connection-pool or DNS-cache
+  transport integration. They remain callable for source compatibility; use
+  Guzzle's configured client and handler for transport behavior.
+- Retain `buildFullUri()` for 4.x subclass compatibility with no scheduled
+  removal release. It delegates to the context-based URI builder.
+
+### Security
+
+- The stable documentation graph remains blocked on VitePress 1.6.4's Vite 5
+  dependency range. `npm audit` reports Vite, esbuild, and VitePress findings:
+  GHSA-4w7w-66w2-5vf9, GHSA-v6wh-96g9-6wx3, GHSA-698v-4r3x-3vcv,
+  GHSA-r825-w8mm-5pxw, GHSA-587h-7wmj-h5pm, GHSA-9jrq-w75r-8gcw,
+  GHSA-rq7h-c2jc-7f22, GHSA-fx2h-pf6j-xcff, and GHSA-67mh-4wv8-2f99.
+  No compatible stable VitePress update is available; the full development
+  audit remains unresolved and is tracked in issue #131. Production audit is
+  clean.
+
 ### Changed
 
 - Restore upstream shadcn-vue Button, Tabs, and Tooltip variants and Slate

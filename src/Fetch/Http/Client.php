@@ -14,6 +14,7 @@ use Fetch\Interfaces\EventDispatcher;
 use Fetch\Interfaces\Middleware;
 use Fetch\Interfaces\Response as ResponseInterface;
 use Fetch\Interfaces\StreamedResponse as StreamedResponseInterface;
+use Fetch\Support\RequestOptions;
 use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -199,85 +200,12 @@ class Client implements ClientInterface, LoggerAwareInterface
             return $this->handler;
         }
 
-        $options = array_merge(
-            ClientHandler::getDefaultOptions(),
+        return $this->sendFetchRequest(
+            $url,
             $options ?? [],
+            null,
+            ContentType::JSON,
         );
-
-        // Normalize the HTTP method
-        $method = strtoupper($options['method'] ?? Method::GET->value);
-
-        try {
-            $methodEnum = Method::fromString($method);
-        } catch (\ValueError $e) {
-            throw new InvalidArgumentException(
-                "Invalid HTTP method: {$method}",
-            );
-        }
-
-        // Process the request body
-        $body = null;
-        $contentType = ContentType::JSON;
-
-        if (isset($options['body'])) {
-            $body = $options['body'];
-            $contentTypeStr =
-                $options['headers']['Content-Type'] ?? ContentType::JSON->value;
-
-            try {
-                $contentType = ContentType::tryFromString($contentTypeStr);
-            } catch (\ValueError $e) {
-                $contentType = $contentTypeStr;
-            }
-        }
-
-        // Handle JSON body specifically
-        if (isset($options['json'])) {
-            $body = $options['json'];
-            $contentType = ContentType::JSON;
-        }
-
-        $this->logger->info('Sending fetch request', [
-            'method' => $method,
-            'url' => $url,
-        ]);
-
-        // Send the request using the new unified approach
-        try {
-            return $this->handler->request(
-                $methodEnum,
-                $url,
-                $body,
-                $contentType,
-                $options,
-            );
-        } catch (GuzzleRequestException $e) {
-            $this->logger->error('Request exception', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-            ]);
-
-            // If the exception has a response, return it
-            $response = $e->getResponse();
-            if ($response !== null) {
-                return Response::createFromBase($response);
-            }
-
-            throw new RequestException(
-                $e->getMessage(),
-                $e->getRequest(),
-                null,
-                $e,
-            );
-        } catch (ConnectException $e) {
-            throw new NetworkException($e->getMessage(), $e->getRequest(), $e);
-        } catch (GuzzleException $e) {
-            throw new ClientException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e,
-            );
-        }
     }
 
     /**
@@ -699,28 +627,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $options = $options ?? [];
         $options['method'] = $method->value;
 
-        if ($body !== null) {
-            $options['body'] = $body;
-
-            // Use the global normalize_content_type function
-            $normalizedContentType = ContentType::normalizeContentType(
-                $contentType,
-            );
-
-            if ($normalizedContentType instanceof ContentType) {
-                $options['headers']['Content-Type'] =
-                    $normalizedContentType->value;
-            } else {
-                $options['headers']['Content-Type'] = $normalizedContentType;
-            }
-        }
-
-        /**
-         * @var ResponseInterface|PromiseInterface<ResponseInterface> $result
-         */
-        $result = $this->fetch($url, $options);
-
-        return $result;
+        return $this->sendFetchRequest($url, $options, $body, $contentType);
     }
 
     /**
@@ -751,5 +658,84 @@ class Client implements ClientInterface, LoggerAwareInterface
         }
 
         return $options;
+    }
+
+    /**
+     * Send a fetch request after applying client defaults.
+     *
+     * @param  array<string, mixed>  $options
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
+     */
+    private function sendFetchRequest(
+        string $url,
+        array $options,
+        mixed $body,
+        string|ContentType $contentType,
+    ): ResponseInterface|PromiseInterface {
+        $contentTypeOption =
+            RequestOptions::getExplicitContentTypeOption($options);
+        $serializationType =
+            $contentTypeOption ?? $contentType;
+        $options = RequestOptions::merge(
+            ClientHandler::getDefaultOptions(),
+            $options,
+        );
+
+        if ($body !== null && $contentTypeOption !== null) {
+            $options['content_type'] = $contentTypeOption;
+        }
+
+        // Normalize the HTTP method
+        $method = RequestOptions::getMethod($options);
+
+        try {
+            $methodEnum = Method::fromString($method);
+        } catch (\ValueError $e) {
+            throw new InvalidArgumentException(
+                "Invalid HTTP method: {$method}",
+            );
+        }
+
+        $this->logger->info('Sending fetch request', [
+            'method' => $method,
+            'url' => $url,
+        ]);
+
+        // Send the request using the new unified approach
+        try {
+            return $this->handler->request(
+                $methodEnum,
+                $url,
+                $body,
+                $serializationType,
+                $options,
+            );
+        } catch (GuzzleRequestException $e) {
+            $this->logger->error('Request exception', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            // If the exception has a response, return it
+            $response = $e->getResponse();
+            if ($response !== null) {
+                return Response::createFromBase($response);
+            }
+
+            throw new RequestException(
+                $e->getMessage(),
+                $e->getRequest(),
+                null,
+                $e,
+            );
+        } catch (ConnectException $e) {
+            throw new NetworkException($e->getMessage(), $e->getRequest(), $e);
+        } catch (GuzzleException $e) {
+            throw new ClientException(
+                $e->getMessage(),
+                (int) $e->getCode(),
+                $e,
+            );
+        }
     }
 }

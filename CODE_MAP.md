@@ -137,7 +137,8 @@ response but does not automatically reconnect.
 `ClientHandler` exposes connection-pool and DNS-cache configuration APIs, but
 the request execution path does not call `ConnectionPool` to obtain a transport
 client or use `DnsCache` to resolve request hosts. Do not assume Fetch-managed
-connection reuse or DNS caching.
+connection reuse or DNS caching. The handler-facing configuration and
+diagnostic APIs are deprecated since 4.1.0; see the connection-pooling guide.
 
 ---
 
@@ -362,7 +363,9 @@ connection reuse or DNS caching.
 These are standalone pool/DNS components with configuration APIs exposed by
 handlers. They are not currently wired into `PerformsHttpRequests`' Guzzle
 request path, so their presence does not mean normal Fetch requests reuse pooled
-connections or resolve through the DNS cache.
+connections or resolve through the DNS cache. Handler-facing pool and DNS
+configuration is deprecated since 4.1.0; `DnsCache` remains a standalone
+utility.
 
 - `PoolConfiguration` – toggles pooling, max connections, max per host/idle,
   keep-alive timeout, connection timeout, strategy, warmup counts, DNS cache

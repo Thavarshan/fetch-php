@@ -8,11 +8,10 @@ use Fetch\Support\GlobalServices;
 use RuntimeException;
 
 /**
- * Coordinates handler-local pool settings with the shared connection services.
+ * Coordinates legacy pool diagnostics and handler-local HTTP/2 settings.
  *
- * The pool and DNS cache remain owned by GlobalServices so handlers can reuse
- * connections. HTTP/2 and the handler's pooling opt-in stay local to this
- * manager instance.
+ * The pool and DNS cache are not connected to request execution. HTTP/2
+ * settings remain local to this manager instance.
  */
 final class ConnectionPoolManager
 {
@@ -28,7 +27,11 @@ final class ConnectionPoolManager
         }
     }
 
-    /** @param array<string, mixed>|bool $configuration */
+    /**
+     * @param  array<string, mixed>|bool  $configuration
+     *
+     * @deprecated since 4.1.0 Pool settings do not affect request transport.
+     */
     public function withConnectionPool(array|bool $configuration): void
     {
         if (is_bool($configuration)) {

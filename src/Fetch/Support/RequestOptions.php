@@ -105,24 +105,67 @@ class RequestOptions
     public static function merge(array ...$optionSets): array
     {
         $result = [];
+        $contentTypeIsExplicit = false;
 
         foreach ($optionSets as $options) {
             // Normalize option keys to canonical names
             $options = self::normalizeOptionKeys($options);
+            $hasBody = self::hasBodyOption($options);
+            $hasContentType = self::hasHeader(
+                $options['headers'] ?? [],
+                'Content-Type',
+            ) || array_key_exists('content_type', $options);
+            $contentType = self::getExplicitContentType($options);
+
+            if ($hasBody) {
+                if ($contentType !== null) {
+                    $contentTypeIsExplicit = true;
+                } elseif ($hasContentType) {
+                    $result = self::withoutHeader($result, 'Content-Type');
+                    $contentTypeIsExplicit = false;
+                } elseif ($contentTypeIsExplicit) {
+                    $options = self::withHeaderValue(
+                        $options,
+                        'Content-Type',
+                        self::getHeaderValue(
+                            $result['headers'] ?? [],
+                            'Content-Type',
+                        ),
+                    );
+                } else {
+                    $result = self::withoutHeader($result, 'Content-Type');
+                }
+            } elseif ($hasContentType) {
+                $contentTypeIsExplicit = $contentType !== null;
+            }
 
             // Normalize body options
             $options = self::normalizeBodyOptions($options);
 
+            if ($hasBody && isset($options['multipart'])) {
+                $result = self::withoutHeader($result, 'Content-Type');
+                $contentTypeIsExplicit = false;
+            }
+
+            if (self::hasBodyOption($options)) {
+                $result = self::stripBodyOptionsExcept($result, []);
+            }
+
             // Deep merge headers
             if (isset($options['headers']) && isset($result['headers'])) {
-                $options['headers'] = array_merge(
+                $options['headers'] = self::mergeHeaders(
                     $result['headers'],
                     $options['headers'],
                 );
             }
 
             // Deep merge query parameters
-            if (isset($options['query']) && isset($result['query'])) {
+            if (
+                isset($options['query']) &&
+                isset($result['query']) &&
+                is_array($options['query']) &&
+                is_array($result['query'])
+            ) {
                 $options['query'] = array_merge(
                     $result['query'],
                     $options['query'],
@@ -145,7 +188,7 @@ class RequestOptions
             $result = array_merge($result, $options);
         }
 
-        return $result;
+        return self::normalizeBodyOptions($result);
     }
 
     /**
@@ -185,8 +228,10 @@ class RequestOptions
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public static function normalizeBodyOptions(array $options): array
-    {
+    public static function normalizeBodyOptions(
+        array $options,
+        ContentType|string|null $serializationType = null,
+    ): array {
         $headers = $options['headers'] ?? [];
         $contentTypeOverride = $options['content_type'] ?? null;
 
@@ -195,19 +240,25 @@ class RequestOptions
             $contentTypeOverride,
         ): void {
             if ($contentTypeOverride !== null) {
-                $headers['Content-Type'] =
+                self::setHeaderValue(
+                    $headers,
+                    'Content-Type',
                     $contentTypeOverride instanceof ContentType
                         ? $contentTypeOverride->value
-                        : (string) $contentTypeOverride;
+                        : (string) $contentTypeOverride,
+                );
 
                 return;
             }
 
-            if (! isset($headers['Content-Type'])) {
-                $headers['Content-Type'] =
+            if (self::getHeaderValue($headers, 'Content-Type') === null) {
+                self::setHeaderValue(
+                    $headers,
+                    'Content-Type',
                     $type instanceof ContentType
                         ? $type->value
-                        : (string) $type;
+                        : (string) $type,
+                );
             }
         };
 
@@ -224,22 +275,24 @@ class RequestOptions
             $options = self::stripBodyOptionsExcept($options, ['multipart']);
             // multipart sets its own content type; ensure header is removed to
             // avoid conflicts
-            unset($headers['Content-Type']);
+            self::removeHeader($headers, 'Content-Type');
         } elseif (isset($options['body'])) {
             $options = self::stripBodyOptionsExcept($options, ['body']);
             if (is_array($options['body'])) {
+                $explicitContentType = $contentTypeOverride ??
+                    $serializationType ??
+                    self::getHeaderValue($headers, 'Content-Type');
                 $explicitContentType =
-                    $contentTypeOverride instanceof ContentType
-                        ? $contentTypeOverride->value
-                        : strtolower((string) $contentTypeOverride);
+                    $explicitContentType instanceof ContentType
+                        ? $explicitContentType->value
+                        : strtolower((string) $explicitContentType);
 
                 // Check if explicit content type requests JSON or no content
                 // type specified
                 $isJsonContentType =
-                    $contentTypeOverride === null ||
+                    $explicitContentType === '' ||
                     str_contains($explicitContentType, 'json') ||
-                    ($contentTypeOverride instanceof ContentType &&
-                        $contentTypeOverride === ContentType::JSON);
+                    $explicitContentType === ContentType::JSON->value;
 
                 if ($isJsonContentType) {
                     // Convert array body to json option for Guzzle
@@ -269,28 +322,234 @@ class RequestOptions
                         'multipart',
                     ]);
                     $options['multipart'] = self::normalizeMultipart($body);
-                    unset($headers['Content-Type']);
+                    self::removeHeader($headers, 'Content-Type');
                 } else {
                     // Array body with non-JSON content type - encode to string
                     // but keep user's content type
                     // This preserves backward compatibility for
                     // withBody($array, 'text/plain') etc.
                     $options['body'] = json_encode($options['body']);
-                    $setContentType($contentTypeOverride);
+                    if ($explicitContentType !== '') {
+                        $setContentType($explicitContentType);
+                    }
                 }
-            } elseif ($contentTypeOverride !== null) {
-                // String/stream body with explicit content type
-                $setContentType($contentTypeOverride);
+            } elseif (
+                $contentTypeOverride !== null || $serializationType !== null
+            ) {
+                // Keep an explicit header while recording the body format.
+                $setContentType($contentTypeOverride ?? $serializationType);
             }
         }
 
-        if ($headers !== []) {
+        if ($headers !== [] || array_key_exists('headers', $options)) {
             $options['headers'] = $headers;
         }
 
         unset($options['content_type']); // normalized into headers
 
         return $options;
+    }
+
+    /**
+     * Replace any body representation before applying a fluent body setter.
+     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $bodyOptions
+     * @return array<string, mixed>
+     */
+    public static function replaceBodyOptions(
+        array $options,
+        array $bodyOptions,
+        bool $preserveContentType = true,
+        ContentType|string|null $serializationType = null,
+    ): array {
+        $options = self::stripBodyOptionsExcept($options, []);
+
+        if (! $preserveContentType) {
+            $options = self::withoutHeader($options, 'Content-Type');
+        }
+
+        return self::normalizeBodyOptions(
+            array_merge($options, $bodyOptions),
+            $serializationType,
+        );
+    }
+
+    /**
+     * Return whether an option set contains a body option, including null.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function hasBodyOption(array $options): bool
+    {
+        foreach (self::BODY_OPTIONS as $key) {
+            if (array_key_exists($key, $options)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get an explicitly supplied Content-Type from an option set.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function getExplicitContentType(
+        array $options,
+    ): ContentType|string|null {
+        return self::getExplicitContentTypeOption($options) ??
+            self::getExplicitContentTypeHeader($options);
+    }
+
+    /**
+     * Get a content type supplied as an option, separate from a header.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function getExplicitContentTypeOption(
+        array $options,
+    ): ContentType|string|null {
+        $value = $options['content_type'] ?? null;
+
+        if ($value instanceof ContentType || is_string($value)) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get a Content-Type header supplied in an option set.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function getExplicitContentTypeHeader(
+        array $options,
+    ): ContentType|string|null {
+        $value = self::getHeaderValue(
+            $options['headers'] ?? [],
+            'Content-Type',
+        );
+
+        if ($value instanceof ContentType || is_string($value)) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check for a header name without regard to its casing.
+     *
+     * @param  array<string, mixed>  $headers
+     */
+    public static function hasHeader(array $headers, string $name): bool
+    {
+        foreach ($headers as $header => $_) {
+            if (strcasecmp((string) $header, $name) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return request options with a case-insensitively replaced header.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public static function withHeaderValue(
+        array $options,
+        string $name,
+        mixed $value,
+    ): array {
+        $headers = $options['headers'] ?? [];
+        self::setHeaderValue($headers, $name, $value);
+        $options['headers'] = $headers;
+
+        return $options;
+    }
+
+    /**
+     * Return request options without a case-insensitive header name.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public static function withoutHeader(
+        array $options,
+        string $name,
+    ): array {
+        $headers = $options['headers'] ?? [];
+        self::removeHeader($headers, $name);
+
+        if ($headers !== [] || array_key_exists('headers', $options)) {
+            $options['headers'] = $headers;
+        }
+
+        return $options;
+    }
+
+    /**
+     * Read the normalized body and its serialization content type.
+     *
+     * Named body representations keep their encoding even when a custom
+     * Content-Type header is present; that header remains in the options.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array{0: mixed, 1: ContentType|string|null}
+     */
+    public static function extractBodyAndContentType(array $options): array
+    {
+        $options = self::normalizeBodyOptions($options);
+        $headers = $options['headers'] ?? [];
+        $header = self::getHeaderValue($headers, 'Content-Type');
+        $contentType = is_string($header)
+            ? ContentType::normalizeContentType($header)
+            : null;
+
+        foreach (['json', 'form_params', 'multipart', 'body'] as $key) {
+            if (! array_key_exists($key, $options)) {
+                continue;
+            }
+
+            $default = match ($key) {
+                'json' => ContentType::JSON,
+                'form_params' => ContentType::FORM_URLENCODED,
+                'multipart' => ContentType::MULTIPART,
+                default => null,
+            };
+
+            $serializationType = $key === 'body'
+                ? ($contentType ?? $default)
+                : ($default ?? $contentType);
+
+            return [$options[$key], $serializationType];
+        }
+
+        return [null, null];
+    }
+
+    /**
+     * Get a header value without regard to the header-name casing.
+     *
+     * @param  array<string, mixed>  $headers
+     */
+    public static function getHeaderValue(
+        array $headers,
+        string $name,
+    ): mixed {
+        foreach ($headers as $header => $value) {
+            if (strcasecmp((string) $header, $name) === 0) {
+                return is_array($value) ? ($value[0] ?? null) : $value;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -627,5 +886,52 @@ class RequestOptions
         }
 
         return $options;
+    }
+
+    /** @param array<string, mixed> $headers */
+    private static function setHeaderValue(
+        array &$headers,
+        string $name,
+        mixed $value,
+    ): void {
+        foreach ($headers as $header => $_) {
+            if (strcasecmp((string) $header, $name) === 0) {
+                $headers[$header] = $value;
+
+                return;
+            }
+        }
+
+        $headers[$name] = $value;
+    }
+
+    /** @param array<string, mixed> $headers */
+    private static function removeHeader(array &$headers, string $name): void
+    {
+        foreach (array_keys($headers) as $header) {
+            if (strcasecmp((string) $header, $name) === 0) {
+                unset($headers[$header]);
+            }
+        }
+    }
+
+    /**
+     * Merge headers while allowing later values to replace names
+     * case-insensitively.
+     *
+     * @param  array<string, mixed>  $current
+     * @param  array<string, mixed>  $incoming
+     * @return array<string, mixed>
+     */
+    private static function mergeHeaders(
+        array $current,
+        array $incoming,
+    ): array {
+        foreach ($incoming as $name => $value) {
+            self::removeHeader($current, (string) $name);
+            $current[$name] = $value;
+        }
+
+        return $current;
     }
 }

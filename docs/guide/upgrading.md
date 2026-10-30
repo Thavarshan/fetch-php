@@ -80,7 +80,10 @@ remains a deprecated shim for direct trait consumers; use `PromiseManager`
 for new composition. Logger forwarding still uses the existing handler
 contract.
 
-`buildFullUri()` remains deprecated in favor of `buildFullUriFromContext()`.
+`buildFullUri()` remains deprecated in favor of
+`buildFullUriFromContext()`. It is retained for 4.x subclass compatibility;
+there is no scheduled removal release. Normal request execution uses the
+context-based method and does not emit its deprecation notice.
 The handler mapper accepts 1 to 200 concurrent tasks and preserves input keys.
 Retries count additional attempts and take delays in milliseconds.
 
@@ -106,8 +109,9 @@ Streaming and SSE remain synchronous, bypass the buffered lifecycle, and are
 not buffered for validation. A configured policy raises
 `ValidationConfigurationException`; disable it before streaming.
 
-The separate Fetch connection-pool and DNS-cache APIs remain configuration
-facilities and do not select the outgoing transport. See [connection pooling].
+The separate Fetch connection-pool and DNS-cache APIs are deprecated since
+4.1.0. They remain for source compatibility but do not select the outgoing
+transport. See [connection pooling] for the limits and Guzzle alternatives.
 
 [changelog]: https://github.com/Thavarshan/fetch-php/blob/main/CHANGELOG.md
 [async requests]: /guide/async-requests

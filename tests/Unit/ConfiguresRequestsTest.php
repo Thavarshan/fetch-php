@@ -57,6 +57,15 @@ class ConfiguresRequestsTest extends TestCase
         $this->assertEquals($params, $this->handler->getOptions()['query']);
     }
 
+    public function test_with_options_replaces_array_query_with_string(): void
+    {
+        $this->handler
+            ->withOptions(['query' => ['page' => 1]])
+            ->withOptions(['query' => 'q=A%20B']);
+
+        $this->assertSame('q=A%20B', $this->handler->getOptions()['query']);
+    }
+
     public function test_with_json_body(): void
     {
         $data = ['name' => 'John Doe', 'email' => 'john@example.com'];
@@ -88,6 +97,28 @@ class ConfiguresRequestsTest extends TestCase
             ContentType::JSON->value,
             $this->handler->getHeaders()['Content-Type'],
         );
+    }
+
+    public function test_with_options_replaces_existing_body_scope(): void
+    {
+        $this->handler->withJson(['previous' => true]);
+        $this->handler->withOptions(['body' => 'replacement']);
+
+        $options = $this->handler->getOptions();
+
+        self::assertSame('replacement', $options['body']);
+        self::assertArrayNotHasKey('json', $options);
+    }
+
+    public function test_with_option_replaces_existing_body_scope(): void
+    {
+        $this->handler->withJson(['previous' => true]);
+        $this->handler->withOption('body', 'replacement');
+
+        $options = $this->handler->getOptions();
+
+        self::assertSame('replacement', $options['body']);
+        self::assertArrayNotHasKey('json', $options);
     }
 
     public function test_with_form_params(): void
@@ -155,6 +186,17 @@ class ConfiguresRequestsTest extends TestCase
             ContentType::TEXT->value,
             $this->handler->getHeaders()['Content-Type'],
         );
+    }
+
+    public function test_with_body_preserves_lowercase_content_type_header(
+    ): void {
+        $this->handler->withHeader('content-type', 'text/plain');
+        $this->handler->withBody('payload');
+
+        $headers = $this->handler->getHeaders();
+
+        self::assertSame('text/plain', $headers['content-type']);
+        self::assertArrayNotHasKey('Content-Type', $headers);
     }
 
     public function test_body_array_sets_json_and_removes_body_option(): void

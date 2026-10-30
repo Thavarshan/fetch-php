@@ -105,7 +105,7 @@ class ClientTest extends TestCase
             ->with(
                 Method::POST,
                 $url,
-                $body,
+                null,
                 ContentType::JSON,
                 $this->callback(
                     static fn (array $requestOptions): bool => $requestOptions[
@@ -118,6 +118,74 @@ class ClientTest extends TestCase
         $result = $this->client->fetch($url, $options);
 
         $this->assertSame($mockResponse, $result);
+    }
+
+    public function test_fetch_uses_normalized_form_options(): void
+    {
+        $body = ['name' => 'Ada Lovelace'];
+        $mockResponse = $this->createMock(Response::class);
+
+        $this->mockHandler
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                Method::POST,
+                'https://example.com/users',
+                null,
+                ContentType::JSON,
+                $this->callback(
+                    static function (array $requestOptions) use (
+                        $body,
+                    ): bool {
+                        return $requestOptions['form_params'] === $body &&
+                            ! isset($requestOptions['body']);
+                    },
+                ),
+            )
+            ->willReturn($mockResponse);
+
+        self::assertSame(
+            $mockResponse,
+            $this->client->fetch('https://example.com/users', [
+                'method' => 'POST',
+                'form_params' => $body,
+                'body' => 'ignored',
+            ]),
+        );
+    }
+
+    public function test_fetch_respects_case_insensitive_content_type(): void
+    {
+        $body = ['name' => 'Ada Lovelace'];
+        $mockResponse = $this->createMock(Response::class);
+
+        $this->mockHandler
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                Method::POST,
+                'https://example.com/users',
+                null,
+                ContentType::JSON,
+                $this->callback(
+                    static function (array $requestOptions): bool {
+                        return $requestOptions['body'] ===
+                                '{"name":"Ada Lovelace"}' &&
+                            $requestOptions['headers']['content-type'] ===
+                                'text/plain';
+                    },
+                ),
+            )
+            ->willReturn($mockResponse);
+
+        self::assertSame(
+            $mockResponse,
+            $this->client->fetch('https://example.com/users', [
+                'method' => 'POST',
+                'body' => $body,
+                'headers' => ['content-type' => 'text/plain'],
+            ]),
+        );
     }
 
     public function test_get(): void
@@ -163,11 +231,11 @@ class ClientTest extends TestCase
                 Method::POST,
                 $url,
                 $body,
-                $contentType,
+                ContentType::JSON,
                 $this->callback(
                     static fn (array $requestOptions): bool => $requestOptions[
                         'timeout'
-                    ] === 30,
+                    ] === 30 && ! isset($requestOptions['json']),
                 ),
             )
             ->willReturn($mockResponse);

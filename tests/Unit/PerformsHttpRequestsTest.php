@@ -488,7 +488,6 @@ class PerformsHttpRequestsTest extends TestCase
         // Use reflection to access protected method
         $reflection = new \ReflectionClass($handler);
         $method = $reflection->getMethod('getEffectiveTimeout');
-        $method->setAccessible(true);
 
         // Call the protected method
         $timeout = $method->invoke($handler);
@@ -522,7 +521,6 @@ class PerformsHttpRequestsTest extends TestCase
         // Use reflection to access protected method
         $reflection = new \ReflectionClass($handler);
         $method = $reflection->getMethod('prepareGuzzleOptions');
-        $method->setAccessible(true);
 
         // Call the protected method
         $options = $method->invoke($handler);
