@@ -60,6 +60,7 @@
         "lint": [
             "duster lint src --using=tlint,phpcodesniffer,phpcsfixer",
             "pint --test",
+            "php tools/check-docblocks.php",
             "php tools/check-line-length.php"
         ],
         "fix": [

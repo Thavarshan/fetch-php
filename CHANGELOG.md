@@ -11,6 +11,11 @@
 - Run the project-installed Pint across the repository in Composer fix and lint
   scripts so they use the same formatter version and file scope as `pint`.
 
+### Changed
+
+- Enforce multiline descriptive docblocks for library functions, methods, and
+  properties in local linting and CI.
+
 ## [v4.1.0] - 2026-10-30
 
 ### Fixed

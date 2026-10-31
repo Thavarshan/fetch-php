@@ -27,6 +27,22 @@ jobs:
       - name: Enforce 80-column project text
         run: php tools/check-line-length.php
 
+  docblocks:
+    name: PHP Docblocks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Enforce multiline library docblocks
+        run: php tools/check-docblocks.php
+
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -48,6 +64,7 @@ jobs:
               - 'phpunit.xml.dist'
               - 'phpstan.neon'
               - 'pint.json'
+              - 'tools/check-docblocks.php'
             docs:
               - 'docs/**'
               - 'package.json'
