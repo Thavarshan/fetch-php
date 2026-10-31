@@ -24,7 +24,7 @@ use React\Promise\PromiseInterface;
  *
  * @phpstan-type CoreHandler callable(
  *     RequestInterface
- * ): (ResponseInterface|PromiseInterface)
+ * ): (ResponseInterface|PromiseInterface<ResponseInterface>)
  */
 final class MiddlewarePipeline
 {

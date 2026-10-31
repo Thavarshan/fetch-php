@@ -6,6 +6,7 @@ namespace Fetch\Concerns;
 
 use Fetch\Http\MiddlewarePipeline;
 use Fetch\Interfaces\Middleware;
+use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\Promise\PromiseInterface;
@@ -68,11 +69,34 @@ trait ManagesMiddleware
         $this->middlewareSequence = 0;
 
         foreach ($middleware as $entry) {
-            if (is_array($entry)) {
-                $this->addMiddleware($entry[0], $entry[1] ?? 0);
-            } else {
+            if ($entry instanceof Middleware || is_callable($entry)) {
                 $this->addMiddleware($entry);
+
+                continue;
             }
+
+            if (! is_array($entry) || ! array_key_exists(0, $entry)) {
+                throw new InvalidArgumentException(
+                    'Middleware entries must be middleware, callables, or '
+                        .'[middleware, priority] pairs.',
+                );
+            }
+
+            $entryMiddleware = $entry[0];
+            $priority = $entry[1] ?? 0;
+
+            if (
+                (! $entryMiddleware instanceof Middleware &&
+                    ! is_callable($entryMiddleware)) ||
+                ! is_int($priority)
+            ) {
+                throw new InvalidArgumentException(
+                    'Middleware pairs require a middleware or callable and '
+                        .'an integer priority.',
+                );
+            }
+
+            $this->addMiddleware($entryMiddleware, $priority);
         }
 
         return $this;

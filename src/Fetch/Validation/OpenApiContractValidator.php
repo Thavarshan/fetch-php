@@ -144,11 +144,9 @@ final class OpenApiContractValidator
         }
 
         $document = $this->parseDocument($contents, $specPath);
-        $version = match (true) {
-            is_object($document) => $document->openapi ?? null,
-            is_array($document) => $document['openapi'] ?? null,
-            default => null,
-        };
+        $version = is_object($document)
+            ? ($document->openapi ?? null)
+            : ($document['openapi'] ?? null);
         if (! is_string($version)) {
             throw new ValidationConfigurationException(
                 'The OpenAPI document must declare an openapi version.',
@@ -237,14 +235,12 @@ final class OpenApiContractValidator
 
     /**
      * Reject references that point outside the current specification file.
+     *
+     * @param  array<mixed>|object  $value
      */
-    private function assertInternalReferencesOnly(mixed $value): void
+    private function assertInternalReferencesOnly(array|object $value): void
     {
-        $items = is_object($value)
-            ? get_object_vars($value)
-            : (is_array($value)
-                ? $value
-                : []);
+        $items = is_object($value) ? get_object_vars($value) : $value;
 
         foreach ($items as $key => $item) {
             if (

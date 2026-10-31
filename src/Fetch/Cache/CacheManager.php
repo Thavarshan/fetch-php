@@ -339,7 +339,7 @@ final class CacheManager
         // Calculate TTL
         $ttl = $this->calculateTtl($response, $cacheControl, $requestOptions);
 
-        if ($ttl !== null && $ttl <= 0) {
+        if ($ttl <= 0) {
             return;
         }
 

@@ -86,10 +86,7 @@ trait RequestImmutabilityTrait
     {
         // Get the custom request target if this class has it set
         $requestTarget = null;
-        if (
-            property_exists($this, 'customRequestTarget') &&
-            $this->customRequestTarget !== null
-        ) {
+        if ($this->customRequestTarget !== null) {
             $requestTarget = $this->customRequestTarget;
         }
 

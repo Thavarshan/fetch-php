@@ -610,7 +610,7 @@ trait PerformsHttpRequests
 
         $mergedOptions = $this->mergeRequestOptions(
             $options,
-            $body !== null,
+            true,
         );
         $bodyOptions = $this->applyBodyOptions(
             $mergedOptions,

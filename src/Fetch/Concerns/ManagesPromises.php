@@ -14,6 +14,10 @@ use React\Promise\PromiseInterface;
  * @deprecated Use Fetch\Async\PromiseManager in new integrations. ClientHandler
  *     no longer uses this trait.
  */
+// This public compatibility trait is exercised by tests but intentionally
+// remains unused by production classes after ClientHandler's composition
+// refactor.
+// @phpstan-ignore-next-line trait.unused
 trait ManagesPromises
 {
     /**
