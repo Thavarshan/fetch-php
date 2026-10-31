@@ -6,9 +6,10 @@ paths:
 # PHP source rules (`src/Fetch/**`)
 
 - New files start with `declare(strict_types=1);`.
-- Duster owns formatting (`pint.json`): PSR-12, 4-space indent, single quotes,
-  imports ordered `const`, `class`, `function`. Run `composer fix` before
-  committing; `composer lint` must pass.
+- Project Pint owns formatting (`pint.json`): PSR-12, 4-space indent, single
+  quotes, imports ordered `const`, `class`, `function`. Composer uses Duster's
+  non-Pint tools on `src` and the installed Pint across the repository. Run
+  `composer fix` before committing; `composer lint` must pass.
 - Keep PHPStan level 8 clean (`composer analyse`). Fix types properly — do not
   add `ignoreErrors` in `phpstan.neon` to hide a real problem.
 - One class per file; PSR-4 under `Fetch\`; filename matches class.

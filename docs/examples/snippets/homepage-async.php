@@ -6,13 +6,13 @@ require dirname(__DIR__, 3).'/vendor/autoload.php';
 
 // @showcase
 use Fetch\Http\ClientHandler;
+use Fetch\Testing\MockResponse;
+use Fetch\Testing\MockServer;
+
+// @endshowcase
 
 use function Matrix\Support\all;
 use function Matrix\Support\await;
-// @endshowcase
-
-use Fetch\Testing\MockResponse;
-use Fetch\Testing\MockServer;
 
 MockServer::fake([
     'GET https://api.example.test/users' => MockResponse::json([['id' => 42]]),

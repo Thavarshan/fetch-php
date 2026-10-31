@@ -48,8 +48,9 @@ final class ValidationLifecycleTest extends TestCase
                 new ValidationConfigurationException('Invalid fixture schema.'),
             ] as $failure) {
                 MockServer::fake([
-                    'GET https://example.test/schema' =>
-                        MockResponse::json(['id' => 42]),
+                    'GET https://example.test/schema' => MockResponse::json([
+                        'id' => 42,
+                    ]),
                 ]);
                 $validator = $this->createMock(ValidatorInterface::class);
                 $validator->method('validate')->willThrowException($failure);
@@ -62,6 +63,7 @@ final class ValidationLifecycleTest extends TestCase
 
                 try {
                     $response = $handler->get('https://example.test/schema');
+
                     if ($response instanceof PromiseInterface) {
                         await($response);
                     }
@@ -114,7 +116,7 @@ final class ValidationLifecycleTest extends TestCase
                 200,
                 ['Content-Type' => 'application/json'],
                 '{"empty":{},"sequential":{"0":"first","1":"second"},'
-                . '"nested":[{}]}',
+                .'"nested":[{}]}',
             ),
         ]);
         $handler = $this->handler($mock);
@@ -170,7 +172,7 @@ final class ValidationLifecycleTest extends TestCase
         ]);
         $json =
             '{"empty":{},"sequential":{"0":"first","1":"second"},'
-                . '"nested":[{}]}';
+                .'"nested":[{}]}';
 
         $response = $handler->request(
             'POST',
@@ -1112,6 +1114,7 @@ final class ValidationLifecycleTest extends TestCase
     private function withOpenApiSpec(string $contents, callable $test): void
     {
         $path = tempnam(sys_get_temp_dir(), 'fetch-openapi-');
+
         if ($path === false) {
             self::fail('Could not create a temporary OpenAPI file.');
         }

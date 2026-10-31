@@ -44,7 +44,7 @@
         "squizlabs/php_codesniffer": "^3.7",
         "symfony/yaml": "^6.0|^7.0",
         "symfony/var-dumper": "^6.0|^7.2",
-        "tightenco/duster": "3.3.0"
+        "tightenco/duster": "3.4.7"
     },
     "suggest": {
         "opis/json-schema": "^2.6 for JSON Schema validation.",
@@ -58,10 +58,14 @@
     },
     "scripts": {
         "lint": [
-            "duster lint src",
+            "duster lint src --using=tlint,phpcodesniffer,phpcsfixer",
+            "pint --test",
             "php tools/check-line-length.php"
         ],
-        "fix": "duster fix src",
+        "fix": [
+            "duster fix src --using=tlint,phpcodesniffer,phpcsfixer",
+            "pint"
+        ],
         "test": "phpunit --no-coverage",
         "test:unit": "phpunit --no-coverage tests/Unit",
         "test:integration": "phpunit --no-coverage tests/Integration",

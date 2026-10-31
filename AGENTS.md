@@ -65,8 +65,10 @@ non-trivial changes. High-level layout under `src/Fetch/` (PSR-4 root `Fetch\`):
 ## Commands (authoritative — from `composer.json` / `package.json`)
 
 - Install: `composer install`.
-- Style check: `composer lint` runs Duster on `src` and the project line check.
-- Auto-fix style: `composer fix` runs `duster fix src`.
+- Style check: `composer lint` runs Duster's non-Pint tools on `src`, the
+  project Pint in test mode across the repository, and the project line check.
+- Auto-fix style: `composer fix` runs Duster's non-Pint tools on `src`, then
+  the project Pint across the repository.
 - Static analysis: `composer analyse` runs PHPStan at level 8.
 - All tests: `composer test` runs `phpunit --no-coverage`.
 - Unit only: `composer test:unit`.
@@ -88,11 +90,12 @@ There is no `bin/` script directory. `composer lint` does not run PHPStan; use
 
 - Declare `declare(strict_types=1);` in every new PHP file.
 - PSR-12 aligned, 4-space indent, single quotes, and 80-column maximum lines.
-  Duster enforces PHP style via `pint.json`; the `max_line_length` setting there
-  is checked across project text files by `tools/check-line-length.php` as part
-  of `composer lint`. Generated lock files and formatter caches are excluded.
-  Pint itself has no maximum-line-length fixer. Run `composer fix` before
-  committing.
+  Project Pint enforces PHP style via `pint.json`; Composer runs the installed
+  Pint across the repository because Duster's bundled Pint can lag behind it.
+  The `max_line_length` setting is checked across project text files by
+  `tools/check-line-length.php` as part of `composer lint`. Generated lock
+  files and formatter caches are excluded. Pint has no maximum-line-length
+  fixer. Run `composer fix` before committing.
 - PSR-4 namespaces under `Fetch\...`; one class per file, filename matches
   class.
 - Keep PHPStan level 8 clean (`composer analyse`); prefer real type fixes over

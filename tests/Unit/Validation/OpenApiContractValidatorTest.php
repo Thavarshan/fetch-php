@@ -179,7 +179,7 @@ final class OpenApiContractValidatorTest extends TestCase
         $spec = str_replace(
             'type: object',
             "type: object\n                "
-                . "\$ref: 'https://schemas.example.invalid/user.json'",
+                ."\$ref: 'https://schemas.example.invalid/user.json'",
             $this->spec(),
         );
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Fetch\Support\GlobalServices;
 use Fetch\Http\ClientHandler;
+use Fetch\Support\GlobalServices;
 use PHPUnit\Framework\TestCase;
 
 /**

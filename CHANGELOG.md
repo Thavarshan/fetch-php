@@ -6,6 +6,10 @@
 
 - Preserve callable-array middleware entries when replacing the middleware
   stack, and validate middleware-priority tuples before registration.
+- Upgrade Duster to 3.4.7 to remove PHP 8.5 deprecation warnings from its
+  bundled linting tools.
+- Run the project-installed Pint across the repository in Composer fix and lint
+  scripts so they use the same formatter version and file scope as `pint`.
 
 ## [v4.1.0] - 2026-10-30
 
