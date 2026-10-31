@@ -179,6 +179,7 @@ final class PromiseManager
             );
         }
 
+        /** @var list<array{key: int|string, value: mixed}> $entries */
         $entries = [];
         foreach ($items as $key => $item) {
             $entries[] = ['key' => $key, 'value' => $item];
@@ -205,13 +206,7 @@ final class PromiseManager
         )->then(static function (array $results): array {
             $mapped = [];
             foreach ($results as $result) {
-                if (
-                    is_array($result) &&
-                    array_key_exists('key', $result) &&
-                    array_key_exists('value', $result)
-                ) {
-                    $mapped[$result['key']] = $result['value'];
-                }
+                $mapped[$result['key']] = $result['value'];
             }
 
             return $mapped;

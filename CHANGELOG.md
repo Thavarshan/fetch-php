@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve callable-array middleware entries when replacing the middleware
+  stack, and validate middleware-priority tuples before registration.
+
 ## [v4.1.0] - 2026-10-30
 
 ### Fixed

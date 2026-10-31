@@ -68,9 +68,7 @@ trait ResponseImmutabilityTrait
         $response = $this->toStatic($new);
 
         // Update the buffered body contents
-        if (property_exists($this, 'bodyContents')) {
-            $response->bodyContents = (string) $body;
-        }
+        $response->bodyContents = (string) $body;
 
         return $response;
     }
