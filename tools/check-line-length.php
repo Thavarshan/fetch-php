@@ -28,6 +28,7 @@ if (! is_int($maxLength) || $maxLength < 1) {
 
 $excludedDirectories = [
     '.git',
+    '.wrangler',
     'coverage',
     'dist',
     'node_modules',

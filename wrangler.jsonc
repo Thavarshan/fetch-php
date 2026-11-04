@@ -1,0 +1,17 @@
+{
+    "$schema": "https://unpkg.com/wrangler@4.157.0/config-schema.json",
+    "name": "fetch-php-docs",
+    "compatibility_date": "2026-11-04",
+    "workers_dev": true,
+    "routes": [
+        {
+            "pattern": "fetch-php.thavarshan.com",
+            "custom_domain": true
+        }
+    ],
+    "assets": {
+        "directory": "./docs/.vitepress/dist",
+        "html_handling": "auto-trailing-slash",
+        "not_found_handling": "404-page"
+    }
+}

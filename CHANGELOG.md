@@ -13,6 +13,9 @@
 
 ### Changed
 
+- Move documentation hosting from Netlify to Cloudflare Workers static assets,
+  deployed with Wrangler after documentation CI passes on main.
+
 - Enforce multiline descriptive docblocks for library functions, methods, and
   properties in local linting and CI.
 

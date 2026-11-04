@@ -42,3 +42,7 @@ CLAUDE.local.md
 
 # Browser QA output
 .artifacts/
+
+# Wrangler local state
+.wrangler/
+docs/.vitepress/.temp/

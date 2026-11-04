@@ -1,6 +1,0 @@
-[build]
-  command = "npm ci && npm run build"
-  publish = "docs/.vitepress/dist"
-
-[build.environment]
-  NODE_VERSION = "24"
