@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Welcome new contributors
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -88,7 +88,7 @@ jobs:
 
     steps:
       - name: Auto-label issues and PRs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -156,7 +156,7 @@ jobs:
 
     steps:
       - name: Thank contributor for easy issues
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const message = [
@@ -188,7 +188,7 @@ jobs:
 
     steps:
       - name: Welcome to discussions
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Check if user has participated in discussions before
