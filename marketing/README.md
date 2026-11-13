@@ -20,8 +20,8 @@ installation", or unverified AI streaming claims.
 ## Release gate (BLOCKER)
 
 Before promoting current v4 functionality, resolve
-[Issue #187](https://github.com/Thavarshan/fetch-php/issues/187)
-. The publicly displayed stable Packagist version was 3.8.1 on 2026-11-14 while
+[Issue #187](https://github.com/Thavarshan/fetch-php/issues/187).
+The publicly displayed stable Packagist version was 3.8.1 on 2026-11-14 while
 GitHub had released 4.1.0. Never assume a GitHub tag means a Composer install
 will resolve it. Confirm a disposable Composer installation matches the
 documented examples.
@@ -35,9 +35,8 @@ product gates in #155, #156 and #160.
 
 - [JavaScript's fetch() in PHP](posts/javascript-fetch-in-php.md) — primary
   technical article, includes strengths *and* limitations.
-- 
-  [Testing HTTP calls without a network](posts/testing-http-requests-offline.md)
-  — article based on the existing README's documented mock API.
+- [Offline HTTP testing](posts/testing-http-requests-offline.md) — based on the
+  existing README's documented mock API.
 - [LinkedIn launch post](posts/linkedin-launch.md) — conversation-first short
   form.
 - [Reddit community discussion](posts/reddit-discussion.md) — post only where
@@ -71,5 +70,5 @@ different signals. Do not calculate "visitor-to-star conversion" unless the
 populations/time windows match, and label such ratios as indicative.
 
 See the repo's existing adoption initiative
-[#162](https://github.com/Thavarshan/fetch-php/issues/162) , which owns the
+[#162](https://github.com/Thavarshan/fetch-php/issues/162), which owns the
 broader program.
