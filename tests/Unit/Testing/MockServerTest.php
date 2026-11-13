@@ -215,6 +215,61 @@ class MockServerTest extends TestCase
         $this->assertNull($localhostResponse); // Allowed to go through
     }
 
+    public function test_allowlist_rejects_unrelated_unmatched_hosts(): void
+    {
+        MockServer::fake([
+            'https://api.example.test/fake' => MockResponse::ok(),
+        ]);
+        MockServer::allowStrayRequests(['https://trusted.example.test/*']);
+
+        $trusted = Request::createFromBase(new GuzzleRequest(
+            'GET',
+            'https://trusted.example.test/resource',
+        ));
+        self::assertNull(
+            MockServer::getInstance()->handleRequest($trusted),
+        );
+
+        $fake = Request::createFromBase(new GuzzleRequest(
+            'GET',
+            'https://api.example.test/fake',
+        ));
+        self::assertNotNull(MockServer::getInstance()->handleRequest($fake));
+
+        $untrusted = Request::createFromBase(new GuzzleRequest(
+            'GET',
+            'https://trusted.example.test.evil.test/resource',
+        ));
+        $this->expectException(InvalidArgumentException::class);
+        MockServer::getInstance()->handleRequest($untrusted);
+    }
+
+    public function test_empty_allowlist_still_blocks_unmatched_requests(): void
+    {
+        MockServer::fake([]);
+        MockServer::allowStrayRequests([]);
+        $request = Request::createFromBase(new GuzzleRequest(
+            'GET',
+            'https://no-fake.example.test/',
+        ));
+
+        $this->expectException(InvalidArgumentException::class);
+        MockServer::getInstance()->handleRequest($request);
+    }
+
+    public function test_allowlist_protection_resets_between_fakes(): void
+    {
+        MockServer::fake([]);
+        MockServer::allowStrayRequests(['https://trusted.example.test/*']);
+        MockServer::fake([]);
+        $request = Request::createFromBase(new GuzzleRequest(
+            'GET',
+            'https://other.example.test/',
+        ));
+
+        self::assertNull(MockServer::getInstance()->handleRequest($request));
+    }
+
     public function test_records_requests(): void
     {
         MockServer::fake([
