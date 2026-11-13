@@ -123,6 +123,19 @@ class DebugInfo
     }
 
     /**
+     * Redact response headers using the same policy as request headers.
+     *
+     * @param  array<string, mixed>  $headers
+     * @return array<string, mixed>
+     */
+    protected static function sanitizeHeaders(array $headers): array
+    {
+        return SensitiveOptionSanitizer::sanitize([
+            'headers' => $headers,
+        ])['headers'];
+    }
+
+    /**
      * Get the request data.
      *
      * @return array<string, mixed>
