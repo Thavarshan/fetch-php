@@ -20,14 +20,14 @@ installation", or unverified AI streaming claims.
 ## Release gate (BLOCKER)
 
 Before promoting current v4 functionality, resolve
-[Packagist indexing issue #187](https://github.com/Thavarshan/fetch-php/issues/187)
+[Issue #187](https://github.com/Thavarshan/fetch-php/issues/187)
 . The publicly displayed stable Packagist version was 3.8.1 on 2026-11-14 while
 GitHub had released 4.1.0. Never assume a GitHub tag means a Composer install
 will resolve it. Confirm a disposable Composer installation matches the
 documented examples.
 
 Also review
-[Windows / pcntl compatibility #152](https://github.com/Thavarshan/fetch-php/issues/152)
+[Issue #152](https://github.com/Thavarshan/fetch-php/issues/152)
 before promising cross-platform compatibility. For AI streams, respect the
 product gates in #155, #156 and #160.
 
