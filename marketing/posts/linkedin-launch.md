@@ -1,7 +1,7 @@
 # LinkedIn launch draft
 
 What if writing an HTTP request in PHP felt a little more like JavaScript's
-`fetch()` ?
+`fetch()`?
 
 I've been maintaining **Fetch PHP**, an open-source HTTP client built on
 Guzzle.
