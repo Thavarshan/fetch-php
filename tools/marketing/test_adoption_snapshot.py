@@ -31,7 +31,9 @@ class SnapshotTests(unittest.TestCase):
                 },
             },
         }
-        report = module.build_snapshot(github, package, "2026-11-14T00:00:00+00:00")
+        report = module.build_snapshot(
+            github, package, "2026-11-14T00:00:00+00:00"
+        )
         self.assertEqual(report["github"]["stars"], 450)
         self.assertEqual(report["packagist"]["downloads_total"], 12000)
         self.assertEqual(report["packagist"]["latest_stable_visible"], "4.10.0")
