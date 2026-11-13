@@ -8,7 +8,7 @@ const syntaxThemes = await getSyntaxThemes();
 const siteUrl = 'https://fetch-php.thavarshan.com/';
 const siteTitle = 'FetchPHP';
 const siteDescription =
-    'A Guzzle-based HTTP client with a familiar fetch API for PHP.';
+    'JavaScript-inspired fetch() for PHP 8.3+: Guzzle-powered HTTP requests, retries, streaming, and PSR interoperability.';
 const themeRoot = fileURLToPath(new URL('./theme', import.meta.url));
 
 export default defineConfig({
