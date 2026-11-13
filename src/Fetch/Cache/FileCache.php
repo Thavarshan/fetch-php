@@ -81,12 +81,8 @@ class FileCache implements CacheInterface
             return null;
         }
 
-        // Check if expired
-        if ($response->isExpired()) {
-            @unlink($path);
-
-            return null;
-        }
+        // Preserve expired entries for stale-while-revalidate and
+        // stale-if-error decisions. prune() performs actual eviction.
 
         return $response;
     }
