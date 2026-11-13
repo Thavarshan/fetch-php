@@ -11,6 +11,7 @@ use Generator;
 use GuzzleHttp\Psr7\Response as BaseResponse;
 use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
+use RuntimeException;
 
 /**
  * A response whose body is read incrementally instead of being buffered.
@@ -82,7 +83,7 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
     public function lines(int $maxLineLength = 1048576): Generator
     {
         if ($maxLineLength < 1) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Maximum line length must be positive.',
             );
         }
@@ -94,7 +95,7 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
 
             while (($pos = strpos($buffer, "\n")) !== false) {
                 if ($pos > $maxLineLength) {
-                    throw new \RuntimeException(
+                    throw new RuntimeException(
                         'Streamed response line exceeds maximum length.',
                     );
                 }
@@ -106,7 +107,7 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
             }
 
             if (strlen($buffer) > $maxLineLength) {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     'Streamed response line exceeds maximum length.',
                 );
             }
