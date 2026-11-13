@@ -64,6 +64,39 @@ class StreamedResponseTest extends TestCase
         );
     }
 
+    public function test_lines_respect_custom_line_length_limit(): void
+    {
+        $response = $this->make("four\nhi\n");
+        self::assertSame(
+            ['four', 'hi'],
+            iterator_to_array($response->lines(4), false),
+        );
+    }
+
+    public function test_lines_reject_oversized_unterminated_content(): void
+    {
+        $response = $this->make(str_repeat('x', 8193));
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('exceeds maximum length');
+
+        iterator_to_array($response->lines(64), false);
+    }
+
+    public function test_lines_reject_oversized_terminated_line(): void
+    {
+        $response = $this->make("12345\nshort\n");
+        $this->expectException(\RuntimeException::class);
+
+        iterator_to_array($response->lines(4), false);
+    }
+
+    public function test_lines_reject_invalid_limit(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        iterator_to_array($this->make('hi')->lines(0), false);
+    }
+
     public function test_buffer_returns_full_response(): void
     {
         $buffered = $this->make('{"ok":true}', [

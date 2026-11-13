@@ -42,9 +42,10 @@ interface StreamedResponse extends \IteratorAggregate, PsrResponseInterface
      *
      * Line terminators are stripped. Both "\n" and "\r\n" are recognised.
      *
+     * @param  int  $maxLineLength  Maximum line bytes, default 1 MiB.
      * @return Generator<int, string>
      */
-    public function lines(): Generator;
+    public function lines(int $maxLineLength = 1048576): Generator;
 
     /**
      * Consume the stream as Server-Sent Events.
