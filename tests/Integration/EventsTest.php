@@ -209,7 +209,7 @@ class EventsTest extends TestCase
             },
         );
 
-        $response = $handler->get('https://example.com/old', [
+        $response = $handler->withOptions([
             'allow_redirects' => [
                 'on_redirect' => function ($request, $response, $uri) use (
                     &$callbackCalls,
@@ -221,7 +221,7 @@ class EventsTest extends TestCase
                     ];
                 },
             ],
-        ]);
+        ])->get('https://example.com/old');
 
         self::assertSame(200, $response->status());
         self::assertSame([[
