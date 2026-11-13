@@ -9,10 +9,10 @@ maintenance PRs are merged and the public Composer distribution is verified.
 
 - [x] #191 / #167: mock allowlist correctly blocks other unmatched requests.
 - [x] #190 / #147, #148: stale file-cache reads and shared-cache TTL precedence.
-- [ ] #192 / #146: bearer token option on the global `fetch()` helper.
+- [x] #192 / #146: bearer token option on the global `fetch()` helper.
 - [x] #193 / #151: preserve user callback alongside redirect events.
-- [ ] #194 / #150: bound line size while streaming.
-- [ ] #195 / #152: remove unnecessary hard `ext-pcntl` requirement.
+- [x] #194 / #150: bound line size while streaming.
+- [x] #195 / #152: remove unnecessary hard `ext-pcntl` requirement.
 - [ ] #196 / #149: shared secret redaction for diagnostics.
 
 The three earlier adoption PRs (#186, #188, #189) have already merged.
