@@ -20,8 +20,7 @@ not implement the browser Fetch security model.
 - Composer
 - Runtime packages: Guzzle 7.9+, PSR-7 1.x/2.x, PSR-3 1.x/2.x/3.x, ReactPHP
   event-loop and promise packages, and `jerome/matrix ^4.0`
-- The package metadata requires `ext-pcntl`. CI ignores that platform
-  requirement on Windows.
+- The package does not require `ext-pcntl`; PHP 8.3+ and Composer are needed.
 
 ```sh
 composer require jerome/fetch-php

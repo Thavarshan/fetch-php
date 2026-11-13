@@ -179,7 +179,7 @@ jobs:
         run:
           composer update --no-interaction --prefer-dist --optimize-autoloader
           --prefer-lowest ${{ matrix.os == 'windows-latest' &&
-          '--ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix' ||
+          '--ignore-platform-req=ext-posix' ||
           '' }}
 
       - name: Execute tests
