@@ -24,7 +24,6 @@
     },
     "require": {
         "php": "^8.3",
-        "ext-pcntl": "*",
         "guzzlehttp/guzzle": "^7.9",
         "guzzlehttp/psr7": "^2.7",
         "jerome/matrix": "^4.0",
