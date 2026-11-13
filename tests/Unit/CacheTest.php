@@ -546,7 +546,7 @@ class CacheTest extends TestCase
         );
     }
 
-    public function test_request_private_cache_overrides_shared_manager_ttl(): void
+    public function test_request_private_cache_overrides_shared_ttl(): void
     {
         $cache = new MemoryCache;
         $manager = new CacheManager($cache, ['is_shared_cache' => true]);
