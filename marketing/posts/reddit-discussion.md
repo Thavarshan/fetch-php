@@ -3,7 +3,7 @@
 Suggested title: **Building a JavaScript-inspired fetch() API for PHP — looking
 for feedback on the tradeoffs**
 
-I've been working on [Fetch PHP](https://github.com/Thavarshan/fetch-php) , a
+I've been working on [Fetch PHP](https://github.com/Thavarshan/fetch-php), a
 Guzzle-powered HTTP client for PHP 8.3+. The design goal is a familiar
 `fetch()` entry point while retaining PHP/Guzzle request options, explicit
 status handling and PSR interoperability.
