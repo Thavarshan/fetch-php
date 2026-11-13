@@ -36,6 +36,29 @@ callbacks, and `MockResponseSequence`. Check `src/Fetch/Testing/MockServer.php`
 for matching and assertion syntax. `record()` enables request/response
 recording, and `recorded()` returns the recorded interactions.
 
+## Allowlisted stray requests
+
+`MockServer::allowStrayRequests($patterns)` allows only unmatched URLs
+matching one of the exact or `*`-wildcard patterns to reach real transport.
+Calling it **enables** stray-request protection; unrelated URLs still throw
+before I/O. An empty allowlist blocks every unmatched request. Fake responses
+take precedence over the allowlist.
+
+```php
+MockServer::fake([
+    'GET https://api.example.test/fixture' => MockResponse::ok(),
+]);
+MockServer::allowStrayRequests(['https://trusted.example.test/*']);
+```
+
+The trusted host pattern does not match
+`https://trusted.example.test.evil.test/`. Pattern matching is anchored
+to the full URL; explicitly include a trailing wildcard when intended.
+
+`fake()` resets the allowlist and guard. Configure the allowlist **after**
+`fake()` and reset state between tests. For fully offline tests, prefer
+`preventStrayRequests()` with no real-transport exceptions.
+
 ## MockResponse
 
 `MockResponse::json($data, $status = 200, $headers = [])` creates JSON.
