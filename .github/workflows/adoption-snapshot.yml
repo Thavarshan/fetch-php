@@ -1,0 +1,39 @@
+name: Weekly adoption snapshot
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/adoption-snapshot.yml'
+      - 'tools/marketing/**'
+  schedule:
+    # Mondays at 03:23 UTC. GitHub's cron may run later.
+    - cron: '23 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Check snapshot parser offline
+        run: python3 -m unittest discover -s tools/marketing -p 'test_*.py' -v
+
+      - name: Collect public GitHub and Packagist counters
+        if: github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/marketing/adoption_snapshot.py
+
+      - name: Preserve snapshot for comparison
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fetch-php-adoption-snapshot-${{ github.run_id }}
+          path: adoption-snapshot/
+          retention-days: 90
