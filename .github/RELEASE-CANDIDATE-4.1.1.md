@@ -10,22 +10,20 @@ maintenance PRs are merged and the public Composer distribution is verified.
 - [x] #191 / #167: mock allowlist correctly blocks other unmatched requests.
 - [x] #190 / #147, #148: stale file-cache reads and shared-cache TTL precedence.
 - [ ] #192 / #146: bearer token option on the global `fetch()` helper.
-- [ ] #193 / #151: preserve user callback alongside redirect events.
+- [x] #193 / #151: preserve user callback alongside redirect events.
 - [ ] #194 / #150: bound line size while streaming.
 - [ ] #195 / #152: remove unnecessary hard `ext-pcntl` requirement.
 - [ ] #196 / #149: shared secret redaction for diagnostics.
 
 The three earlier adoption PRs (#186, #188, #189) have already merged.
 
-## Blocking distribution verification
+## Composer distribution verification
 
-- [ ] Resolve [#187](https://github.com/Thavarshan/fetch-php/issues/187):
-  confirm Packagist has indexed GitHub release `4.1.0` and the source commit.
-- [ ] Confirm `jerome/matrix 4.0.0` is indexed and available in Packagist.
-  The Fetch v4 composer constraint requires `jerome/matrix ^4.0`.
-- [ ] Check the `Package & Release` workflow from the previous release.
-  Diagnose `verify-packagist` if it timed out. Inspect the package webhook
-  deliveries and refresh/reconnect indexing where necessary.
+- [x] Fetch PHP 4.1.0 is indexed in Packagist's official Composer P2 API.
+- [x] Matrix 4.0.0 is indexed in Packagist's official Composer P2 API.
+- [x] The stale public HTML snapshot was a false alarm; #187 is closed.
+- [ ] Inspect `Package & Release` workflow results for the previous tag.
+- [ ] Confirm the Composer-installed version on the target PHP platform.
 - [ ] On a clean machine, ensure `composer show jerome/matrix --all` and
   `composer show jerome/fetch-php --all` show intended versions.
 - [ ] Create a disposable Composer project and install the latest **stable**
@@ -78,7 +76,7 @@ After the release completes:
   project, plus Windows installation if #195 was merged.
 - [ ] Check documentation examples against installed `4.1.1`.
 - [ ] Post the honest v4.1.1 announcement and ask for technical feedback.
-- [ ] Close issue #187 only after both packages' indexing is repaired.
+- [x] Close false-alarm issue #187 after P2 API verification.
 
 ## Not included in this patch
 
