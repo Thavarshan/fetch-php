@@ -9,7 +9,7 @@ HTTP clients too — Guzzle, Symfony HttpClient, and Laravel's HTTP client are
 established options. But switching between JavaScript and PHP often means
 switching request styles.
 
-I built [Fetch PHP](https://github.com/Thavarshan/fetch-php) , an MIT-licensed,
+I built [Fetch PHP](https://github.com/Thavarshan/fetch-php), an MIT-licensed,
 Guzzle-powered client with a JavaScript-inspired global `fetch()` helper. The
 goal is a familiar first request without giving up PHP-native interfaces.
 
