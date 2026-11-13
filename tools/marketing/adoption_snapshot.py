@@ -21,7 +21,11 @@ PACKAGIST_URL = "https://packagist.org/packages/jerome/fetch-php.json"
 
 def get_json(url: str) -> dict:
     headers = {
-        "Accept": "application/vnd.github+json" if "api.github.com" in url else "application/json",
+        "Accept": (
+            "application/vnd.github+json"
+            if "api.github.com" in url
+            else "application/json"
+        ),
         "User-Agent": "FetchPHP-Adoption-Snapshot/1.0",
     }
     token = os.getenv("GITHUB_TOKEN")
@@ -49,7 +53,9 @@ def build_snapshot(github: dict, packagist: dict, when: str) -> dict:
     ]
     newest_stable = max(
         available_versions,
-        key=lambda name: tuple(int(part) for part in name.lstrip("v").split(".")),
+        key=lambda name: tuple(
+            int(part) for part in name.lstrip("v").split(".")
+        ),
         default=None,
     )
 
@@ -72,10 +78,13 @@ def build_snapshot(github: dict, packagist: dict, when: str) -> dict:
             "packagist": PACKAGIST_URL,
         },
         "caveats": [
-            "Packagist downloads are not unique users or production installations.",
+            "Packagist downloads are not unique users or "
+            "production installations.",
             "open_issues_count includes pull requests.",
-            "GitHub traffic and referral analytics are owner-only and not included.",
-            "Measurements are snapshots, not attribution of stars to a specific campaign.",
+            "GitHub traffic and referral analytics are "
+            "owner-only and not included.",
+            "Measurements are snapshots, not attribution "
+            "of stars to a specific campaign.",
         ],
     }
 
@@ -86,7 +95,9 @@ def main() -> int:
         github = get_json(GITHUB_URL)
         packagist = get_json(PACKAGIST_URL)
         snapshot = build_snapshot(github, packagist, now)
-    except (HTTPError, URLError, TimeoutError, ValueError, KeyError, TypeError) as exc:
+    except (
+        HTTPError, URLError, TimeoutError, ValueError, KeyError, TypeError
+    ) as exc:
         print(f"Unable to collect public adoption data: {exc}", file=sys.stderr)
         return 1
 
@@ -111,10 +122,15 @@ def main() -> int:
         f"| Packagist total downloads | {p['downloads_total']:,} |",
         f"| Packagist monthly downloads | {p['downloads_monthly']:,} |",
         f"| Packagist daily downloads | {p['downloads_daily']:,} |",
-        f"| Packagist latest indexed stable | {p['latest_stable_visible'] or 'Not determined'} |",
+        (
+            "| Packagist latest indexed stable | "
+            f"{p['latest_stable_visible'] or 'Not determined'} |"
+        ),
         "",
-        "Only public counters are captured. No traffic, clone or referrer data is accessible here.",
-        "Downloads are not unique users; do not attribute a count change to a specific post.",
+        "Only public counters are captured. No traffic, clone or "
+        "referrer data is accessible here.",
+        "Downloads are not unique users; do not attribute a count "
+        "change to a specific post.",
     ]
     (out / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
