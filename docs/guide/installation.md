@@ -28,9 +28,6 @@ require __DIR__ . '/vendor/autoload.php';
 - Runtime dependencies listed in `composer.json`: Guzzle HTTP `^7.9`, Guzzle
   PSR-7 `^2.7`, Matrix `^4.0`, ReactPHP event-loop `^1.5` and promise `^3.2`,
   PSR HTTP Message `1 or `2`, and PSR Log `1, `2, or `3.
-- Composer metadata requires `ext-pcntl`. The CI matrix runs Windows with the
-  pcntl and posix platform requirements ignored; a default Composer install on
-  Windows may report the missing pcntl extension.
 
 The cURL extension is not declared as a package requirement. It is required for
 the HTTP/2 cURL configuration path; HTTP/2 also depends on the local cURL build
@@ -55,8 +52,6 @@ logger. A handler can use a custom `GuzzleHttp\ClientInterface` through
   conflicts; this is a library and does not commit `composer.lock`.
 - For HTTP/2, check that the cURL extension is loaded and advertises HTTP/2
   support.
-- If you install on Windows, account for the package's declared `ext-pcntl`
-  requirement; CI's platform override is for its test matrix.
 
 Continue with the [quickstart](/guide/quickstart) or see
 [custom clients and transports](/guide/custom-clients).
