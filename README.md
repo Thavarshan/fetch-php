@@ -1,12 +1,18 @@
 # Fetch PHP
 
-Fetch PHP is a Guzzle-based HTTP client for PHP with a small global `fetch()`
-helper, an object-oriented client, PSR-7 and PSR-18 support, streaming,
-middleware, retries, and optional caching.
+**JavaScript-inspired `fetch()` for PHP 8.3+.** Make HTTP requests with a
+familiar entry point, backed by Guzzle. Use simple synchronous requests, or
+opt into fluent configuration, retries, middleware, streaming, asynchronous
+workflows, and PSR-7 / PSR-18 interoperability.
 
-The API takes inspiration from JavaScript Fetch. It uses PHP values and Guzzle
-request options, and it does not implement the browser Fetch API or its security
-model.
+Fetch PHP takes inspiration from JavaScript Fetch, but it is **not** a browser
+Fetch API polyfill. It uses PHP values and Guzzle request options, and does
+not implement the browser Fetch security model.
+
+- [Install and try it](#requirements-and-installation)
+- [Browse the documentation](https://fetch-php.thavarshan.com/)
+- [Explore reproducible examples](https://fetch-php.thavarshan.com/examples/)
+- [Report a problem or suggest an improvement](https://github.com/Thavarshan/fetch-php/issues)
 
 ## Requirements and installation
 
@@ -23,6 +29,24 @@ composer require jerome/fetch-php
 
 Composer autoloads the global helpers. In a standalone script, load
 `vendor/autoload.php`.
+
+## A request in a few lines
+
+After installing, this example makes a real network request to a public
+demo API (internet access required):
+
+```php
+<?php
+
+require __DIR__.'/vendor/autoload.php';
+
+$response = fetch('https://jsonplaceholder.typicode.com/users/1');
+echo $response->json()['name'];
+```
+
+**Want a deterministic example without a network connection?** Use the
+built-in mock server in the quick start below. For production applications,
+do not trust unvalidated response data or URLs derived from user input.
 
 ## Quick start
 
