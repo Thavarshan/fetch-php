@@ -7,6 +7,7 @@ namespace Tests\Unit;
 use Fetch\Cache\CacheControl;
 use Fetch\Cache\CachedResponse;
 use Fetch\Cache\CacheKeyGenerator;
+use Fetch\Cache\CacheManager;
 use Fetch\Cache\FileCache;
 use Fetch\Cache\MemoryCache;
 use Fetch\Http\Response;
@@ -476,21 +477,97 @@ class CacheTest extends TestCase
         $this->assertEquals(0, $stats['items']);
     }
 
-    public function test_file_cache_expired_items_not_returned(): void
+    public function test_file_cache_retains_expired_entries_until_pruned(): void
     {
         $cache = new FileCache($this->testCacheDir);
-
-        // Create an already expired cached response
         $cached = new CachedResponse(
             statusCode: 200,
             headers: [],
-            body: 'test',
+            body: 'expired',
             createdAt: time() - 100,
-            expiresAt: time() - 1, // Already expired
+            expiresAt: time() - 30,
         );
 
-        $cache->set('expired-key', $cached);
+        $cache->set('expired-key', $cached, -30);
+
+        $this->assertTrue($cache->get('expired-key')->isExpired());
+        $this->assertTrue($cache->has('expired-key'));
+        $this->assertSame(1, $cache->prune());
         $this->assertNull($cache->get('expired-key'));
+    }
+
+    public function test_file_cache_serves_stale_while_revalidate(): void
+    {
+        $cache = new FileCache($this->testCacheDir);
+        $manager = new CacheManager($cache, [
+            'stale_while_revalidate' => 60,
+        ]);
+        $url = 'https://api.example.test/stale';
+        $cache->set(
+            $manager->generateKey('GET', $url),
+            CachedResponse::fromResponse(
+                new Response(200, [], 'stale body'),
+                -30,
+            ),
+            -30,
+        );
+
+        $lookup = $manager->getCachedResponse('GET', $url);
+
+        $this->assertSame('STALE', $lookup['status']);
+        $this->assertNotNull($lookup['cached']);
+        $this->assertSame(
+            'stale body',
+            (string) $lookup['response']->getBody(),
+        );
+    }
+
+    public function test_request_shared_cache_uses_s_maxage_for_ttl(): void
+    {
+        $cache = new MemoryCache;
+        $manager = new CacheManager($cache);
+        $url = 'https://api.example.test/shared';
+        $options = ['cache' => ['is_shared_cache' => true]];
+        $response = new Response(200, [
+            'Cache-Control' => 'public, max-age=3600, s-maxage=60',
+        ], 'shared');
+
+        $manager->storeResponse('GET', $url, $response, $options);
+        $stored = $cache->get($manager->generateKey('GET', $url, $options));
+
+        $this->assertNotNull($stored);
+        $this->assertGreaterThanOrEqual(
+            59,
+            $stored->getExpiresAt() - time(),
+        );
+        $this->assertLessThanOrEqual(
+            60,
+            $stored->getExpiresAt() - time(),
+        );
+    }
+
+    public function test_request_private_cache_overrides_shared_manager_ttl(): void
+    {
+        $cache = new MemoryCache;
+        $manager = new CacheManager($cache, ['is_shared_cache' => true]);
+        $url = 'https://api.example.test/private';
+        $options = ['cache' => ['is_shared_cache' => false]];
+        $response = new Response(200, [
+            'Cache-Control' => 'public, max-age=90, s-maxage=10',
+        ], 'private');
+
+        $manager->storeResponse('GET', $url, $response, $options);
+        $stored = $cache->get($manager->generateKey('GET', $url, $options));
+
+        $this->assertNotNull($stored);
+        $this->assertGreaterThanOrEqual(
+            89,
+            $stored->getExpiresAt() - time(),
+        );
+        $this->assertLessThanOrEqual(
+            90,
+            $stored->getExpiresAt() - time(),
+        );
     }
 
     public function test_file_cache_prune(): void
