@@ -3,30 +3,30 @@
 This document contains the manual tasks we **cannot complete by editing GitHub
 source**.
 
-## First: verify Composer package distribution (blocking)
+## First: verify the installable Composer version
 
-1. Open https://packagist.org/packages/jerome/fetch-php and sign in using the
-   Packagist owner account.
-2. Check the listed versions. At the 2026-11-14 audit, latest shown stable was
-   `3.8.1`, whereas GitHub had tagged `4.1.0`. If versions still disagree,
-   open the package's Update action, inspect the resulting status/errors, and
-   check whether the GitHub Packagist webhook is active.
-3. In GitHub, open repository **Settings → Webhooks** and inspect Packagist
-   delivery events; check **Actions → Package & Release** for the v4.1.0 tag's
-   post-release verification results. Do not replace a working webhook blindly.
-4. In a disposable directory, use:
-   ```sh
-   composer clear-cache
-   composer show jerome/fetch-php --all
-   composer require jerome/fetch-php
-   composer show jerome/fetch-php
-   ```
-   If the directory lacks `composer.json`, run
-   `composer init --no-interaction --name=local/fetch-php-smoke` first. Verify
-   PHP >= 8.3 and platform extensions before attributing failures to Packagist.
-5. Ensure the Composer-installed version matches release notes and examples.
-   Update [issue #187](https://github.com/Thavarshan/fetch-php/issues/187) with
-   results; **never share package tokens**.
+The authoritative Packagist P2 API lists Fetch PHP 4.1.0 and Matrix 4.0.0,
+as checked on November 14, 2026:
+
+- https://repo.packagist.org/p2/jerome/fetch-php.json
+- https://repo.packagist.org/p2/jerome/matrix.json
+
+A stale HTML listing created false-alarm issue #187, now closed. There is
+no evidence that Packagist indexing needs repair. Before publishing a
+tutorial, run the following in a disposable directory:
+
+```sh
+mkdir -p /tmp/fetch-php-smoke && cd /tmp/fetch-php-smoke
+composer init --no-interaction --name=local/fetch-php-smoke
+composer clear-cache
+composer show jerome/fetch-php --all
+composer show jerome/matrix --all
+composer require jerome/fetch-php
+composer show jerome/fetch-php
+```
+
+Confirm that the resolved version matches your examples and PHP platform.
+Never share Composer credentials or publish version claims from a cached page.
 
 ## Next: merge and deploy reviewed source changes
 
@@ -50,7 +50,7 @@ source**.
    [#152](https://github.com/Thavarshan/fetch-php/issues/152) with actual tests
    before promising Windows support.
 
-## Publish after the release gate
+## Publish after installation checks
 
 1. Publish `posts/javascript-fetch-in-php.md` on your own domain or DEV
    Community, replacing publication notes and testing all snippets against the

@@ -17,14 +17,13 @@ workflows and PSR interoperability.
 "faster than Guzzle", "fully nonblocking by default", "works on every PHP
 installation", or unverified AI streaming claims.
 
-## Release gate (BLOCKER)
+## Installation verification
 
-Before promoting current v4 functionality, resolve
-[Issue #187](https://github.com/Thavarshan/fetch-php/issues/187).
-The publicly displayed stable Packagist version was 3.8.1 on 2026-11-14 while
-GitHub had released 4.1.0. Never assume a GitHub tag means a Composer install
-will resolve it. Confirm a disposable Composer installation matches the
-documented examples.
+Composer's official P2 metadata confirms that Fetch PHP 4.1.0 and Matrix
+4.0.0 are indexed. An older cached Packagist webpage caused a false alarm:
+[issue #187](https://github.com/Thavarshan/fetch-php/issues/187)
+has been closed. For publication, still check the Composer-installed version
+in a clean project and execute examples against that version.
 
 Also review
 [Issue #152](https://github.com/Thavarshan/fetch-php/issues/152)
@@ -48,7 +47,7 @@ product gates in #155, #156 and #160.
 
 ## Suggested four-week distribution
 
-- **Week 1:** Repair #187, verify the docs and installation, and record
+- **Week 1:** Verify docs and installation, then record
   initial Packagist/GitHub measurements.
 - **Week 2:** Publish the JavaScript/PHP comparison, then share a native
   code example and request feedback on LinkedIn.
