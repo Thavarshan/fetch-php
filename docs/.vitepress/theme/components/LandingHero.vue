@@ -9,7 +9,9 @@ import RequestResponseDemo from './RequestResponseDemo.vue';
         <div class="site-container hero-frame">
             <div class="hero-intro">
                 <div>
-                    <p class="eyebrow">FetchPHP / JavaScript-inspired HTTP for PHP</p>
+                    <p class="eyebrow">
+                        FetchPHP / JavaScript-inspired HTTP for PHP
+                    </p>
                     <h1 id="landing-title">
                         Meet <em>fetch()</em><br />
                         for modern PHP.
