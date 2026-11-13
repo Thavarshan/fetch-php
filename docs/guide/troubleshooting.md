@@ -6,12 +6,12 @@ description:
 
 # Troubleshooting
 
-## Composer reports missing `ext-pcntl`
+## Composer reports missing an extension
 
-The package metadata requires `ext-pcntl`. Confirm Composer uses the same PHP
-installation as your application and enable the extension where available.
-Windows CI ignores this requirement for its test matrix; that does not remove
-the package constraint from a normal Composer install.
+Check `composer check-platform-reqs` and verify that Composer is using the
+PHP executable intended for your application. Fetch PHP itself does not
+require `ext-pcntl`; if an error mentions it, inspect the requirements of
+other packages in the dependency graph.
 
 ## A 404 or 500 did not throw
 
