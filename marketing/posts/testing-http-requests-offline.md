@@ -48,8 +48,8 @@ assert($response->json()['name'] === 'Ada Lovelace');
 echo $response->json()['name'], PHP_EOL;
 ```
 
-Then run `php example.php` . The fake handles the request locally; it does not
-call `api.example.test` .
+Then run `php example.php`. The fake handles the request locally; it does not
+call `api.example.test`.
 
 This is based on the tested example in the Fetch PHP README. In a test suite,
 also verify unexpected requests are rejected, and reset shared mocks between
@@ -76,7 +76,7 @@ way your fixture assumes. Keep a small number of separate integration or
 contract checks where appropriate.
 
 See the [testing guide](https://fetch-php.thavarshan.com/guide/testing) and
-[source repository](https://github.com/Thavarshan/fetch-php) . What HTTP
+[source repository](https://github.com/Thavarshan/fetch-php). What HTTP
 integration test has been the hardest for you to keep reliable?
 
 *Disclosure: I maintain Fetch PHP.*
