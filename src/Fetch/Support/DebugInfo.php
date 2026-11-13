@@ -32,22 +32,6 @@ class DebugInfo
     ];
 
     /**
-     * Sensitive headers to redact from debug output.
-     *
-     * @var array<int, string>
-     */
-    protected const SENSITIVE_HEADERS = [
-        'authorization',
-        'x-api-key',
-        'api-key',
-        'x-auth-token',
-        'cookie',
-        'set-cookie',
-        'x-csrf-token',
-        'x-xsrf-token',
-    ];
-
-    /**
      * Create a new DebugInfo instance.
      *
      * @param  array<string, mixed>  $requestData  Request data (method, uri,
@@ -128,64 +112,14 @@ class DebugInfo
     }
 
     /**
-     * Sanitize options to redact sensitive information.
+     * Redact request options before storing diagnostic data.
      *
-     * @param  array<string, mixed>  $options  The options to sanitize
-     * @return array<string, mixed> Sanitized options
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
      */
     protected static function sanitizeOptions(array $options): array
     {
-        $sanitizedOptions = $options;
-
-        // Mask sensitive headers (case-insensitive)
-        if (
-            isset($sanitizedOptions['headers']) &&
-            is_array($sanitizedOptions['headers'])
-        ) {
-            $sanitizedOptions['headers'] = self::sanitizeHeaders(
-                $sanitizedOptions['headers'],
-            );
-        }
-
-        // Mask auth credentials
-        if (isset($sanitizedOptions['auth'])) {
-            $sanitizedOptions['auth'] = '[REDACTED]';
-        }
-
-        return $sanitizedOptions;
-    }
-
-    /**
-     * Sanitize headers to redact sensitive information.
-     *
-     * @param  array<string, mixed>  $headers  The headers to sanitize
-     * @return array<string, mixed> Sanitized headers
-     */
-    protected static function sanitizeHeaders(array $headers): array
-    {
-        $sanitizedHeaders = $headers;
-
-        foreach ($sanitizedHeaders as $key => $value) {
-            if (
-                in_array(
-                    strtolower((string) $key),
-                    self::SENSITIVE_HEADERS,
-                    true,
-                )
-            ) {
-                if (is_array($value)) {
-                    $sanitizedHeaders[$key] = array_fill(
-                        0,
-                        count($value),
-                        '[REDACTED]',
-                    );
-                } else {
-                    $sanitizedHeaders[$key] = '[REDACTED]';
-                }
-            }
-        }
-
-        return $sanitizedHeaders;
+        return SensitiveOptionSanitizer::sanitize($options);
     }
 
     /**
