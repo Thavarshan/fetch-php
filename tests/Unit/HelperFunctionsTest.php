@@ -93,7 +93,7 @@ class HelperFunctionsTest extends TestCase
         );
     }
 
-    public function test_explicit_authorization_takes_priority_over_token(): void
+    public function test_explicit_authorization_overrides_token(): void
     {
         $options = process_request_options([
             'token' => 'ignored',
