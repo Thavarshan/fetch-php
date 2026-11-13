@@ -75,22 +75,40 @@ class StreamedResponse extends BaseResponse implements StreamedResponseInterface
     }
 
     /**
-     * Yield the body one line at a time, handling chunk boundaries.
+     * Yield lines across chunk boundaries, with bounded line buffering.
      *
      * @return Generator<int, string>
      */
-    public function lines(): Generator
+    public function lines(int $maxLineLength = 1048576): Generator
     {
+        if ($maxLineLength < 1) {
+            throw new \InvalidArgumentException(
+                'Maximum line length must be positive.',
+            );
+        }
+
         $buffer = '';
 
         foreach ($this->stream() as $chunk) {
             $buffer .= $chunk;
 
             while (($pos = strpos($buffer, "\n")) !== false) {
+                if ($pos > $maxLineLength) {
+                    throw new \RuntimeException(
+                        'Streamed response line exceeds maximum length.',
+                    );
+                }
+
                 $line = substr($buffer, 0, $pos);
                 $buffer = substr($buffer, $pos + 1);
 
                 yield rtrim($line, "\r");
+            }
+
+            if (strlen($buffer) > $maxLineLength) {
+                throw new \RuntimeException(
+                    'Streamed response line exceeds maximum length.',
+                );
             }
         }
 
