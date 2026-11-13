@@ -524,7 +524,7 @@ class CacheTest extends TestCase
 
     public function test_request_shared_cache_uses_s_maxage_for_ttl(): void
     {
-        $cache = new MemoryCache;
+        $cache = new FileCache($this->testCacheDir);
         $manager = new CacheManager($cache);
         $url = 'https://api.example.test/shared';
         $options = ['cache' => ['is_shared_cache' => true]];
@@ -548,7 +548,7 @@ class CacheTest extends TestCase
 
     public function test_request_private_cache_overrides_shared_ttl(): void
     {
-        $cache = new MemoryCache;
+        $cache = new FileCache($this->testCacheDir);
         $manager = new CacheManager($cache, ['is_shared_cache' => true]);
         $url = 'https://api.example.test/private';
         $options = ['cache' => ['is_shared_cache' => false]];
