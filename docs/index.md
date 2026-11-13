@@ -1,8 +1,8 @@
 ---
 layout: landing
 pageClass: fetch-landing
-title: Every good idea starts with a request.
+title: JavaScript-inspired fetch() for modern PHP
 description:
-  A familiar fetch API, fluent configuration, and explicit async workflows.
-  Meet the HTTP client built for modern PHP.
+  Make familiar HTTP requests in PHP 8.3+ with a Guzzle-powered client.
+  Explore retries, streaming, async workflows, and PSR interoperability.
 ---
