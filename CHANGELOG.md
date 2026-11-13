@@ -13,6 +13,8 @@
   without replacing a caller-supplied Authorization header (#146).
 - Preserve an existing Guzzle `on_redirect` callback alongside Fetch
   redirect lifecycle events (#151).
+- Bound streamed line buffers with a configurable maximum length to avoid
+  unbounded growth on untrusted HTTP response bodies (#150).
 - Allow installing on platforms without the unused `ext-pcntl` extension,
   including Windows where supported by other dependencies (#152).
 - Preserve callable-array middleware entries when replacing the middleware
