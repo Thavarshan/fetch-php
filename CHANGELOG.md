@@ -4,6 +4,17 @@
 
 ### Fixed
 
+- Preserve explicit stray-request allowlists without permitting unrelated
+  unmatched HTTP requests to escape network test fakes (#167).
+- Keep expired file-cache entries readable until pruning so stale policies can
+  evaluate them, and respect per-request shared-cache TTL overrides (#147,
+  #148).
+- Honor `token` as a bearer Authorization header on global `fetch()` requests,
+  without replacing a caller-supplied Authorization header (#146).
+- Preserve an existing Guzzle `on_redirect` callback alongside Fetch
+  redirect lifecycle events (#151).
+- Allow installing on platforms without the unused `ext-pcntl` extension,
+  including Windows where supported by other dependencies (#152).
 - Preserve callable-array middleware entries when replacing the middleware
   stack, and validate middleware-priority tuples before registration.
 - Upgrade Duster to 3.4.7 to remove PHP 8.5 deprecation warnings from its
