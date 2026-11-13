@@ -124,6 +124,36 @@ if (! function_exists('process_request_options')) {
             ]),
         );
 
+        // The Fetch-only token option is not a Guzzle option. Translate it
+        // before forwarding the request and avoid leaking the raw option.
+        if (array_key_exists('token', $processedOptions)) {
+            $token = $processedOptions['token'];
+            unset($processedOptions['token']);
+
+            if ($token !== null) {
+                if (! is_string($token) || trim($token) === '') {
+                    throw new InvalidArgumentException(
+                        'Bearer token must be a non-empty string.',
+                    );
+                }
+
+                // Respect caller-provided Authorization or basic auth.
+                if (
+                    ! isset($processedOptions['auth']) &&
+                    RequestOptions::getHeaderValue(
+                        $processedOptions['headers'] ?? [],
+                        'Authorization',
+                    ) === null
+                ) {
+                    $processedOptions = RequestOptions::withAuth(
+                        $processedOptions,
+                        'token',
+                        $token,
+                    );
+                }
+            }
+        }
+
         return RequestOptions::normalizeBodyOptions($processedOptions);
     }
 }

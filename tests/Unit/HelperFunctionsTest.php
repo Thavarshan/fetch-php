@@ -71,6 +71,48 @@ class HelperFunctionsTest extends TestCase
         $this->assertEquals(30, $processed['timeout']);
     }
 
+    public function test_fetch_token_becomes_bearer_header(): void
+    {
+        MockServer::fake([
+            'GET https://api.example.test/auth' => MockResponse::ok(),
+        ]);
+        MockServer::preventStrayRequests();
+
+        fetch('https://api.example.test/auth', ['token' => 'test-secret']);
+
+        MockServer::assertSent(function ($request): bool {
+            return $request->getHeaderLine('Authorization') ===
+                'Bearer test-secret';
+        });
+
+        $options = process_request_options(['token' => 'test-secret']);
+        self::assertArrayNotHasKey('token', $options);
+        self::assertSame(
+            'Bearer test-secret',
+            $options['headers']['Authorization'],
+        );
+    }
+
+    public function test_explicit_authorization_overrides_token(): void
+    {
+        $options = process_request_options([
+            'token' => 'ignored',
+            'headers' => ['authorization' => 'Basic abc'],
+        ]);
+
+        self::assertSame(
+            'Basic abc',
+            $options['headers']['authorization'],
+        );
+        self::assertArrayNotHasKey('token', $options);
+    }
+
+    public function test_invalid_bearer_token_is_rejected(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        process_request_options(['token' => ['unexpected']]);
+    }
+
     public function test_extract_body_and_content_type(): void
     {
         // Test with JSON
