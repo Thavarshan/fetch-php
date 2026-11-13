@@ -132,7 +132,7 @@ if (! function_exists('process_request_options')) {
 
             if ($token !== null) {
                 if (! is_string($token) || trim($token) === '') {
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         'Bearer token must be a non-empty string.',
                     );
                 }
