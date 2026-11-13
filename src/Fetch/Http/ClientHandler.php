@@ -28,6 +28,7 @@ use Fetch\Support\GlobalServices;
 use Fetch\Support\RequestContext;
 use Fetch\Support\RequestOptions as FetchRequestOptions;
 use Fetch\Support\RetryDefaults;
+use Fetch\Support\SensitiveOptionSanitizer;
 use Fetch\Validation\ValidationManager;
 use Fetch\Validation\ValidationPolicy;
 use GuzzleHttp\Client as GuzzleClient;
@@ -998,7 +999,7 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected function sanitizeOptions(array $options): array
     {
-        return \Fetch\Support\SensitiveOptionSanitizer::sanitize($options);
+        return SensitiveOptionSanitizer::sanitize($options);
     }
 
     /**
