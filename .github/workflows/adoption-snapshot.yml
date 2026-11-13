@@ -17,6 +17,9 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Check snapshot parser offline
+        run: python3 -m unittest discover -s tools/marketing -p 'test_*.py' -v
+
       - name: Collect public GitHub and Packagist counters
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
