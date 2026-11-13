@@ -4,11 +4,11 @@ test('homepage is rendered on the server with highlighted examples',
     async ({ page, request }) => {
         const response = await request.get('/');
         const html = await response.text();
-        expect(html).toContain('Every good idea');
+        expect(html).toContain('for modern PHP.');
         expect(html).toContain('shiki');
         expect(html).not.toContain('landing-tab-request');
         await page.goto('/');
-        await expect(page.locator('h1')).toContainText('a request.');
+        await expect(page.locator('h1')).toContainText('for modern PHP.');
         await expect(page.locator('.workbench')).toBeVisible();
         await expect(page.getByRole('link', {
             name: 'Get started', exact: false,
@@ -78,7 +78,7 @@ test('local search finds and opens a documentation page', async ({ page }) => {
     await expect(page.locator('#localsearch-input')).toBeFocused();
     await page.keyboard.press('Escape');
     await page.getByRole('link', { name: 'FetchPHP', exact: true }).click();
-    await expect(page.locator('h1')).toContainText('a request.');
+    await expect(page.locator('h1')).toContainText('for modern PHP.');
 });
 
 test('theme switching updates VitePress and shared component tokens',

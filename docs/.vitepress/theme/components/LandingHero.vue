@@ -9,17 +9,19 @@ import RequestResponseDemo from './RequestResponseDemo.vue';
         <div class="site-container hero-frame">
             <div class="hero-intro">
                 <div>
-                    <p class="eyebrow">FetchPHP / HTTP for modern PHP</p>
+                    <p class="eyebrow">
+                        FetchPHP / JavaScript-inspired HTTP for PHP
+                    </p>
                     <h1 id="landing-title">
-                        Every good idea<br />
-                        starts with <em>a request.</em>
+                        Meet <em>fetch()</em><br />
+                        for modern PHP.
                     </h1>
                 </div>
                 <div class="hero-description">
                     <p>
-                        A familiar fetch API. The power of Guzzle.
-                        From your first request to concurrent workflows,
-                        write HTTP that feels at home in PHP.
+                        A familiar JavaScript-inspired entry point, powered by
+                        Guzzle. Start with a simple request, then opt in
+                        to retries, streaming, and async workflows.
                     </p>
                     <div class="hero-actions flex flex-wrap gap-3">
                         <Button as-child size="lg" class="min-h-11">
