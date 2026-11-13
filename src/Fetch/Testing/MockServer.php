@@ -119,7 +119,9 @@ class MockServer
     public static function allowStrayRequests(array $patterns = []): void
     {
         $instance = self::getInstance();
-        $instance->preventStrayRequests = false;
+        // Whitelisting specific URLs must not unlock all unmatched URLs.
+        // Calling this method enables the guard even if none are allowed.
+        $instance->preventStrayRequests = true;
         $instance->allowedStrayPatterns = $patterns;
     }
 
