@@ -8,7 +8,7 @@ source**.
 1. Open https://packagist.org/packages/jerome/fetch-php and sign in using the
    Packagist owner account.
 2. Check the listed versions. At the 2026-11-14 audit, latest shown stable was
-   `3.8.1` , whereas GitHub had tagged `4.1.0` . If versions still disagree,
+   `3.8.1`, whereas GitHub had tagged `4.1.0`. If versions still disagree,
    open the package's Update action, inspect the resulting status/errors, and
    check whether the GitHub Packagist webhook is active.
 3. In GitHub, open repository **Settings → Webhooks** and inspect Packagist
@@ -21,10 +21,9 @@ source**.
    composer require jerome/fetch-php
    composer show jerome/fetch-php
    ```
-Create a `composer.json` using
-`composer init --no-interaction --name=local/fetch-php-smoke` if needed. Verify
-PHP >= 8.3 and platform extensions before attributing install failures to
-Packagist.
+   If the directory lacks `composer.json`, run
+   `composer init --no-interaction --name=local/fetch-php-smoke` first. Verify
+   PHP >= 8.3 and platform extensions before attributing failures to Packagist.
 5. Ensure the Composer-installed version matches release notes and examples.
    Update [issue #187](https://github.com/Thavarshan/fetch-php/issues/187) with
    results; **never share package tokens**.
@@ -32,8 +31,8 @@ Packagist.
 ## Next: merge and deploy reviewed source changes
 
 1. Review the draft onboarding PR and marketing-assets PR for accuracy.
-2. Check the PR Actions tab. Run `composer docs:examples` , `npm ci` ,
-   `npm run typecheck` , `npm run build` and `npm run check-links` if CI does
+2. Check the PR Actions tab. Run `composer docs:examples`, `npm ci`,
+   `npm run typecheck`, `npm run build` and `npm run check-links` if CI does
    not cover them.
 3. Verify the docs landing page at desktop and mobile widths, and check the
    public site after deployment.
