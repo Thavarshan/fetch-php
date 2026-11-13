@@ -12,7 +12,7 @@ not implement the browser Fetch security model.
 - [Install and try it](#requirements-and-installation)
 - [Browse the documentation](https://fetch-php.thavarshan.com/)
 - [Explore reproducible examples](https://fetch-php.thavarshan.com/examples/)
-- [Report a problem or suggest an improvement](https://github.com/Thavarshan/fetch-php/issues)
+- [Report an issue](https://github.com/Thavarshan/fetch-php/issues)
 
 ## Requirements and installation
 
