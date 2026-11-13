@@ -8,7 +8,7 @@ maintenance PRs are merged and the public Composer distribution is verified.
 ## Candidate changes (include only once merged)
 
 - [x] #191 / #167: mock allowlist correctly blocks other unmatched requests.
-- [ ] #190 / #147, #148: stale file-cache reads and shared-cache TTL precedence.
+- [x] #190 / #147, #148: stale file-cache reads and shared-cache TTL precedence.
 - [ ] #192 / #146: bearer token option on the global `fetch()` helper.
 - [ ] #193 / #151: preserve user callback alongside redirect events.
 - [ ] #194 / #150: bound line size while streaming.
