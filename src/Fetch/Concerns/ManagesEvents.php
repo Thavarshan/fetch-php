@@ -387,11 +387,13 @@ trait ManagesEvents
             'track_redirects' => false,
         ];
 
+        $existingCallback = $config['on_redirect'] ?? null;
         $count = 0;
         $config['on_redirect'] = function ($req, $response, $uri) use (
             &$count,
             $request,
             $context,
+            $existingCallback,
         ): void {
             $count++;
             $this->emitRedirectEvent(
@@ -401,6 +403,10 @@ trait ManagesEvents
                 $count,
                 $context,
             );
+
+            if (is_callable($existingCallback)) {
+                $existingCallback($req, $response, $uri);
+            }
         };
 
         $guzzleOptions['allow_redirects'] = $config;

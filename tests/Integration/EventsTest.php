@@ -195,6 +195,44 @@ class EventsTest extends TestCase
         $this->assertSame(1, $redirectEvent->getRedirectCount());
     }
 
+    public function test_redirect_event_preserves_user_callback(): void
+    {
+        $handler = $this->handler([
+            new PsrResponse(302, ['Location' => 'https://example.com/new']),
+            new PsrResponse(200, [], 'destination'),
+        ]);
+        $callbackCalls = [];
+        $redirectEvent = null;
+        $handler->onRedirect(
+            function (RedirectEvent $event) use (&$redirectEvent): void {
+                $redirectEvent = $event;
+            },
+        );
+
+        $response = $handler->withOptions([
+            'allow_redirects' => [
+                'on_redirect' => function ($request, $response, $uri) use (
+                    &$callbackCalls,
+                ): void {
+                    $callbackCalls[] = [
+                        $request->getMethod(),
+                        $response->getStatusCode(),
+                        (string) $uri,
+                    ];
+                },
+            ],
+        ])->get('https://example.com/old');
+
+        self::assertSame(200, $response->status());
+        self::assertSame([[
+            'GET',
+            302,
+            'https://example.com/new',
+        ]], $callbackCalls);
+        self::assertInstanceOf(RedirectEvent::class, $redirectEvent);
+        self::assertSame(1, $redirectEvent->getRedirectCount());
+    }
+
     public function test_priority_orders_listeners(): void
     {
         $handler = $this->handler([new PsrResponse(200)]);
