@@ -998,45 +998,7 @@ class ClientHandler implements ClientHandlerInterface
      */
     protected function sanitizeOptions(array $options): array
     {
-        $sanitizedOptions = $options;
-
-        // Mask sensitive headers (case-insensitive)
-        if (
-            isset($sanitizedOptions['headers']) &&
-            is_array($sanitizedOptions['headers'])
-        ) {
-            $sensitiveHeaders = [
-                'authorization',
-                'x-api-key',
-                'api-key',
-                'x-auth-token',
-                'cookie',
-                'set-cookie',
-            ];
-
-            foreach ($sanitizedOptions['headers'] as $key => $value) {
-                if (
-                    in_array(strtolower((string) $key), $sensitiveHeaders, true)
-                ) {
-                    if (is_array($value)) {
-                        $sanitizedOptions['headers'][$key] = array_fill(
-                            0,
-                            count($value),
-                            '[REDACTED]',
-                        );
-                    } else {
-                        $sanitizedOptions['headers'][$key] = '[REDACTED]';
-                    }
-                }
-            }
-        }
-
-        // Mask auth credentials
-        if (isset($sanitizedOptions['auth'])) {
-            $sanitizedOptions['auth'] = '[REDACTED]';
-        }
-
-        return $sanitizedOptions;
+        return \Fetch\Support\SensitiveOptionSanitizer::sanitize($options);
     }
 
     /**
