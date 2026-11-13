@@ -46,3 +46,6 @@ CLAUDE.local.md
 # Wrangler local state
 .wrangler/
 docs/.vitepress/.temp/
+
+# Local public adoption reports
+/adoption-snapshot/
