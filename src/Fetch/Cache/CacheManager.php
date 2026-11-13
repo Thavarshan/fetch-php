@@ -593,7 +593,10 @@ final class CacheManager
 
         // Get TTL from Cache-Control headers
         if ($this->options['respect_cache_headers'] ?? true) {
-            $isSharedCache = $this->options['is_shared_cache'] ?? false;
+            $isSharedCache = is_array($cacheConfig)
+                ? $cacheConfig['is_shared_cache'] ??
+                    ($this->options['is_shared_cache'] ?? false)
+                : $this->options['is_shared_cache'] ?? false;
             $headerTtl = $cacheControl->getTtl($response, $isSharedCache);
 
             if ($headerTtl !== null) {
